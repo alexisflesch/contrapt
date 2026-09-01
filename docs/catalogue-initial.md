@@ -32,7 +32,8 @@ en mouvement ; les poutres et la bascule modifient sa trajectoire jusqu'au panie
 - rayon, masse, friction et rebond fixes par la definition du jeu ;
 - aucune propriete physique modifiable dans les premiers niveaux ;
 - position initiale configurable par l'auteur ;
-- objet verrouille ou disponible dans l'inventaire selon le niveau.
+- permissions explicites de deplacement, rotation et retrait, ou disponible dans
+  l'inventaire selon le niveau.
 
 Il n'existe qu'une seule mecanique de balle au depart. Le choix tennis, basket ou
 autre releve d'abord de la direction graphique. Des balles aux proprietes physiques
@@ -53,7 +54,7 @@ designee par le niveau.
 - position configurable par l'auteur ;
 - orientation fixe par defaut, la rotation n'etant exposee que si les niveaux en ont
   reellement besoin ;
-- normalement verrouille en mode resolution.
+- normalement non deplacable, non rotatable et non retirable en mode resolution.
 
 Le panier emet un fait de domaine du type `ball-entered-target`. L'objectif du
 niveau reference ce fait ou l'etat du capteur ; il n'est pas code directement dans
@@ -101,8 +102,8 @@ joueur de comprendre ou de configurer des joints.
 - geometrie, limites angulaires, masse et friction fixes initialement ;
 - deplacement de l'ensemble autorisable par le niveau ;
 - pas de demontage, de redimensionnement ou de connexion manuelle ;
-- normalement introduite deja placee et verrouillee avant de devenir disponible
-  dans l'inventaire.
+- normalement introduite deja placee, sans permissions joueur, avant de devenir
+  disponible dans l'inventaire.
 
 La planche et le joint internes appartiennent a l'instance de simulation de la
 bascule. Ils n'ont pas d'identifiants persistants de niveau et ne sont pas
@@ -110,23 +111,29 @@ selectionnables independamment dans l'editeur.
 
 ## Inventaire
 
-Une entree d'inventaire reference une famille et les proprietes deja choisies :
+Une entree d'inventaire a son propre identifiant, reference une famille et les
+proprietes deja choisies. Elle porte aussi les permissions qui seront copiees vers
+le placement cree :
 
 ```ts
 interface InventoryEntry {
-  objectType: "ball" | "basket" | "beam" | "seesaw";
-  props: Record<string, unknown>;
+  id: string;
+  type: "ball" | "basket" | "beam" | "seesaw";
+  props: {} | { size: "short" | "medium" | "long" };
   quantity: number;
+  permissions: { move: boolean; rotate: boolean; remove: boolean };
 }
 ```
 
-Pour une poutre, `props` contient la taille. Le schema concret sera une union Zod
-discriminee afin que les proprietes soient typees selon `objectType` ; le
-`Record<string, unknown>` ci-dessus illustre seulement la forme generale.
+Le schema concret est une union Zod stricte discriminee afin que les proprietes
+soient typees selon `type`. Pour une poutre, `props` contient la taille ; les trois
+autres familles n'acceptent aucune propriete en v1. La rotation est disponible pour
+les poutres uniquement : `permissions.rotate` doit donc etre `false` pour les
+autres familles.
 
 Les premiers niveaux peuvent n'offrir qu'une ou deux poutres. La balle, le panier
-et la bascule peuvent etre places et verrouilles par l'auteur sans apparaitre dans
-le tiroir du joueur.
+et la bascule peuvent etre places par l'auteur avec leurs trois permissions a
+`false`, sans apparaitre dans le tiroir du joueur.
 
 ## Progression suggeree
 
@@ -152,7 +159,7 @@ concept n'est pas acquis.
 - detruire une bascule detruit tous ses composants physiques internes ;
 - le panier ne valide que la balle cible d'un objectif ;
 - le capteur du panier ne modifie pas la trajectoire physique ;
-- les objets verrouilles refusent les commandes d'edition interdites ;
+- les objets dont une permission est a `false` refusent la commande correspondante ;
 - l'inventaire distingue et decompte correctement les tailles de poutre.
 
 ## Decisions a prendre par experimentation
@@ -164,4 +171,3 @@ concept n'est pas acquis.
 - angles de snapping et comportement pres des limites ;
 - duree de maintien necessaire dans le panier ;
 - limites angulaires et amortissement de la bascule.
-

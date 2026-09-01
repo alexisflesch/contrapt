@@ -1,6 +1,6 @@
 # ADR 0003 - Bootstrap du projet
 
-Statut : propose
+Statut : accepte
 
 Date : 2026-09-01
 

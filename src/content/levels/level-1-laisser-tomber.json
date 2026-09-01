@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "level-1-laisser-tomber",
+  "metadata": {
+    "title": "Laisser tomber",
+    "description": "Faire entrer la balle dans le panier en lançant la simulation. Les positions sont provisoires, en unités du monde, et seront ajustées après les essais physiques."
+  },
+  "objects": [
+    {
+      "id": "ball-1",
+      "type": "ball",
+      "transform": {
+        "position": { "x": 0, "y": 4 },
+        "rotation": 0
+      },
+      "props": {},
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-1",
+      "type": "basket",
+      "transform": {
+        "position": { "x": 0, "y": 0 },
+        "rotation": 0
+      },
+      "props": {},
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [],
+  "goal": {
+    "type": "basket",
+    "ballId": "ball-1",
+    "basketId": "basket-1"
+  },
+  "buildZones": []
+}

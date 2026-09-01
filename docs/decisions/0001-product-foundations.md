@@ -4,9 +4,9 @@ Statut : accepte
 
 ## Decision
 
-Le jeu est une reinterpretation moderne et originale du puzzle mecanique a reaction
-en chaine. Il ne cherche pas la fidelite a un catalogue ou a des mecanismes
-historiques.
+Le jeu, nomme **Contrapt!**, est une reinterpretation moderne et originale du
+puzzle mecanique a reaction en chaine. Il ne cherche pas la fidelite a un catalogue
+ou a des mecanismes historiques.
 
 La version 1 est une PWA statique, jouable et editable hors ligne, sans backend. La
 creation de niveaux sur telephone est une exigence de premier rang et reutilise le

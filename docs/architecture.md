@@ -51,25 +51,44 @@ recreer. Cela ne restaure jamais un monde physique serialise dans le niveau.
 
 ## Enveloppe de niveau
 
-Le schema conceptuel minimal est :
+Le contrat persistant courant est `LevelDocument v1`, defini par le schema Zod
+strict `src/domain/level-document.ts`. Sa forme est volontairement plus petite que
+le modele d'evolution envisage :
 
 ```ts
-interface LevelDocument {
-  schemaVersion: number;
+interface LevelDocumentV1 {
+  schemaVersion: 1;
   id: string;
-  metadata: LevelMetadata;
-  world: WorldSettings;
+  metadata: { title: string; description?: string };
   objects: ObjectPlacement[];
-  connections: ConnectionPlacement[];
   inventory: InventoryEntry[];
-  goals: GoalDefinition[];
-  restrictions?: RestrictionDefinition[];
-  hints?: HintDefinition[];
+  goal: { type: 'basket'; ballId: string; basketId: string };
+  buildZones: Array<{
+    min: { x: number; y: number };
+    max: { x: number; y: number };
+  }>;
 }
 ```
 
+Chaque placement existant, comme chaque entree d'inventaire, porte explicitement
+`permissions: { move: boolean; rotate: boolean; remove: boolean }`. Lorsqu'une
+entree est placee, ses permissions deviennent celles du nouveau placement. Il n'y
+a pas de booleen generique `locked` dans le document.
+
 Le schema Zod est la source de verite executable. Le type TypeScript est infere du
-schema lorsque c'est possible, afin d'eviter deux definitions divergentes.
+schema afin d'eviter deux definitions divergentes. Il refuse les champs inconnus,
+les valeurs non finies et les bornes techniques ; sa validation semantique refuse
+notamment les identifiants de placement ou d'inventaire dupliques et les references
+de but qui ne designent pas une balle et un panier places.
+
+Les positions et les bornes de `buildZones` sont en unites du monde. Une zone est
+un rectangle non vide : `min.x < max.x` et `min.y < max.y`. Les rotations de toutes
+les transformees sont persistees en radians.
+
+La gravite et la duree de maintien dans le panier sont des regles globales de
+l'application, non des proprietes de niveau v1. Les objets du moteur physique, le
+monde de simulation et tout parametre de rendu restent egalement absents du format.
+Les choix et plafonds associes sont consignes dans l'ADR 0004.
 
 Chaque version persistante possede un decodeur strict et une migration vers la
 version courante. La pipeline est :
@@ -110,23 +129,12 @@ ni des placements de niveau, ni des objets manipulables separement.
 
 ### Placement persistant
 
-Un placement ne contient que des donnees stables :
-
-```ts
-interface ObjectPlacement<Props = unknown> {
-  id: string;
-  type: string;
-  objectVersion: number;
-  transform: {
-    position: { x: number; y: number };
-    rotation: number;
-  };
-  props: Props;
-  locked?: boolean;
-}
-```
-
-Les unites et conventions d'angle devront etre fixees dans une decision dediee.
+`objects` est une union discriminee stricte sur `type`. Les quatre variantes v1
+sont `ball`, `basket`, `beam` et `seesaw`. Seule une poutre a une propriete :
+`props: { size: 'short' | 'medium' | 'long' }`; les trois autres ont des
+proprietes strictement vides. Un placement ne contient que son identifiant, son
+type, sa transformee en unites du monde, ses proprietes et ses permissions. Il ne
+contient ni version par objet, ni handle de moteur, ni objet graphique.
 
 ### Instance ephemere
 
@@ -147,26 +155,18 @@ Le catalogue initial et ses capacites minimales sont detailles dans
 
 ## Connexions
 
-Une connexion est une entite de document distincte. Ses extremites referencent un
-objet et un port nomme. Les schemas verifient la forme ; un validateur semantique
-verifie l'existence des objets, des ports et leur compatibilite.
-
-Les connexions permettent plus tard d'ajouter pivots, ressorts, cordes, courroies ou
-liaisons logiques sans imbriquer les objets les uns dans les autres. La presence de
-ce modele ne force pas l'interface a exposer toutes ces connexions en version 1.
+`LevelDocument v1` ne contient pas de champ `connections`. La bascule reste un seul
+placement, meme si sa future instance de simulation cree un pivot interne. Ajouter
+des pivots, ressorts, cordes, courroies ou liaisons logiques exigera un besoin de
+game design, un nouveau contrat de document et une migration explicite.
 
 ## Objectifs
 
-Les objectifs sont des definitions declaratives choisies dans un registre ferme.
-Ils ne contiennent pas de code. Les premiers evaluateurs doivent rester simples :
-
-- un objet ou un type d'objet entre dans une zone ;
-- une condition reste vraie pendant une duree ;
-- un capteur est active ;
-- tous ou au moins un des sous-objectifs est satisfait.
-
-Une sequence ou des expressions plus riches ne seront ajoutees qu'avec un besoin de
-game design concret.
+La v1 contient exactement un seul objectif declaratif : `goal.type === 'basket'`.
+Il reference par identifiant une balle et un panier deja places. Le capteur et la
+duree de maintien qui l'evalue sont des details globaux du jeu, pas du document.
+Les objectifs composes, sequences ou parametres ne seront ajoutes qu'avec un besoin
+de game design concret et une migration de format.
 
 ## Commandes et historique
 
@@ -178,8 +178,10 @@ Les gestes continus sont regroupes : deplacer un objet pendant deux secondes cre
 une seule entree d'historique, pas une entree par evenement tactile. Une commande
 invalide ne modifie ni le document ni l'historique.
 
-Le domaine de commandes est commun au mode resolution et au mode creation. Les
-permissions de la session determinent quelles commandes sont autorisees.
+Le domaine de commandes est commun au mode resolution et au mode creation. En
+resolution, les permissions persistantes du placement ou de l'entree d'inventaire
+determinent quelles commandes sont autorisees ; le mode creation garde ses propres
+droits d'auteur.
 
 ## Simulation
 

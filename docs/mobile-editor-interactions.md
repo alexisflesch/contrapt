@@ -18,7 +18,7 @@ disponibles :
 - en resolution, le joueur ne voit que son inventaire et ne modifie que les objets
   autorises par le niveau ;
 - en creation, l'auteur accede au catalogue, aux proprietes du niveau, a
-  l'inventaire, aux objectifs et au verrouillage ;
+  l'inventaire, aux objectifs et aux permissions du futur joueur ;
 - un apercu « comme joueur » dans l'editeur applique les permissions du mode
   resolution sans creer un second plateau.
 
@@ -231,24 +231,30 @@ visuellement comparables :
 
 ## Objets verrouilles et permissions
 
-Un objet verrouille reste selectionnable afin que son role soit comprehensible.
+Chaque placement et chaque entree d'inventaire persistante declare les trois
+permissions `move`, `rotate` et `remove`. En resolution, un objet dont les trois
+sont `false` est presente comme « Verrouille par ce niveau », tout en restant
+selectionnable afin que son role soit comprehensible. Une permission absente
+n'existe pas dans le format v1 : elle est toujours explicitement vraie ou fausse.
+
 En resolution :
 
 - il n'affiche aucune poignee correspondant a une action interdite ;
-- un glisser ne le deplace pas et ne devient pas silencieusement un panoramique ;
-- le panneau indique « Verrouille par ce niveau » ;
+- un glisser est refuse lorsque `move` est `false` et ne devient pas
+  silencieusement un panoramique ;
+- le panneau indique l'etat verrouille lorsque les trois permissions sont fausses,
+  ou les actions particulieres indisponibles dans les autres cas ;
 - une tentative de modification produit un retour bref, visible et annonce aux
   technologies d'assistance.
 
-Dans l'editeur de creation, `locked` est la propriete persistante qui definit les
-permissions du futur joueur. Elle n'empeche pas l'auteur de modifier l'objet. Le
-mode d'apercu « comme joueur » applique en revanche le verrouillage. Cette
-distinction evite d'introduire un second mecanisme de verrouillage propre a l'outil
-d'auteur.
+Dans l'editeur de creation, le triplet de permissions persistant definit les
+actions du futur joueur. Il n'empeche pas l'auteur de modifier l'objet. Le mode
+d'apercu « comme joueur » applique en revanche ces permissions, sans introduire un
+second mecanisme de verrouillage propre a l'outil d'auteur.
 
-Les autres restrictions de niveau, telles que deplacement autorise mais rotation
-interdite, suivent la meme regle : seules les poignees permises sont visibles et
-les commandes sont refusees par la couche application, pas seulement par l'UI.
+Des restrictions comme deplacement autorise mais rotation interdite suivent la meme
+regle : seules les poignees permises sont visibles et les commandes sont refusees
+par la couche application, pas seulement par l'UI.
 
 ## Annuler et retablir
 
@@ -421,13 +427,14 @@ supportee.
 8. **Rotation.** Quand une poignee de rotation est glissee a travers plusieurs
    angles de snapping puis relachee, alors seul l'angle final produit une commande ;
    annuler restaure exactement l'angle initial.
-9. **Objet verrouille.** Etant donne une poutre verrouillee en resolution, quand le
-   joueur tente de la glisser, alors elle est selectionnee mais ne bouge pas, la
-   camera ne bouge pas, aucune commande n'est creee et la restriction est annoncee.
-10. **Verrouillage d'auteur.** Etant donne le meme document ouvert en creation,
-    quand l'auteur selectionne cet objet, alors il peut le modifier et changer la
-    propriete de verrouillage ; l'apercu comme joueur applique ensuite la
-    restriction.
+9. **Objet verrouille.** Etant donne une poutre dont `move`, `rotate` et `remove`
+   sont tous a `false` en resolution, quand le joueur tente de la glisser, alors
+   elle est selectionnee mais ne bouge pas, la camera ne bouge pas, aucune commande
+   n'est creee et la restriction est annoncee.
+10. **Permissions d'auteur.** Etant donne le meme document ouvert en creation,
+    quand l'auteur selectionne cet objet, alors il peut le modifier et changer le
+    triplet de permissions ; l'apercu comme joueur applique ensuite ces
+    restrictions.
 11. **Undo, redo et inventaire.** Apres placement puis deplacement d'une poutre,
     deux annulations restaurent d'abord sa position puis la retirent en rendant la
     quantite ; deux retablissements reproduisent les deux actions.
