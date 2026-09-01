@@ -1,9 +1,9 @@
-# Strategie de qualite
+# Stratégie de qualité
 
 ## Objectif
 
-La qualite repose sur des contrats executables et une boucle de feedback courte.
-Les outils ne remplacent pas la conception, mais doivent rendre les ecarts visibles
+La qualité repose sur des contrats exécutables et une boucle de feedback courte.
+Les outils ne remplacent pas la conception, mais doivent rendre les écarts visibles
 avant qu'ils ne se propagent aux niveaux et aux sauvegardes.
 
 ## TDD
@@ -11,139 +11,139 @@ avant qu'ils ne se propagent aux niveaux et aux sauvegardes.
 Red-Green-Refactor est obligatoire pour les comportements du domaine, de la
 simulation, des codecs, des migrations et pour toute correction de bug.
 
-Un bon test decrit une consequence observable et reste valable apres un refactoring
-interne. Il ne se contente pas de verifier qu'une methode privee a ete appelee ou
-qu'un fichier contient une chaine donnee.
+Un bon test décrit une conséquence observable et reste valable après un refactoring
+interne. Il ne se contente pas de vérifier qu'une méthode privée a été appelée ou
+qu'un fichier contient une chaîne donnée.
 
-Une correction de bug commence par le plus petit test reproduisant le defaut. Les
-tests de regression utilisant un niveau complet sont ajoutes en plus, et non a la
-place, d'un test cible lorsque celui-ci est possible.
+Une correction de bug commence par le plus petit test reproduisant le défaut. Les
+tests de régression utilisant un niveau complet sont ajoutés en plus, et non à la
+place, d'un test ciblé lorsque celui-ci est possible.
 
 ## Pyramide de tests
 
 ### Tests unitaires
 
-- schemas et validateurs semantiques ;
+- schémas et validateurs sémantiques ;
 - commandes et undo/redo ;
 - inventaire, restrictions et objectifs ;
 - migrations ;
 - codecs et limites ;
-- controleurs d'objets purs.
+- contrôleurs d'objets purs.
 
-Ils doivent etre majoritaires et ne pas requerir de navigateur.
+Ils doivent être majoritaires et ne pas requérir de navigateur.
 
 ### Tests contractuels
 
-Chaque module d'objet passe la meme suite : metadonnees valides, props par defaut
-valides, aller-retour de serialisation, construction/destruction sans fuite connue,
-ports coherents et comportement minimal.
+Chaque module d'objet passe la même suite : métadonnées valides, props par défaut
+valides, aller-retour de sérialisation, construction/destruction sans fuite connue,
+ports cohérents et comportement minimal.
 
-Chaque implementation de repository passe un contrat commun pour les operations
+Chaque implémentation de repository passe un contrat commun pour les opérations
 qu'elle supporte.
 
-### Tests d'integration de simulation
+### Tests d'intégration de simulation
 
-Des scenes minimales verifient les interactions avec le moteur physique a pas fixe.
-Les assertions portent sur des tolerances et des invariants utiles, pas sur tous les
+Des scènes minimales vérifient les interactions avec le moteur physique à pas fixe.
+Les assertions portent sur des tolérances et des invariants utiles, pas sur tous les
 floats internes du moteur.
 
-Les scenes de conformite sont conservees apres le choix du moteur pour detecter les
-regressions lors des mises a jour de dependances.
+Les scènes de conformité sont conservées après le choix du moteur pour détecter les
+régressions lors des mises à jour de dépendances.
 
 ### Tests end-to-end
 
-Les parcours critiques sont testes dans de vrais navigateurs : ouvrir un niveau,
-placer et pivoter au tactile, undo/redo, lancer, reinitialiser, reussir, creer,
+Les parcours critiques sont testés dans de vrais navigateurs : ouvrir un niveau,
+placer et pivoter au tactile, undo/redo, lancer, réinitialiser, réussir, créer,
 sauvegarder, recharger, importer et partager.
 
 Au moins un projet de test utilise un viewport et des interactions tactiles de
-telephone. Les tests desktop ne sont pas consideres comme substituts.
+téléphone. Les tests desktop ne sont pas considérés comme substituts.
 
 ### Tests de contenu
 
-Tous les niveaux embarques sont valides au build. Une solution de reference ou un
-scenario equivalent prouve leur resolubilite et sert de regression. Cette solution
-n'est pas un secret de securite : une application statique ne peut pas cacher
-durablement une donnee livree au navigateur.
+Tous les niveaux embarqués sont valides au build. Une solution de référence ou un
+scénario équivalent prouve leur résolubilité et sert de régression. Cette solution
+n'est pas un secret de sécurité : une application statique ne peut pas cacher
+durablement une donnée livrée au navigateur.
 
-## Determinisme et temps
+## Déterminisme et temps
 
 - pas physique fixe ;
-- ordre de creation stable ;
-- graine explicite pour tout aleatoire ;
-- aucun temps mural dans les regles ;
-- versions du moteur et des parametres consignees ;
-- replay par commandes envisage pour diagnostiquer les echecs, sans en faire une
-  fonctionnalite utilisateur initiale.
+- ordre de création stable ;
+- graine explicite pour tout aléatoire ;
+- aucun temps mural dans les règles ;
+- versions du moteur et des paramètres consignées ;
+- replay par commandes envisagé pour diagnostiquer les échecs, sans en faire une
+  fonctionnalité utilisateur initiale.
 
-La promesse exacte de reproductibilite sera fixee avec le moteur. Ne pas promettre
-un resultat bit-a-bit si la suite multi-navigateurs ne le demontre pas.
+La promesse exacte de reproductibilité sera fixée avec le moteur. Ne pas promettre
+un résultat bit-à-bit si la suite multi-navigateurs ne le démontre pas.
 
-## Garde-fous envisages
+## Garde-fous envisagés
 
 Le scaffolding doit fournir une commande globale unique, par exemple `check`, qui
 orchestre sans les masquer :
 
-- TypeScript strict sans emission ;
+- TypeScript strict sans émission ;
 - ESLint avec informations de type ;
-- verification Prettier ;
+- vérification Prettier ;
 - tests unitaires et contractuels ;
-- validation des schemas et niveaux embarques ;
-- detection de code ou d'exports inutilises ;
+- validation des schémas et niveaux embarqués ;
+- détection de code ou d'exports inutilisés ;
 - build de production ;
-- sous-ensemble end-to-end critique selon le cout d'execution.
+- sous-ensemble end-to-end critique selon le coût d'exécution.
 
-Les bibliotheques exactes seront confirmees au scaffolding. Les candidats initiaux
+Les bibliothèques exactes seront confirmées au scaffolding. Les candidats initiaux
 sont Vitest pour les tests TypeScript et Playwright pour les navigateurs. Un outil
-ne doit etre ajoute que s'il detecte une classe d'erreur differente et produit un
+ne doit être ajouté que s'il détecte une classe d'erreur différente et produit un
 signal exploitable.
 
-La proposition concrete de bootstrap et l'interface des scripts sont decrites dans
-`docs/decisions/0003-project-bootstrap.md`. Elles restent proposees jusqu'a
-acceptation de cette decision.
+La proposition concrète de bootstrap et l'interface des scripts sont décrites dans
+`docs/decisions/0003-project-bootstrap.md`. Elles restent proposées jusqu'à
+acceptation de cette décision.
 
-La CI execute la meme commande que le developpement local. Aucun warning de lint ou
-de TypeScript n'est tolere sur la branche principale.
+La CI exécute la même commande que le développement local. Aucun warning de lint ou
+de TypeScript n'est toléré sur la branche principale.
 
-## Regles de schemas
+## Règles de schémas
 
-- Zod definit les formes runtime ;
-- les types TypeScript sont inferes autant que possible ;
-- les schemas externes sont stricts et refusent les champs inconnus, sauf decision
-  de compatibilite explicite ;
-- les valeurs numeriques ont bornes et finitude verifiees ;
-- les references inter-objets passent une validation semantique distincte ;
-- le parseur retourne des erreurs structurees transformables en messages utilisateur.
+- Zod définit les formes runtime ;
+- les types TypeScript sont inférés autant que possible ;
+- les schémas externes sont stricts et refusent les champs inconnus, sauf décision
+  de compatibilité explicite ;
+- les valeurs numériques ont bornes et finitude vérifiées ;
+- les références inter-objets passent une validation sémantique distincte ;
+- le parseur retourne des erreurs structurées transformables en messages utilisateur.
 
-## Propriete et fuzzing
+## Propriété et fuzzing
 
 Les codecs URL, migrations, commandes inversibles et parseurs sont de bons candidats
-aux tests generatifs. Ils seront introduits quand les premiers contrats seront
-stables, plutot que d'ajouter immediatement une dependance sans cas reel.
+aux tests génératifs. Ils seront introduits quand les premiers contrats seront
+stables, plutôt que d'ajouter immédiatement une dépendance sans cas réel.
 
 Invariants prioritaires :
 
-- decoder un niveau encode restitue le meme document canonique ;
-- une sequence de commandes suivie de tous ses undo restitue le document initial ;
-- migrer deux fois ne modifie pas un document deja courant ;
-- aucune entree finie et bornee ne produit de valeur `NaN` ou infinie ;
-- une charge depassant les limites est refusee avant allocation excessive.
+- décoder un niveau encodé restitue le même document canonique ;
+- une séquence de commandes suivie de tous ses undo restitue le document initial ;
+- migrer deux fois ne modifie pas un document déjà courant ;
+- aucune entrée finie et bornée ne produit de valeur `NaN` ou infinie ;
+- une charge dépassant les limites est refusée avant allocation excessive.
 
-## Dependances et mises a jour
+## Dépendances et mises à jour
 
-Les versions sont verrouillees par le lockfile. Une mise a jour du moteur physique,
-de Zod, du renderer, du service worker ou du stockage est traitee comme sensible et
-doit passer la suite complete pertinente.
+Les versions sont verrouillées par le lockfile. Une mise à jour du moteur physique,
+de Zod, du renderer, du service worker ou du stockage est traitée comme sensible et
+doit passer la suite complète pertinente.
 
-Une abstraction ne justifie pas l'installation de plusieurs implementations en
-production. Les moteurs candidats ne cohabiteront que pendant l'evaluation, puis le
-moteur non retenu sera retire.
+Une abstraction ne justifie pas l'installation de plusieurs implémentations en
+production. Les moteurs candidats ne cohabiteront que pendant l'évaluation, puis le
+moteur non retenu sera retiré.
 
 ## Skills futurs
 
-Les skills projet seront crees apres l'existence des schemas et scripts auxquels
-ils se referent. Ils resteront courts et specialises : auteur d'objet, auteur de
-niveau, regression physique et validation de contenu.
+Les skills projet seront créés après l'existence des schémas et scripts auxquels
+ils se réfèrent. Ils resteront courts et spécialisés : auteur d'objet, auteur de
+niveau, régression physique et validation de contenu.
 
-Ils imposeront l'usage des contrats reels du depot. Ils ne recopieront ni ce
-document, ni des conseils generiques deja appliques par les outils.
+Ils imposeront l'usage des contrats réels du dépôt. Ils ne recopieront ni ce
+document, ni des conseils génériques déjà appliqués par les outils.
