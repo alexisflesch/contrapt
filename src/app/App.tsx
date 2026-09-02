@@ -330,7 +330,10 @@ export function App() {
   const hasValidPlacementPreview = useRef(false);
   const activePointer = useRef<{ readonly id: number | null } | null>(null);
   const capturedPointerId = useRef<number | null>(null);
-  const activeMovePointer = useRef<{ readonly id: number | null; readonly placementId: string } | null>(null);
+  const activeMovePointer = useRef<{
+    readonly id: number | null;
+    readonly placementId: string;
+  } | null>(null);
   const isSideLayout = useSyncExternalStore(
     subscribeToSideLayout,
     getSideLayoutSnapshot,
@@ -348,7 +351,13 @@ export function App() {
     (object) => object.id === session.selectedPlacementId,
   );
   const placementName = (object: LevelDocument['objects'][number]): string =>
-    object.type === 'ball' ? 'Balle' : object.type === 'basket' ? 'Panier' : object.type === 'beam' ? 'Poutre' : 'Bascule';
+    object.type === 'ball'
+      ? 'Balle'
+      : object.type === 'basket'
+        ? 'Panier'
+        : object.type === 'beam'
+          ? 'Poutre'
+          : 'Bascule';
   const loadLevelOne = (): void => {
     const levelOne = embeddedLevels[0];
     if (levelOne === undefined) {
@@ -670,9 +679,7 @@ export function App() {
     updateSession(selectEditorPlacement(sessionRef.current, placementId));
   };
 
-  const executeSelectedCommand = (
-    command: Parameters<typeof executeEditorCommand>[1],
-  ): void => {
+  const executeSelectedCommand = (command: Parameters<typeof executeEditorCommand>[1]): void => {
     const result = executeEditorCommand(sessionRef.current, command);
     updateSession(result.session);
     if (result.status === 'rejected') setFeedback(refusalMessage(result.reason));
@@ -830,8 +837,12 @@ export function App() {
           <h1>Contrapt!</h1>
         </div>
         <p className="level-label">
-          <span>{session.mode === 'creation' ? 'Éditeur de niveaux' : 'Niveau 1 · Laisser tomber'}</span>
-          <span className="level-mode">{session.mode === 'creation' ? 'Mode éditeur' : 'Mode joueur'}</span>
+          <span>
+            {session.mode === 'creation' ? 'Éditeur de niveaux' : 'Niveau 1 · Laisser tomber'}
+          </span>
+          <span className="level-mode">
+            {session.mode === 'creation' ? 'Mode éditeur' : 'Mode joueur'}
+          </span>
         </p>
         <button
           className="icon-button"
@@ -850,7 +861,13 @@ export function App() {
       <main className="app-main">
         {isMenuOpen && (
           <section className="level-menu" aria-label="Menu principal">
-            <button type="button" className="context-action" onClick={() => { setIsLevelListOpen(true); }}>
+            <button
+              type="button"
+              className="context-action"
+              onClick={() => {
+                setIsLevelListOpen(true);
+              }}
+            >
               Liste des niveaux
             </button>
             {isLevelListOpen && (
@@ -1100,7 +1117,9 @@ export function App() {
             <button
               className="camera-button camera-reset"
               type="button"
-              onClick={() => { updateCamera(initialCamera); }}
+              onClick={() => {
+                updateCamera(initialCamera);
+              }}
             >
               Ajuster à la scène
             </button>
@@ -1133,7 +1152,9 @@ export function App() {
                   type="button"
                   {...objectAttributes}
                   aria-pressed={session.selectedPlacementId === object.id}
-                  onClick={() => { selectPlacement(object.id); }}
+                  onClick={() => {
+                    selectPlacement(object.id);
+                  }}
                 >
                   {placementName(object)}
                 </button>
@@ -1146,15 +1167,24 @@ export function App() {
           </section>
 
           {selectedPlacement !== undefined && session.phase === 'construction' && (
-            <section className="context-panel" aria-label={`Objet sélectionné : ${placementName(selectedPlacement)}`}>
+            <section
+              className="context-panel"
+              aria-label={`Objet sélectionné : ${placementName(selectedPlacement)}`}
+            >
               <strong>Objet sélectionné : {placementName(selectedPlacement)}</strong>
               {selectedPlacement.permissions.move && (
                 <button
                   className="context-action"
                   type="button"
-                  onPointerDown={(event) => { beginMove(pointerIdFromEvent(event.pointerId)); }}
-                  onPointerMove={(event) => { previewMove({ x: event.clientX, y: event.clientY }); }}
-                  onPointerUp={(event) => { commitMove(pointerIdFromEvent(event.pointerId)); }}
+                  onPointerDown={(event) => {
+                    beginMove(pointerIdFromEvent(event.pointerId));
+                  }}
+                  onPointerMove={(event) => {
+                    previewMove({ x: event.clientX, y: event.clientY });
+                  }}
+                  onPointerUp={(event) => {
+                    commitMove(pointerIdFromEvent(event.pointerId));
+                  }}
                   onPointerCancel={() => {
                     activeMovePointer.current = null;
                     const cancelled = cancelEditorManipulation(sessionRef.current);

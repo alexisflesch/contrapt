@@ -371,9 +371,7 @@ describe('coque Contrapt!', () => {
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
     expect(within(levelList).getByText('Niveau 1 · Laisser tomber')).toBeVisible();
-    expect(
-      within(levelList).getByRole('button', { name: 'Lancer le niveau 1' }),
-    ).toBeEnabled();
+    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
     expect(within(levelList).queryByText(/Niveau 2/i)).not.toBeInTheDocument();
   });
 
@@ -394,12 +392,8 @@ describe('coque Contrapt!', () => {
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
     expect(result).toBeVisible();
     expect(within(result).getByText('Victoire')).toBeVisible();
-    expect(
-      within(result).getByRole('button', { name: 'Rejouer le niveau' }),
-    ).toBeVisible();
-    expect(
-      within(result).getByRole('button', { name: 'Retour aux niveaux' }),
-    ).toBeVisible();
+    expect(within(result).getByRole('button', { name: 'Rejouer le niveau' })).toBeVisible();
+    expect(within(result).getByRole('button', { name: 'Retour aux niveaux' })).toBeVisible();
   });
 
   it('retourne à la liste depuis le résultat sans inventer de niveau suivant', () => {
@@ -825,9 +819,7 @@ describe('coque Contrapt!', () => {
     fireEvent.click(rotateControl);
     expect(beam.getAttribute('data-rotation')).not.toBe(initialRotation);
 
-    fireEvent.click(
-      within(contextPanel).getByRole('button', { name: 'Supprimer la poutre' }),
-    );
+    fireEvent.click(within(contextPanel).getByRole('button', { name: 'Supprimer la poutre' }));
     expect(within(scene).queryByRole('button', { name: 'Poutre' })).not.toBeInTheDocument();
 
     const undoButton = screen.getByRole('button', { name: 'Annuler' });

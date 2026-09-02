@@ -40,7 +40,9 @@ const createBeamDocument = (size: BeamSize) =>
   levelDocumentSchema.parse({
     ...levelDocument,
     objects: [
-      ...levelDocument.objects.filter((object) => object.type === 'ball' || object.type === 'basket'),
+      ...levelDocument.objects.filter(
+        (object) => object.type === 'ball' || object.type === 'basket',
+      ),
       {
         id: `beam-${size}`,
         type: 'beam',
@@ -249,14 +251,14 @@ describe('projection du plateau', () => {
 
 describe('renderer Canvas 2D du plateau', () => {
   it('projette les dimensions visuelles selon pixelsPerWorldUnit', async () => {
-    const destinationAtTwoPixels = await renderDestination(
-      createBeamDocument('medium'),
-      { ...viewport, pixelsPerWorldUnit: 2 },
-    );
-    const destinationAtFourPixels = await renderDestination(
-      createBeamDocument('medium'),
-      { ...viewport, pixelsPerWorldUnit: 4 },
-    );
+    const destinationAtTwoPixels = await renderDestination(createBeamDocument('medium'), {
+      ...viewport,
+      pixelsPerWorldUnit: 2,
+    });
+    const destinationAtFourPixels = await renderDestination(createBeamDocument('medium'), {
+      ...viewport,
+      pixelsPerWorldUnit: 4,
+    });
 
     expect(destinationAtFourPixels.width).toBe(destinationAtTwoPixels.width * 2);
     expect(destinationAtFourPixels.height).toBe(destinationAtTwoPixels.height * 2);

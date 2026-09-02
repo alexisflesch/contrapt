@@ -42,12 +42,14 @@ describe('niveaux embarques', () => {
     for (let fixedStep = 0; fixedStep < maximumFixedSteps; fixedStep += 1) {
       if (session.readGoalEvaluation().status === 'succeeded') break;
       session.advanceFixedSteps(1);
-      observedTargetEntry ||= session.readState().events.some(
-        (event) =>
-          event.type === 'object-entered-sensor' &&
-          event.placementId === 'ball-1' &&
-          event.targetId === 'basket-1',
-      );
+      observedTargetEntry ||= session
+        .readState()
+        .events.some(
+          (event) =>
+            event.type === 'object-entered-sensor' &&
+            event.placementId === 'ball-1' &&
+            event.targetId === 'basket-1',
+        );
     }
 
     expect(session.readGoalEvaluation().status).toBe('succeeded');
