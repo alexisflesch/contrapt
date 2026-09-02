@@ -12,6 +12,45 @@ contradictions entre la documentation et le code constatées pendant l'essai.
 Chaque tâche indique le modèle et l'effort recommandés selon la table de routage
 de `.codex/skills/orchestrate/references/routing.md` (`luna`, `terra`, `sol`).
 
+## Suivi
+
+Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarré.
+
+| Tâche                                 | État | Commit                |
+| ------------------------------------- | ---- | --------------------- |
+| A1 — ADR 0007                         | ✅   | `cdab65b`             |
+| A2 — `LevelDocument v2` et migration  | ✅   | `09bf926`             |
+| A3 — Caméra, panoramique, pincement   | ⏳   | amorce dans `09bf926` |
+| A4 — Colliders en repère y-bas        | ⬜   |                       |
+| A5 — Découper `App.tsx`               | ⬜   |                       |
+| B1 — Niveau 1 par défaut              | ⬜   |                       |
+| B2 — Bornes du monde et fin de partie | ⬜   |                       |
+| B3 — Géométrie du niveau 1            | ⬜   |                       |
+| C1 — Fantôme de placement             | ⬜   |                       |
+| C2 — Ombre portée                     | ⬜   |                       |
+| C3 — Manipulation sur le plateau      | ⬜   |                       |
+| D1 — Pipeline de sprites              | ⬜   |                       |
+| D2 — Régénérer les sprites            | ⬜   |                       |
+| D3 — Fond suivant la caméra           | ⬜   |                       |
+| D4 — Mise en page des trois formats   | ⬜   |                       |
+| E1 — Niveau 2                         | ⬜   |                       |
+| E2 — Niveaux 3 à 8                    | ⬜   |                       |
+
+### Écarts constatés depuis l'écriture du plan
+
+- **`pnpm check` n'était pas verte au démarrage**, contrairement à ce qu'annonçait
+  `etat.md` : Knip échoue sur `worldLengthToPixels` et des types inutilisés de
+  `board-renderer.ts`, et `layer-boundaries.test.ts` échoue par timeout ESLint
+  quand il tourne en parallèle. Vérifié sur un dépôt propre. À rattacher à la
+  tranche qui les rencontre.
+- **`format:check` ne couvre pas le Markdown** : le glob de `package.json` omet
+  `.md`, et trois fichiers de `docs/` sont déjà mal formatés sans que la gate le
+  voie.
+- **A2 ne pouvait pas finir verte seule** : le passage en v2 casse des appelants
+  qui appartiennent au périmètre de A3. La promesse « chaque tâche finit par
+  `pnpm check` verte » est fausse pour une tâche qui modifie un contrat
+  partagé ; A2 et A3 forment une paire.
+
 ---
 
 ## 1. Ce que l'essai a réellement montré
@@ -236,6 +275,8 @@ séquence, pas en parallèle.
 
 ### A1 — ADR 0007 « Repère du monde, scène, caméra et échelle des sprites »
 
+État : ✅ **Fait** — commit `cdab65b`.
+
 **Modèle : `sol` / effort `max`.** (Table de routage : « Rédaction ou révision
 d'ADR, déplacement de frontière ».)
 
@@ -262,6 +303,8 @@ section 1 de ce plan.
 ---
 
 ### A2 — `LevelDocument v2` : rectangle de scène et migration
+
+État : ✅ **Fait** — commit `09bf926`.
 
 **Modèle : `terra` / effort `high`.** (« Schéma Zod, validation sémantique,
 migration ».)
@@ -299,6 +342,8 @@ et un test couvre chacune des deux versions.
 ---
 
 ### A3 — Une vraie caméra, et la mort du document en pixels
+
+État : ⏳ **En cours.** L'amorce est intégrée dans `09bf926` (atelier en unités monde, `fitCameraToScene` inline, cadrage câblé) ; le module pur, le panoramique et le pincement restent à faire.
 
 **Modèle : `terra` / effort `high`.**
 
@@ -348,6 +393,8 @@ canvas ; un point écran au centre du canvas se reconvertit au centre de la scè
 
 ### A4 — Remettre les colliders dans le repère y-bas
 
+État : ⬜ À faire.
+
 **Modèle : `sol` / effort `high`.** (« Adaptateur physique, boucle à pas fixe,
 déterminisme ».)
 
@@ -391,6 +438,8 @@ passent, et le JSON du niveau 1 n'a plus de rotation de compensation.
 
 ### A5 — Découper `App.tsx`
 
+État : ⬜ À faire.
+
 **Modèle : `terra` / effort `high`.**
 
 Écrit dans `src/app/`, `src/ui/`.
@@ -427,6 +476,8 @@ signe que le refactoring a changé le comportement : il faut revenir en arrière
 
 ### B1 — Le niveau 1 est le parcours par défaut
 
+État : ⬜ À faire.
+
 **Modèle : `terra` / effort `medium`.** (« Composant React, câblage d'UI,
 style ».)
 
@@ -460,6 +511,8 @@ que le statut a changé.
 
 ### B2 — Bornes du monde et fin de partie
 
+État : ⬜ À faire.
+
 **Modèle : `sol` / effort `high`.**
 
 Écrit dans `src/simulation/`, `src/domain/`, `src/app/`.
@@ -486,6 +539,8 @@ produit l'issue « temps écoulé » ; aucune des deux ne modifie le document é
 ---
 
 ### B3 — Recaler la géométrie du niveau 1
+
+État : ⬜ À faire.
 
 **Modèle : `luna` / effort `high`.** (« Écrire un JSON de niveau depuis une spec
 écrite ».)
@@ -516,6 +571,8 @@ de référence aux niveaux suivants.
 ## 5. Phase C — Le placement et la manipulation, la demande explicite
 
 ### C1 — Le fantôme de placement est le vrai objet
+
+État : ⬜ À faire.
 
 **Modèle : `terra` / effort `high`.**
 
@@ -574,6 +631,8 @@ boîte de l'objet après relâchement : elles coïncident.
 
 ### C2 — Ombre portée au sol
 
+État : ⬜ À faire.
+
 **Modèle : `terra` / effort `medium`.**
 
 Écrit dans `src/presentation/board-renderer.ts`.
@@ -592,6 +651,8 @@ puis sprite — et l'absence d'ombre sous un fantôme invalide.
 ---
 
 ### C3 — Sélection, déplacement et rotation directement sur le plateau
+
+État : ⬜ À faire.
 
 **Modèle : `terra` / effort `high`.**
 
@@ -640,6 +701,8 @@ deux fois, en n'utilisant que le plateau et le panneau contextuel.
 
 ### D1 — Pipeline de sprites
 
+État : ⬜ À faire.
+
 **Modèle : `terra` / effort `high`.**
 
 Écrit dans `src/presentation/sprite-loader.ts`, `scripts/`, `docs/`.
@@ -660,6 +723,8 @@ avec D2.
 ---
 
 ### D2 — Régénérer les quatre familles
+
+État : ⬜ À faire.
 
 **Modèle : `luna` / effort `xhigh`, capacité de génération d'image.**
 
@@ -693,6 +758,8 @@ signaler plutôt que de contourner la vérification.
 
 ### D3 — Le fond suit la caméra
 
+État : ⬜ À faire.
+
 **Modèle : `terra` / effort `medium`.**
 
 Écrit dans `src/presentation/board-renderer.ts`, `src/ui/styles.css`.
@@ -712,6 +779,8 @@ projeté suit le zoom, et un test visuel Playwright compare deux niveaux de zoom
 ---
 
 ### D4 — Mise en page des trois formats
+
+État : ⬜ À faire.
 
 **Modèle : `terra` / effort `medium`.**
 
@@ -749,6 +818,8 @@ minimale du plateau.
 
 ### E1 — Niveau 2 « Construire un pont »
 
+État : ⬜ À faire.
+
 **Modèle : `luna` / effort `high`** pour le JSON et la fixture, **`terra` /
 `medium`** pour le parcours tactile.
 
@@ -765,6 +836,8 @@ la poutre de référence réussit ; une commande de rotation est refusée sans
 modifier le document.
 
 ### E2 — Niveaux 3 à 8
+
+État : ⬜ À faire.
 
 Un niveau par tranche, `luna` / `high`, **après** que les constantes physiques
 soient figées par A4 et B2. Ne pas écrire toute la campagne d'avance : c'est ce
