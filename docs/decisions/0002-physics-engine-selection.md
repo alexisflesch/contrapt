@@ -102,8 +102,11 @@ recentrage divise par trois le coût de la première tranche.
 
 ## Conséquences
 
-- Un seul moteur entre dans le graphe d'import de production. Rapier n'y entre
-  jamais et n'est pas installé.
+- Un seul moteur entre dans le graphe d'import de production : Planck. Rapier
+  n'entre dans aucun import de production. Son installation est autorisée
+  uniquement comme dépendance de développement temporaire, strictement réservée
+  aux mesures comparatives des scènes 6 et 7 ; il doit être retiré dès que leurs
+  résultats sont consignés dans cette ADR.
 - Le port physique reste défini à partir des besoins des scènes de conformité et
   non de l'API de Planck. Aucun type, handle, vecteur ou callback propre à Planck
   ne traverse ce port. C'est cette contrainte qui rend la décision réversible, et
