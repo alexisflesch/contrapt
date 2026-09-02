@@ -42,23 +42,24 @@ export type BoardCanvasContext = Readonly<{
   ) => void;
 }>;
 
-type BoardDestination = Readonly<{
+export type BoardDestination = Readonly<{
   readonly x: number;
   readonly y: number;
   readonly width: number;
   readonly height: number;
 }>;
 
-type ProjectedBoardObject = Readonly<{
+export type ProjectedBoardObject = Readonly<{
   readonly id: string;
   readonly family: SpriteFamily;
   readonly assetPath: string;
   readonly position: BoardPoint;
   readonly rotation: number;
+  /** Bounds in world units, centered on `position`, for rendering and editor framing. */
   readonly destination: BoardDestination;
 }>;
 
-type BoardProjection = Readonly<{
+export type BoardProjection = Readonly<{
   readonly objects: readonly ProjectedBoardObject[];
 }>;
 
@@ -69,22 +70,26 @@ type FamilyVisual = Readonly<{
 
 const familyVisuals = {
   ball: {
-    width: 32,
-    height: 32,
+    width: 0.6,
+    height: 0.6,
   },
   basket: {
-    width: 64,
-    height: 48,
-  },
-  beam: {
-    width: 96,
-    height: 24,
+    width: 1.5,
+    height: 1.1,
   },
   seesaw: {
-    width: 96,
-    height: 48,
+    width: 3,
+    height: 0.94,
   },
-} satisfies Record<SpriteFamily, FamilyVisual>;
+} satisfies Record<Exclude<SpriteFamily, 'beam'>, FamilyVisual>;
+
+/* These dimensions mirror the colliders in simulation-session without importing
+ * the physics adapter into presentation. */
+const beamVisuals = {
+  short: { width: 2, height: 0.25 },
+  medium: { width: 4, height: 0.25 },
+  long: { width: 6, height: 0.25 },
+} satisfies Record<'short' | 'medium' | 'long', FamilyVisual>;
 
 const centeredDestination = ({ width, height }: FamilyVisual): BoardDestination => ({
   x: -width / 2,
@@ -93,9 +98,17 @@ const centeredDestination = ({ width, height }: FamilyVisual): BoardDestination 
   height,
 });
 
+const visualForObject = (object: LevelDocument['objects'][number]): FamilyVisual => {
+  if (object.type === 'beam') {
+    return beamVisuals[object.props.size];
+  }
+
+  return familyVisuals[object.type];
+};
+
 export const projectLevel = (document: LevelDocument): BoardProjection => ({
   objects: document.objects.map((object) => {
-    const visual = familyVisuals[object.type];
+    const visual = visualForObject(object);
 
     return {
       id: object.id,
@@ -114,6 +127,19 @@ export const projectLevel = (document: LevelDocument): BoardProjection => ({
 export const worldToPixels = (position: BoardPoint, viewport: BoardViewport): BoardPoint => ({
   x: (position.x - viewport.origin.x) * viewport.pixelsPerWorldUnit,
   y: (position.y - viewport.origin.y) * viewport.pixelsPerWorldUnit,
+});
+
+export const worldLengthToPixels = (length: number, viewport: BoardViewport): number =>
+  length * viewport.pixelsPerWorldUnit;
+
+const destinationToPixels = (
+  destination: BoardDestination,
+  viewport: BoardViewport,
+): BoardDestination => ({
+  x: worldLengthToPixels(destination.x, viewport),
+  y: worldLengthToPixels(destination.y, viewport),
+  width: worldLengthToPixels(destination.width, viewport),
+  height: worldLengthToPixels(destination.height, viewport),
 });
 
 type BoardRenderer = Readonly<{
@@ -151,7 +177,7 @@ export const createBoardRenderer = ({
       }
 
       const position = worldToPixels(object.position, viewport);
-      const { x, y, width, height } = object.destination;
+      const { x, y, width, height } = destinationToPixels(object.destination, viewport);
 
       context.save();
       context.translate(position.x, position.y);
