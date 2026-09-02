@@ -5,5 +5,12 @@
     "jsx": "react-jsx",
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "e2e/**/*.ts", "scripts/**/*.ts", "*.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "e2e/**/*.ts",
+    "scripts/**/*.ts",
+    "test/**/*.ts",
+    "*.config.ts"
+  ]
 }

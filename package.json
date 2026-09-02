@@ -27,6 +27,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm deadcode && pnpm content:check && pnpm test:run && pnpm build && pnpm test:e2e:critical"
   },
   "dependencies": {
+    "planck": "1.5.0",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "zod": "4.1.5"

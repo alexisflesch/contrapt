@@ -1,6 +1,6 @@
 # État du dépôt — Contrapt!
 
-Dernière mise à jour : 1er septembre 2026.
+Dernière mise à jour : 2 septembre 2026.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tranche
@@ -11,9 +11,9 @@ et ne contient ni décision ni spécification ; celles-ci restent dans
 ## Stack en place
 
 Le dépôt utilise actuellement Node 24, pnpm 11.13.1, TypeScript 6, Vite 8, React
-19 et Zod 4. Vitest et Testing Library couvrent les tests unitaires et DOM ;
-Playwright couvre le navigateur ; ESLint type-aware, Prettier et Knip assurent les
-garde-fous statiques. Les versions exactes et scripts exécutables sont dans
+19, Zod 4 et Planck 1.5.0. Vitest et Testing Library couvrent les tests unitaires
+et DOM ; Playwright couvre le navigateur ; ESLint type-aware, Prettier et Knip
+assurent les garde-fous statiques. Les versions exactes et scripts exécutables sont dans
 [`package.json`](../package.json).
 
 La gate `pnpm check` orchestre typecheck, lint sans warning, vérification du
@@ -34,6 +34,15 @@ structurante nécessite une décision documentée.
   déplacement, rotation et retrait existent pour les contextes joueur et auteur.
   Elles appliquent permissions, centre dans une zone, protection de l’objectif et
   provenance éphémère.
+- `EditorSession` coordonne la tentative, son historique, la sélection, les
+  manipulations groupées et les phases construction/simulation/pause/résultat. Le
+  reset restaure exactement la tentative et l’historique au lancement.
+- L’objectif panier v1 est évalué de façon pure à partir de faits d’entrée et de
+  sortie de capteur ordonnés par pas fixe. La durée de maintien est injectée et ne
+  devient pas une propriété du niveau.
+- Le protocole candidat-neutre de conformité physique valide les traces, le repos,
+  la reproductibilité tolérante et les percentiles de durée. Une première scène
+  Planck headless de chute produit une trace déterministe validée par ce protocole.
 - Un validateur de catalogue et le script `content:check` valident les fichiers JSON
   embarqués, leurs références et l’unicité des identifiants de niveau.
 - Un seul contenu exécutable est présent : le JSON du niveau 1 « Laisser tomber ».
@@ -50,9 +59,10 @@ structurante nécessite une décision documentée.
 - La coque affiche encore un atelier statique. Ses cartes ne pilotent pas
   `ConstructionAttempt`, le plateau ne rend pas les placements du niveau et les
   boutons d’édition ou de simulation ne réalisent pas encore leurs actions.
-- Planck.js est retenu (ADR 0002) mais n’est pas encore installé ni intégré. La
-  porte de validation — scènes 6 et 7 mesurées sur les deux moteurs — n’est pas
-  franchie ; tant qu’elle ne l’est pas, la décision reste réouvrable.
+- Planck 1.5.0 est installé pour le harnais de conformité. Il n’existe pas encore
+  d’adaptateur physique de production. La porte de validation — scènes 6 et 7
+  mesurées sur les deux moteurs — n’est pas franchie ; tant qu’elle ne l’est pas,
+  la décision reste réouvrable.
 - Canvas 2D est retenu pour le plateau (ADR 0006) mais aucun renderer n’existe.
   Le pipeline de sprites — dimensions de référence, chargement, `devicePixelRatio`
   — reste entièrement à construire.
@@ -71,9 +81,9 @@ structurante nécessite une décision documentée.
 
 ## Dernière exécution de la gate
 
-La gate finale `pnpm check` a été exécutée avec succès le 1er septembre 2026 après
+La gate finale `pnpm check` a été exécutée avec succès le 2 septembre 2026 après
 l’intégration de tous les changements : typecheck, lint, formatage, Knip,
-validation du niveau embarqué, 51 tests Vitest, build de production et 2 parcours
+validation du niveau embarqué, 92 tests Vitest, build de production et 2 parcours
 Playwright Chromium tactiles, dont le viewport 320 × 568. Cette mesure décrit
 l’état présent du dépôt et devra naturellement être réexécutée après toute
 reprise.
