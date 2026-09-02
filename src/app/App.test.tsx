@@ -1,14 +1,42 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import styles from '../ui/styles.css?raw';
 
 import { App } from './App';
+import { screenPointToWorld } from './screen-point-to-world';
+
+type PointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel';
+
+interface TestPointerEvent {
+  readonly pointerId: number;
+  readonly pointerType: string;
+  readonly clientX: number;
+  readonly clientY: number;
+}
+
+const firePointerEvent = (
+  element: HTMLElement,
+  type: PointerEventType,
+  properties: TestPointerEvent,
+): void => {
+  const event = new Event(type, { bubbles: true });
+  Object.defineProperties(event, {
+    pointerId: { configurable: true, value: properties.pointerId },
+    pointerType: { configurable: true, value: properties.pointerType },
+    clientX: { configurable: true, value: properties.clientX },
+    clientY: { configurable: true, value: properties.clientY },
+  });
+  fireEvent(element, event);
+};
 
 describe('coque Contrapt!', () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   it('présente le plateau et les quatre familles du catalogue', () => {
@@ -31,14 +59,17 @@ describe('coque Contrapt!', () => {
     expect(screen.getByRole('button', { name: /Bascule/ })).toBeVisible();
   });
 
-  it('annonce l’objet choisi dans le catalogue', () => {
+  it('annonce l’objet choisi depuis le plateau après repli du catalogue', () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
 
-    expect(screen.getByRole('button', { name: /Balle/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('Objet sélectionné : Balle.')).toBeVisible();
+    expect(screen.getByText('Placement actif : Balle.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Ouvrir le catalogue' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   it('permet de replier puis de rouvrir le catalogue avec un contenu accessible', () => {
@@ -114,5 +145,273 @@ describe('coque Contrapt!', () => {
     ]) {
       expect(screen.getByRole('button', { name: actionName })).toBeVisible();
     }
+  });
+
+  it('présente le catalogue comme un panneau latéral ouvert en paysage', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    vi.stubGlobal('innerWidth', 844);
+    vi.stubGlobal('innerHeight', 390);
+
+    render(<App />);
+
+    expect(screen.getByRole('region', { name: 'Objets disponibles' })).not.toHaveClass(
+      'object-drawer-collapsed',
+    );
+    expect(screen.getByRole('button', { name: /Balle/ })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Fermer le catalogue' })).not.toBeInTheDocument();
+  });
+
+  it('active le parcours de placement par toucher d’une carte, séparément du plateau', () => {
+    render(<App />);
+
+    const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+
+    const ballCard = within(drawer).getByRole('button', { name: /Balle/ });
+    fireEvent.click(ballCard);
+
+    expect(board).toBeVisible();
+    expect(screen.getByText(/placement actif.*Balle/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeVisible();
+  });
+
+  it('expose les états disponibles d’annuler et de rétablir après un placement', () => {
+    render(<App />);
+
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    const redoButton = screen.getByRole('button', { name: 'Rétablir' });
+    expect(undoButton).toBeDisabled();
+    expect(redoButton).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 320,
+      clientY: 240,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 320,
+      clientY: 240,
+    });
+
+    expect(undoButton).toBeEnabled();
+    expect(redoButton).toBeDisabled();
+
+    fireEvent.click(undoButton);
+    expect(undoButton).toBeDisabled();
+    expect(redoButton).toBeEnabled();
+
+    fireEvent.click(redoButton);
+    expect(undoButton).toBeEnabled();
+    expect(redoButton).toBeDisabled();
+  });
+
+  it('suit le doigt pendant le placement sans créer d’historique avant le relâchement', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 120,
+      clientY: 100,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: Number.NaN,
+      clientY: Number.POSITIVE_INFINITY,
+    });
+
+    expect(undoButton).toBeDisabled();
+    expect(screen.getByText(/position tactile est indisponible/i)).toBeVisible();
+
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: Number.NaN,
+      clientY: Number.POSITIVE_INFINITY,
+    });
+
+    expect(undoButton).toBeDisabled();
+  });
+
+  it('place dans l’atelier libre avec le contexte auteur hors de la zone joueur', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: -1000,
+      clientY: -1000,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: -1000,
+      clientY: -1000,
+    });
+
+    expect(screen.queryByText(/placement refusé/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Annuler' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Annuler le placement' })).not.toBeInTheDocument();
+  });
+
+  it('ferme réellement le tiroir après activation tout en gardant le placement annulable', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
+    expect(drawer).toBeVisible();
+    expect(drawer).toHaveClass('object-drawer-collapsed');
+    expect(screen.getByRole('button', { name: 'Ouvrir le catalogue' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(screen.queryByRole('button', { name: /Balle/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Fermer le catalogue' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeVisible();
+  });
+
+  it('définit la conversion d’un point viewport en unités monde avec un plateau décalé et un zoom', () => {
+    expect(screenPointToWorld({ x: 250, y: 170 }, { left: 100, top: 50 }, 2)).toEqual({
+      x: 75,
+      y: 60,
+    });
+  });
+
+  it('annule une prévisualisation sur pointercancel sans projection ni entrée d’historique', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 120,
+      clientY: 100,
+    });
+    firePointerEvent(board, 'pointercancel', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 120,
+      clientY: 100,
+    });
+
+    expect(undoButton).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeVisible();
+
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 120,
+      clientY: 100,
+    });
+    expect(undoButton).toBeDisabled();
+  });
+
+  it('annule le placement lorsqu’un second pointeur arrive sans créer de commande', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 120,
+      clientY: 100,
+    });
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 180,
+      clientY: 140,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 180,
+      clientY: 140,
+    });
+
+    expect(undoButton).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeVisible();
+  });
+
+  it('refuse des coordonnées absentes avant prévisualisation ou commit et conserve l’outil annulable', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    const pointerDown = new Event('pointerdown', { bubbles: true });
+    fireEvent(board, pointerDown);
+
+    const feedback = screen.getByText(/position tactile est indisponible/i);
+    expect(feedback).toBeVisible();
+    expect(feedback).toHaveAttribute('aria-live', 'assertive');
+    expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeEnabled();
+    expect(undoButton).toBeDisabled();
+
+    fireEvent(board, new Event('pointerup', { bubbles: true }));
+    expect(undoButton).toBeDisabled();
+  });
+
+  it('refuse les coordonnées non finies avant prévisualisation ou commit', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    const pointerDown = new Event('pointerdown', { bubbles: true });
+    Object.defineProperties(pointerDown, {
+      clientX: { configurable: true, value: Number.NaN },
+      clientY: { configurable: true, value: Number.POSITIVE_INFINITY },
+    });
+    fireEvent(board, pointerDown);
+
+    const feedback = screen.getByText(/position tactile est indisponible/i);
+    expect(feedback).toBeVisible();
+    expect(feedback).toHaveAttribute('aria-live', 'assertive');
+    expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeEnabled();
+    expect(undoButton).toBeDisabled();
+  });
+
+  it('réserve une cible tactile de 44 CSS px pour l’annulation du placement', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    const cancelButton = screen.getByRole('button', { name: 'Annuler le placement' });
+    expect(cancelButton).toHaveClass('placement-cancel');
+    expect(styles).toMatch(/\.placement-cancel\s*\{[^}]*min-width:\s*44px[^}]*min-height:\s*44px/s);
   });
 });
