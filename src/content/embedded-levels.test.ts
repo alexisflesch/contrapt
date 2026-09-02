@@ -37,22 +37,21 @@ describe('niveaux embarques', () => {
     const session = createSimulationSession(level, { fixedStepSeconds: 1 / 60 });
     const initialSnapshot = session.readState();
     const maximumFixedSteps = 600;
+    let observedTargetEntry = false;
 
     for (let fixedStep = 0; fixedStep < maximumFixedSteps; fixedStep += 1) {
       if (session.readGoalEvaluation().status === 'succeeded') break;
       session.advanceFixedSteps(1);
+      observedTargetEntry ||= session.readState().events.some(
+        (event) =>
+          event.type === 'object-entered-sensor' &&
+          event.placementId === 'ball-1' &&
+          event.targetId === 'basket-1',
+      );
     }
 
     expect(session.readGoalEvaluation().status).toBe('succeeded');
-    expect(session.readState().events).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: 'object-entered-sensor',
-          placementId: 'ball-1',
-          targetId: 'basket-1',
-        }),
-      ]),
-    );
+    expect(observedTargetEntry).toBe(true);
 
     session.reset();
 
