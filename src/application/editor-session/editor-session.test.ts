@@ -24,7 +24,7 @@ import {
 const permissions = { move: true, rotate: false, remove: false } as const;
 
 const createLevel = (): LevelDocument => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'editor-session-test',
   metadata: { title: 'Editor session test' },
   objects: [
@@ -61,6 +61,7 @@ const createLevel = (): LevelDocument => ({
   ],
   goal: { type: 'basket', ballId: 'goal-ball', basketId: 'goal-basket' },
   buildZones: [{ min: { x: 0, y: 0 }, max: { x: 10, y: 10 } }],
+  scene: { min: { x: -5, y: -5 }, max: { x: 15, y: 15 } },
 });
 
 const createSession = (): EditorSession =>

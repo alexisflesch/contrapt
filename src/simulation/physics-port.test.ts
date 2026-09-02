@@ -16,7 +16,7 @@ const permissions = { move: false, rotate: false, remove: false } as const;
 
 const createLevelDocument = (ballY = 8): LevelDocument =>
   levelDocumentSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'physics-port-contract',
     metadata: { title: 'Contrat du port physique' },
     objects: [
@@ -52,11 +52,12 @@ const createLevelDocument = (ballY = 8): LevelDocument =>
     inventory: [],
     goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
     buildZones: [{ min: { x: -10, y: -10 }, max: { x: 10, y: 12 } }],
+    scene: { min: { x: -10, y: -10 }, max: { x: 10, y: 12 } },
   });
 
 const createFreeBallLevelDocument = (): LevelDocument =>
   levelDocumentSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'physics-port-downward-gravity',
     metadata: { title: 'Contrat de gravité orientée vers le bas' },
     objects: [
@@ -78,11 +79,12 @@ const createFreeBallLevelDocument = (): LevelDocument =>
     inventory: [],
     goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
     buildZones: [{ min: { x: -10, y: -10 }, max: { x: 10, y: 10 } }],
+    scene: { min: { x: -10, y: -10 }, max: { x: 10, y: 10 } },
   });
 
 const createBasketSensorLevelDocument = (): LevelDocument =>
   levelDocumentSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'physics-port-basket-sensor',
     metadata: { title: 'Contrat du capteur panier' },
     objects: [
@@ -105,11 +107,12 @@ const createBasketSensorLevelDocument = (): LevelDocument =>
     inventory: [],
     goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
     buildZones: [{ min: { x: -10, y: -10 }, max: { x: 10, y: 12 } }],
+    scene: { min: { x: -10, y: -10 }, max: { x: 10, y: 12 } },
   });
 
 const createBasketSensorExitLevelDocument = (basketX = 0): LevelDocument =>
   levelDocumentSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'physics-port-inverted-basket-sensor',
     metadata: { title: 'Contrat de sortie du capteur panier' },
     objects: [
@@ -132,11 +135,12 @@ const createBasketSensorExitLevelDocument = (basketX = 0): LevelDocument =>
     inventory: [],
     goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
     buildZones: [{ min: { x: -10, y: -10 }, max: { x: 10, y: 12 } }],
+    scene: { min: { x: -10, y: -10 }, max: { x: 10, y: 12 } },
   });
 
 const createSeesawImpactLevelDocument = (): LevelDocument =>
   levelDocumentSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'physics-port-seesaw-impact',
     metadata: { title: 'Contrat de l’impact sur la bascule' },
     objects: [
@@ -165,11 +169,12 @@ const createSeesawImpactLevelDocument = (): LevelDocument =>
     inventory: [],
     goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
     buildZones: [{ min: { x: -10, y: -12 }, max: { x: 12, y: 12 } }],
+    scene: { min: { x: -10, y: -12 }, max: { x: 12, y: 12 } },
   });
 
 const createBeamImpactLevelDocument = (beamX: number): LevelDocument =>
   levelDocumentSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: `physics-port-beam-impact-${String(beamX)}`,
     metadata: { title: 'Contrat de l’impact sur la poutre' },
     objects: [
@@ -198,6 +203,7 @@ const createBeamImpactLevelDocument = (beamX: number): LevelDocument =>
     inventory: [],
     goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
     buildZones: [{ min: { x: -12, y: -12 }, max: { x: 12, y: 12 } }],
+    scene: { min: { x: -12, y: -12 }, max: { x: 12, y: 12 } },
   });
 
 const isEventType = (event: { readonly type: string }, type: string): boolean =>

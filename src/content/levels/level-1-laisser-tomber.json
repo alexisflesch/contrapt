@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "level-1-laisser-tomber",
   "metadata": {
     "title": "Laisser tomber",
@@ -33,5 +33,9 @@
     "ballId": "ball-1",
     "basketId": "basket-1"
   },
-  "buildZones": []
+  "buildZones": [],
+  "scene": {
+    "min": { "x": -4, "y": -5 },
+    "max": { "x": 4, "y": 1 }
+  }
 }

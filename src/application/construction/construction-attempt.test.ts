@@ -20,7 +20,7 @@ const permissions = {
 } as const;
 
 const createLevel = (): LevelDocument => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'construction-test',
   metadata: { title: 'Construction test' },
   objects: [
@@ -64,6 +64,9 @@ const createLevel = (): LevelDocument => ({
   ],
   buildZones: [{ min: { x: 0, y: 0 }, max: { x: 10, y: 10 } }],
   goal: { type: 'basket', ballId: 'goal-ball', basketId: 'goal-basket' },
+  // Wide enough to still contain the author-mode moves in this file, which
+  // deliberately go far outside the player build zone (up to ±20).
+  scene: { min: { x: -25, y: -25 }, max: { x: 25, y: 25 } },
 });
 
 const placeBeam = (context: ConstructionContext = 'player') =>

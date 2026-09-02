@@ -78,22 +78,30 @@ const inventoryByObjectKind: Readonly<Record<ObjectKind, string>> = {
 };
 
 const workshopDocument = levelDocumentSchema.parse({
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'free-workshop',
   metadata: { title: 'Atelier de niveau' },
+  scene: { min: { x: 0, y: 0 }, max: { x: 16, y: 9 } },
   objects: [
+    {
+      id: 'workshop-floor',
+      type: 'beam',
+      props: { size: 'long' },
+      transform: { position: { x: 8, y: 8 }, rotation: 0 },
+      permissions: { move: false, rotate: false, remove: false },
+    },
     {
       id: 'goal-ball',
       type: 'ball',
       props: {},
-      transform: { position: { x: 40, y: 40 }, rotation: 0 },
+      transform: { position: { x: 8, y: 1 }, rotation: 0 },
       permissions: { move: false, rotate: false, remove: false },
     },
     {
       id: 'goal-basket',
       type: 'basket',
       props: {},
-      transform: { position: { x: 600, y: 400 }, rotation: 0 },
+      transform: { position: { x: 12, y: 7 }, rotation: 0 },
       permissions: { move: false, rotate: false, remove: false },
     },
   ],
@@ -128,7 +136,7 @@ const workshopDocument = levelDocumentSchema.parse({
     },
   ],
   goal: { type: 'basket', ballId: 'goal-ball', basketId: 'goal-basket' },
-  buildZones: [{ min: { x: 0, y: 0 }, max: { x: 640, y: 480 } }],
+  buildZones: [{ min: { x: 0, y: 0 }, max: { x: 16, y: 9 } }],
 });
 
 const initialSession = (): EditorSession =>
@@ -146,8 +154,31 @@ interface CameraState {
   readonly pixelsPerWorldUnit: number;
 }
 
-const initialCamera: CameraState = { origin: { x: 0, y: 0 }, pixelsPerWorldUnit: 0.32 };
+const initialCamera: CameraState = { origin: { x: 0, y: 0 }, pixelsPerWorldUnit: 48 };
 const cameraZoomFactor = 1.25;
+/** ADR 0007 - Caméra : « contain » du rectangle de scène avec 4 % de marge. */
+const sceneFitMargin = 0.96;
+
+const fitCameraToScene = (
+  scene: LevelDocument['scene'],
+  cssWidth: number,
+  cssHeight: number,
+): CameraState => {
+  const sceneWidth = scene.max.x - scene.min.x;
+  const sceneHeight = scene.max.y - scene.min.y;
+  if (cssWidth <= 0 || cssHeight <= 0 || sceneWidth <= 0 || sceneHeight <= 0) return initialCamera;
+
+  const pixelsPerWorldUnit =
+    Math.min(cssWidth / sceneWidth, cssHeight / sceneHeight) * sceneFitMargin;
+
+  return {
+    pixelsPerWorldUnit,
+    origin: {
+      x: (scene.min.x + scene.max.x) / 2 - cssWidth / 2 / pixelsPerWorldUnit,
+      y: (scene.min.y + scene.max.y) / 2 - cssHeight / 2 / pixelsPerWorldUnit,
+    },
+  };
+};
 const fixedStepSeconds = 1 / 60;
 
 const hasFiniteCoordinates = (point: ScreenPoint): boolean =>
@@ -371,6 +402,7 @@ export function App() {
     setHasWon(false);
     setIsMenuOpen(false);
     setIsLevelListOpen(false);
+    fitCameraToCurrentScene();
   };
   const returnToLevels = (): void => {
     disposeSimulationSession();
@@ -393,6 +425,22 @@ export function App() {
   const updateCamera = (nextCamera: CameraState): void => {
     cameraRef.current = nextCamera;
     setCamera(nextCamera);
+  };
+
+  const fitCameraToCurrentScene = (): void => {
+    const canvas = boardCanvasRef.current;
+    if (canvas === null) return;
+
+    const bounds = canvas.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) return;
+
+    updateCamera(
+      fitCameraToScene(
+        currentEditorAttempt(sessionRef.current).document.scene,
+        bounds.width,
+        bounds.height,
+      ),
+    );
   };
 
   const cancelSimulationFrame = (): void => {
@@ -824,6 +872,17 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    fitCameraToCurrentScene();
+    window.addEventListener('resize', fitCameraToCurrentScene);
+    window.addEventListener('orientationchange', fitCameraToCurrentScene);
+    return () => {
+      window.removeEventListener('resize', fitCameraToCurrentScene);
+      window.removeEventListener('orientationchange', fitCameraToCurrentScene);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cadrage initial et sur changement de viewport, l'état courant est lu par refs
+  }, []);
+
+  useEffect(() => {
     boardRenderRef.current?.();
   }, [session, simulationState, camera]);
 
@@ -1117,9 +1176,7 @@ export function App() {
             <button
               className="camera-button camera-reset"
               type="button"
-              onClick={() => {
-                updateCamera(initialCamera);
-              }}
+              onClick={fitCameraToCurrentScene}
             >
               Ajuster à la scène
             </button>

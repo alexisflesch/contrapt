@@ -105,7 +105,7 @@ const viewport = {
 } satisfies BoardViewport;
 
 const levelDocument = levelDocumentSchema.parse({
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'presentation-contract',
   metadata: { title: 'Contrat de rendu' },
   objects: [
@@ -141,6 +141,7 @@ const levelDocument = levelDocumentSchema.parse({
   inventory: [],
   goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
   buildZones: [],
+  scene: { min: { x: 10, y: 6 }, max: { x: 20, y: 13 } },
 });
 
 const createContext = (): {

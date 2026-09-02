@@ -70,7 +70,7 @@ const collectObjectKeys = (value: unknown): readonly string[] => {
 };
 
 const levelDocumentFixture = levelDocumentSchema.parse({
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'sprite-loader-fixture',
   metadata: {
     title: 'Sprite loader fixture',
@@ -129,6 +129,10 @@ const levelDocumentFixture = levelDocumentSchema.parse({
       max: { x: 10, y: 10 },
     },
   ],
+  scene: {
+    min: { x: -2, y: -2 },
+    max: { x: 12, y: 12 },
+  },
 });
 
 describe('sprite loader contract', () => {

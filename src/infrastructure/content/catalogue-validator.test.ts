@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { validateContentCatalog, type ContentLevelFile } from './catalogue-validator';
 
 const validLevel = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'first-drop',
   metadata: { title: 'Laisser tomber' },
   objects: [
@@ -25,12 +25,13 @@ const validLevel = {
   inventory: [],
   goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
   buildZones: [],
+  scene: { min: { x: -4, y: -2 }, max: { x: 4, y: 6 } },
 };
 
 const file = (filePath: string, value: unknown): ContentLevelFile => ({ filePath, value });
 
 describe('validateContentCatalog', () => {
-  it('valide un catalogue de niveaux v1 et retourne les documents valides', () => {
+  it('valide un catalogue de niveaux v2 et retourne les documents valides', () => {
     const result = validateContentCatalog([file('level-1.json', validLevel)]);
 
     expect(result.valid).toBe(true);

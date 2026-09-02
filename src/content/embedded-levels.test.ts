@@ -4,10 +4,10 @@ import { embeddedLevels } from './embedded-levels';
 import { createSimulationSession } from '../simulation/simulation-session';
 
 describe('niveaux embarques', () => {
-  it('expose la fixture du niveau 1 Laisser tomber comme un document v1 valide', () => {
+  it('expose la fixture du niveau 1 Laisser tomber comme un document v2 valide', () => {
     expect(embeddedLevels).toHaveLength(1);
     expect(embeddedLevels[0]).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       id: 'level-1-laisser-tomber',
       metadata: { title: 'Laisser tomber' },
       inventory: [],
