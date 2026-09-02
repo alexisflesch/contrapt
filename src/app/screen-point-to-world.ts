@@ -13,7 +13,8 @@ export const screenPointToWorld = (
   point: ScreenPoint,
   boardRect: BoardOffset,
   zoom: number,
+  origin: ScreenPoint = { x: 0, y: 0 },
 ): ScreenPoint => ({
-  x: (point.x - boardRect.left) / zoom,
-  y: (point.y - boardRect.top) / zoom,
+  x: origin.x + (point.x - boardRect.left) / zoom,
+  y: origin.y + (point.y - boardRect.top) / zoom,
 });
