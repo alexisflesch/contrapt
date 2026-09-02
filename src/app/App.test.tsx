@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import styles from '../ui/styles.css?raw';
@@ -33,6 +33,34 @@ const firePointerEvent = (
   fireEvent(element, event);
 };
 
+type AnimationFrameCallback = (timestamp: number) => void;
+
+const createAnimationFrameHarness = () => {
+  let nextFrameId = 0;
+  const pendingFrames = new Map<number, AnimationFrameCallback>();
+  const requestAnimationFrame = vi.fn((callback: AnimationFrameCallback): number => {
+    const frameId = nextFrameId;
+    nextFrameId += 1;
+    pendingFrames.set(frameId, callback);
+    return frameId;
+  });
+  const cancelAnimationFrame = vi.fn((frameId: number): void => {
+    pendingFrames.delete(frameId);
+  });
+
+  vi.stubGlobal('requestAnimationFrame', requestAnimationFrame);
+  vi.stubGlobal('cancelAnimationFrame', cancelAnimationFrame);
+
+  return {
+    requestAnimationFrame,
+    flush(timestamp: number): void {
+      const callbacks = [...pendingFrames.values()];
+      pendingFrames.clear();
+      for (const callback of callbacks) callback(timestamp);
+    },
+  };
+};
+
 describe('coque Contrapt!', () => {
   afterEach(() => {
     cleanup();
@@ -43,12 +71,13 @@ describe('coque Contrapt!', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: 'Contrapt!' })).toBeVisible();
-    expect(screen.getByText('Atelier de niveau')).toBeVisible();
-    expect(screen.getByText('Éditeur libre')).toBeVisible();
+    expect(screen.getByText('Éditeur de niveaux')).toBeVisible();
+    expect(screen.getByText('Mode éditeur')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+    expect(screen.queryByText('Préparez votre machine')).not.toBeInTheDocument();
     expect(
-      screen.getByText('Le plateau est prêt pour votre prochaine construction.'),
-    ).toBeVisible();
+      screen.queryByText('Le plateau est prêt pour votre prochaine construction.'),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
@@ -59,13 +88,86 @@ describe('coque Contrapt!', () => {
     expect(screen.getByRole('button', { name: /Bascule/ })).toBeVisible();
   });
 
-  it('annonce l’objet choisi depuis le plateau après repli du catalogue', () => {
+  it('rend un canvas accessible superposé au plateau et conserve son aide tactile', () => {
+    render(<App />);
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+
+    expect(canvas.tagName).toBe('CANVAS');
+    expect(within(board).queryByText('Préparez votre machine')).not.toBeInTheDocument();
+    expect(
+      within(board).queryByText('Le plateau est prêt pour votre prochaine construction.'),
+    ).not.toBeInTheDocument();
+    expect(board.querySelector('.scene-ground')).not.toBeInTheDocument();
+    expect(styles).toContain('board-generic-v0.png');
+
+    for (const controlName of ['Zoom arrière', 'Ajuster à la scène', 'Zoom avant']) {
+      expect(screen.getByRole('button', { name: controlName })).toBeVisible();
+    }
+  });
+
+  it('affiche un aperçu de placement qui suit la souris puis le geste tactile', () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Panier/ }));
 
-    expect(screen.getByText('Placement actif : Balle.')).toBeVisible();
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    expect(
+      screen.queryByRole('img', { name: 'Aperçu de placement : Panier' }),
+    ).not.toBeInTheDocument();
+
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 1,
+      pointerType: 'mouse',
+      clientX: 120,
+      clientY: 100,
+    });
+
+    const preview = screen.getByRole('img', { name: 'Aperçu de placement : Panier' });
+    expect(preview).toBeVisible();
+    const initialPosition = preview.getAttribute('data-position');
+    expect(initialPosition).not.toBeNull();
+
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 1,
+      pointerType: 'mouse',
+      clientX: 260,
+      clientY: 180,
+    });
+
+    expect(preview).toHaveAttribute('data-position');
+    const mousePosition = preview.getAttribute('data-position');
+    expect(mousePosition).not.toBe(initialPosition);
+
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 120,
+      clientY: 100,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 260,
+      clientY: 180,
+    });
+
+    expect(preview.getAttribute('data-position')).not.toBe(mousePosition);
+  });
+
+  it('replie le catalogue sans superposer de texte dans la zone de construction', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Panier/ }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    expect(within(board).queryByText(/Placement actif\s*:\s*Panier/i)).not.toBeInTheDocument();
+    expect(
+      within(board).queryByRole('button', { name: 'Annuler le placement' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ouvrir le catalogue' })).toHaveAttribute(
       'aria-expanded',
       'false',
@@ -147,6 +249,88 @@ describe('coque Contrapt!', () => {
     }
   });
 
+  it('lance la simulation depuis l’atelier puis propose de revenir à l’édition', () => {
+    render(<App />);
+
+    const testButton = screen.getByRole('button', { name: 'Tester' });
+    expect(testButton).toBeEnabled();
+
+    fireEvent.click(testButton);
+
+    expect(screen.getByText('Simulation en cours')).toBeVisible();
+    const resetButton = screen.getByRole('button', { name: 'Réinitialiser' });
+    expect(resetButton).toBeVisible();
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    expect(
+      within(board).queryByRole('button', { name: 'Mettre en pause' }),
+    ).not.toBeInTheDocument();
+    expect(within(board).queryByRole('button', { name: 'Réinitialiser' })).not.toBeInTheDocument();
+
+    fireEvent.click(resetButton);
+
+    expect(screen.queryByText('Simulation en cours')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+  });
+
+  it('avance la physique par RAF contrôlé et permet de la mettre en pause puis de reprendre', () => {
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+
+    const testButton = screen.getByRole('button', { name: 'Tester' });
+    expect(testButton).toBeEnabled();
+    fireEvent.click(testButton);
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+    expect(screen.getByRole('button', { name: 'Mettre en pause' })).toBeVisible();
+    expect(canvas).toHaveAttribute('data-simulation-step', '0');
+    const initialBallPosition = canvas.getAttribute('data-simulation-ball-position');
+    expect(initialBallPosition).not.toBeNull();
+    expect(animationFrames.requestAnimationFrame).toHaveBeenCalled();
+
+    const fixedStepMilliseconds = 1000 / 60;
+    act(() => {
+      animationFrames.flush(0);
+    });
+    act(() => {
+      animationFrames.flush(fixedStepMilliseconds);
+    });
+
+    expect(canvas).toHaveAttribute('data-simulation-step', '1');
+    expect(canvas.getAttribute('data-simulation-ball-position')).not.toBe(initialBallPosition);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mettre en pause' }));
+    expect(screen.getByRole('button', { name: 'Reprendre' })).toBeVisible();
+    const pausedStep = canvas.getAttribute('data-simulation-step');
+    const pausedBallPosition = canvas.getAttribute('data-simulation-ball-position');
+
+    act(() => {
+      animationFrames.flush(fixedStepMilliseconds * 2);
+    });
+
+    expect(canvas).toHaveAttribute('data-simulation-step', pausedStep);
+    expect(canvas).toHaveAttribute('data-simulation-ball-position', pausedBallPosition);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reprendre' }));
+    expect(screen.getByRole('button', { name: 'Mettre en pause' })).toBeVisible();
+    act(() => {
+      animationFrames.flush(fixedStepMilliseconds * 3);
+    });
+    act(() => {
+      animationFrames.flush(fixedStepMilliseconds * 4);
+    });
+
+    expect(Number(canvas.getAttribute('data-simulation-step'))).toBeGreaterThan(Number(pausedStep));
+    expect(canvas.getAttribute('data-simulation-ball-position')).not.toBe(pausedBallPosition);
+  });
+
+  it('identifie explicitement le contexte de travail comme éditeur de niveaux', () => {
+    render(<App />);
+
+    expect(screen.getByText('Éditeur de niveaux')).toBeVisible();
+    expect(screen.getByText('Mode éditeur')).toBeVisible();
+  });
+
   it('présente le catalogue comme un panneau latéral ouvert en paysage', () => {
     vi.stubGlobal('matchMedia', () => ({ matches: false }));
     vi.stubGlobal('innerWidth', 844);
@@ -172,8 +356,10 @@ describe('coque Contrapt!', () => {
     fireEvent.click(ballCard);
 
     expect(board).toBeVisible();
-    expect(screen.getByText(/placement actif.*Balle/i)).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeVisible();
+    expect(within(board).queryByText(/placement actif.*Balle/i)).not.toBeInTheDocument();
+    const cancelButton = screen.getByRole('button', { name: 'Annuler le placement' });
+    expect(cancelButton).toBeVisible();
+    expect(board).not.toContainElement(cancelButton);
   });
 
   it('expose les états disponibles d’annuler et de rétablir après un placement', () => {

@@ -5,11 +5,15 @@ test('affiche la coque Contrapt! sur un écran mobile', async ({ page }) => {
 
   await expect(page).toHaveTitle('Contrapt!');
   await expect(page.getByRole('heading', { name: 'Contrapt!' })).toBeVisible();
-  await expect(page.getByText('Éditeur libre')).toBeVisible();
+  await expect(page.getByText('Éditeur de niveaux')).toBeVisible();
+  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  const board = page.getByRole('region', { name: 'Plateau de jeu' });
+  await expect(board).toBeVisible();
   await expect(
     page.getByText('Le plateau est prêt pour votre prochaine construction.'),
-  ).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+  ).toHaveCount(0);
+  await expect(page.getByText('Préparez votre machine')).toHaveCount(0);
+  await expect(board.getByRole('img', { name: 'Rendu du plateau' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
 
   const openCatalogueButton = page.getByRole('button', { name: 'Ouvrir le catalogue' });
