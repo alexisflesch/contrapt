@@ -335,6 +335,14 @@ frontières dans [l’architecture](architecture.md).
   PNG chargés par l’application, jamais référencés par un document de niveau. Ce
   choix est accepté par
   [l’ADR 0006](decisions/0006-board-renderer.md).
+- Le repère du monde — 1 unité pour 1 mètre, axe `y` vers le bas, origine au coin
+  supérieur gauche de la scène —, le rectangle de scène déclaré par chaque niveau,
+  le cadrage « Ajuster à la scène » avec ses bornes de zoom, et la convention de
+  sprite — fond transparent, 128 px par unité monde à @2x, boîte alpha égale à
+  l’empreinte du collider — sont acceptés par
+  [l’ADR 0007](decisions/0007-world-scale-and-camera.md). Le rectangle de scène
+  entre dans le format persistant : il impose `schemaVersion: 2` et une migration
+  v1 → v2.
 
 ## Architecture et invariants à préserver
 
@@ -366,8 +374,7 @@ tranche. Le découpage exécutable des prochaines tranches est dans
 
 ## Décisions réellement encore ouvertes
 
-- dimensions, masses, frictions, rebonds, limites de la bascule et tailles exactes
-  des poutres ;
+- masses, frictions, rebonds et limites de la bascule ;
 - volume du panier et durée exacte de maintien validant la réussite ;
 - seuils tactiles et dimensions finales du tiroir à mesurer sur appareil, sans
   rouvrir le principe du bottom sheet ;
@@ -397,6 +404,7 @@ questions ouvertes.
 - [Contrat `LevelDocument v1`](decisions/0004-level-document-v1.md)
 - [Provenance de `ConstructionAttempt`](decisions/0005-construction-attempt.md)
 - [Renderer du plateau](decisions/0006-board-renderer.md)
+- [Repère du monde, scène, caméra et sprites](decisions/0007-world-scale-and-camera.md)
 - [Architecture](architecture.md)
 - [Qualité et TDD](qualite.md)
 - [Catalogue initial](catalogue-initial.md)

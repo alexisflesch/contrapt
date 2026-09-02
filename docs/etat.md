@@ -57,7 +57,8 @@ structurante nécessite une décision documentée.
 - T3a/T3b fournissent le sprite loader, l’adaptateur injectable
   fetch/blob/`createImageBitmap`, la projection monde→pixels et le renderer Canvas
   2D avec prise en charge du DPR. T3c affiche un canvas accessible dans l’App,
-  redessine le document courant de l’éditeur et conserve les gestes tactiles.
+  redessine le document courant de l’éditeur et conserve les gestes tactiles. Ce
+  redessin est réel mais illisible à l’écran : voir la dette d’échelle ci-dessous.
 - T4c fournit le parcours de simulation depuis l’éditeur : `Tester` crée réellement
   une `SimulationSession` Planck à partir du snapshot, l’avance via
   `requestAnimationFrame` et des timestamps injectés, projette les positions dans
@@ -67,9 +68,6 @@ structurante nécessite une décision documentée.
   L’aperçu graphique suit `pointermove` à la souris avant le `pointerdown` et
   reste compatible avec le tactile. L’en-tête identifie explicitement
   « Éditeur de niveaux » et « Mode éditeur ».
-- Les quatre PNG 2× locaux sont présents dans `public/assets/sprites`. Ce sont des
-  prototypes graphiques à revoir : ils ne respectent pas encore parfaitement la
-  2D plate demandée par l’ADR 0006.
 - Le fond générique `public/assets/backgrounds/board-generic-v0.png` est intégré au
   plateau : crème, quadrillé et encadré, sans texte ni objets de jeu. Il s’agit
   d’un prototype d’ambiance et non d’une direction artistique définitive.
@@ -98,13 +96,30 @@ structurante nécessite une décision documentée.
   avec validation réelle sur téléphone — n’est pas franchie et la décision reste
   réouvrable.
 - Canvas 2D est retenu pour le plateau (ADR 0006) et le renderer ainsi que le
-  chargement des sprites sont présents. Le zoom n’est pas encore opérationnel.
+  chargement des sprites sont présents, mais il n’existe aucune caméra :
+  `camera.origin` n’est jamais modifié, il n’y a pas de panoramique, le zoom n’a
+  pas de bornes et « Ajuster à la scène » réaffecte la constante initiale au lieu
+  de calculer un cadrage. L’ADR 0007 fixe le cadrage attendu ; rien n’en est
+  encore implémenté.
 - Le cycle de simulation de l’éditeur (animation, pause/reprise et reset) est
   livré avec T4c ; le niveau 1 jouable dans le parcours de campagne reste ouvert.
 - Seul le niveau 1 existe en JSON. Les niveaux 2 à 8 sont des spécifications
   narratives et n’ont pas encore de solutions de régression exécutables.
-- Le renderer projette désormais le document courant de l’éditeur dans un canvas,
-  mais le plateau n’est pas encore un parcours jouable complet.
+- Le renderer projette bien le document courant de l’éditeur dans un canvas, mais
+  à `pixelsPerWorldUnit: 0.32` : la balle mesure 0,19 px et le plateau paraît
+  vide. Le rendu est donc effectif et inexploitable. La cause racine est le
+  document d’atelier de `src/app/App.tsx`, écrit en coordonnées de type pixel,
+  qui viole l’invariant « les positions du domaine sont exprimées en unités du
+  monde » ; l’ADR 0007 acte sa suppression.
+- Les quatre PNG de `public/assets/sprites` ne sont pas des sprites utilisables :
+  environ 3,8 Mo au total, fond noir opaque et halo pour `beam@2x.png`,
+  perspective 3/4 pour `basket@2x.png`, et aucune correspondance entre la boîte
+  alpha et l’empreinte du collider. Ils ne respectent ni la convention de sprite
+  de l’ADR 0007, ni la 2D plate de l’ADR 0006, et sont à reproduire plutôt qu’à
+  ajuster.
+- Le fond `public/assets/backgrounds/board-generic-v0.png` est posé en
+  `background-size: cover` CSS : il ne suit ni le zoom ni le panoramique et sa
+  grille ne dit rien de l’échelle réelle du monde.
 - Le build est statique, mais l’installabilité PWA, le service worker, la politique
   de mise à jour et le fonctionnement hors ligne ne sont pas encore implémentés.
 - IndexedDB, dépôts de brouillons/progression, import-export et partage par
