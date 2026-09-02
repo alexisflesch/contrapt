@@ -372,10 +372,10 @@ describe('renderer Canvas 2D du plateau', () => {
     expect(drawOperations).toHaveLength(projection.objects.length);
     expect(drawOperations.map((operation) => operation.values.slice(-4))).toEqual(
       projection.objects.map((object: ProjectedObject) => [
-        object.destination.x,
-        object.destination.y,
-        object.destination.width,
-        object.destination.height,
+        object.destination.x * viewport.pixelsPerWorldUnit,
+        object.destination.y * viewport.pixelsPerWorldUnit,
+        object.destination.width * viewport.pixelsPerWorldUnit,
+        object.destination.height * viewport.pixelsPerWorldUnit,
       ]),
     );
     for (const [index, object] of projection.objects.entries()) {
