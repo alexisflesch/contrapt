@@ -34,6 +34,66 @@ type ProjectedObject = Readonly<{
   }>;
 }>;
 
+type BeamSize = 'short' | 'medium' | 'long';
+
+const createBeamDocument = (size: BeamSize) =>
+  levelDocumentSchema.parse({
+    ...levelDocument,
+    objects: [
+      ...levelDocument.objects.filter((object) => object.type === 'ball' || object.type === 'basket'),
+      {
+        id: `beam-${size}`,
+        type: 'beam',
+        transform: { position: { x: 12, y: 8 }, rotation: 0 },
+        props: { size },
+        permissions: { move: true, rotate: true, remove: true },
+      },
+    ],
+  });
+
+const renderDestination = async (
+  document: Parameters<typeof projectLevel>[0],
+  renderViewport: BoardViewport,
+): Promise<{
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}> => {
+  const { context, operations } = createContext();
+  const spriteLoader = createPendingSpriteLoader();
+  spriteLoader.setReady();
+  const renderer = createBoardRenderer({
+    canvas: { width: 0, height: 0 },
+    context,
+    viewport: renderViewport,
+    spriteLoader: spriteLoader.loader,
+  });
+
+  await renderer.render(projectLevel(document));
+
+  const drawOperations = operations.filter(
+    (candidate): candidate is Extract<Operation, { readonly kind: 'drawImage' }> =>
+      candidate.kind === 'drawImage',
+  );
+  const operation = drawOperations[drawOperations.length - 1];
+  if (operation === undefined) {
+    throw new Error('Aucune opération drawImage n’a été enregistrée.');
+  }
+
+  const [x, y, width, height] = operation.values.slice(-4);
+  if (
+    typeof x !== 'number' ||
+    typeof y !== 'number' ||
+    typeof width !== 'number' ||
+    typeof height !== 'number'
+  ) {
+    throw new Error('La destination Canvas enregistrée est invalide.');
+  }
+
+  return { x, y, width, height };
+};
+
 const viewport = {
   cssWidth: 320,
   cssHeight: 240,
@@ -188,6 +248,39 @@ describe('projection du plateau', () => {
 });
 
 describe('renderer Canvas 2D du plateau', () => {
+  it('projette les dimensions visuelles selon pixelsPerWorldUnit', async () => {
+    const destinationAtTwoPixels = await renderDestination(
+      createBeamDocument('medium'),
+      { ...viewport, pixelsPerWorldUnit: 2 },
+    );
+    const destinationAtFourPixels = await renderDestination(
+      createBeamDocument('medium'),
+      { ...viewport, pixelsPerWorldUnit: 4 },
+    );
+
+    expect(destinationAtFourPixels.width).toBe(destinationAtTwoPixels.width * 2);
+    expect(destinationAtFourPixels.height).toBe(destinationAtTwoPixels.height * 2);
+  });
+
+  it('projette les longueurs de poutre dans l’ordre short, medium, long', async () => {
+    const destinations = await Promise.all(
+      (['short', 'medium', 'long'] as const).map((size) =>
+        renderDestination(createBeamDocument(size), viewport),
+      ),
+    );
+    const [shortDestination, mediumDestination, longDestination] = destinations;
+    if (
+      shortDestination === undefined ||
+      mediumDestination === undefined ||
+      longDestination === undefined
+    ) {
+      throw new Error('Les trois longueurs de poutre doivent être rendues.');
+    }
+
+    expect(shortDestination.width).toBeLessThan(mediumDestination.width);
+    expect(mediumDestination.width).toBeLessThan(longDestination.width);
+  });
+
   it('dimensionne le canvas en pixels physiques sans muter le LevelDocument', async () => {
     const { context } = createContext();
     const spriteLoader = createPendingSpriteLoader();
