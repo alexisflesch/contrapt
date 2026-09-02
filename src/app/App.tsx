@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import {
   createConstructionAttempt,
+  movePlacement,
   placeFromInventory,
+  removePlacement,
+  rotatePlacement,
 } from '../application/construction/construction-attempt';
 import {
   beginEditorManipulation,
@@ -18,8 +21,11 @@ import {
   completeSimulation,
   undoEditorCommand,
   currentEditorAttempt,
+  executeEditorCommand,
+  selectEditorPlacement,
   type EditorSession,
 } from '../application/editor-session/editor-session';
+import { embeddedLevels } from '../content/embedded-levels';
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
 import {
   createBoardRenderer,
@@ -135,7 +141,13 @@ const refusalMessage = (reason: string): string =>
 
 const unavailablePositionMessage = 'Placement refusé : la position tactile est indisponible.';
 const unavailableViewportMessage = 'Placement refusé : le cadrage du plateau est indisponible.';
-const placementZoom = 1;
+interface CameraState {
+  readonly origin: ScreenPoint;
+  readonly pixelsPerWorldUnit: number;
+}
+
+const initialCamera: CameraState = { origin: { x: 0, y: 0 }, pixelsPerWorldUnit: 0.32 };
+const cameraZoomFactor = 1.25;
 const fixedStepSeconds = 1 / 60;
 
 const hasFiniteCoordinates = (point: ScreenPoint): boolean =>
@@ -147,9 +159,11 @@ const placementPreviewFromPointer = (
   kind: ObjectKind,
   point: ScreenPoint,
   boardRect: BoardOffset,
+  pixelsPerWorldUnit: number,
+  origin: ScreenPoint,
   isValid: boolean,
 ): Omit<PlacementPreview, 'revision'> | null => {
-  if (!hasFiniteCoordinates(point) || !hasUsableZoom(placementZoom)) return null;
+  if (!hasFiniteCoordinates(point) || !hasUsableZoom(pixelsPerWorldUnit)) return null;
 
   return {
     kind,
@@ -157,7 +171,7 @@ const placementPreviewFromPointer = (
       x: point.x - boardRect.left,
       y: point.y - boardRect.top,
     },
-    worldPosition: screenPointToWorld(point, boardRect, placementZoom),
+    worldPosition: screenPointToWorld(point, boardRect, pixelsPerWorldUnit, origin),
     isValid,
   };
 };
@@ -295,8 +309,13 @@ export function App() {
   const [session, setSession] = useState<EditorSession>(initialSession);
   const [simulationState, setSimulationState] = useState<SimulationSnapshot | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [camera, setCamera] = useState(initialCamera);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLevelListOpen, setIsLevelListOpen] = useState(false);
+  const [hasWon, setHasWon] = useState(false);
   const nextPlacementNumber = useRef(1);
   const boardCanvasRef = useRef<HTMLCanvasElement>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
   const spriteLoaderRef = useRef<SpriteLoader | null>(null);
   const boardRenderRef = useRef<(() => void) | null>(null);
   const boardRenderQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -307,9 +326,11 @@ export function App() {
   const simulationTimestampRef = useRef<number | null>(null);
   const placementPreviewRevisionRef = useRef(0);
   const placementToolRef = useRef<PlacementTool | null>(placementTool);
+  const cameraRef = useRef(camera);
   const hasValidPlacementPreview = useRef(false);
   const activePointer = useRef<{ readonly id: number | null } | null>(null);
   const capturedPointerId = useRef<number | null>(null);
+  const activeMovePointer = useRef<{ readonly id: number | null; readonly placementId: string } | null>(null);
   const isSideLayout = useSyncExternalStore(
     subscribeToSideLayout,
     getSideLayoutSnapshot,
@@ -322,6 +343,32 @@ export function App() {
   const simulationBall = simulationState?.bodies.find(
     (body) => body.placementId === simulationBallId && body.role === 'primary',
   );
+  const displayedAttempt = currentEditorAttempt(session);
+  const selectedPlacement = displayedAttempt.document.objects.find(
+    (object) => object.id === session.selectedPlacementId,
+  );
+  const placementName = (object: LevelDocument['objects'][number]): string =>
+    object.type === 'ball' ? 'Balle' : object.type === 'basket' ? 'Panier' : object.type === 'beam' ? 'Poutre' : 'Bascule';
+  const loadLevelOne = (): void => {
+    const levelOne = embeddedLevels[0];
+    if (levelOne === undefined) {
+      setFeedback('Le niveau 1 embarqué est indisponible.');
+      return;
+    }
+    disposeSimulationSession();
+    updateSession(createEditorSession('resolution', createConstructionAttempt(levelOne)));
+    updatePlacementTool(null);
+    setPlacementPreview(null);
+    setHasWon(false);
+    setIsMenuOpen(false);
+    setIsLevelListOpen(false);
+  };
+  const returnToLevels = (): void => {
+    disposeSimulationSession();
+    setHasWon(false);
+    setIsMenuOpen(true);
+    setIsLevelListOpen(true);
+  };
   const updateSession = (nextSession: EditorSession): void => {
     sessionRef.current = nextSession;
     setSession(nextSession);
@@ -333,6 +380,10 @@ export function App() {
   const updateSimulationState = (nextState: SimulationSnapshot | null): void => {
     simulationStateRef.current = nextState;
     setSimulationState(nextState);
+  };
+  const updateCamera = (nextCamera: CameraState): void => {
+    cameraRef.current = nextCamera;
+    setCamera(nextCamera);
   };
 
   const cancelSimulationFrame = (): void => {
@@ -381,6 +432,7 @@ export function App() {
         const completed = completeSimulation(sessionRef.current);
         if (completed.status === 'accepted') {
           updateSession(completed.session);
+          setHasWon(true);
           simulationTimestampRef.current = null;
           return;
         }
@@ -424,6 +476,7 @@ export function App() {
     activePointer.current = null;
     capturedPointerId.current = null;
     setFeedback(null);
+    setHasWon(false);
     scheduleSimulationFrame();
   };
 
@@ -516,7 +569,14 @@ export function App() {
     boardRect: BoardOffset,
     isValid: boolean,
   ): void => {
-    const preview = placementPreviewFromPointer(kind, point, boardRect, isValid);
+    const preview = placementPreviewFromPointer(
+      kind,
+      point,
+      boardRect,
+      cameraRef.current.pixelsPerWorldUnit,
+      cameraRef.current.origin,
+      isValid,
+    );
     if (preview === null) {
       setPlacementPreview(null);
       return;
@@ -536,7 +596,7 @@ export function App() {
       setFeedback(unavailablePositionMessage);
       return;
     }
-    if (!hasUsableZoom(placementZoom)) {
+    if (!hasUsableZoom(cameraRef.current.pixelsPerWorldUnit)) {
       hasValidPlacementPreview.current = false;
       setPlacementPreview(null);
       setFeedback(unavailableViewportMessage);
@@ -558,7 +618,12 @@ export function App() {
       updateSession(currentSession);
     }
 
-    const worldPosition = screenPointToWorld(point, boardRect, placementZoom);
+    const worldPosition = screenPointToWorld(
+      point,
+      boardRect,
+      cameraRef.current.pixelsPerWorldUnit,
+      cameraRef.current.origin,
+    );
 
     const result = previewEditorManipulation(
       currentSession,
@@ -583,7 +648,7 @@ export function App() {
     const activeTool = placementToolRef.current;
     if (activeTool === null) return;
 
-    setPlacementIndicator(activeTool.kind, point, boardRect, hasValidPlacementPreview.current);
+    placeAt(point, boardRect);
   };
 
   const commitPlacement = (): void => {
@@ -599,6 +664,61 @@ export function App() {
     } else {
       setFeedback(refusalMessage(result.reason));
     }
+  };
+
+  const selectPlacement = (placementId: string): void => {
+    updateSession(selectEditorPlacement(sessionRef.current, placementId));
+  };
+
+  const executeSelectedCommand = (
+    command: Parameters<typeof executeEditorCommand>[1],
+  ): void => {
+    const result = executeEditorCommand(sessionRef.current, command);
+    updateSession(result.session);
+    if (result.status === 'rejected') setFeedback(refusalMessage(result.reason));
+  };
+
+  const beginMove = (pointerId: number | null): void => {
+    const placementId = sessionRef.current.selectedPlacementId;
+    if (placementId === null) return;
+    const result = beginEditorManipulation(sessionRef.current, { kind: 'move', placementId });
+    if (result.status === 'rejected') {
+      setFeedback(refusalMessage(result.reason));
+      return;
+    }
+    updateSession(result.session);
+    activeMovePointer.current = { id: pointerId, placementId };
+  };
+
+  const previewMove = (point: ScreenPoint): void => {
+    const activeMove = activeMovePointer.current;
+    const boardRect = boardRef.current?.getBoundingClientRect();
+    if (activeMove === null || boardRect === undefined || !hasFiniteCoordinates(point)) return;
+    const position = screenPointToWorld(
+      point,
+      boardRect,
+      cameraRef.current.pixelsPerWorldUnit,
+      cameraRef.current.origin,
+    );
+    const result = previewEditorManipulation(
+      sessionRef.current,
+      movePlacement({
+        context: sessionRef.current.mode === 'resolution' ? 'player' : 'author',
+        placementId: activeMove.placementId,
+        position,
+      }),
+    );
+    updateSession(result.session);
+    if (result.status === 'rejected') setFeedback(refusalMessage(result.reason));
+  };
+
+  const commitMove = (pointerId: number | null): void => {
+    const activeMove = activeMovePointer.current;
+    if (activeMove === null || (activeMove.id !== null && activeMove.id !== pointerId)) return;
+    activeMovePointer.current = null;
+    const result = commitEditorManipulation(sessionRef.current);
+    updateSession(result.session);
+    if (result.status === 'rejected') setFeedback(refusalMessage(result.reason));
   };
 
   useEffect(() => {
@@ -666,8 +786,8 @@ export function App() {
             viewport: {
               cssWidth: bounds.width,
               cssHeight: bounds.height,
-              origin: { x: 0, y: 0 },
-              pixelsPerWorldUnit: 1,
+              origin: cameraRef.current.origin,
+              pixelsPerWorldUnit: cameraRef.current.pixelsPerWorldUnit,
               devicePixelRatio: window.devicePixelRatio > 0 ? window.devicePixelRatio : 1,
             },
             spriteLoader,
@@ -698,7 +818,7 @@ export function App() {
 
   useEffect(() => {
     boardRenderRef.current?.();
-  }, [session, simulationState]);
+  }, [session, simulationState, camera]);
 
   return (
     <div className="app-shell">
@@ -710,16 +830,45 @@ export function App() {
           <h1>Contrapt!</h1>
         </div>
         <p className="level-label">
-          <span>Éditeur de niveaux</span>
-          <span className="level-mode">Mode éditeur</span>
+          <span>{session.mode === 'creation' ? 'Éditeur de niveaux' : 'Niveau 1 · Laisser tomber'}</span>
+          <span className="level-mode">{session.mode === 'creation' ? 'Mode éditeur' : 'Mode joueur'}</span>
         </p>
-        <button className="icon-button" type="button" aria-label="Ouvrir le menu">
+        <button
+          className="icon-button"
+          type="button"
+          aria-label="Ouvrir le menu"
+          aria-expanded={isMenuOpen}
+          onClick={() => {
+            setIsMenuOpen((open) => !open);
+            setIsLevelListOpen((open) => !isMenuOpen && !open);
+          }}
+        >
           <span aria-hidden="true">☰</span>
         </button>
       </header>
 
       <main className="app-main">
+        {isMenuOpen && (
+          <section className="level-menu" aria-label="Menu principal">
+            <button type="button" className="context-action" onClick={() => { setIsLevelListOpen(true); }}>
+              Liste des niveaux
+            </button>
+            {isLevelListOpen && (
+              <section className="level-list" aria-label="Liste des niveaux">
+                <p>Niveau 1 · Laisser tomber</p>
+                <button type="button" className="primary-button" onClick={loadLevelOne}>
+                  Lancer le niveau 1
+                </button>
+              </section>
+            )}
+          </section>
+        )}
         <section className="workspace" aria-label="Espace de construction">
+          {session.mode === 'resolution' && (
+            <section className="level-objective" aria-label="Objectif du niveau">
+              Faire entrer la balle dans le panier
+            </section>
+          )}
           <div
             className="workspace-toolbar"
             aria-label={
@@ -817,6 +966,7 @@ export function App() {
 
           <div
             className="scene-frame"
+            ref={boardRef}
             role="region"
             aria-label="Plateau de jeu"
             onPointerDown={(event) => {
@@ -837,7 +987,7 @@ export function App() {
                 setFeedback(unavailablePositionMessage);
                 return;
               }
-              if (!hasUsableZoom(placementZoom)) {
+              if (!hasUsableZoom(cameraRef.current.pixelsPerWorldUnit)) {
                 hasValidPlacementPreview.current = false;
                 setPlacementPreview(null);
                 setFeedback(unavailableViewportMessage);
@@ -905,6 +1055,7 @@ export function App() {
                   ? undefined
                   : `${String(simulationBall.position.x)},${String(simulationBall.position.y)}`
               }
+              data-camera-zoom={String(camera.pixelsPerWorldUnit)}
             />
             {placementPreview !== null && session.phase === 'construction' && (
               <div
@@ -925,20 +1076,142 @@ export function App() {
                 <span aria-hidden="true" />
               </div>
             )}
+            {placementPreview?.isValid === true && session.phase === 'construction' && (
+              <p className="placement-preview-status" role="status">
+                Aperçu de placement valide
+              </p>
+            )}
           </div>
 
           <div className="camera-controls" aria-label="Cadrage du plateau">
-            <button className="camera-button" type="button" aria-label="Zoom arrière">
+            <button
+              className="camera-button"
+              type="button"
+              aria-label="Zoom arrière"
+              onClick={() => {
+                updateCamera({
+                  ...cameraRef.current,
+                  pixelsPerWorldUnit: cameraRef.current.pixelsPerWorldUnit / cameraZoomFactor,
+                });
+              }}
+            >
               −
             </button>
-            <button className="camera-button camera-reset" type="button">
+            <button
+              className="camera-button camera-reset"
+              type="button"
+              onClick={() => { updateCamera(initialCamera); }}
+            >
               Ajuster à la scène
             </button>
-            <button className="camera-button" type="button" aria-label="Zoom avant">
+            <button
+              className="camera-button"
+              type="button"
+              aria-label="Zoom avant"
+              onClick={() => {
+                updateCamera({
+                  ...cameraRef.current,
+                  pixelsPerWorldUnit: cameraRef.current.pixelsPerWorldUnit * cameraZoomFactor,
+                });
+              }}
+            >
               +
             </button>
           </div>
+
+          <section className="scene-objects" aria-label="Objets de la scène">
+            {displayedAttempt.document.objects.map((object) => {
+              const objectAttributes = {
+                className: 'scene-object',
+                'data-position': `${String(object.transform.position.x)},${String(object.transform.position.y)}`,
+                'data-rotation': String(object.transform.rotation),
+              };
+              const isEditablePlacement = displayedAttempt.provenance[object.id] !== undefined;
+              return isEditablePlacement ? (
+                <button
+                  key={object.id}
+                  type="button"
+                  {...objectAttributes}
+                  aria-pressed={session.selectedPlacementId === object.id}
+                  onClick={() => { selectPlacement(object.id); }}
+                >
+                  {placementName(object)}
+                </button>
+              ) : (
+                <span key={object.id} {...objectAttributes}>
+                  {placementName(object)}
+                </span>
+              );
+            })}
+          </section>
+
+          {selectedPlacement !== undefined && session.phase === 'construction' && (
+            <section className="context-panel" aria-label={`Objet sélectionné : ${placementName(selectedPlacement)}`}>
+              <strong>Objet sélectionné : {placementName(selectedPlacement)}</strong>
+              {selectedPlacement.permissions.move && (
+                <button
+                  className="context-action"
+                  type="button"
+                  onPointerDown={(event) => { beginMove(pointerIdFromEvent(event.pointerId)); }}
+                  onPointerMove={(event) => { previewMove({ x: event.clientX, y: event.clientY }); }}
+                  onPointerUp={(event) => { commitMove(pointerIdFromEvent(event.pointerId)); }}
+                  onPointerCancel={() => {
+                    activeMovePointer.current = null;
+                    const cancelled = cancelEditorManipulation(sessionRef.current);
+                    updateSession(cancelled.session);
+                  }}
+                >
+                  Déplacer la {placementName(selectedPlacement).toLowerCase()}
+                </button>
+              )}
+              {selectedPlacement.type === 'beam' && selectedPlacement.permissions.rotate && (
+                <button
+                  className="context-action"
+                  type="button"
+                  onClick={() => {
+                    executeSelectedCommand(
+                      rotatePlacement({
+                        context: session.mode === 'resolution' ? 'player' : 'author',
+                        placementId: selectedPlacement.id,
+                        rotation: selectedPlacement.transform.rotation + Math.PI / 12,
+                      }),
+                    );
+                  }}
+                >
+                  Tourner à droite
+                </button>
+              )}
+              {selectedPlacement.permissions.remove && (
+                <button
+                  className="context-action"
+                  type="button"
+                  onClick={() => {
+                    executeSelectedCommand(
+                      removePlacement({
+                        context: session.mode === 'resolution' ? 'player' : 'author',
+                        placementId: selectedPlacement.id,
+                      }),
+                    );
+                  }}
+                >
+                  Supprimer la {placementName(selectedPlacement).toLowerCase()}
+                </button>
+              )}
+            </section>
+          )}
         </section>
+
+        {session.phase === 'result' && hasWon && (
+          <section className="level-result" aria-label="Résultat du niveau">
+            <strong>Victoire</strong>
+            <button className="primary-button" type="button" onClick={loadLevelOne}>
+              Rejouer le niveau
+            </button>
+            <button className="context-action" type="button" onClick={returnToLevels}>
+              Retour aux niveaux
+            </button>
+          </section>
+        )}
 
         {isDrawerOpen && !isSideLayout && placementTool === null && (
           <button
@@ -984,6 +1257,7 @@ export function App() {
                   key={kind}
                   type="button"
                   disabled={session.phase !== 'construction'}
+                  aria-label={kind === 'Poutre' ? 'Poutre courte' : kind}
                   aria-pressed={selectedObject === kind}
                   onClick={() => {
                     activatePlacement(kind);
