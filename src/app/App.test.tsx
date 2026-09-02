@@ -82,6 +82,24 @@ const placeBeam = (): HTMLElement => {
   return board;
 };
 
+const openEmbeddedLevelOne = (): void => {
+  fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
+};
+
+const advanceSimulationToResult = (
+  animationFrames: ReturnType<typeof createAnimationFrameHarness>,
+): void => {
+  const fixedStepMilliseconds = 1000 / 60;
+
+  act(() => {
+    animationFrames.flush(0);
+    for (let frame = 1; frame <= 180; frame += 1) {
+      animationFrames.flush(frame * fixedStepMilliseconds);
+    }
+  });
+};
+
 describe('coque Contrapt!', () => {
   afterEach(() => {
     cleanup();
@@ -343,6 +361,91 @@ describe('coque Contrapt!', () => {
 
     expect(Number(canvas.getAttribute('data-simulation-step'))).toBeGreaterThan(Number(pausedStep));
     expect(canvas.getAttribute('data-simulation-ball-position')).not.toBe(pausedBallPosition);
+  });
+
+  it('ouvre depuis le menu la liste contenant le seul niveau embarqué et son lancement', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
+
+    const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
+    expect(levelList).toBeVisible();
+    expect(within(levelList).getByText('Niveau 1 · Laisser tomber')).toBeVisible();
+    expect(
+      within(levelList).getByRole('button', { name: 'Lancer le niveau 1' }),
+    ).toBeEnabled();
+    expect(within(levelList).queryByText(/Niveau 2/i)).not.toBeInTheDocument();
+  });
+
+  it('lance la fixture embarquée en mode joueur et annonce la victoire après des RAF contrôlés', () => {
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+
+    openEmbeddedLevelOne();
+
+    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Objectif du niveau' })).toHaveTextContent(
+      'Faire entrer la balle dans le panier',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames);
+
+    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
+    expect(result).toBeVisible();
+    expect(within(result).getByText('Victoire')).toBeVisible();
+    expect(
+      within(result).getByRole('button', { name: 'Rejouer le niveau' }),
+    ).toBeVisible();
+    expect(
+      within(result).getByRole('button', { name: 'Retour aux niveaux' }),
+    ).toBeVisible();
+  });
+
+  it('retourne à la liste depuis le résultat sans inventer de niveau suivant', () => {
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+
+    openEmbeddedLevelOne();
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retour aux niveaux' }));
+
+    const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
+    expect(levelList).toBeVisible();
+    expect(within(levelList).getByText('Niveau 1 · Laisser tomber')).toBeVisible();
+    expect(within(levelList).queryByText(/Niveau 2/i)).not.toBeInTheDocument();
+  });
+
+  it('permet de rejouer ou de réinitialiser la simulation sans dialogue bloquant', () => {
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+
+    openEmbeddedLevelOne();
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    expect(screen.getByText('Simulation en cours')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+    expect(screen.queryByText('Simulation en cours')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    expect(screen.getByText('Simulation en cours')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    expect(screen.getByText('Simulation en cours')).toBeVisible();
+
+    advanceSimulationToResult(animationFrames);
+    fireEvent.click(screen.getByRole('button', { name: 'Rejouer le niveau' }));
+    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
   });
 
   it('identifie explicitement le contexte de travail comme éditeur de niveaux', () => {
