@@ -20,10 +20,20 @@ describe('scène 6 — cycle de vie comparatif', () => {
 
     for (const report of comparison.reports) {
       expect(report.memoryMeasurements).toHaveLength(measuredCycles);
-      expect(report.memoryMeasurements.every((bytes) => Number.isFinite(bytes) && bytes >= 0)).toBe(
-        true,
+      expect(
+        report.memoryMeasurements.every(
+          ({ heapUsedBytes, rssBytes, externalBytes, arrayBuffersBytes }) =>
+            [heapUsedBytes, rssBytes, externalBytes, arrayBuffersBytes].every(
+              (bytes) => Number.isFinite(bytes) && bytes >= 0,
+            ),
+        ),
+      ).toBe(true);
+      expect(report.analysis).toEqual(
+        analyzeLifecycle(
+          report.memoryMeasurements.map(({ rssBytes }) => rssBytes),
+          measuredCycles,
+        ),
       );
-      expect(report.analysis).toEqual(analyzeLifecycle(report.memoryMeasurements, measuredCycles));
       expect(report.analysis.sampleCount).toBe(measuredCycles);
       expect(report.liveObjectCountsAfterDestroy).toHaveLength(measuredCycles);
       expect(report.liveObjectCountsAfterDestroy.every((count) => count === 0)).toBe(true);
