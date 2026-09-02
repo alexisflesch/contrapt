@@ -61,6 +61,27 @@ const createAnimationFrameHarness = () => {
   };
 };
 
+const placeBeam = (): HTMLElement => {
+  fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+  fireEvent.click(screen.getByRole('button', { name: /Poutre/ }));
+
+  const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+  firePointerEvent(board, 'pointerdown', {
+    pointerId: 1,
+    pointerType: 'touch',
+    clientX: 320,
+    clientY: 240,
+  });
+  firePointerEvent(board, 'pointerup', {
+    pointerId: 1,
+    pointerType: 'touch',
+    clientX: 320,
+    clientY: 240,
+  });
+
+  return board;
+};
+
 describe('coque Contrapt!', () => {
   afterEach(() => {
     cleanup();
@@ -599,5 +620,121 @@ describe('coque Contrapt!', () => {
     const cancelButton = screen.getByRole('button', { name: 'Annuler le placement' });
     expect(cancelButton).toHaveClass('placement-cancel');
     expect(styles).toMatch(/\.placement-cancel\s*\{[^}]*min-width:\s*44px[^}]*min-height:\s*44px/s);
+  });
+
+  it('pilote le cadrage avec les boutons tactiles et restaure la scène', () => {
+    render(<App />);
+
+    const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
+      name: 'Rendu du plateau',
+    });
+    const initialZoom = canvas.getAttribute('data-camera-zoom');
+    if (initialZoom === null) throw new Error('Le canvas doit exposer le zoom initial.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom avant' }));
+    expect(canvas.getAttribute('data-camera-zoom')).not.toBe(initialZoom);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom arrière' }));
+    expect(canvas).toHaveAttribute('data-camera-zoom', initialZoom);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom avant' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ajuster à la scène' }));
+    expect(canvas).toHaveAttribute('data-camera-zoom', initialZoom);
+  });
+
+  it('sélectionne une poutre hors canvas et regroupe son déplacement tactile en une commande', () => {
+    render(<App />);
+    placeBeam();
+
+    const scene = screen.getByRole('region', { name: 'Objets de la scène' });
+    const beam = within(scene).getByRole('button', { name: 'Poutre' });
+    const initialPosition = beam.getAttribute('data-position');
+    if (initialPosition === null) throw new Error('La poutre doit exposer sa position initiale.');
+
+    fireEvent.click(beam);
+    expect(beam).toHaveAttribute('aria-pressed', 'true');
+
+    const contextPanel = screen.getByRole('region', { name: 'Objet sélectionné : Poutre' });
+    const moveControl = within(contextPanel).getByRole('button', {
+      name: 'Déplacer la poutre',
+    });
+
+    firePointerEvent(moveControl, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 320,
+      clientY: 240,
+    });
+    firePointerEvent(moveControl, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 360,
+      clientY: 260,
+    });
+    firePointerEvent(moveControl, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 420,
+      clientY: 300,
+    });
+    firePointerEvent(moveControl, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 420,
+      clientY: 300,
+    });
+
+    const movedPosition = beam.getAttribute('data-position');
+    if (movedPosition === null) throw new Error('La poutre doit exposer sa position déplacée.');
+    expect(movedPosition).not.toBe(initialPosition);
+
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    const redoButton = screen.getByRole('button', { name: 'Rétablir' });
+    fireEvent.click(undoButton);
+    expect(within(scene).getByRole('button', { name: 'Poutre' })).toHaveAttribute(
+      'data-position',
+      initialPosition,
+    );
+    expect(redoButton).toBeEnabled();
+
+    fireEvent.click(redoButton);
+    expect(within(scene).getByRole('button', { name: 'Poutre' })).toHaveAttribute(
+      'data-position',
+      movedPosition,
+    );
+  });
+
+  it('fait pivoter puis supprime la poutre avec des contrôles accessibles et undo/redo', () => {
+    render(<App />);
+    placeBeam();
+
+    const scene = screen.getByRole('region', { name: 'Objets de la scène' });
+    const beam = within(scene).getByRole('button', { name: 'Poutre' });
+    fireEvent.click(beam);
+
+    const contextPanel = screen.getByRole('region', { name: 'Objet sélectionné : Poutre' });
+    const initialRotation = beam.getAttribute('data-rotation');
+    const rotateControl = within(contextPanel).getByRole('button', {
+      name: 'Tourner à droite',
+    });
+    expect(styles).toMatch(/\.context-action\s*\{[^}]*min-width:\s*44px[^}]*min-height:\s*44px/s);
+
+    fireEvent.click(rotateControl);
+    expect(beam.getAttribute('data-rotation')).not.toBe(initialRotation);
+
+    fireEvent.click(
+      within(contextPanel).getByRole('button', { name: 'Supprimer la poutre' }),
+    );
+    expect(within(scene).queryByRole('button', { name: 'Poutre' })).not.toBeInTheDocument();
+
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    const redoButton = screen.getByRole('button', { name: 'Rétablir' });
+    fireEvent.click(undoButton);
+    const restoredBeam = within(scene).getByRole('button', { name: 'Poutre' });
+    expect(restoredBeam).toHaveAttribute('data-rotation');
+    expect(restoredBeam.getAttribute('data-rotation')).not.toBe(initialRotation);
+
+    fireEvent.click(redoButton);
+    expect(within(scene).queryByRole('button', { name: 'Poutre' })).not.toBeInTheDocument();
   });
 });
