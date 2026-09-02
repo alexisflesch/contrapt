@@ -137,4 +137,68 @@ test.describe('coque sur le petit viewport supporté', () => {
     await expect(page.getByRole('button', { name: /Balle/ })).toBeHidden();
     await expect(page.getByRole('button', { name: 'Fermer le catalogue' })).toBeHidden();
   });
+
+  test('affiche un aperçu valide avant le placement tactile dans la zone de construction', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+    await page.getByRole('button', { name: 'Poutre courte' }).tap();
+
+    const board = page.getByRole('region', { name: 'Plateau de jeu' });
+    const renderer = board.getByRole('img', { name: 'Rendu du plateau' });
+    const renderingBeforePreview = await renderer.screenshot();
+    const bounds = await board.boundingBox();
+    expect(bounds).not.toBeNull();
+    if (bounds === null) {
+      throw new Error('Le plateau doit avoir une zone tactile mesurable.');
+    }
+
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+
+    await expect(page.getByRole('status')).toContainText('Aperçu de placement valide');
+    const renderingWithPreview = await renderer.screenshot();
+    expect(renderingWithPreview.equals(renderingBeforePreview)).toBe(false);
+  });
+
+  test('place au tactile puis annule le placement sans laisser l’objet dans le rendu', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    const board = page.getByRole('region', { name: 'Plateau de jeu' });
+    const renderer = board.getByRole('img', { name: 'Rendu du plateau' });
+    const renderingBeforePlacement = await renderer.screenshot();
+
+    await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+    await page.getByRole('button', { name: 'Poutre courte' }).tap();
+    await board.tap({ position: { x: 160, y: 120 } });
+
+    await expect(page.getByRole('button', { name: 'Annuler' })).toBeEnabled();
+    const renderingAfterPlacement = await renderer.screenshot();
+    expect(renderingAfterPlacement.equals(renderingBeforePlacement)).toBe(false);
+
+    await page.getByRole('button', { name: 'Annuler' }).tap();
+    await expect(page.getByRole('button', { name: 'Annuler' })).toBeDisabled();
+    const renderingAfterUndo = await renderer.screenshot();
+    expect(renderingAfterUndo).toEqual(renderingBeforePlacement);
+  });
+
+  test('modifie visiblement le cadrage avec zoom puis ajustement au tactile', async ({ page }) => {
+    await page.goto('/');
+
+    const renderer = page
+      .getByRole('region', { name: 'Plateau de jeu' })
+      .getByRole('img', { name: 'Rendu du plateau' });
+    const initialRendering = await renderer.screenshot();
+
+    await page.getByRole('button', { name: 'Zoom avant' }).tap();
+    const zoomedRendering = await renderer.screenshot();
+    expect(zoomedRendering.equals(initialRendering)).toBe(false);
+
+    await page.getByRole('button', { name: 'Ajuster à la scène' }).tap();
+    const adjustedRendering = await renderer.screenshot();
+    expect(adjustedRendering.equals(zoomedRendering)).toBe(false);
+  });
 });
