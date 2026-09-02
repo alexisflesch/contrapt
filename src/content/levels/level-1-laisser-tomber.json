@@ -21,7 +21,7 @@
       "type": "basket",
       "transform": {
         "position": { "x": 0, "y": 0 },
-        "rotation": 0
+        "rotation": 3.141592653589793
       },
       "props": {},
       "permissions": { "move": false, "rotate": false, "remove": false }
