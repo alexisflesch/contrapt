@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import styles from '../ui/styles.css?raw';
 
@@ -100,7 +100,39 @@ const advanceSimulationToResult = (
   });
 };
 
+/**
+ * jsdom does no layout, so every element's `getBoundingClientRect()` is a
+ * zero rect by default. That degenerate size is a real edge case the pure
+ * camera module handles safely (ADR 0007's absolute zoom floor), but it does
+ * not exercise the actual fit/conversion math a browser would run, and it
+ * silently changes what a hardcoded click coordinate means in world units.
+ * Stubbing the canvas's rect to a plausible, non-zero size — chosen at the
+ * workshop scene's own 16:9 aspect ratio, which also happens to reproduce
+ * the historical default zoom of 48 px/unit — keeps every click coordinate
+ * in this file meaningful without hand-tuning each one.
+ */
+const BOARD_CANVAS_WIDTH_IN_CSS_PIXELS = 800;
+const BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS = 450;
+
+const boardCanvasRect: DOMRect = {
+  x: 0,
+  y: 0,
+  left: 0,
+  top: 0,
+  right: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS,
+  bottom: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS,
+  width: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS,
+  height: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS,
+  toJSON() {
+    return this;
+  },
+};
+
 describe('coque Contrapt!', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(boardCanvasRect);
+  });
+
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
@@ -551,24 +583,39 @@ describe('coque Contrapt!', () => {
     expect(undoButton).toBeDisabled();
   });
 
-  it('place dans l’atelier libre avec le contexte auteur hors de la zone joueur', () => {
+  it('place dans l’atelier libre avec le contexte auteur en bordure de la scène', () => {
+    // ADR 0007 supprime le document d'atelier en pixels : la scène de
+    // l'atelier (16 × 9) déclare désormais une zone de construction qui la
+    // couvre entièrement, et tout placement (auteur ou joueur) doit en plus
+    // rester contenu dans le rectangle de scène (validation de schéma
+    // inconditionnelle). Il n'existe donc plus de position à la fois valide
+    // au sens du schéma et hors de la zone de construction : le comportement
+    // observable qui reste à garantir est qu'un placement auteur près du
+    // bord de la scène/zone de construction est accepté sans refus
+    // parasite — la garantie « le contexte auteur ignore la zone de
+    // construction » continue d'être couverte au niveau unitaire par
+    // src/application/construction/construction-attempt.test.ts.
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    // Avec le canvas simulé 800 × 450 et la scène 16 × 9 de l'atelier, ce
+    // point correspond à un point monde proche du coin (16, 9) de la scène,
+    // donc de la zone de construction — mais toujours strictement à
+    // l'intérieur des deux.
     firePointerEvent(board, 'pointerdown', {
       pointerId: 1,
       pointerType: 'touch',
-      clientX: -1000,
-      clientY: -1000,
+      clientX: 700,
+      clientY: 380,
     });
     firePointerEvent(board, 'pointerup', {
       pointerId: 1,
       pointerType: 'touch',
-      clientX: -1000,
-      clientY: -1000,
+      clientX: 700,
+      clientY: 380,
     });
 
     expect(screen.queryByText(/placement refusé/i)).not.toBeInTheDocument();
@@ -599,6 +646,74 @@ describe('coque Contrapt!', () => {
       x: 75,
       y: 60,
     });
+  });
+
+  it('convertit le toucher depuis le rectangle du canvas et non celui du cadre à bordure de 2 px', () => {
+    // styles.css place le canvas en `inset: 0` à l'intérieur de `.scene-frame`,
+    // qui porte une bordure de 2 px : les deux rectangles sont donc décalés
+    // l'un par rapport à l'autre dans un vrai navigateur. jsdom ne fait
+    // aucune mise en page, donc ce décalage doit être simulé explicitement
+    // pour vérifier que la conversion part bien du canvas.
+    render(<App />);
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+
+    vi.spyOn(board, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS + 4,
+      bottom: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS + 4,
+      width: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS + 4,
+      height: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS + 4,
+      toJSON() {
+        return this;
+      },
+    });
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+      x: 2,
+      y: 2,
+      left: 2,
+      top: 2,
+      right: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS + 2,
+      bottom: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS + 2,
+      width: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS,
+      height: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS,
+      toJSON() {
+        return this;
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 702,
+      clientY: 382,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 702,
+      clientY: 382,
+    });
+
+    const scene = screen.getByRole('region', { name: 'Objets de la scène' });
+    const placedBall = within(scene).getByRole('button', { name: 'Balle' });
+    const [placedX, placedY] = (placedBall.getAttribute('data-position') ?? '')
+      .split(',')
+      .map(Number);
+
+    // Attendu à partir du rectangle du CANVAS (left/top = 2) : si la
+    // conversion utilisait par erreur le rectangle du cadre (left/top = 0),
+    // le résultat serait décalé de 2 / 48 ≈ 0,0417 unité monde sur chaque
+    // axe — l'écart exact que ce test doit détecter.
+    expect(placedX).toBeCloseTo(14.25, 6);
+    expect(placedY).toBeCloseTo(7.729166666666667, 6);
   });
 
   it('annule une prévisualisation sur pointercancel sans projection ni entrée d’historique', () => {
@@ -719,24 +834,49 @@ describe('coque Contrapt!', () => {
     expect(styles).toMatch(/\.placement-cancel\s*\{[^}]*min-width:\s*44px[^}]*min-height:\s*44px/s);
   });
 
-  it('pilote le cadrage avec les boutons tactiles et restaure la scène', () => {
+  it('pilote le cadrage avec les boutons tactiles, le borne aux nouvelles limites, et restaure la scène', () => {
+    // Remplace l'ancien test du même nom, qui ne détectait plus rien : avec
+    // l'amorce (fitCameraToScene bornée à un canvas de taille nulle sous
+    // jsdom), « Ajuster à la scène » ne recalculait rien et l'assertion
+    // finale passait par coïncidence sur la dernière valeur de zoom laissée
+    // par les clics précédents. Ce test vérifie désormais que les boutons
+    // changent réellement le zoom, que les bornes de l'ADR 0007 § Caméra
+    // s'appliquent ([0,6×, 4×] le zoom ajusté), et que « Ajuster à la scène »
+    // recalcule bien un cadrage identique au cadrage initial.
     render(<App />);
 
     const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
       name: 'Rendu du plateau',
     });
-    const initialZoom = canvas.getAttribute('data-camera-zoom');
-    if (initialZoom === null) throw new Error('Le canvas doit exposer le zoom initial.');
+    const readZoom = (): number => {
+      const value = canvas.getAttribute('data-camera-zoom');
+      if (value === null) throw new Error('Le canvas doit exposer le zoom courant.');
+      return Number(value);
+    };
+
+    // Avec le canvas simulé 800 × 450 (16 × 9, comme la scène de l'atelier)
+    // et la marge de 4 % de l'ADR 0007, le cadrage initial vaut 48 px/unité ;
+    // les bornes de zoom valent donc [0,6 × 48, 4 × 48] = [28,8, 192].
+    const initialZoom = readZoom();
+    expect(initialZoom).toBe(48);
+    const expectedMinZoom = 28.8;
+    const expectedMaxZoom = 192;
 
     fireEvent.click(screen.getByRole('button', { name: 'Zoom avant' }));
-    expect(canvas.getAttribute('data-camera-zoom')).not.toBe(initialZoom);
+    expect(readZoom()).toBeGreaterThan(initialZoom);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Zoom arrière' }));
-    expect(canvas).toHaveAttribute('data-camera-zoom', initialZoom);
+    for (let clicks = 0; clicks < 20; clicks += 1) {
+      fireEvent.click(screen.getByRole('button', { name: 'Zoom avant' }));
+    }
+    expect(readZoom()).toBeCloseTo(expectedMaxZoom, 6);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Zoom avant' }));
+    for (let clicks = 0; clicks < 30; clicks += 1) {
+      fireEvent.click(screen.getByRole('button', { name: 'Zoom arrière' }));
+    }
+    expect(readZoom()).toBeCloseTo(expectedMinZoom, 6);
+
     fireEvent.click(screen.getByRole('button', { name: 'Ajuster à la scène' }));
-    expect(canvas).toHaveAttribute('data-camera-zoom', initialZoom);
+    expect(readZoom()).toBe(initialZoom);
   });
 
   it('sélectionne une poutre hors canvas et regroupe son déplacement tactile en une commande', () => {

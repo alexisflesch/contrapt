@@ -25,8 +25,14 @@ import {
   selectEditorPlacement,
   type EditorSession,
 } from '../application/editor-session/editor-session';
-import { embeddedLevels } from '../content/embedded-levels';
-import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
+import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
+import type { LevelDocument } from '../domain/level-document';
+import {
+  fitCameraToScene,
+  panCamera,
+  zoomCameraAt,
+  type Camera,
+} from '../presentation/board-camera';
 import {
   createBoardRenderer,
   projectLevel,
@@ -77,70 +83,8 @@ const inventoryByObjectKind: Readonly<Record<ObjectKind, string>> = {
   Bascule: 'inventory-seesaw',
 };
 
-const workshopDocument = levelDocumentSchema.parse({
-  schemaVersion: 2,
-  id: 'free-workshop',
-  metadata: { title: 'Atelier de niveau' },
-  scene: { min: { x: 0, y: 0 }, max: { x: 16, y: 9 } },
-  objects: [
-    {
-      id: 'workshop-floor',
-      type: 'beam',
-      props: { size: 'long' },
-      transform: { position: { x: 8, y: 8 }, rotation: 0 },
-      permissions: { move: false, rotate: false, remove: false },
-    },
-    {
-      id: 'goal-ball',
-      type: 'ball',
-      props: {},
-      transform: { position: { x: 8, y: 1 }, rotation: 0 },
-      permissions: { move: false, rotate: false, remove: false },
-    },
-    {
-      id: 'goal-basket',
-      type: 'basket',
-      props: {},
-      transform: { position: { x: 12, y: 7 }, rotation: 0 },
-      permissions: { move: false, rotate: false, remove: false },
-    },
-  ],
-  inventory: [
-    {
-      id: 'inventory-ball',
-      type: 'ball',
-      props: {},
-      quantity: 99,
-      permissions: { move: true, rotate: false, remove: true },
-    },
-    {
-      id: 'inventory-basket',
-      type: 'basket',
-      props: {},
-      quantity: 99,
-      permissions: { move: true, rotate: false, remove: true },
-    },
-    {
-      id: 'inventory-beam',
-      type: 'beam',
-      props: { size: 'medium' },
-      quantity: 99,
-      permissions: { move: true, rotate: true, remove: true },
-    },
-    {
-      id: 'inventory-seesaw',
-      type: 'seesaw',
-      props: {},
-      quantity: 99,
-      permissions: { move: true, rotate: false, remove: true },
-    },
-  ],
-  goal: { type: 'basket', ballId: 'goal-ball', basketId: 'goal-basket' },
-  buildZones: [{ min: { x: 0, y: 0 }, max: { x: 16, y: 9 } }],
-});
-
 const initialSession = (): EditorSession =>
-  createEditorSession('creation', createConstructionAttempt(workshopDocument));
+  createEditorSession('creation', createConstructionAttempt(embeddedWorkshopDocument));
 
 const refusalMessage = (reason: string): string =>
   reason === 'outside-build-zone'
@@ -149,36 +93,12 @@ const refusalMessage = (reason: string): string =>
 
 const unavailablePositionMessage = 'Placement refusé : la position tactile est indisponible.';
 const unavailableViewportMessage = 'Placement refusé : le cadrage du plateau est indisponible.';
-interface CameraState {
-  readonly origin: ScreenPoint;
-  readonly pixelsPerWorldUnit: number;
-}
 
-const initialCamera: CameraState = { origin: { x: 0, y: 0 }, pixelsPerWorldUnit: 48 };
-const cameraZoomFactor = 1.25;
-/** ADR 0007 - Caméra : « contain » du rectangle de scène avec 4 % de marge. */
-const sceneFitMargin = 0.96;
+/** UI increment for the ± buttons. Not an ADR 0007 bound: those live in board-camera.ts. */
+const CAMERA_BUTTON_ZOOM_FACTOR = 1.25;
+/** Guards pinch-zoom against a division by (near) zero when two fingers nearly touch. */
+const MIN_PINCH_DISTANCE_IN_CSS_PIXELS = 1;
 
-const fitCameraToScene = (
-  scene: LevelDocument['scene'],
-  cssWidth: number,
-  cssHeight: number,
-): CameraState => {
-  const sceneWidth = scene.max.x - scene.min.x;
-  const sceneHeight = scene.max.y - scene.min.y;
-  if (cssWidth <= 0 || cssHeight <= 0 || sceneWidth <= 0 || sceneHeight <= 0) return initialCamera;
-
-  const pixelsPerWorldUnit =
-    Math.min(cssWidth / sceneWidth, cssHeight / sceneHeight) * sceneFitMargin;
-
-  return {
-    pixelsPerWorldUnit,
-    origin: {
-      x: (scene.min.x + scene.max.x) / 2 - cssWidth / 2 / pixelsPerWorldUnit,
-      y: (scene.min.y + scene.max.y) / 2 - cssHeight / 2 / pixelsPerWorldUnit,
-    },
-  };
-};
 const fixedStepSeconds = 1 / 60;
 
 const hasFiniteCoordinates = (point: ScreenPoint): boolean =>
@@ -340,7 +260,9 @@ export function App() {
   const [session, setSession] = useState<EditorSession>(initialSession);
   const [simulationState, setSimulationState] = useState<SimulationSnapshot | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [camera, setCamera] = useState(initialCamera);
+  const [camera, setCamera] = useState<Camera>(() =>
+    fitCameraToScene(embeddedWorkshopDocument.scene, { width: 0, height: 0 }),
+  );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLevelListOpen, setIsLevelListOpen] = useState(false);
   const [hasWon, setHasWon] = useState(false);
@@ -364,6 +286,15 @@ export function App() {
   const activeMovePointer = useRef<{
     readonly id: number | null;
     readonly placementId: string;
+  } | null>(null);
+  /** Pointers currently down on the empty board, tracked for pan/pinch (mobile-editor-interactions.md § Navigation). */
+  const boardGesturePointers = useRef<Map<number, ScreenPoint>>(new Map());
+  const panPointerId = useRef<number | null>(null);
+  const panLastPoint = useRef<ScreenPoint | null>(null);
+  const pinchStart = useRef<{
+    readonly camera: Camera;
+    readonly midpoint: ScreenPoint;
+    readonly distance: number;
   } | null>(null);
   const isSideLayout = useSyncExternalStore(
     subscribeToSideLayout,
@@ -422,25 +353,190 @@ export function App() {
     simulationStateRef.current = nextState;
     setSimulationState(nextState);
   };
-  const updateCamera = (nextCamera: CameraState): void => {
+  const updateCamera = (nextCamera: Camera): void => {
     cameraRef.current = nextCamera;
     setCamera(nextCamera);
   };
 
+  const currentScene = (): LevelDocument['scene'] =>
+    currentEditorAttempt(sessionRef.current).document.scene;
+
+  /**
+   * The canvas's own rect, not `.scene-frame`'s: the frame carries a 2px
+   * border, so its rect is offset from the canvas it visually contains.
+   */
+  const readCanvasRect = (): DOMRect | null =>
+    boardCanvasRef.current?.getBoundingClientRect() ?? null;
+
+  const readCanvasSizeInCss = (): { readonly width: number; readonly height: number } | null => {
+    const bounds = readCanvasRect();
+    if (bounds === null) return null;
+    return { width: bounds.width, height: bounds.height };
+  };
+
   const fitCameraToCurrentScene = (): void => {
-    const canvas = boardCanvasRef.current;
-    if (canvas === null) return;
+    const canvasSize = readCanvasSizeInCss();
+    if (canvasSize === null) return;
 
-    const bounds = canvas.getBoundingClientRect();
-    if (bounds.width <= 0 || bounds.height <= 0) return;
+    updateCamera(fitCameraToScene(currentScene(), canvasSize));
+  };
 
-    updateCamera(
-      fitCameraToScene(
-        currentEditorAttempt(sessionRef.current).document.scene,
-        bounds.width,
-        bounds.height,
-      ),
-    );
+  const zoomByButtonFactor = (factor: number): void => {
+    const canvasSize = readCanvasSizeInCss();
+    if (canvasSize === null) return;
+
+    const anchor = { x: canvasSize.width / 2, y: canvasSize.height / 2 };
+    updateCamera(zoomCameraAt(cameraRef.current, factor, anchor, currentScene(), canvasSize));
+  };
+
+  const distanceBetweenPoints = (a: ScreenPoint, b: ScreenPoint): number =>
+    Math.hypot(a.x - b.x, a.y - b.y);
+
+  const midpointBetweenPoints = (a: ScreenPoint, b: ScreenPoint): ScreenPoint => ({
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+  });
+
+  const resetBoardGesture = (): void => {
+    boardGesturePointers.current.clear();
+    panPointerId.current = null;
+    panLastPoint.current = null;
+    pinchStart.current = null;
+  };
+
+  /**
+   * mobile-editor-interactions.md § Zoom: a second finger touching the board
+   * cancels any in-progress object manipulation without creating a history
+   * command, and the two fingers then drive the camera.
+   */
+  const cancelActiveObjectManipulationForGesture = (): void => {
+    if (activeMovePointer.current === null) return;
+    activeMovePointer.current = null;
+    const cancelled = cancelEditorManipulation(sessionRef.current);
+    if (cancelled.status === 'accepted') updateSession(cancelled.session);
+  };
+
+  const beginPinch = (): void => {
+    const points = [...boardGesturePointers.current.values()];
+    const [first, second] = points;
+    if (first === undefined || second === undefined) return;
+
+    panPointerId.current = null;
+    panLastPoint.current = null;
+    pinchStart.current = {
+      camera: cameraRef.current,
+      midpoint: midpointBetweenPoints(first, second),
+      distance: Math.max(distanceBetweenPoints(first, second), MIN_PINCH_DISTANCE_IN_CSS_PIXELS),
+    };
+  };
+
+  const handleBoardGesturePointerDown = (
+    pointerId: number | null,
+    point: ScreenPoint,
+    target: HTMLDivElement,
+  ): void => {
+    if (pointerId === null || !hasFiniteCoordinates(point)) return;
+
+    // A pointer arriving anywhere on the board while an object move is in
+    // progress (started from the context panel's move handle) counts as the
+    // "second finger" the manipulation-cancel rule describes.
+    cancelActiveObjectManipulationForGesture();
+
+    boardGesturePointers.current.set(pointerId, point);
+
+    if (boardGesturePointers.current.size === 1) {
+      panPointerId.current = pointerId;
+      panLastPoint.current = point;
+      if (typeof target.setPointerCapture === 'function') {
+        try {
+          target.setPointerCapture(pointerId);
+        } catch {
+          // Capture is a progressive enhancement; the gesture still works without it.
+        }
+      }
+      return;
+    }
+
+    if (boardGesturePointers.current.size === 2) {
+      beginPinch();
+    }
+  };
+
+  const handleBoardGesturePointerMove = (pointerId: number | null, point: ScreenPoint): void => {
+    if (pointerId === null || !boardGesturePointers.current.has(pointerId)) return;
+    if (!hasFiniteCoordinates(point)) return;
+
+    boardGesturePointers.current.set(pointerId, point);
+    const canvasSize = readCanvasSizeInCss();
+    if (canvasSize === null) return;
+
+    if (boardGesturePointers.current.size === 1 && panPointerId.current === pointerId) {
+      const last = panLastPoint.current;
+      if (last === null) return;
+      const delta = { x: point.x - last.x, y: point.y - last.y };
+      panLastPoint.current = point;
+      updateCamera(panCamera(cameraRef.current, delta, currentScene(), canvasSize));
+      return;
+    }
+
+    if (boardGesturePointers.current.size === 2 && pinchStart.current !== null) {
+      const points = [...boardGesturePointers.current.values()];
+      const [first, second] = points;
+      if (first === undefined || second === undefined) return;
+      const canvasRect = readCanvasRect();
+      if (canvasRect === null) return;
+
+      const currentMidpoint = midpointBetweenPoints(first, second);
+      const currentDistance = Math.max(
+        distanceBetweenPoints(first, second),
+        MIN_PINCH_DISTANCE_IN_CSS_PIXELS,
+      );
+      const factor = currentDistance / pinchStart.current.distance;
+      const anchor = {
+        x: pinchStart.current.midpoint.x - canvasRect.left,
+        y: pinchStart.current.midpoint.y - canvasRect.top,
+      };
+      const scene = currentScene();
+      const zoomed = zoomCameraAt(pinchStart.current.camera, factor, anchor, scene, canvasSize);
+      const panDelta = {
+        x: currentMidpoint.x - pinchStart.current.midpoint.x,
+        y: currentMidpoint.y - pinchStart.current.midpoint.y,
+      };
+      updateCamera(panCamera(zoomed, panDelta, scene, canvasSize));
+    }
+  };
+
+  const handleBoardGesturePointerEnd = (pointerId: number | null): void => {
+    if (pointerId === null) return;
+
+    boardGesturePointers.current.delete(pointerId);
+    if (panPointerId.current === pointerId) {
+      panPointerId.current = null;
+      panLastPoint.current = null;
+    }
+    if (boardGesturePointers.current.size < 2) {
+      pinchStart.current = null;
+    }
+    if (
+      boardGesturePointers.current.size === 1 &&
+      panPointerId.current === null &&
+      pinchStart.current === null
+    ) {
+      const [remaining] = [...boardGesturePointers.current.entries()];
+      if (remaining === undefined) return;
+      const [remainingId, remainingPoint] = remaining;
+      panPointerId.current = remainingId;
+      panLastPoint.current = remainingPoint;
+    }
+  };
+
+  const releaseGesturePointerCapture = (element: HTMLDivElement, pointerId: number): void => {
+    if (typeof element.releasePointerCapture !== 'function') return;
+    try {
+      element.releasePointerCapture(pointerId);
+    } catch {
+      // A browser can release capture before dispatching pointercancel.
+    }
   };
 
   const cancelSimulationFrame = (): void => {
@@ -532,6 +628,7 @@ export function App() {
     hasValidPlacementPreview.current = false;
     activePointer.current = null;
     capturedPointerId.current = null;
+    resetBoardGesture();
     setFeedback(null);
     setHasWon(false);
     scheduleSimulationFrame();
@@ -550,6 +647,7 @@ export function App() {
     hasValidPlacementPreview.current = false;
     activePointer.current = null;
     capturedPointerId.current = null;
+    resetBoardGesture();
     setFeedback(null);
   };
 
@@ -616,6 +714,7 @@ export function App() {
     hasValidPlacementPreview.current = false;
     activePointer.current = null;
     capturedPointerId.current = null;
+    resetBoardGesture();
     setIsDrawerOpen(false);
     setFeedback(null);
   };
@@ -747,8 +846,8 @@ export function App() {
 
   const previewMove = (point: ScreenPoint): void => {
     const activeMove = activeMovePointer.current;
-    const boardRect = boardRef.current?.getBoundingClientRect();
-    if (activeMove === null || boardRect === undefined || !hasFiniteCoordinates(point)) return;
+    const boardRect = readCanvasRect();
+    if (activeMove === null || boardRect === null || !hasFiniteCoordinates(point)) return;
     const position = screenPointToWorld(
       point,
       boardRect,
@@ -777,8 +876,23 @@ export function App() {
   };
 
   useEffect(() => {
+    // mobile-editor-interactions.md § Portrait, paysage et changements de
+    // viewport : une manipulation tactile en cours est annulée avant le
+    // recalcul du layout, quel que soit son type (placement, déplacement ou
+    // panoramique/pincement de caméra).
     const cancelForLayoutChange = (): void => {
-      if (placementToolRef.current === null) return;
+      resetBoardGesture();
+
+      const hadActiveMove = activeMovePointer.current !== null;
+      activeMovePointer.current = null;
+
+      if (placementToolRef.current === null) {
+        if (hadActiveMove) {
+          const result = cancelEditorManipulation(sessionRef.current);
+          if (result.status === 'accepted') updateSession(result.session);
+        }
+        return;
+      }
 
       const result = cancelEditorManipulation(sessionRef.current);
       if (result.status === 'accepted') {
@@ -1046,76 +1160,117 @@ export function App() {
             role="region"
             aria-label="Plateau de jeu"
             onPointerDown={(event) => {
-              if (placementToolRef.current === null) return;
-              const pointerId = pointerIdFromEvent(event.pointerId);
-              if (activePointer.current !== null) {
-                if (activePointer.current.id !== pointerId) {
-                  cancelPlacementProjection();
-                  setFeedback('Placement annulé : un second doigt a interrompu le geste.');
-                }
-                return;
-              }
-
-              const point = { x: event.clientX, y: event.clientY };
-              if (!hasFiniteCoordinates(point)) {
-                hasValidPlacementPreview.current = false;
-                setPlacementPreview(null);
-                setFeedback(unavailablePositionMessage);
-                return;
-              }
-              if (!hasUsableZoom(cameraRef.current.pixelsPerWorldUnit)) {
-                hasValidPlacementPreview.current = false;
-                setPlacementPreview(null);
-                setFeedback(unavailableViewportMessage);
-                return;
-              }
-
-              activePointer.current = { id: pointerId };
-              if (
-                pointerId !== null &&
-                typeof event.currentTarget.setPointerCapture === 'function'
-              ) {
-                try {
-                  event.currentTarget.setPointerCapture(pointerId);
-                  capturedPointerId.current = pointerId;
-                } catch {
-                  // Capture is a progressive enhancement; the gesture still works without it.
-                }
-              }
-              placeAt(point, event.currentTarget.getBoundingClientRect());
-            }}
-            onPointerUp={(event) => {
-              const pointerId = pointerIdFromEvent(event.pointerId);
-              if (!isActivePointer(activePointer.current, pointerId)) return;
-              activePointer.current = null;
-              if (pointerId !== null) releasePointerCapture(event.currentTarget, pointerId);
-              commitPlacement();
-            }}
-            onPointerMove={(event) => {
               const pointerId = pointerIdFromEvent(event.pointerId);
               const point = { x: event.clientX, y: event.clientY };
-              const boardRect = event.currentTarget.getBoundingClientRect();
-              if (isActivePointer(activePointer.current, pointerId)) {
+
+              if (placementToolRef.current !== null) {
+                if (activePointer.current !== null) {
+                  if (activePointer.current.id !== pointerId) {
+                    cancelPlacementProjection();
+                    setFeedback('Placement annulé : un second doigt a interrompu le geste.');
+                  }
+                  return;
+                }
+
+                if (!hasFiniteCoordinates(point)) {
+                  hasValidPlacementPreview.current = false;
+                  setPlacementPreview(null);
+                  setFeedback(unavailablePositionMessage);
+                  return;
+                }
+                if (!hasUsableZoom(cameraRef.current.pixelsPerWorldUnit)) {
+                  hasValidPlacementPreview.current = false;
+                  setPlacementPreview(null);
+                  setFeedback(unavailableViewportMessage);
+                  return;
+                }
+
+                activePointer.current = { id: pointerId };
+                if (
+                  pointerId !== null &&
+                  typeof event.currentTarget.setPointerCapture === 'function'
+                ) {
+                  try {
+                    event.currentTarget.setPointerCapture(pointerId);
+                    capturedPointerId.current = pointerId;
+                  } catch {
+                    // Capture is a progressive enhancement; the gesture still works without it.
+                  }
+                }
+                const boardRect = readCanvasRect();
+                if (boardRect === null) {
+                  hasValidPlacementPreview.current = false;
+                  setPlacementPreview(null);
+                  setFeedback(unavailableViewportMessage);
+                  return;
+                }
                 placeAt(point, boardRect);
                 return;
               }
 
-              updatePlacementIndicator(point, boardRect);
+              // mobile-editor-interactions.md § Navigation: one finger from an
+              // empty area pans the camera, two fingers pinch-zoom it.
+              handleBoardGesturePointerDown(pointerId, point, event.currentTarget);
+            }}
+            onPointerUp={(event) => {
+              const pointerId = pointerIdFromEvent(event.pointerId);
+
+              if (placementToolRef.current !== null) {
+                if (!isActivePointer(activePointer.current, pointerId)) return;
+                activePointer.current = null;
+                if (pointerId !== null) releasePointerCapture(event.currentTarget, pointerId);
+                commitPlacement();
+                return;
+              }
+
+              if (pointerId !== null) releaseGesturePointerCapture(event.currentTarget, pointerId);
+              handleBoardGesturePointerEnd(pointerId);
+            }}
+            onPointerMove={(event) => {
+              const pointerId = pointerIdFromEvent(event.pointerId);
+              const point = { x: event.clientX, y: event.clientY };
+
+              if (placementToolRef.current !== null) {
+                const boardRect = readCanvasRect();
+                if (boardRect === null) return;
+                if (isActivePointer(activePointer.current, pointerId)) {
+                  placeAt(point, boardRect);
+                  return;
+                }
+
+                updatePlacementIndicator(point, boardRect);
+                return;
+              }
+
+              handleBoardGesturePointerMove(pointerId, point);
             }}
             onPointerCancel={(event) => {
               const pointerId = pointerIdFromEvent(event.pointerId);
-              if (!isActivePointer(activePointer.current, pointerId)) return;
-              activePointer.current = null;
-              if (pointerId !== null) releasePointerCapture(event.currentTarget, pointerId);
-              cancelPlacementProjection();
-              setFeedback('Placement annulé : le geste tactile a été interrompu.');
+
+              if (placementToolRef.current !== null) {
+                if (!isActivePointer(activePointer.current, pointerId)) return;
+                activePointer.current = null;
+                if (pointerId !== null) releasePointerCapture(event.currentTarget, pointerId);
+                cancelPlacementProjection();
+                setFeedback('Placement annulé : le geste tactile a été interrompu.');
+                return;
+              }
+
+              if (pointerId !== null) releaseGesturePointerCapture(event.currentTarget, pointerId);
+              handleBoardGesturePointerEnd(pointerId);
             }}
             onLostPointerCapture={(event) => {
               const pointerId = pointerIdFromEvent(event.pointerId);
-              capturedPointerId.current = null;
-              if (!isActivePointer(activePointer.current, pointerId)) return;
-              cancelPlacementProjection();
-              setFeedback('Placement annulé : le geste tactile a été interrompu.');
+
+              if (placementToolRef.current !== null) {
+                capturedPointerId.current = null;
+                if (!isActivePointer(activePointer.current, pointerId)) return;
+                cancelPlacementProjection();
+                setFeedback('Placement annulé : le geste tactile a été interrompu.');
+                return;
+              }
+
+              handleBoardGesturePointerEnd(pointerId);
             }}
           >
             <canvas
@@ -1165,10 +1320,7 @@ export function App() {
               type="button"
               aria-label="Zoom arrière"
               onClick={() => {
-                updateCamera({
-                  ...cameraRef.current,
-                  pixelsPerWorldUnit: cameraRef.current.pixelsPerWorldUnit / cameraZoomFactor,
-                });
+                zoomByButtonFactor(1 / CAMERA_BUTTON_ZOOM_FACTOR);
               }}
             >
               −
@@ -1185,10 +1337,7 @@ export function App() {
               type="button"
               aria-label="Zoom avant"
               onClick={() => {
-                updateCamera({
-                  ...cameraRef.current,
-                  pixelsPerWorldUnit: cameraRef.current.pixelsPerWorldUnit * cameraZoomFactor,
-                });
+                zoomByButtonFactor(CAMERA_BUTTON_ZOOM_FACTOR);
               }}
             >
               +

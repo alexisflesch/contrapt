@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { embeddedLevels } from './embedded-levels';
+import { embeddedLevels, embeddedWorkshopDocument } from './embedded-levels';
 import { createSimulationSession } from '../simulation/simulation-session';
 
 describe('niveaux embarques', () => {
@@ -59,5 +59,19 @@ describe('niveaux embarques', () => {
 
     expect(session.readState()).toEqual(initialSnapshot);
     expect(session.readGoalEvaluation().status).toBe('pending');
+  });
+
+  it('expose l’atelier libre comme un document v2 valide distinct de la campagne', () => {
+    expect(embeddedWorkshopDocument).toMatchObject({
+      schemaVersion: 2,
+      id: 'free-workshop',
+      scene: { min: { x: 0, y: 0 }, max: { x: 16, y: 9 } },
+    });
+
+    // ADR 0007 : l'atelier est un document embarqué et validé comme les
+    // niveaux de campagne, mais ce n'est pas un niveau de campagne : il ne
+    // doit jamais apparaître dans la liste des niveaux jouables.
+    expect(embeddedLevels.some((level) => level.id === embeddedWorkshopDocument.id)).toBe(false);
+    expect(embeddedLevels.map((level) => level.id)).not.toContain('free-workshop');
   });
 });
