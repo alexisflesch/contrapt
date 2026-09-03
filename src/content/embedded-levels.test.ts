@@ -13,6 +13,9 @@ describe('niveaux embarques', () => {
       inventory: [],
       buildZones: [],
       goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      // B3 (plan-remise-en-jeu.md § 4) : la balle est suspendue directement
+      // au-dessus du panier, largement ouvert, sans obstacle entre les deux.
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
     });
 
     const level = embeddedLevels[0];
@@ -20,11 +23,13 @@ describe('niveaux embarques', () => {
       expect.objectContaining({
         id: 'ball-1',
         type: 'ball',
+        transform: { position: { x: 4, y: 1 }, rotation: 0 },
         permissions: { move: false, rotate: false, remove: false },
       }),
       expect.objectContaining({
         id: 'basket-1',
         type: 'basket',
+        transform: { position: { x: 4, y: 4.2 }, rotation: 0 },
         permissions: { move: false, rotate: false, remove: false },
       }),
     ]);
@@ -36,6 +41,11 @@ describe('niveaux embarques', () => {
 
     const session = createSimulationSession(level, { fixedStepSeconds: 1 / 60 });
     const initialSnapshot = session.readState();
+    // B3 (plan-remise-en-jeu.md § 4) : à la géométrie recalée, la balle
+    // atteint le capteur en 42 pas fixes et l'objectif est confirmé réussi
+    // en 73 (mesuré empiriquement contre le moteur physique réel). 600 pas
+    // (10 s simulées) garde une marge large — plus de huit fois le besoin
+    // réel — sans être une borne juste-suffisante.
     const maximumFixedSteps = 600;
     let observedTargetEntry = false;
 
@@ -50,10 +60,15 @@ describe('niveaux embarques', () => {
             event.placementId === 'ball-1' &&
             event.targetId === 'basket-1',
         );
+      // B2 (plan-remise-en-jeu.md § 4) : à cette géométrie, la chute vers un
+      // panier largement ouvert ne doit jamais expirer par timeout ni sortir
+      // de la scène avant d'avoir atteint le panier.
+      expect(session.readFailureEvaluation().status).toBe('pending');
     }
 
     expect(session.readGoalEvaluation().status).toBe('succeeded');
     expect(observedTargetEntry).toBe(true);
+    expect(session.readFailureEvaluation().status).toBe('pending');
 
     session.reset();
 
