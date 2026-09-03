@@ -26,7 +26,7 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
 | B1 — Niveau 1 par défaut              | ✅   | `c486059`              |
 | B2 — Bornes du monde et fin de partie | ✅   | `900a15c`              |
 | B3 — Géométrie du niveau 1            | ✅   | `5bc44ec`              |
-| B4 — Balle visible dans le panier     | ⬜   |                        |
+| B4 — Balle visible dans le panier     | ✅   | `e79d77f`              |
 | B5 — Recadrage stable pendant l'issue | ⬜   |                        |
 | C1 — Fantôme de placement             | ⬜   |                        |
 | C2 — Ombre portée                     | ⬜   |                        |
@@ -603,7 +603,7 @@ voir sa réussite.
 
 ### B4 — La balle doit rester visible à l'intérieur du panier
 
-État : ⬜ À faire.
+État : ✅ **Fait** — commit `e79d77f`.
 
 **Modèle : `terra` / effort `medium`.**
 
