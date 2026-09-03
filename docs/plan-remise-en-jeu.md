@@ -26,6 +26,8 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
 | B1 — Niveau 1 par défaut              | ✅   | `c486059`              |
 | B2 — Bornes du monde et fin de partie | ✅   | `900a15c`              |
 | B3 — Géométrie du niveau 1            | ✅   | `5bc44ec`              |
+| B4 — Balle visible dans le panier     | ⬜   |                        |
+| B5 — Recadrage stable pendant l'issue | ⬜   |                        |
 | C1 — Fantôme de placement             | ⬜   |                        |
 | C2 — Ombre portée                     | ⬜   |                        |
 | C3 — Manipulation sur le plateau      | ⬜   |                        |
@@ -55,6 +57,15 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
   confirmé préexistant à B3 par comparaison avec le code d'avant la tâche.
   Hors du gate (`pnpm check` ne lance que `--project=mobile`), non
   encore rattaché à une tranche.
+- **Deux boutons « Réinitialiser » identiques et actifs simultanément** après
+  une simulation terminée (un dans la barre de statut du haut, un dans le
+  bandeau de résultat), relevé par la revue critique post-phase B. Même
+  libellé, même action (`restoreConstruction`). Non rattaché à une tranche ;
+  candidat naturel quand C3 ou D4 touchera ces deux zones.
+- **320 × 568 n'a pas reçu la même attention que 390 × 844** : le titre du
+  niveau passe sur deux lignes dans l'en-tête, et le plateau tombe légèrement
+  sous le seuil de 55 % de hauteur que le plan D4 se fixe pour le portrait.
+  Pas un échec net, mais à vérifier explicitement quand D4 sera pris.
 
 ---
 
@@ -581,6 +592,86 @@ de référence aux niveaux suivants.
 
 ---
 
+## 4 bis. Deux régressions trouvées en jouant après la phase B
+
+Signalées par l'utilisateur en testant l'application, puis confirmées par une
+revue critique dédiée (agent en lecture seule, aucune écriture de code, captures
+et causes racines vérifiées dans `/tmp/.../scratchpad/`) qui a aussi couvert les
+sept formats d'écran. Les deux sont bloquantes, cheap à corriger, et
+n'attendent pas la phase C : elles cassent l'instant même où le joueur est censé
+voir sa réussite.
+
+### B4 — La balle doit rester visible à l'intérieur du panier
+
+État : ⬜ À faire.
+
+**Modèle : `terra` / effort `medium`.**
+
+Écrit dans `src/presentation/board-renderer.ts` et/ou `src/content/levels/*.json`.
+
+**Confirmé, pas supposé :** à la victoire, le panier s'affiche vide — la balle a
+disparu. Cause vérifiée : `level-1-laisser-tomber.json` liste `ball-1` avant
+`basket-1`, et le renderer dessine `document.objects` dans cet ordre
+(`board-renderer.ts:173`) ; le sprite du panier, opaque et plein, est donc peint
+**après** la balle et la recouvre entièrement dès qu'elle est à l'intérieur.
+Reproduit identiquement en desktop et en mobile portrait — capture :
+`desktop-04-victory-maybe.png`.
+
+Ce n'est pas un problème d'ordre du JSON à corriger niveau par niveau : le
+renderer n'a aucune notion de profondeur, il suit l'ordre du tableau `objects`,
+qui n'a jamais eu vocation à encoder un ordre de dessin. Introduire un ordre de
+dessin explicite et déterministe dans `projectLevel`/`createBoardRenderer` —
+par exemple une balle toujours dessinée après tout objet non-balle, ou un champ
+de tri dérivé de la famille — plutôt qu'un correctif sur le seul niveau 1.
+Vérifier aussi la bascule et la poutre, qui n'ont pas ce problème aujourd'hui
+mais pourraient le développer si un futur niveau superpose des objets.
+
+**Sortie vérifiable :** capture d'écran à la victoire du niveau 1 montrant la
+balle visible dans le panier, plus un test de renderer qui verrouille l'ordre de
+dessin indépendamment de l'ordre du document.
+
+---
+
+### B5 — Le recadrage automatique ne doit pas faire bouger la scène pendant la lecture
+
+État : ⬜ À faire.
+
+**Modèle : `terra` / effort `medium`.**
+
+Écrit dans `src/app/use-board-camera.ts`, `src/ui/styles.css`.
+
+**Régression introduite par le correctif de B1.** Le `ResizeObserver` posé sur
+le canvas (commit `c486059`) rappelle `fitCameraToCurrentScene()` — donc
+recalcule zoom **et** centrage depuis zéro — à chaque changement de la boîte CSS
+du canvas. Or l'apparition du bandeau de victoire ou d'échec **sous** le plateau
+réduit la hauteur de `.scene-frame`, ce qui déclenche l'observateur : la scène se
+re-zoome visiblement à l'instant précis où le joueur regarde le résultat. C'était
+un correctif nécessaire contre un vrai bug (canvas vide après victoire, § note de
+B1), mais trop large : il recadre sur _tout_ changement de taille, pas seulement
+ceux qui rendent l'ancien cadrage invalide.
+
+Deux directions possibles, à trancher par l'agent qui prend la tâche :
+
+- **réserver l'espace du bandeau à l'avance** dans la mise en page (une zone de
+  hauteur fixe sous le plateau, vide ou non), pour que `.scene-frame` ne change
+  jamais de taille CSS quand le résultat apparaît — supprime le déclenchement
+  plutôt que d'apprivoiser sa conséquence ;
+- si le plateau doit réellement pouvoir changer de taille (redimensionnement de
+  fenêtre, rotation d'écran), **distinguer** un changement de taille qui rend
+  l'ancien cadrage invalide (scène partiellement hors canvas) d'un changement
+  mineur, et ne recadrer complètement que dans le premier cas — sinon ajuster
+  origin/zoom de façon continue plutôt que de sauter d'un cadrage `fit` à l'autre.
+
+Ne pas réintroduire le bug de B1 (canvas vide) en corrigeant celui-ci : les deux
+scénarios doivent avoir un test de non-régression.
+
+**Sortie vérifiable :** un test qui fait apparaître puis disparaître le bandeau
+de résultat et vérifie que `camera` (zoom et origine) ne change pas ; un test
+qui vérifie que la scène reste entièrement visible malgré un vrai
+redimensionnement de fenêtre (non-régression du bug de B1).
+
+---
+
 ## 5. Phase C — Le placement et la manipulation, la demande explicite
 
 ### C1 — Le fantôme de placement est le vrai objet
@@ -671,6 +762,31 @@ puis sprite — et l'absence d'ombre sous un fantôme invalide.
 
 Écrit dans `src/presentation/`, `src/app/`, `src/ui/`, `e2e/`.
 
+**Ce n'est pas un simple confort à livrer, c'est un vide à combler.** Une revue
+critique après la phase B a vérifié dans le code, pas seulement observé à
+l'écran, que dans l'état actuel :
+
+- **il n'existe aucun moyen de sélectionner un objet autre que celui qu'on vient
+  de poser.** `commitEditorManipulation` sélectionne automatiquement chaque
+  nouveau placement (`editor-session.ts`), mais rien dans `App.tsx` n'appelle
+  jamais `selectPlacement` en réponse à un geste sur le plateau — la fonction
+  existe dans `use-editor-session.ts`, exportée, jamais invoquée. Au-delà d'un
+  seul objet posé, la seule façon d'atteindre un objet plus ancien est de tout
+  annuler jusqu'à lui, ce qui le supprime plutôt que de le sélectionner.
+  L'atelier est aujourd'hui un aller simple ;
+- **le bouton « Déplacer » du panneau contextuel ne déplace rien**, ni à la
+  souris ni au doigt (testé aux deux, y compris un vrai geste tactile via CDP).
+  Cause vérifiée : `moveHandlers.onPointerDown` dans `use-board-pointers.ts`
+  n'appelle jamais `setPointerCapture`, contrairement au flux de placement qui
+  le fait explicitement quelques dizaines de lignes plus haut dans le même
+  fichier. Dès que le doigt quitte le bouton de 44 px pour atteindre le
+  plateau, `pointermove` cesse d'être reçu et `previewMove` n'est plus jamais
+  rappelé.
+
+Cette tâche remplace le mécanisme cassé, elle ne l'améliore pas : vérifie en
+premier que l'implémentation neuve couvre ces deux cas précis avant de passer au
+reste, plutôt que de les découvrir a posteriori.
+
 Remplace les pastilles et les boutons-poignées par ce qu'exige
 `mobile-editor-interactions.md` §§ Sélection, Déplacement, Rotation.
 
@@ -697,6 +813,13 @@ Remplace les pastilles et les boutons-poignées par ce qu'exige
 
 5. **Supprimer** les boutons « Déplacer la … » et « Tourner à droite » du panneau
    contextuel, ainsi que la bande `.scene-objects`.
+
+6. **Corriger au passage** le message de refus générique de
+   `use-editor-session.ts` (`refusalMessage`) : il préfixe tout refus par
+   « Placement refusé » quel que soit le type d'action réellement rejetée
+   (déplacement, rotation, suppression). Repéré pendant la revue critique sur un
+   déplacement refusé, annoncé comme un placement refusé — trompeur, et cette
+   tâche va multiplier les cas de refus hors placement.
 
 **Tests réécrits :** « sélectionne une poutre hors canvas et regroupe son
 déplacement tactile en une commande » et « fait pivoter puis supprime la poutre »
@@ -747,6 +870,13 @@ présents ne sont pas encore câblés dans `sprite-loader.ts` ni
 `object-family-registry.ts` : `beam@2x.png` et `seesaw@2x.png` historiques
 restent ceux réellement utilisés par le renderer.
 
+Autre défaut relevé sur `c72c8cc` par la revue critique, à corriger dans la même
+régénération : le tablier de la bascule est rouge/bordeaux vif alors que la
+poutre est en bois clair naturel — deux objets qui devraient se lire comme « la
+même planche » (catalogue initial, et la bascule est elle-même un tablier de
+bois) utilisent des palettes sans rapport. Repris explicitement dans la
+description de `seesaw*@2x.png` ci-dessous.
+
 **Modèle : `luna` / effort `xhigh`, capacité de génération d'image.**
 
 Écrit dans `public/assets/sprites/`.
@@ -758,14 +888,14 @@ régulier, palette chaude cohérente avec le visuel de référence
 `ee99b245-f82e-4090-992b-15305004f8a3.png`, l'objet **touchant les quatre bords
 du cadre** sans marge.
 
-| Sprite               | PNG @2x   | Sujet                                                                                                   |
-| -------------------- | --------- | ------------------------------------------------------------------------------------------------------- |
-| `ball@2x.png`        | 77 × 77   | bille rouge mate, un seul reflet net en haut à gauche, contour brun                                     |
-| `basket@2x.png`      | 192 × 141 | panier d'osier ouvert vu de côté, tressage lisible, ouverture vers le haut, **pas** de cercle de basket |
-| `beam-short@2x.png`  | 256 × 32  | planche de bois clair, veinage discret, extrémités arrondies                                            |
-| `beam-medium@2x.png` | 512 × 32  | même planche, même veinage, allongée                                                                    |
-| `beam-long@2x.png`   | 768 × 32  | idem                                                                                                    |
-| `seesaw@2x.png`      | 384 × 120 | tablier de bois horizontal sur un socle triangulaire métallique, socle **sous** le pivot                |
+| Sprite               | PNG @2x   | Sujet                                                                                                                                                                    |
+| -------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ball@2x.png`        | 77 × 77   | bille rouge mate, un seul reflet net en haut à gauche, contour brun                                                                                                      |
+| `basket@2x.png`      | 192 × 141 | panier d'osier ouvert vu de côté, tressage lisible, ouverture vers le haut, **pas** de cercle de basket                                                                  |
+| `beam-short@2x.png`  | 256 × 32  | planche de bois clair, veinage discret, extrémités arrondies                                                                                                             |
+| `beam-medium@2x.png` | 512 × 32  | même planche, même veinage, allongée                                                                                                                                     |
+| `beam-long@2x.png`   | 768 × 32  | idem                                                                                                                                                                     |
+| `seesaw@2x.png`      | 384 × 120 | tablier de bois horizontal **de la même teinte que la poutre** (bois clair naturel, pas de rouge/bordeaux) sur un socle triangulaire métallique, socle **sous** le pivot |
 
 Les trois poutres doivent être visiblement la même planche à trois longueurs,
 pas trois objets différents. Après génération : détourer, recadrer sur la boîte
