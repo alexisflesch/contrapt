@@ -23,7 +23,6 @@ import {
   type SimulationBodyState,
   type SimulationSnapshot,
 } from '../simulation/simulation-session';
-import { placementName } from './placement-name';
 
 const shouldReplaceSimulationBody = (
   current: SimulationBodyState | undefined,
@@ -132,15 +131,16 @@ interface BoardViewProps {
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
   readonly onFitToScene: () => void;
-  readonly onSelectPlacement: (placementId: string) => void;
 }
 
 /**
  * The board itself: the canvas and its sprite-pipeline rendering (ADR 0006,
- * ADR 0007), the placement-preview overlay, the camera zoom controls, and
- * the accessible "scene objects" layer used both for a11y and as the
- * hit-testable surface e2e/unit tests select and drag (the canvas itself is
- * opaque to the DOM).
+ * ADR 0007), the placement-preview overlay, and the camera zoom controls.
+ * B1 (plan-remise-en-jeu.md § 4) removed the debug "scene objects" pip list
+ * that used to sit under the canvas — a leftover pre-A5 inspection layer, not
+ * part of the player-facing UI. Tests that need to read or select a placed
+ * object now go through the canvas's own `data-*` attributes; on-canvas
+ * selection is C3's job.
  */
 export function BoardView({
   session,
@@ -155,14 +155,12 @@ export function BoardView({
   onZoomIn,
   onZoomOut,
   onFitToScene,
-  onSelectPlacement,
 }: BoardViewProps) {
   const boardRef = useRef<HTMLDivElement>(null);
   const spriteLoaderRef = useRef<SpriteLoader | null>(null);
   const boardRenderRef = useRef<(() => void) | null>(null);
   const boardRenderQueueRef = useRef<Promise<void>>(Promise.resolve());
 
-  const displayedAttempt = currentEditorAttempt(session);
   const simulationBallId = session.simulationSnapshot?.document.goal.ballId;
   const simulationBall = simulationState?.bodies.find(
     (body) => body.placementId === simulationBallId && body.role === 'primary',
@@ -300,34 +298,6 @@ export function BoardView({
           +
         </button>
       </div>
-
-      <section className="scene-objects" aria-label="Objets de la scène">
-        {displayedAttempt.document.objects.map((object) => {
-          const objectAttributes = {
-            className: 'scene-object',
-            'data-position': `${String(object.transform.position.x)},${String(object.transform.position.y)}`,
-            'data-rotation': String(object.transform.rotation),
-          };
-          const isEditablePlacement = displayedAttempt.provenance[object.id] !== undefined;
-          return isEditablePlacement ? (
-            <button
-              key={object.id}
-              type="button"
-              {...objectAttributes}
-              aria-pressed={session.selectedPlacementId === object.id}
-              onClick={() => {
-                onSelectPlacement(object.id);
-              }}
-            >
-              {placementName(object)}
-            </button>
-          ) : (
-            <span key={object.id} {...objectAttributes}>
-              {placementName(object)}
-            </span>
-          );
-        })}
-      </section>
     </>
   );
 }

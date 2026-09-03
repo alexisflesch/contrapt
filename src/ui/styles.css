@@ -161,6 +161,16 @@ h1 {
   padding: 14px 16px calc(16px + var(--drawer-peek-height) + env(safe-area-inset-bottom));
 }
 
+/*
+ * B1 (plan-remise-en-jeu.md § 4): when the current attempt has no inventory
+ * (level 1), the catalogue drawer is not rendered at all — so the bottom
+ * clearance normally reserved for its collapsed peek height would otherwise
+ * leave a dead gap under the board. Give that space back to the board.
+ */
+.workspace-no-drawer {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
 .workspace-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -386,7 +396,6 @@ h1 {
   color: var(--ink);
 }
 
-.scene-objects,
 .context-panel,
 .level-menu,
 .level-list,
@@ -402,11 +411,6 @@ h1 {
   background: var(--surface);
 }
 
-.scene-objects {
-  min-height: 44px;
-}
-
-.scene-object,
 .context-action {
   min-width: 44px;
   min-height: 44px;
@@ -417,10 +421,6 @@ h1 {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-}
-
-.scene-object[aria-pressed='true'] {
-  background: var(--surface-active);
 }
 
 .context-panel strong,
@@ -454,12 +454,14 @@ h1 {
   font-weight: 700;
 }
 
+/*
+ * B1 (plan-remise-en-jeu.md § 4): the victory banner used to be a
+ * `position: absolute` overlay pinned to the bottom of `.scene-frame`,
+ * covering part of the board (including, at some sizes, the ball and
+ * basket). It now renders in the normal document flow, after the board in
+ * the DOM, so it can never cover what the player just watched play out.
+ */
 .level-result {
-  position: absolute;
-  z-index: 35;
-  right: 16px;
-  bottom: calc(var(--drawer-peek-height) + 16px);
-  left: 16px;
   justify-content: center;
   box-shadow: 0 8px 22px rgb(61 52 48 / 18%);
 }

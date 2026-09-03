@@ -99,6 +99,28 @@ export function useBoardCamera(getScene: () => SceneRect): BoardCameraController
     };
   }, [fitCameraToCurrentScene]);
 
+  useEffect(() => {
+    // The canvas's own CSS size can change for reasons a `window` resize
+    // event never fires for: a flex sibling appearing or disappearing next
+    // to it (e.g. the B1 result banner, or a selection's context panel)
+    // reflows `.scene-frame` without the viewport itself changing size.
+    // Without this, the camera keeps the origin/zoom it fit for the
+    // *previous* canvas size, and objects render outside the new, smaller
+    // buffer — the board goes visibly blank instead of merely resizing.
+    // `ResizeObserver` is unavailable in the jsdom test environment, so this
+    // degrades to window-resize-only there (already covered above).
+    const canvas = boardCanvasRef.current;
+    if (canvas === null || typeof ResizeObserver !== 'function') return;
+
+    const observer = new ResizeObserver(() => {
+      fitCameraToCurrentScene();
+    });
+    observer.observe(canvas);
+    return () => {
+      observer.disconnect();
+    };
+  }, [fitCameraToCurrentScene]);
+
   return {
     camera,
     cameraRef,

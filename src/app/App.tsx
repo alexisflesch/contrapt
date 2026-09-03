@@ -1,8 +1,11 @@
 import { useState } from 'react';
 
 import { createConstructionAttempt } from '../application/construction/construction-attempt';
-import { createEditorSession } from '../application/editor-session/editor-session';
-import { embeddedLevels } from '../content/embedded-levels';
+import {
+  createEditorSession,
+  currentEditorAttempt,
+} from '../application/editor-session/editor-session';
+import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
 import { AppHeader } from '../ui/AppHeader';
 import { BoardView } from '../ui/BoardView';
 import { ContextPanel } from '../ui/ContextPanel';
@@ -27,7 +30,6 @@ export function App() {
     currentScene,
     undo,
     redo,
-    selectPlacement,
     executeCommand,
   } = useEditorSession();
   const boardCamera = useBoardCamera(currentScene);
@@ -49,6 +51,13 @@ export function App() {
   const [isLevelListOpen, setIsLevelListOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  // B1 (plan-remise-en-jeu.md § 4, `initial-progression.md` § Niveau 1):
+  // level 1 declares `inventory: []`, so the catalogue drawer must not
+  // appear at all — not collapsed, not empty — for it. Read from the
+  // current attempt rather than special-casing the level id, so this stays
+  // correct for any future level that also ships without an inventory.
+  const hasInventory = currentEditorAttempt(session).document.inventory.length > 0;
+
   const loadLevelOne = (): void => {
     const levelOne = embeddedLevels[0];
     if (levelOne === undefined) {
@@ -57,6 +66,19 @@ export function App() {
     }
     simulation.disposeSimulationSession();
     updateSession(createEditorSession('resolution', createConstructionAttempt(levelOne)));
+    pointers.clearPlacementTool();
+    pointers.clearPlacementPreview();
+    simulation.setHasWon(false);
+    setIsMenuOpen(false);
+    setIsLevelListOpen(false);
+    boardCamera.fitCameraToCurrentScene();
+  };
+
+  const loadWorkshop = (): void => {
+    simulation.disposeSimulationSession();
+    updateSession(
+      createEditorSession('creation', createConstructionAttempt(embeddedWorkshopDocument)),
+    );
     pointers.clearPlacementTool();
     pointers.clearPlacementPreview();
     simulation.setHasWon(false);
@@ -90,8 +112,12 @@ export function App() {
             setIsLevelListOpen(true);
           }}
           onLaunchLevelOne={loadLevelOne}
+          onOpenWorkshop={loadWorkshop}
         />
-        <section className="workspace" aria-label="Espace de construction">
+        <section
+          className={`workspace${hasInventory ? '' : ' workspace-no-drawer'}`}
+          aria-label="Espace de construction"
+        >
           {session.mode === 'resolution' && (
             <section className="level-objective" aria-label="Objectif du niveau">
               Faire entrer la balle dans le panier
@@ -122,7 +148,17 @@ export function App() {
             onZoomIn={boardCamera.zoomIn}
             onZoomOut={boardCamera.zoomOut}
             onFitToScene={boardCamera.fitCameraToCurrentScene}
-            onSelectPlacement={selectPlacement}
+          />
+          {/*
+            Non-modal and in normal document flow (plan-remise-en-jeu.md § 4,
+            B1): it renders after the board in the DOM instead of as an
+            absolutely-positioned overlay, so it never covers the scene the
+            player just watched play out.
+          */}
+          <LevelResult
+            isVisible={session.phase === 'result' && simulation.hasWon}
+            onReplay={loadLevelOne}
+            onReturnToLevels={returnToLevels}
           />
           <ContextPanel
             session={session}
@@ -130,28 +166,25 @@ export function App() {
             onExecuteCommand={executeCommand}
           />
         </section>
-        <LevelResult
-          isVisible={session.phase === 'result' && simulation.hasWon}
-          onReplay={loadLevelOne}
-          onReturnToLevels={returnToLevels}
-        />
-        <ObjectDrawer
-          session={session}
-          selectedObject={pointers.placementTool?.kind}
-          isDrawerOpen={isDrawerOpen}
-          isSideLayout={isSideLayout}
-          isPlacementActive={pointers.placementTool !== null}
-          onToggleDrawer={() => {
-            setIsDrawerOpen((current) => !current);
-          }}
-          onCloseDrawer={() => {
-            setIsDrawerOpen(false);
-          }}
-          onSelectKind={(kind) => {
-            pointers.activatePlacement(kind);
-            setIsDrawerOpen(false);
-          }}
-        />
+        {hasInventory && (
+          <ObjectDrawer
+            session={session}
+            selectedObject={pointers.placementTool?.kind}
+            isDrawerOpen={isDrawerOpen}
+            isSideLayout={isSideLayout}
+            isPlacementActive={pointers.placementTool !== null}
+            onToggleDrawer={() => {
+              setIsDrawerOpen((current) => !current);
+            }}
+            onCloseDrawer={() => {
+              setIsDrawerOpen(false);
+            }}
+            onSelectKind={(kind) => {
+              pointers.activatePlacement(kind);
+              setIsDrawerOpen(false);
+            }}
+          />
+        )}
       </main>
     </div>
   );

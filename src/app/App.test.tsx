@@ -61,30 +61,19 @@ const createAnimationFrameHarness = () => {
   };
 };
 
-const placeBeam = (): HTMLElement => {
-  fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-  fireEvent.click(screen.getByRole('button', { name: /Poutre/ }));
-
-  const board = screen.getByRole('region', { name: 'Plateau de jeu' });
-  firePointerEvent(board, 'pointerdown', {
-    pointerId: 1,
-    pointerType: 'touch',
-    clientX: 320,
-    clientY: 240,
-  });
-  firePointerEvent(board, 'pointerup', {
-    pointerId: 1,
-    pointerType: 'touch',
-    clientX: 320,
-    clientY: 240,
-  });
-
-  return board;
-};
-
 const openEmbeddedLevelOne = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
   fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
+};
+
+/**
+ * B1 (plan-remise-en-jeu.md § 4) moved the free-creation workshop off the
+ * home screen: it is reachable only through ☰ → « Atelier de construction ».
+ * Every test below that exercises editor/catalogue behaviour starts here.
+ */
+const openEmbeddedWorkshop = (): void => {
+  fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Atelier de construction' }));
 };
 
 const advanceSimulationToResult = (
@@ -138,17 +127,43 @@ describe('coque Contrapt!', () => {
     vi.unstubAllGlobals();
   });
 
-  it('présente le plateau et les quatre familles du catalogue', () => {
+  it('démarre en mode résolution sur le niveau 1, sans tiroir ni actions d’édition', () => {
+    // B1 (plan-remise-en-jeu.md § 4) : l'application n'ouvre plus l'atelier
+    // par défaut ; elle charge directement le niveau 1 embarqué en session
+    // de résolution. `initial-progression.md` § Niveau 1 : l'inventaire est
+    // vide, donc le tiroir catalogue n'apparaît pas du tout, et aucune
+    // action d'édition (Annuler/Rétablir, catalogue) n'est disponible.
     render(<App />);
 
     expect(screen.getByRole('heading', { name: 'Contrapt!' })).toBeVisible();
+    expect(screen.getByText('Niveau 1 · Laisser tomber')).toBeVisible();
+    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Objectif du niveau' })).toHaveTextContent(
+      'Faire entrer la balle dans le panier',
+    );
+
+    expect(screen.queryByRole('region', { name: 'Objets disponibles' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ouvrir le catalogue' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Annuler' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rétablir' })).not.toBeInTheDocument();
+
+    for (const actionName of ['Tester', 'Zoom arrière', 'Ajuster à la scène', 'Zoom avant']) {
+      expect(screen.getByRole('button', { name: actionName })).toBeVisible();
+    }
+  });
+
+  it('ouvre l’atelier depuis le menu et expose le plateau et les quatre familles du catalogue', () => {
+    // Réécrit depuis « présente le plateau et les quatre familles du
+    // catalogue » : ce test décrivait l'atelier comme écran d'accueil, un
+    // comportement que B1 supprime explicitement. L'atelier reste
+    // entièrement fonctionnel, mais désormais uniquement depuis ☰.
+    render(<App />);
+    openEmbeddedWorkshop();
+
     expect(screen.getByText('Éditeur de niveaux')).toBeVisible();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
-    expect(screen.queryByText('Préparez votre machine')).not.toBeInTheDocument();
-    expect(
-      screen.queryByText('Le plateau est prêt pour votre prochaine construction.'),
-    ).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
@@ -180,6 +195,7 @@ describe('coque Contrapt!', () => {
 
   it('affiche un aperçu de placement qui suit la souris puis le geste tactile', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Panier/ }));
@@ -230,6 +246,7 @@ describe('coque Contrapt!', () => {
 
   it('replie le catalogue sans superposer de texte dans la zone de construction', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Panier/ }));
@@ -247,6 +264,7 @@ describe('coque Contrapt!', () => {
 
   it('permet de replier puis de rouvrir le catalogue avec un contenu accessible', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     const openButton = screen.getByRole('button', { name: 'Ouvrir le catalogue' });
     expect(openButton).toHaveAttribute('aria-expanded', 'false');
@@ -277,6 +295,7 @@ describe('coque Contrapt!', () => {
 
   it('ferme le tiroir lorsqu’on touche le scrim', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: 'Fermer le catalogue' }));
@@ -290,6 +309,7 @@ describe('coque Contrapt!', () => {
 
   it('conserve la même géométrie de workspace pendant l’ouverture', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     const workspace = screen.getByRole('region', { name: 'Espace de construction' });
     const boundsBefore = workspace.getBoundingClientRect();
@@ -301,6 +321,7 @@ describe('coque Contrapt!', () => {
 
   it('laisse les actions essentielles visibles lorsque le tiroir est replié', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     expect(screen.getByRole('button', { name: 'Ouvrir le catalogue' })).toHaveAttribute(
       'aria-expanded',
@@ -322,6 +343,7 @@ describe('coque Contrapt!', () => {
 
   it('lance la simulation depuis l’atelier puis propose de revenir à l’édition', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     const testButton = screen.getByRole('button', { name: 'Tester' });
     expect(testButton).toBeEnabled();
@@ -453,6 +475,24 @@ describe('coque Contrapt!', () => {
     expect(within(result).getByRole('button', { name: 'Retour aux niveaux' })).toBeVisible();
   });
 
+  it('affiche le bandeau de victoire après le plateau dans le flux normal, jamais en overlay', () => {
+    // B1 (plan-remise-en-jeu.md § 4) : le bandeau de victoire recouvrait le
+    // bas du plateau (position absolue par-dessus le canvas), ce qui pouvait
+    // cacher la balle et le panier. Il s'affiche désormais après le plateau
+    // dans le DOM, dans le flux normal du document.
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames);
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
+
+    expect(board.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(styles).not.toMatch(/\.level-result\s*\{[^}]*position:\s*absolute/s);
+  });
+
   it('retourne à la liste depuis le résultat sans inventer de niveau suivant', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
@@ -499,8 +539,12 @@ describe('coque Contrapt!', () => {
     expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
   });
 
-  it('identifie explicitement le contexte de travail comme éditeur de niveaux', () => {
+  it('identifie l’atelier, une fois ouvert depuis le menu, comme éditeur de niveaux', () => {
+    // Réécrit depuis « identifie explicitement le contexte de travail comme
+    // éditeur de niveaux », qui vérifiait ces libellés dès le premier rendu :
+    // B1 fait démarrer l'application sur le niveau 1, pas sur l'atelier.
     render(<App />);
+    openEmbeddedWorkshop();
 
     expect(screen.getByText('Éditeur de niveaux')).toBeVisible();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
@@ -512,6 +556,7 @@ describe('coque Contrapt!', () => {
     vi.stubGlobal('innerHeight', 390);
 
     render(<App />);
+    openEmbeddedWorkshop();
 
     expect(screen.getByRole('region', { name: 'Objets disponibles' })).not.toHaveClass(
       'object-drawer-collapsed',
@@ -522,6 +567,7 @@ describe('coque Contrapt!', () => {
 
   it('active le parcours de placement par toucher d’une carte, séparément du plateau', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
@@ -539,6 +585,7 @@ describe('coque Contrapt!', () => {
 
   it('expose les états disponibles d’annuler et de rétablir après un placement', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
     const redoButton = screen.getByRole('button', { name: 'Rétablir' });
@@ -576,6 +623,7 @@ describe('coque Contrapt!', () => {
 
   it('suit le doigt pendant le placement sans créer d’historique avant le relâchement', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
@@ -621,6 +669,7 @@ describe('coque Contrapt!', () => {
     // construction » continue d'être couverte au niveau unitaire par
     // src/application/construction/construction-attempt.test.ts.
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
@@ -650,6 +699,7 @@ describe('coque Contrapt!', () => {
 
   it('ferme réellement le tiroir après activation tout en gardant le placement annulable', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
@@ -673,76 +723,9 @@ describe('coque Contrapt!', () => {
     });
   });
 
-  it('convertit le toucher depuis le rectangle du canvas et non celui du cadre à bordure de 2 px', () => {
-    // styles.css place le canvas en `inset: 0` à l'intérieur de `.scene-frame`,
-    // qui porte une bordure de 2 px : les deux rectangles sont donc décalés
-    // l'un par rapport à l'autre dans un vrai navigateur. jsdom ne fait
-    // aucune mise en page, donc ce décalage doit être simulé explicitement
-    // pour vérifier que la conversion part bien du canvas.
-    render(<App />);
-
-    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
-    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
-
-    vi.spyOn(board, 'getBoundingClientRect').mockReturnValue({
-      x: 0,
-      y: 0,
-      left: 0,
-      top: 0,
-      right: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS + 4,
-      bottom: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS + 4,
-      width: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS + 4,
-      height: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS + 4,
-      toJSON() {
-        return this;
-      },
-    });
-    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
-      x: 2,
-      y: 2,
-      left: 2,
-      top: 2,
-      right: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS + 2,
-      bottom: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS + 2,
-      width: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS,
-      height: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS,
-      toJSON() {
-        return this;
-      },
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
-
-    firePointerEvent(board, 'pointerdown', {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 702,
-      clientY: 382,
-    });
-    firePointerEvent(board, 'pointerup', {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 702,
-      clientY: 382,
-    });
-
-    const scene = screen.getByRole('region', { name: 'Objets de la scène' });
-    const placedBall = within(scene).getByRole('button', { name: 'Balle' });
-    const [placedX, placedY] = (placedBall.getAttribute('data-position') ?? '')
-      .split(',')
-      .map(Number);
-
-    // Attendu à partir du rectangle du CANVAS (left/top = 2) : si la
-    // conversion utilisait par erreur le rectangle du cadre (left/top = 0),
-    // le résultat serait décalé de 2 / 48 ≈ 0,0417 unité monde sur chaque
-    // axe — l'écart exact que ce test doit détecter.
-    expect(placedX).toBeCloseTo(14.25, 6);
-    expect(placedY).toBeCloseTo(7.729166666666667, 6);
-  });
-
   it('annule une prévisualisation sur pointercancel sans projection ni entrée d’historique', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
@@ -776,6 +759,7 @@ describe('coque Contrapt!', () => {
 
   it('annule le placement lorsqu’un second pointeur arrive sans créer de commande', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
@@ -807,6 +791,7 @@ describe('coque Contrapt!', () => {
 
   it('refuse des coordonnées absentes avant prévisualisation ou commit et conserve l’outil annulable', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
@@ -828,6 +813,7 @@ describe('coque Contrapt!', () => {
 
   it('refuse les coordonnées non finies avant prévisualisation ou commit', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
@@ -850,6 +836,7 @@ describe('coque Contrapt!', () => {
 
   it('réserve une cible tactile de 44 CSS px pour l’annulation du placement', () => {
     render(<App />);
+    openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
     fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
@@ -867,8 +854,10 @@ describe('coque Contrapt!', () => {
     // par les clics précédents. Ce test vérifie désormais que les boutons
     // changent réellement le zoom, que les bornes de l'ADR 0007 § Caméra
     // s'appliquent ([0,6×, 4×] le zoom ajusté), et que « Ajuster à la scène »
-    // recalcule bien un cadrage identique au cadrage initial.
+    // recalcule bien un cadrage identique au cadrage initial. Il s'exécute
+    // dans l'atelier (scène 16 × 9) : les valeurs attendues en dépendent.
     render(<App />);
+    openEmbeddedWorkshop();
 
     const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
       name: 'Rendu du plateau',
@@ -904,97 +893,66 @@ describe('coque Contrapt!', () => {
     expect(readZoom()).toBe(initialZoom);
   });
 
-  it('sélectionne une poutre hors canvas et regroupe son déplacement tactile en une commande', () => {
+  it('réajuste la caméra quand le canvas lui-même change de taille, pas seulement la fenêtre', () => {
+    // Bug trouvé pendant le passage manuel de B1 : mettre le bandeau de
+    // victoire dans le flux normal (plutôt qu'en overlay) réduit la hauteur
+    // de `.scene-frame` quand il apparaît, mais aucun `resize` de `window`
+    // ne se déclenche pour ce type de reflow — seul un sibling flex a
+    // changé. Sans un observateur sur le canvas lui-même, la caméra reste
+    // calée sur l'ancienne taille et les objets se dessinent hors du
+    // nouveau tampon : le plateau paraît vide. `use-board-camera.ts`
+    // observe désormais aussi le canvas.
+    interface FakeResizeObserverInstance {
+      readonly callback: ResizeObserverCallback;
+    }
+    const instances: FakeResizeObserverInstance[] = [];
+    class FakeResizeObserver {
+      readonly callback: ResizeObserverCallback;
+      constructor(callback: ResizeObserverCallback) {
+        this.callback = callback;
+        instances.push(this);
+      }
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+
     render(<App />);
-    placeBeam();
 
-    const scene = screen.getByRole('region', { name: 'Objets de la scène' });
-    const beam = within(scene).getByRole('button', { name: 'Poutre' });
-    const initialPosition = beam.getAttribute('data-position');
-    if (initialPosition === null) throw new Error('La poutre doit exposer sa position initiale.');
-
-    fireEvent.click(beam);
-    expect(beam).toHaveAttribute('aria-pressed', 'true');
-
-    const contextPanel = screen.getByRole('region', { name: 'Objet sélectionné : Poutre' });
-    const moveControl = within(contextPanel).getByRole('button', {
-      name: 'Déplacer la poutre',
+    const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
+      name: 'Rendu du plateau',
     });
+    const initialZoom = Number(canvas.getAttribute('data-camera-zoom'));
+    expect(instances.length).toBeGreaterThan(0);
 
-    firePointerEvent(moveControl, 'pointerdown', {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 320,
-      clientY: 240,
-    });
-    firePointerEvent(moveControl, 'pointermove', {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 360,
-      clientY: 260,
-    });
-    firePointerEvent(moveControl, 'pointermove', {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 420,
-      clientY: 300,
-    });
-    firePointerEvent(moveControl, 'pointerup', {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 420,
-      clientY: 300,
-    });
-
-    const movedPosition = beam.getAttribute('data-position');
-    if (movedPosition === null) throw new Error('La poutre doit exposer sa position déplacée.');
-    expect(movedPosition).not.toBe(initialPosition);
-
-    const undoButton = screen.getByRole('button', { name: 'Annuler' });
-    const redoButton = screen.getByRole('button', { name: 'Rétablir' });
-    fireEvent.click(undoButton);
-    expect(within(scene).getByRole('button', { name: 'Poutre' })).toHaveAttribute(
-      'data-position',
-      initialPosition,
+    // Simulate a much shorter canvas — the same reflow a flex sibling (the
+    // victory banner, a selection's context panel) can cause without ever
+    // firing a `window` resize event.
+    const shrunkCanvasRect: DOMRect = {
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS,
+      bottom: 150,
+      width: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS,
+      height: 150,
+      toJSON() {
+        return this;
+      },
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      shrunkCanvasRect,
     );
-    expect(redoButton).toBeEnabled();
 
-    fireEvent.click(redoButton);
-    expect(within(scene).getByRole('button', { name: 'Poutre' })).toHaveAttribute(
-      'data-position',
-      movedPosition,
-    );
-  });
-
-  it('fait pivoter puis supprime la poutre avec des contrôles accessibles et undo/redo', () => {
-    render(<App />);
-    placeBeam();
-
-    const scene = screen.getByRole('region', { name: 'Objets de la scène' });
-    const beam = within(scene).getByRole('button', { name: 'Poutre' });
-    fireEvent.click(beam);
-
-    const contextPanel = screen.getByRole('region', { name: 'Objet sélectionné : Poutre' });
-    const initialRotation = beam.getAttribute('data-rotation');
-    const rotateControl = within(contextPanel).getByRole('button', {
-      name: 'Tourner à droite',
+    act(() => {
+      for (const instance of instances) {
+        instance.callback([], instance as unknown as ResizeObserver);
+      }
     });
-    expect(styles).toMatch(/\.context-action\s*\{[^}]*min-width:\s*44px[^}]*min-height:\s*44px/s);
 
-    fireEvent.click(rotateControl);
-    expect(beam.getAttribute('data-rotation')).not.toBe(initialRotation);
-
-    fireEvent.click(within(contextPanel).getByRole('button', { name: 'Supprimer la poutre' }));
-    expect(within(scene).queryByRole('button', { name: 'Poutre' })).not.toBeInTheDocument();
-
-    const undoButton = screen.getByRole('button', { name: 'Annuler' });
-    const redoButton = screen.getByRole('button', { name: 'Rétablir' });
-    fireEvent.click(undoButton);
-    const restoredBeam = within(scene).getByRole('button', { name: 'Poutre' });
-    expect(restoredBeam).toHaveAttribute('data-rotation');
-    expect(restoredBeam.getAttribute('data-rotation')).not.toBe(initialRotation);
-
-    fireEvent.click(redoButton);
-    expect(within(scene).queryByRole('button', { name: 'Poutre' })).not.toBeInTheDocument();
+    const resizedZoom = Number(canvas.getAttribute('data-camera-zoom'));
+    expect(resizedZoom).not.toBe(initialZoom);
   });
 });

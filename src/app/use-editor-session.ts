@@ -10,11 +10,23 @@ import {
   undoEditorCommand,
   type EditorSession,
 } from '../application/editor-session/editor-session';
-import { embeddedWorkshopDocument } from '../content/embedded-levels';
+import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
 
-const initialSession = (): EditorSession =>
-  createEditorSession('creation', createConstructionAttempt(embeddedWorkshopDocument));
+/**
+ * B1 (plan-remise-en-jeu.md § 4): the app opens directly on level 1 in
+ * resolution mode, not the free-creation workshop. The workshop remains
+ * reachable from the ☰ menu (`App.tsx`'s `loadWorkshop`). The fallback to the
+ * workshop below only matters if `embeddedLevels` were ever empty, which
+ * `embedded-levels.ts` structurally never allows — `noUncheckedIndexedAccess`
+ * still requires handling it explicitly rather than asserting it away.
+ */
+const initialSession = (): EditorSession => {
+  const levelOne = embeddedLevels[0];
+  return levelOne === undefined
+    ? createEditorSession('creation', createConstructionAttempt(embeddedWorkshopDocument))
+    : createEditorSession('resolution', createConstructionAttempt(levelOne));
+};
 
 /** Translates an `EditorActionResult` rejection reason into user-facing feedback. */
 const refusalMessage = (reason: string): string =>

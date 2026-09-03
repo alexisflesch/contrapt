@@ -1,4 +1,7 @@
-import type { EditorSession } from '../application/editor-session/editor-session';
+import {
+  currentEditorAttempt,
+  type EditorSession,
+} from '../application/editor-session/editor-session';
 import type { ObjectKind } from '../app/object-catalog';
 
 interface SimulationControlsProps {
@@ -27,6 +30,12 @@ export function SimulationControls({
   onResume,
   onRestoreConstruction,
 }: SimulationControlsProps) {
+  // A session with no inventory (level 1: `initial-progression.md` § Niveau 1,
+  // "Aucune action d'édition") has nothing a command could ever undo or redo:
+  // hiding these buttons outright, rather than just disabling them, keeps the
+  // action bar limited to what B1 (plan-remise-en-jeu.md § 4) allows.
+  const hasInventory = currentEditorAttempt(session).document.inventory.length > 0;
+
   return (
     <div
       className="workspace-toolbar"
@@ -36,24 +45,28 @@ export function SimulationControls({
     >
       {session.phase === 'construction' && (
         <>
-          <button
-            className="toolbar-button"
-            type="button"
-            disabled={session.history.past.length === 0}
-            onClick={onUndo}
-          >
-            <span aria-hidden="true">↶</span>
-            Annuler
-          </button>
-          <button
-            className="toolbar-button"
-            type="button"
-            disabled={session.history.future.length === 0}
-            onClick={onRedo}
-          >
-            <span aria-hidden="true">↷</span>
-            Rétablir
-          </button>
+          {hasInventory && (
+            <>
+              <button
+                className="toolbar-button"
+                type="button"
+                disabled={session.history.past.length === 0}
+                onClick={onUndo}
+              >
+                <span aria-hidden="true">↶</span>
+                Annuler
+              </button>
+              <button
+                className="toolbar-button"
+                type="button"
+                disabled={session.history.future.length === 0}
+                onClick={onRedo}
+              >
+                <span aria-hidden="true">↷</span>
+                Rétablir
+              </button>
+            </>
+          )}
           {activePlacementKind !== null && (
             <div className="toolbar-status" aria-live="polite">
               Placement actif : {activePlacementKind}.
