@@ -16,25 +16,25 @@ de `.codex/skills/orchestrate/references/routing.md` (`luna`, `terra`, `sol`).
 
 Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarré.
 
-| Tâche                                 | État | Commit                |
-| ------------------------------------- | ---- | --------------------- |
-| A1 — ADR 0007                         | ✅   | `cdab65b`             |
-| A2 — `LevelDocument v2` et migration  | ✅   | `09bf926`             |
-| A3 — Caméra, panoramique, pincement   | ⏳   | amorce dans `09bf926` |
-| A4 — Colliders en repère y-bas        | ⬜   |                       |
-| A5 — Découper `App.tsx`               | ⬜   |                       |
-| B1 — Niveau 1 par défaut              | ⬜   |                       |
-| B2 — Bornes du monde et fin de partie | ⬜   |                       |
-| B3 — Géométrie du niveau 1            | ⬜   |                       |
-| C1 — Fantôme de placement             | ⬜   |                       |
-| C2 — Ombre portée                     | ⬜   |                       |
-| C3 — Manipulation sur le plateau      | ⬜   |                       |
-| D1 — Pipeline de sprites              | ⬜   |                       |
-| D2 — Régénérer les sprites            | ⬜   |                       |
-| D3 — Fond suivant la caméra           | ⬜   |                       |
-| D4 — Mise en page des trois formats   | ⬜   |                       |
-| E1 — Niveau 2                         | ⬜   |                       |
-| E2 — Niveaux 3 à 8                    | ⬜   |                       |
+| Tâche                                 | État | Commit                 |
+| ------------------------------------- | ---- | ---------------------- |
+| A1 — ADR 0007                         | ✅   | `cdab65b`              |
+| A2 — `LevelDocument v2` et migration  | ✅   | `09bf926`              |
+| A3 — Caméra, panoramique, pincement   | ✅   | `06b6f50`              |
+| A4 — Colliders en repère y-bas        | ⬜   |                        |
+| A5 — Découper `App.tsx`               | ⬜   |                        |
+| B1 — Niveau 1 par défaut              | ⬜   |                        |
+| B2 — Bornes du monde et fin de partie | ⬜   |                        |
+| B3 — Géométrie du niveau 1            | ⬜   |                        |
+| C1 — Fantôme de placement             | ⬜   |                        |
+| C2 — Ombre portée                     | ⬜   |                        |
+| C3 — Manipulation sur le plateau      | ⬜   |                        |
+| D1 — Pipeline de sprites              | ⬜   | assets bruts `c72c8cc` |
+| D2 — Régénérer les sprites            | ⬜   | assets bruts `c72c8cc` |
+| D3 — Fond suivant la caméra           | ⬜   |                        |
+| D4 — Mise en page des trois formats   | ⬜   |                        |
+| E1 — Niveau 2                         | ⬜   |                        |
+| E2 — Niveaux 3 à 8                    | ⬜   |                        |
 
 ### Écarts constatés depuis l'écriture du plan
 
@@ -343,7 +343,7 @@ et un test couvre chacune des deux versions.
 
 ### A3 — Une vraie caméra, et la mort du document en pixels
 
-État : ⏳ **En cours.** L'amorce est intégrée dans `09bf926` (atelier en unités monde, `fitCameraToScene` inline, cadrage câblé) ; le module pur, le panoramique et le pincement restent à faire.
+État : ✅ **Fait** — commit `06b6f50`.
 
 **Modèle : `terra` / effort `high`.**
 
@@ -701,7 +701,11 @@ deux fois, en n'utilisant que le plateau et le panneau contextuel.
 
 ### D1 — Pipeline de sprites
 
-État : ⬜ À faire.
+État : ⬜ À faire. Note : des PNG aux dimensions cibles existent déjà dans
+`public/assets/` (commit `c72c8cc`, produits hors de ce plan par un agent
+externe ayant lu l'ADR 0007) — fond transparent, dimensions correctes à l'œil,
+mais **non mesurés** par un script. Ne pas les régénérer sans avoir d'abord
+écrit `validate-sprites.ts` et vérifié ce qu'ils valent réellement.
 
 **Modèle : `terra` / effort `high`.**
 
@@ -724,7 +728,11 @@ avec D2.
 
 ### D2 — Régénérer les quatre familles
 
-État : ⬜ À faire.
+État : ⬜ À faire. Note : voir D1 — possiblement déjà couvert par `c72c8cc`,
+à confirmer une fois le script de D1 écrit plutôt qu'à l'œil. Les fichiers déjà
+présents ne sont pas encore câblés dans `sprite-loader.ts` ni
+`object-family-registry.ts` : `beam@2x.png` et `seesaw@2x.png` historiques
+restent ceux réellement utilisés par le renderer.
 
 **Modèle : `luna` / effort `xhigh`, capacité de génération d'image.**
 
