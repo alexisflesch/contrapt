@@ -1033,25 +1033,26 @@ describe('coque Contrapt!', () => {
     expect(resizedZoom).not.toBe(initialZoom);
   });
 
-  it('réserve en permanence l’espace du bandeau de résultat, dès le tout premier rendu, pour qu’aucune phase ne redimensionne le plateau', () => {
+  it('réserve en permanence un unique emplacement partagé pour le résultat, dès le tout premier rendu, pour qu’aucune phase ne redimensionne le plateau', () => {
     // B5 (plan-remise-en-jeu.md § 4 bis): the ResizeObserver B1 added (see
     // the test above) refits the camera on *any* CSS size change of the
     // canvas — including the reflow the victory/failure banner used to cause
     // by mounting as a brand new flex sibling under `.scene-frame` right when
     // the outcome became known.
     //
-    // A first version of this fix only reserved `.level-result-slot` outside
+    // A first version of this fix only reserved a slot outside
     // `'construction'` (i.e. from the moment "Tester" is pressed). Playing it
     // manually showed that this still moved the resize — just to an earlier
-    // moment, from "Tester" onward — rather than removing it: the player
-    // still watched the board shrink, just not exactly when the outcome
-    // appeared. `LevelResult` now renders `.level-result-slot`
-    // unconditionally, from the component's very first render (construction
-    // included), so the exact same DOM node exists for the whole lifetime of
-    // the app: construction → running → result → construction again. If
-    // this regresses to a phase-conditional mount, the DOM-identity checks
-    // below fail because a brand new node gets created at some transition
-    // instead of the existing one being reused.
+    // moment, from "Tester" onward — rather than removing it. A second
+    // version reserved unconditionally, but gave `ContextPanel` its *own*
+    // separate reservation alongside this one: since the two never have
+    // content at the same time (this one only in `'result'`, `ContextPanel`
+    // only in `'construction'`), that meant permanent, simultaneous, unfilled
+    // space for both — 392px measured on a wide viewport, of which 200px
+    // never fills at all on a level with nothing to select. `App.tsx` now
+    // mounts both inside one shared `.status-slot`, unconditionally, so the
+    // exact same DOM node exists for the whole lifetime of the app, and only
+    // one reservation exists, sized to the larger of the two contents.
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
 
@@ -1061,16 +1062,20 @@ describe('coque Contrapt!', () => {
     });
     const zoomAtMount = canvas.getAttribute('data-camera-zoom');
 
-    // Reserved from the very first render, before "Tester" is even pressed.
-    const slotAtMount = workspace.querySelector('.level-result-slot');
+    // Reserved from the very first render, before "Tester" is even pressed —
+    // and it is the *only* reserved slot: no leftover per-component wrapper.
+    const slotAtMount = workspace.querySelector('.status-slot');
     expect(slotAtMount).not.toBeNull();
+    expect(workspace.querySelectorAll('.status-slot')).toHaveLength(1);
+    expect(styles).not.toMatch(/\.level-result-slot\s*\{/);
+    expect(styles).not.toMatch(/\.context-panel-slot\s*\{/);
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
 
     // The moment a first, incomplete fix still got wrong: clicking "Tester"
     // must not touch the slot or the camera either.
-    expect(workspace.querySelector('.level-result-slot')).toBe(slotAtMount);
+    expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
     expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
 
     advanceSimulationToResult(animationFrames);
@@ -1078,7 +1083,7 @@ describe('coque Contrapt!', () => {
     // The banner appears — the reflow-sensitive moment the original bug
     // report described — but the reserved slot is still the very same DOM
     // node: no flex sibling was ever added or removed under `.scene-frame`.
-    expect(workspace.querySelector('.level-result-slot')).toBe(slotAtMount);
+    expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
     expect(within(result).getByText('Victoire')).toBeVisible();
     expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
@@ -1086,14 +1091,14 @@ describe('coque Contrapt!', () => {
     // The slot's CSS reserves height regardless of content — this is what
     // makes the DOM-identity guarantee above actually prevent a resize in a
     // real browser (verified manually; jsdom does no layout).
-    expect(styles).toMatch(/\.level-result-slot\s*\{[^}]*min-height:\s*\d/s);
+    expect(styles).toMatch(/\.status-slot\s*\{[^}]*min-height:\s*\d/s);
 
     // Disparition: replaying returns to construction. The slot stays
     // mounted (same node) with its content cleared, and the camera — fit to
     // the same scene and the same canvas size throughout — never changed.
     fireEvent.click(within(result).getByRole('button', { name: 'Rejouer le niveau' }));
 
-    expect(workspace.querySelector('.level-result-slot')).toBe(slotAtMount);
+    expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
     expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
   });
@@ -1205,15 +1210,17 @@ describe('coque Contrapt!', () => {
     expect(resizedZoom).toBeCloseTo(expectedZoom, 6);
   });
 
-  it('réserve en permanence l’espace du panneau contextuel, comme B5 l’a fait pour le résultat', () => {
+  it('affiche le panneau contextuel dans le même emplacement partagé que le résultat, sans en ajouter un second', () => {
     // Signalé par l'utilisateur en jouant, après B5 : le panneau contextuel
     // (« Objet sélectionné : … », affiché dès qu'un placement existe, car
     // c'est le seul objet qu'un placement peut sélectionner aujourd'hui — le
-    // clic de sélection sur le plateau est C3, pas encore livré) est un flex
-    // sibling monté/démonté sous `.scene-frame` exactement comme l'était
-    // `LevelResult` avant B5 : sa disparition/apparition redimensionne le
-    // plateau et redéclenche le `ResizeObserver`. Même défaut, même
-    // correctif : un wrapper toujours monté, jamais démonté.
+    // clic de sélection sur le plateau est C3, pas encore livré) avait reçu
+    // sa propre réservation indépendante de celle du résultat — donc deux
+    // blocs d'espace mort simultanés et permanents sous le plateau, alors
+    // qu'aucun niveau ne peut jamais afficher les deux à la fois. Il partage
+    // désormais `.status-slot` avec `LevelResult` (voir le test précédent) :
+    // ce test vérifie que la sélection apparaît bien dans cet unique
+    // emplacement partagé, sans en créer un second.
     render(<App />);
     openEmbeddedWorkshop();
 
@@ -1223,9 +1230,10 @@ describe('coque Contrapt!', () => {
     });
     const zoomAtMount = canvas.getAttribute('data-camera-zoom');
 
-    // Réservé dès le premier rendu, avant tout placement.
-    const slotAtMount = workspace.querySelector('.context-panel-slot');
+    // Réservé dès le premier rendu, avant tout placement — et c'est le seul.
+    const slotAtMount = workspace.querySelector('.status-slot');
     expect(slotAtMount).not.toBeNull();
+    expect(workspace.querySelectorAll('.status-slot')).toHaveLength(1);
     expect(screen.queryByText(/Objet sélectionné/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
@@ -1245,9 +1253,11 @@ describe('coque Contrapt!', () => {
       clientY: 225,
     });
 
-    // Le placement se sélectionne automatiquement : le panneau apparaît, mais
-    // dans le même nœud DOM réservé, sans jamais en créer un nouveau.
-    expect(workspace.querySelector('.context-panel-slot')).toBe(slotAtMount);
+    // Le placement se sélectionne automatiquement : le panneau apparaît dans
+    // le même nœud DOM réservé, toujours unique, sans jamais en créer un
+    // second à côté.
+    expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
+    expect(workspace.querySelectorAll('.status-slot')).toHaveLength(1);
     expect(screen.getByText('Objet sélectionné : Poutre')).toBeVisible();
     expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
 
@@ -1255,10 +1265,8 @@ describe('coque Contrapt!', () => {
 
     // Annuler retire le placement, donc sa sélection : le panneau disparaît,
     // le nœud réservé reste, le cadrage n'a pas bougé.
-    expect(workspace.querySelector('.context-panel-slot')).toBe(slotAtMount);
+    expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
     expect(screen.queryByText(/Objet sélectionné/)).not.toBeInTheDocument();
     expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
-
-    expect(styles).toMatch(/\.context-panel-slot\s*\{[^}]*min-height:\s*\d/s);
   });
 });

@@ -151,29 +151,42 @@ export function App() {
           />
           {/*
             Non-modal and in normal document flow (plan-remise-en-jeu.md § 4,
-            B1): it renders after the board in the DOM instead of as an
-            absolutely-positioned overlay, so it never covers the scene the
-            player just watched play out.
+            B1): whichever of the two below renders content appears after the
+            board in the DOM instead of as an absolutely-positioned overlay,
+            so it never covers the scene the player just watched play out.
 
-            B5 (plan-remise-en-jeu.md § 4 bis): `LevelResult` always renders
-            its `.level-result-slot` wrapper, in every phase — not only once
-            `outcome` exists. A first version of this fix reserved the slot
-            only outside `'construction'` (i.e. from the moment "Tester" is
-            pressed), which still resized `.scene-frame`, just earlier —
-            confirmed by playing it. Reserving unconditionally is what keeps
-            `.scene-frame`'s CSS box constant across the whole app lifetime.
+            B5 (plan-remise-en-jeu.md § 4 bis) reserved a fixed-height slot so
+            the result banner's appearance never resizes `.scene-frame` (a
+            first version only reserved it outside `'construction'`, which
+            still moved the resize, just earlier — confirmed by playing it).
+            The same fix was then applied to `ContextPanel` on its own
+            `.context-panel-slot` — which meant *two* always-mounted,
+            independently reserved blocks stacked under the board at once,
+            even though `LevelResult` only ever has content during `'result'`
+            and `ContextPanel` only during `'construction'`: never both at
+            the same time. On a level with nothing to select (level 1's empty
+            inventory), `ContextPanel`'s reservation was 100% permanent dead
+            space. Confirmed live on a 1920 × 869 viewport: the board was
+            170px tall with ~392px of empty reserved space beneath it.
+
+            Fixed by sharing one `.status-slot` between both: each component
+            renders its content or `null`, and this wrapper — never
+            conditionally rendered — is what actually reserves the height,
+            once, sized to the larger of the two, not their sum.
           */}
-          <LevelResult
-            outcome={simulation.attemptOutcome}
-            onReplay={loadLevelOne}
-            onReset={simulation.restoreConstruction}
-            onReturnToLevels={returnToLevels}
-          />
-          <ContextPanel
-            session={session}
-            moveHandlers={pointers.moveHandlers}
-            onExecuteCommand={executeCommand}
-          />
+          <div className="status-slot">
+            <LevelResult
+              outcome={simulation.attemptOutcome}
+              onReplay={loadLevelOne}
+              onReset={simulation.restoreConstruction}
+              onReturnToLevels={returnToLevels}
+            />
+            <ContextPanel
+              session={session}
+              moveHandlers={pointers.moveHandlers}
+              onExecuteCommand={executeCommand}
+            />
+          </div>
         </section>
         {hasInventory && (
           <ObjectDrawer
