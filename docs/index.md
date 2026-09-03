@@ -22,7 +22,7 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/backlog.md`                                 | 125     | découpage des tranches, dépendances, tranche courante                   |
 | `docs/cahier-des-charges.md`                      | 412     | vision produit, périmètre, hors-périmètre                               |
 | `docs/etat.md`                                    | 141     | ce qui est livré, les dettes, la dernière gate                          |
-| `docs/plan-remise-en-jeu.md`                      | 1046    | ordre d'exécution des tranches T3/T4b/T5, constaté par essai navigateur |
+| `docs/plan-remise-en-jeu.md`                      | 1064    | ordre d'exécution des tranches T3/T4b/T5, constaté par essai navigateur |
 | `docs/architecture.md`                            | 213     | couches, dépendances, états distincts, modèle d'objet                   |
 | `docs/qualite.md`                                 | 149     | stratégie de test, niveaux de test, gates                               |
 | `docs/catalogue-initial.md`                       | 173     | contrats des quatre familles d'objets                                   |

@@ -66,6 +66,15 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
   niveau passe sur deux lignes dans l'en-tête, et le plateau tombe légèrement
   sous le seuil de 55 % de hauteur que le plan D4 se fixe pour le portrait.
   Pas un échec net, mais à vérifier explicitement quand D4 sera pris.
+- **B2 (sortie de scène) reconfirmée en direct, pas seulement en test** :
+  balle fixe de l'atelier envoyée hors scène par une bascule → bandeau
+  « Hors de la scène » en 3,53 s réelles. Le mécanisme fonctionne. Ce qui a
+  pu donner l'impression contraire en jouant : dans l'atelier, **seule la
+  balle fixe d'origine (`goal-ball`) est suivie par l'objectif** ; une balle
+  supplémentaire posée depuis le tiroir peut sortir de l'écran sans que rien
+  ne se passe, ce qui est correct (elle n'est pas la cible) mais rien à
+  l'écran ne dit au joueur laquelle est suivie. Défaut de clarté réel, à
+  rattacher à une tranche d'interface plutôt qu'à B2.
 
 ---
 
@@ -876,6 +885,15 @@ poutre est en bois clair naturel — deux objets qui devraient se lire comme « 
 même planche » (catalogue initial, et la bascule est elle-même un tablier de
 bois) utilisent des palettes sans rapport. Repris explicitement dans la
 description de `seesaw*@2x.png` ci-dessous.
+
+**Panier en deux calques.** B4 corrige la balle invisible (ordre de dessin),
+mais avec un seul sprite de panier une balle posée dedans ne peut que flotter
+par-dessus, jamais paraître nichée à l'intérieur. Brief séparé, destiné à
+l'agent de génération d'assets, avec la convention de dimensions/ancrage exacte
+et ce que le câblage renderer devra faire ensuite :
+[`docs/assets/basket-two-layer-sprite.md`](assets/basket-two-layer-sprite.md).
+Non bloquant pour le reste de D2 — le panier à un seul calque reste utilisable
+en attendant.
 
 **Modèle : `luna` / effort `xhigh`, capacité de génération d'image.**
 
