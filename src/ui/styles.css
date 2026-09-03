@@ -466,6 +466,32 @@ h1 {
   box-shadow: 0 8px 22px rgb(61 52 48 / 18%);
 }
 
+/*
+ * B2 (plan-remise-en-jeu.md § 4): defeat must not read as victory with
+ * another colour. The two banners differ by their word, by an explanatory
+ * line only the failure carries, and by the action offered — « Rejouer le
+ * niveau » against « Réinitialiser ». The palette only reinforces that.
+ */
+.level-result-victory strong {
+  color: var(--leaf);
+}
+
+.level-result-failure {
+  border-color: var(--accent-strong);
+  background: var(--surface-active);
+}
+
+.level-result-failure strong {
+  color: var(--accent-strong);
+}
+
+.level-result-reason {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+
 .object-drawer {
   position: fixed;
   z-index: 30;

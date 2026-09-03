@@ -32,6 +32,12 @@ const SEESAW_BASE_HEIGHT = 0.7;
 const CONTACT_TOLERANCE = 0.02;
 /** Assez de pas pour qu'une chute d'environ trois unités se stabilise complètement. */
 const SETTLING_FIXED_STEPS = 300;
+/**
+ * B2 (plan-remise-en-jeu.md § 4) : budget par défaut d'une tentative, vingt
+ * secondes simulées. Recalculé ici depuis le pas fixe, comme la simulation
+ * doit le faire, plutôt que lu dans une constante de production.
+ */
+const DEFAULT_ATTEMPT_TIMEOUT_FIXED_STEPS = Math.round(20 / FIXED_STEP_SECONDS);
 
 const expectCloseTo = (actual: number, expected: number, tolerance = CONTACT_TOLERANCE): void => {
   expect(
@@ -378,6 +384,86 @@ const createBeamImpactLevelDocument = (beamX: number): LevelDocument =>
     buildZones: [{ min: { x: -12, y: -12 }, max: { x: 12, y: 12 } }],
     scene: { min: { x: -12, y: -12 }, max: { x: 12, y: 12 } },
   });
+
+/**
+ * B2 (plan-remise-en-jeu.md § 4) : la balle tombe à côté du panier, dans le
+ * vide. Aucun mur implicite ne la retient — un niveau qui veut un sol le pose
+ * avec une poutre statique — donc elle finit par franchir le rectangle de
+ * scène élargi.
+ */
+const createUnreachableBasketLevelDocument = (): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-unreachable-basket',
+    metadata: { title: 'Contrat de sortie de scène' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 2, y: 1 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 8, y: 5 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: 0, y: 0 }, max: { x: 10, y: 6 } },
+  });
+
+/**
+ * B2 : la balle se pose sur une poutre statique, à l'intérieur de la scène, et
+ * n'en bouge plus. Rien ne la fera jamais entrer dans le panier : seule la
+ * limite de temps peut clore la tentative.
+ */
+const createRestingBallLevelDocument = (): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-resting-ball',
+    metadata: { title: 'Contrat de temps écoulé' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 5, y: 1 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'beam-1',
+        type: 'beam',
+        transform: { position: { x: 5, y: 4 }, rotation: 0 },
+        props: { size: 'medium' },
+        permissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 9, y: 5 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: 0, y: 0 }, max: { x: 10, y: 6 } },
+  });
+
+/** Steps one at a time until the attempt fails, or gives up after `maxSteps`. */
+const advanceUntilFailure = (session: SimulationSession, maxSteps: number): void => {
+  for (let step = 0; step < maxSteps; step += 1) {
+    if (session.readFailureEvaluation().status === 'failed') return;
+    session.advanceFixedSteps(1);
+  }
+};
 
 const isEventType = (event: { readonly type: string }, type: string): boolean =>
   event.type === type;
@@ -951,6 +1037,92 @@ describe('port physique candidat-neutre', () => {
       expect(later.position).toEqual(settled.position);
       expect(later.rotation).toBe(settled.rotation);
     });
+  });
+
+  it('conclut à la sortie de scène pour une balle dont le panier est inatteignable', () => {
+    const level = createUnreachableBasketLevelDocument();
+    const levelBeforeSimulation = structuredClone(level);
+
+    withSession(level, (session) => {
+      expect(session.readFailureEvaluation()).toEqual({
+        status: 'pending',
+        reason: null,
+        failedAtFixedStep: null,
+      });
+
+      advanceUntilFailure(session, DEFAULT_ATTEMPT_TIMEOUT_FIXED_STEPS);
+
+      const failure = session.readFailureEvaluation();
+      expect(failure).toMatchObject({ status: 'failed', reason: 'out-of-scene' });
+      // Bien avant la limite de temps : la chute dure environ 1,2 s.
+      expect(failure.failedAtFixedStep).toBeLessThan(DEFAULT_ATTEMPT_TIMEOUT_FIXED_STEPS);
+      expect(session.readState().fixedStep).toBe(failure.failedAtFixedStep);
+      // Le centre de la balle a bien franchi la scène élargie de deux unités.
+      expect(body(session.readState(), 'ball-1', 'primary').position.y).toBeGreaterThan(8);
+      expect(session.readGoalEvaluation().status).toBe('pending');
+      expect(level).toEqual(levelBeforeSimulation);
+
+      session.reset();
+
+      expect(session.readFailureEvaluation()).toEqual({
+        status: 'pending',
+        reason: null,
+        failedAtFixedStep: null,
+      });
+      expect(level).toEqual(levelBeforeSimulation);
+    });
+  });
+
+  it('conclut au temps écoulé pour une balle immobile dans la scène', () => {
+    const level = createRestingBallLevelDocument();
+    const levelBeforeSimulation = structuredClone(level);
+
+    withSession(level, (session) => {
+      session.advanceFixedSteps(DEFAULT_ATTEMPT_TIMEOUT_FIXED_STEPS - 1);
+
+      const settled = body(session.readState(), 'ball-1', 'primary');
+      expect(settled.linearVelocity).toEqual({ x: 0, y: 0 });
+      expect(settled.position.y).toBeLessThan(6);
+      expect(session.readFailureEvaluation()).toEqual({
+        status: 'pending',
+        reason: null,
+        failedAtFixedStep: null,
+      });
+
+      session.advanceFixedSteps(1);
+
+      expect(session.readFailureEvaluation()).toEqual({
+        status: 'failed',
+        reason: 'timeout',
+        failedAtFixedStep: DEFAULT_ATTEMPT_TIMEOUT_FIXED_STEPS,
+      });
+      expect(session.readGoalEvaluation().status).toBe('pending');
+      expect(level).toEqual(levelBeforeSimulation);
+    });
+  });
+
+  it('compte la limite de temps en pas fixes issus de la durée injectée', () => {
+    const level = createRestingBallLevelDocument();
+    const session = createSimulationSession(level, {
+      fixedStepSeconds: FIXED_STEP_SECONDS,
+      attemptTimeoutSeconds: 1,
+    });
+
+    try {
+      session.advanceFixedSteps(59);
+
+      expect(session.readFailureEvaluation().status).toBe('pending');
+
+      session.advanceFixedSteps(1);
+
+      expect(session.readFailureEvaluation()).toEqual({
+        status: 'failed',
+        reason: 'timeout',
+        failedAtFixedStep: 60,
+      });
+    } finally {
+      session.destroy();
+    }
   });
 
   it('fait pivoter la planche après un impact puis revient à son angle initial', () => {

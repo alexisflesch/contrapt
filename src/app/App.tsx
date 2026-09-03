@@ -68,7 +68,7 @@ export function App() {
     updateSession(createEditorSession('resolution', createConstructionAttempt(levelOne)));
     pointers.clearPlacementTool();
     pointers.clearPlacementPreview();
-    simulation.setHasWon(false);
+    simulation.clearAttemptOutcome();
     setIsMenuOpen(false);
     setIsLevelListOpen(false);
     boardCamera.fitCameraToCurrentScene();
@@ -81,7 +81,7 @@ export function App() {
     );
     pointers.clearPlacementTool();
     pointers.clearPlacementPreview();
-    simulation.setHasWon(false);
+    simulation.clearAttemptOutcome();
     setIsMenuOpen(false);
     setIsLevelListOpen(false);
     boardCamera.fitCameraToCurrentScene();
@@ -89,7 +89,7 @@ export function App() {
 
   const returnToLevels = (): void => {
     simulation.disposeSimulationSession();
-    simulation.setHasWon(false);
+    simulation.clearAttemptOutcome();
     setIsMenuOpen(true);
     setIsLevelListOpen(true);
   };
@@ -156,8 +156,10 @@ export function App() {
             player just watched play out.
           */}
           <LevelResult
-            isVisible={session.phase === 'result' && simulation.hasWon}
+            isVisible={session.phase === 'result'}
+            outcome={simulation.attemptOutcome}
             onReplay={loadLevelOne}
+            onReset={simulation.restoreConstruction}
             onReturnToLevels={returnToLevels}
           />
           <ContextPanel

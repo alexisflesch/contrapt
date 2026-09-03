@@ -8,6 +8,7 @@ import {
   startSimulation,
   type EditorSession,
 } from '../application/editor-session/editor-session';
+import { resolveAttemptOutcome, type AttemptOutcome } from '../domain/attempt-failure-evaluator';
 import {
   createSimulationSession,
   type SimulationSession,
@@ -55,8 +56,15 @@ interface UseSimulationRunnerOptions {
 
 interface SimulationRunnerController {
   readonly simulationState: SimulationSnapshot | null;
-  readonly hasWon: boolean;
-  readonly setHasWon: (hasWon: boolean) => void;
+  /**
+   * How the last attempt ended, and why. B2 (plan-remise-en-jeu.md § 4)
+   * replaces the previous `hasWon` boolean: `completeSimulation` moves to
+   * `phase: 'result'` for any outcome on purpose, so remembering which one
+   * happened belongs to this hook.
+   */
+  readonly attemptOutcome: AttemptOutcome | null;
+  /** Forgets a finished attempt, when leaving the level it belonged to. */
+  readonly clearAttemptOutcome: () => void;
   readonly simulationStateRef: RefObject<SimulationSnapshot | null>;
   readonly launchSimulation: () => void;
   readonly restoreConstruction: () => void;
@@ -79,7 +87,7 @@ export function useSimulationRunner({
   pointers,
 }: UseSimulationRunnerOptions): SimulationRunnerController {
   const [simulationState, setSimulationState] = useState<SimulationSnapshot | null>(null);
-  const [hasWon, setHasWon] = useState(false);
+  const [attemptOutcome, setAttemptOutcome] = useState<AttemptOutcome | null>(null);
   const simulationStateRef = useRef<SimulationSnapshot | null>(null);
   const simulationSessionRef = useRef<SimulationSession | null>(null);
   const simulationAnimationFrameRef = useRef<number | null>(null);
@@ -133,11 +141,15 @@ export function useSimulationRunner({
       const nextState = physicalSession.readState();
       updateSimulationState(nextState);
 
-      if (physicalSession.readGoalEvaluation().status === 'succeeded') {
+      const outcome = resolveAttemptOutcome(
+        physicalSession.readGoalEvaluation(),
+        physicalSession.readFailureEvaluation(),
+      );
+      if (outcome !== null) {
         const completed = completeSimulation(sessionRef.current);
         if (completed.status === 'accepted') {
           updateSession(completed.session);
-          setHasWon(true);
+          setAttemptOutcome(outcome);
           simulationTimestampRef.current = null;
           return;
         }
@@ -178,7 +190,7 @@ export function useSimulationRunner({
     pointers.clearPlacementTool();
     pointers.resetGestureState();
     setFeedback(null);
-    setHasWon(false);
+    setAttemptOutcome(null);
     scheduleSimulationFrame();
   };
 
@@ -193,6 +205,7 @@ export function useSimulationRunner({
     updateSession(result.session);
     pointers.resetGestureState();
     setFeedback(null);
+    setAttemptOutcome(null);
   };
 
   const pauseCurrentSimulation = (): void => {
@@ -239,8 +252,10 @@ export function useSimulationRunner({
 
   return {
     simulationState,
-    hasWon,
-    setHasWon,
+    attemptOutcome,
+    clearAttemptOutcome: () => {
+      setAttemptOutcome(null);
+    },
     simulationStateRef,
     launchSimulation,
     restoreConstruction,

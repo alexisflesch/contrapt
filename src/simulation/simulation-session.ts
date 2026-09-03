@@ -13,6 +13,15 @@ import {
 
 import type { LevelDocument } from '../domain/level-document';
 import {
+  advanceAttemptFailureEvaluation,
+  applyAttemptFailureFacts,
+  createAttemptFailureEvaluation,
+  resetAttemptFailureEvaluation,
+  type AttemptFailureEvaluation,
+  type AttemptFailureRule,
+  type BallPositionFact,
+} from '../domain/attempt-failure-evaluator';
+import {
   advanceBasketGoalEvaluation,
   applyBasketGoalFacts,
   createBasketGoalEvaluation,
@@ -81,12 +90,15 @@ interface SimulationResources {
 
 interface SimulationSessionOptions {
   readonly fixedStepSeconds: number;
+  /** Budget of one attempt, in simulated seconds. Defaults to `DEFAULT_ATTEMPT_TIMEOUT_SECONDS`. */
+  readonly attemptTimeoutSeconds?: number;
 }
 
 export interface SimulationSession {
   readState(): SimulationSnapshot;
   readResources(): SimulationResources;
   readGoalEvaluation(): BasketGoalEvaluation;
+  readFailureEvaluation(): AttemptFailureEvaluation;
   advanceFixedSteps(count: number): void;
   advanceElapsedSeconds(elapsedSeconds: number): number;
   reset(): void;
@@ -147,6 +159,19 @@ const SEESAW_ANGLE_LIMIT = Math.PI / 6;
  * sensor must not win.
  */
 const BASKET_GOAL_HOLD_DURATION_IN_FIXED_STEPS = 30;
+/**
+ * Global game rule (B2, plan-remise-en-jeu.md § 4): the attempt is lost as
+ * soon as the target ball's centre leaves the level's scene rectangle widened
+ * by this margin on every side. The world has no implicit walls — a level that
+ * wants a floor lays a static beam — so this is what ends a fall into nothing.
+ */
+const OUT_OF_SCENE_MARGIN_IN_WORLD_UNITS = 2;
+/**
+ * Global game rule (B2): an attempt that neither wins nor leaves the scene is
+ * given twenty simulated seconds. Converted to fixed steps below, because the
+ * domain evaluator counts steps and never seconds.
+ */
+const DEFAULT_ATTEMPT_TIMEOUT_SECONDS = 20;
 
 const createPhysicsWorld = () =>
   // Sleeping is what stops a settled ball from vibrating forever.
@@ -170,6 +195,12 @@ const assertNonNegativeSafeInteger = (value: number, label: string): void => {
   }
 };
 
+const assertPositiveSafeInteger = (value: number, label: string): void => {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new RangeError(`${label} doit être un entier sûr strictement positif.`);
+  }
+};
+
 const bodyType = (body: Body): SimulationBodyType => {
   const type = body.getType();
   if (type === 'static') return 'static';
@@ -181,6 +212,7 @@ class PlanckSimulationSession implements SimulationSession {
   readonly #level: LevelDocument;
   readonly #fixedStepSeconds: number;
   readonly #goalRule: BasketGoalRule;
+  readonly #failureRule: AttemptFailureRule;
 
   #world: ReturnType<typeof createPhysicsWorld> | null = null;
   #bodies: BodyRecord[] = [];
@@ -190,6 +222,7 @@ class PlanckSimulationSession implements SimulationSession {
   #activeSensorContacts = new Map<string, number>();
   #events: SimulationSensorEvent[] = [];
   #goalEvaluation = createBasketGoalEvaluation();
+  #failureEvaluation = createAttemptFailureEvaluation();
   #fixedStep = 0;
   #accumulatedSeconds = 0;
   #destroyed = false;
@@ -202,13 +235,22 @@ class PlanckSimulationSession implements SimulationSession {
     this.#updateSensorContact(contact, -1);
   };
 
-  constructor(level: LevelDocument, fixedStepSeconds: number) {
+  constructor(level: LevelDocument, fixedStepSeconds: number, attemptTimeoutSeconds: number) {
     this.#level = structuredClone(level);
     this.#fixedStepSeconds = fixedStepSeconds;
     this.#goalRule = {
       ballId: this.#level.goal.ballId,
       basketId: this.#level.goal.basketId,
       holdDurationInFixedSteps: BASKET_GOAL_HOLD_DURATION_IN_FIXED_STEPS,
+    };
+    // The budget crosses into the domain as a step count: seconds stop here.
+    const timeoutInFixedSteps = Math.round(attemptTimeoutSeconds / fixedStepSeconds);
+    assertPositiveSafeInteger(timeoutInFixedSteps, 'La limite de temps en pas fixes');
+    this.#failureRule = {
+      ballId: this.#level.goal.ballId,
+      scene: this.#level.scene,
+      outOfSceneMarginInWorldUnits: OUT_OF_SCENE_MARGIN_IN_WORLD_UNITS,
+      timeoutInFixedSteps,
     };
     this.#buildWorld();
   }
@@ -271,6 +313,10 @@ class PlanckSimulationSession implements SimulationSession {
     return { ...this.#goalEvaluation };
   }
 
+  readFailureEvaluation(): AttemptFailureEvaluation {
+    return { ...this.#failureEvaluation };
+  }
+
   advanceFixedSteps(count: number): void {
     assertNonNegativeSafeInteger(count, 'Le nombre de pas fixes');
     if (this.#destroyed || count === 0) return;
@@ -309,6 +355,7 @@ class PlanckSimulationSession implements SimulationSession {
     this.#accumulatedSeconds = 0;
     this.#events = [];
     this.#goalEvaluation = resetBasketGoalEvaluation();
+    this.#failureEvaluation = resetAttemptFailureEvaluation();
     this.#buildWorld();
   }
 
@@ -510,6 +557,38 @@ class PlanckSimulationSession implements SimulationSession {
       this.#goalRule,
       this.#fixedStep,
     );
+    this.#failureEvaluation = applyAttemptFailureFacts(
+      this.#failureEvaluation,
+      this.#failureRule,
+      this.#readTargetBallPositionFacts(),
+    );
+    this.#failureEvaluation = advanceAttemptFailureEvaluation(
+      this.#failureEvaluation,
+      this.#failureRule,
+      this.#fixedStep,
+    );
+  }
+
+  /**
+   * The target ball's position after the step, turned into the ordered fact
+   * the domain evaluator consumes. A step produces at most one such fact, so
+   * its order is always zero.
+   */
+  #readTargetBallPositionFacts(): readonly BallPositionFact[] {
+    const ball = this.#bodies.find(
+      (record) => record.placementId === this.#failureRule.ballId && record.role === 'primary',
+    );
+    if (ball === undefined) return [];
+
+    const position = ball.handle.getPosition();
+    return [
+      {
+        placementId: ball.placementId,
+        position: { x: position.x, y: position.y },
+        fixedStep: this.#fixedStep,
+        order: 0,
+      },
+    ];
   }
 
   #updateSensorContact(contact: Contact, delta: 1 | -1): void {
@@ -593,5 +672,7 @@ export const createSimulationSession = (
   options: SimulationSessionOptions,
 ): SimulationSession => {
   assertPositiveFinite(options.fixedStepSeconds, 'Le pas fixe');
-  return new PlanckSimulationSession(level, options.fixedStepSeconds);
+  const attemptTimeoutSeconds = options.attemptTimeoutSeconds ?? DEFAULT_ATTEMPT_TIMEOUT_SECONDS;
+  assertPositiveFinite(attemptTimeoutSeconds, 'La durée maximale d’une tentative');
+  return new PlanckSimulationSession(level, options.fixedStepSeconds, attemptTimeoutSeconds);
 };

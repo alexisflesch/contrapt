@@ -90,6 +90,24 @@ const advanceSimulationToResult = (
 };
 
 /**
+ * B2 (plan-remise-en-jeu.md § 4) : le budget d'une tentative vaut vingt
+ * secondes simulées, soit 1200 pas fixes à 60 Hz, et le plafond de rattrapage
+ * n'accorde que cinq pas par frame. Il faut donc 240 frames suffisamment
+ * espacées pour atteindre le temps écoulé. Les frames suivantes sont sans
+ * effet : la boucle cesse de se replanifier dès l'issue connue.
+ */
+const advanceSimulationToTimeout = (
+  animationFrames: ReturnType<typeof createAnimationFrameHarness>,
+): void => {
+  act(() => {
+    animationFrames.flush(0);
+    for (let frame = 1; frame <= 240; frame += 1) {
+      animationFrames.flush(frame * 1000);
+    }
+  });
+};
+
+/**
  * jsdom does no layout, so every element's `getBoundingClientRect()` is a
  * zero rect by default. That degenerate size is a real edge case the pure
  * camera module handles safely (ADR 0007's absolute zoom floor), but it does
@@ -491,6 +509,55 @@ describe('coque Contrapt!', () => {
 
     expect(board.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(styles).not.toMatch(/\.level-result\s*\{[^}]*position:\s*absolute/s);
+  });
+
+  it('annonce l’échec sans recouvrir le plateau quand le temps de la tentative est écoulé', () => {
+    // B2 (plan-remise-en-jeu.md § 4) : la balle de l'atelier se pose sur la
+    // poutre du sol et n'atteindra jamais le panier. Sans issue d'échec, la
+    // tentative ne se terminait pas.
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+
+    openEmbeddedWorkshop();
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToTimeout(animationFrames);
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
+
+    expect(within(result).getByText('Échec')).toBeVisible();
+    expect(within(result).queryByText('Victoire')).not.toBeInTheDocument();
+    expect(within(result).getByText(/temps écoulé/i)).toBeVisible();
+    expect(within(result).getByRole('button', { name: 'Réinitialiser' })).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(board.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('réinitialise depuis le bandeau d’échec et restitue le document d’avant lancement', () => {
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+
+    openEmbeddedWorkshop();
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    const ballPositionAtLaunch = canvas.getAttribute('data-simulation-ball-position');
+    expect(ballPositionAtLaunch).not.toBeNull();
+
+    advanceSimulationToTimeout(animationFrames);
+    expect(canvas.getAttribute('data-simulation-ball-position')).not.toBe(ballPositionAtLaunch);
+
+    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
+    fireEvent.click(within(result).getByRole('button', { name: 'Réinitialiser' }));
+
+    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
+    expect(canvas).not.toHaveAttribute('data-simulation-step');
+    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+
+    // Relancer depuis le document restitué repart exactement du même état.
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    expect(canvas.getAttribute('data-simulation-ball-position')).toBe(ballPositionAtLaunch);
   });
 
   it('retourne à la liste depuis le résultat sans inventer de niveau suivant', () => {
