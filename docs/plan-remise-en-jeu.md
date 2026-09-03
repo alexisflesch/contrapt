@@ -23,7 +23,7 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
 | A3 — Caméra, panoramique, pincement   | ✅   | `06b6f50`              |
 | A4 — Colliders en repère y-bas        | ✅   | `e19bf88`              |
 | A5 — Découper `App.tsx`               | ✅   | `2d446db`              |
-| B1 — Niveau 1 par défaut              | ⬜   |                        |
+| B1 — Niveau 1 par défaut              | ✅   | `c486059`              |
 | B2 — Bornes du monde et fin de partie | ⬜   |                        |
 | B3 — Géométrie du niveau 1            | ⬜   |                        |
 | C1 — Fantôme de placement             | ⬜   |                        |
@@ -480,7 +480,11 @@ signe que le refactoring a changé le comportement : il faut revenir en arrière
 
 ### B1 — Le niveau 1 est le parcours par défaut
 
-État : ⬜ À faire.
+État : ✅ **Fait** — commit `c486059`. A aussi corrigé un bug trouvé pendant
+l'essai manuel : le bandeau de victoire non-absolu faisait varier la taille
+CSS du canvas sans `resize` de fenêtre, la caméra restait calée sur l'ancien
+cadrage et la scène disparaissait après la victoire — corrigé par un
+`ResizeObserver` sur le canvas dans `use-board-camera.ts`.
 
 **Modèle : `terra` / effort `medium`.** (« Composant React, câblage d'UI,
 style ».)
