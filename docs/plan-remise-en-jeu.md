@@ -22,7 +22,7 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
 | A2 — `LevelDocument v2` et migration  | ✅   | `09bf926`              |
 | A3 — Caméra, panoramique, pincement   | ✅   | `06b6f50`              |
 | A4 — Colliders en repère y-bas        | ✅   | `e19bf88`              |
-| A5 — Découper `App.tsx`               | ⬜   |                        |
+| A5 — Découper `App.tsx`               | ✅   | `2d446db`              |
 | B1 — Niveau 1 par défaut              | ⬜   |                        |
 | B2 — Bornes du monde et fin de partie | ⬜   |                        |
 | B3 — Géométrie du niveau 1            | ⬜   |                        |
@@ -441,7 +441,8 @@ passent, et le JSON du niveau 1 n'a plus de rotation de compensation.
 
 ### A5 — Découper `App.tsx`
 
-État : ⬜ À faire.
+État : ✅ **Fait** — commit `2d446db`. `App.tsx` : 158 lignes. Phase A
+terminée.
 
 **Modèle : `terra` / effort `high`.**
 
