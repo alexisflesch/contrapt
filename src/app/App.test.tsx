@@ -395,6 +395,31 @@ describe('coque Contrapt!', () => {
     expect(canvas.getAttribute('data-simulation-ball-position')).not.toBe(pausedBallPosition);
   });
 
+  it('plafonne le rattrapage RAF à 5 pas fixes après un long écart entre deux frames', () => {
+    // Un retour d'onglet suspend requestAnimationFrame ; l'écart entre deux
+    // frames peut alors valoir plusieurs secondes. Sans plafond, la boucle
+    // tenterait des centaines de pas fixes d'un coup (5000 ms / (1000/60 ms)
+    // = 300 pas) et gèlerait la page. Le plafond limite le rattrapage à 5 pas
+    // fixes par frame ; le reste de la durée accumulée est abandonné.
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+    expect(canvas).toHaveAttribute('data-simulation-step', '0');
+
+    act(() => {
+      animationFrames.flush(0);
+    });
+    act(() => {
+      animationFrames.flush(5000);
+    });
+
+    expect(canvas).toHaveAttribute('data-simulation-step', '5');
+  });
+
   it('ouvre depuis le menu la liste contenant le seul niveau embarqué et son lancement', () => {
     render(<App />);
 
