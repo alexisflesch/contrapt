@@ -455,6 +455,38 @@ h1 {
 }
 
 /*
+ * B5 (plan-remise-en-jeu.md § 4 bis): fixed height, unconditionally mounted
+ * by `LevelResult.tsx` in *every* phase, including `'construction'` — before
+ * "Tester" is even pressed. Without this, `.scene-frame`'s flex-computed CSS
+ * height changes whenever this sibling appears or disappears, which fires
+ * the `ResizeObserver` in `use-board-camera.ts` and visibly re-fits the
+ * camera.
+ *
+ * An earlier version of this fix reserved the slot only outside
+ * `'construction'` (from the moment "Tester" is pressed), reasoning that the
+ * resize would then happen early instead of at the reveal. Playing it showed
+ * that reasoning was wrong from the player's point of view: the board still
+ * visibly resized, just at "Tester" instead of at the outcome. Reserving
+ * unconditionally is what actually gets to zero resizes.
+ *
+ * The height is sized for the tallest real banner measured in Chromium
+ * across the app's supported width range (320–1440px): the failure banner
+ * (extra explanatory line) wraps its two buttons onto their own row below
+ * 360px, reaching 183px at the 320px floor (`html`/`body` `min-width`); the
+ * victory banner peaks at 145px in that same narrow range. Both settle at
+ * 116px / 93px from 375px up. 192px covers the 320px worst case with a
+ * margin; revisit if a banner's copy grows or the narrow-width layout
+ * changes.
+ */
+.level-result-slot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 192px;
+}
+
+/*
  * B1 (plan-remise-en-jeu.md § 4): the victory banner used to be a
  * `position: absolute` overlay pinned to the bottom of `.scene-frame`,
  * covering part of the board (including, at some sizes, the ball and

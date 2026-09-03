@@ -154,9 +154,16 @@ export function App() {
             B1): it renders after the board in the DOM instead of as an
             absolutely-positioned overlay, so it never covers the scene the
             player just watched play out.
+
+            B5 (plan-remise-en-jeu.md § 4 bis): `LevelResult` always renders
+            its `.level-result-slot` wrapper, in every phase — not only once
+            `outcome` exists. A first version of this fix reserved the slot
+            only outside `'construction'` (i.e. from the moment "Tester" is
+            pressed), which still resized `.scene-frame`, just earlier —
+            confirmed by playing it. Reserving unconditionally is what keeps
+            `.scene-frame`'s CSS box constant across the whole app lifetime.
           */}
           <LevelResult
-            isVisible={session.phase === 'result'}
             outcome={simulation.attemptOutcome}
             onReplay={loadLevelOne}
             onReset={simulation.restoreConstruction}

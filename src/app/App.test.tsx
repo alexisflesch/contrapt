@@ -4,6 +4,8 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { embeddedLevels } from '../content/embedded-levels';
+import { fitCameraToScene } from '../presentation/board-camera';
 import styles from '../ui/styles.css?raw';
 
 import { App } from './App';
@@ -65,6 +67,14 @@ const openEmbeddedLevelOne = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
   fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
 };
+
+/** B5: the declared scene of the level the app boots into, for cross-checking `fitCameraToScene`. */
+const levelOneScene = (() => {
+  const levelOne = embeddedLevels[0];
+  if (levelOne === undefined)
+    throw new Error('Le niveau 1 embarqué est indisponible dans les tests.');
+  return levelOne.scene;
+})();
 
 /**
  * B1 (plan-remise-en-jeu.md § 4) moved the free-creation workshop off the
@@ -1021,5 +1031,177 @@ describe('coque Contrapt!', () => {
 
     const resizedZoom = Number(canvas.getAttribute('data-camera-zoom'));
     expect(resizedZoom).not.toBe(initialZoom);
+  });
+
+  it('réserve en permanence l’espace du bandeau de résultat, dès le tout premier rendu, pour qu’aucune phase ne redimensionne le plateau', () => {
+    // B5 (plan-remise-en-jeu.md § 4 bis): the ResizeObserver B1 added (see
+    // the test above) refits the camera on *any* CSS size change of the
+    // canvas — including the reflow the victory/failure banner used to cause
+    // by mounting as a brand new flex sibling under `.scene-frame` right when
+    // the outcome became known.
+    //
+    // A first version of this fix only reserved `.level-result-slot` outside
+    // `'construction'` (i.e. from the moment "Tester" is pressed). Playing it
+    // manually showed that this still moved the resize — just to an earlier
+    // moment, from "Tester" onward — rather than removing it: the player
+    // still watched the board shrink, just not exactly when the outcome
+    // appeared. `LevelResult` now renders `.level-result-slot`
+    // unconditionally, from the component's very first render (construction
+    // included), so the exact same DOM node exists for the whole lifetime of
+    // the app: construction → running → result → construction again. If
+    // this regresses to a phase-conditional mount, the DOM-identity checks
+    // below fail because a brand new node gets created at some transition
+    // instead of the existing one being reused.
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+
+    const workspace = screen.getByRole('region', { name: 'Espace de construction' });
+    const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
+      name: 'Rendu du plateau',
+    });
+    const zoomAtMount = canvas.getAttribute('data-camera-zoom');
+
+    // Reserved from the very first render, before "Tester" is even pressed.
+    const slotAtMount = workspace.querySelector('.level-result-slot');
+    expect(slotAtMount).not.toBeNull();
+    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+
+    // The moment a first, incomplete fix still got wrong: clicking "Tester"
+    // must not touch the slot or the camera either.
+    expect(workspace.querySelector('.level-result-slot')).toBe(slotAtMount);
+    expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
+
+    advanceSimulationToResult(animationFrames);
+
+    // The banner appears — the reflow-sensitive moment the original bug
+    // report described — but the reserved slot is still the very same DOM
+    // node: no flex sibling was ever added or removed under `.scene-frame`.
+    expect(workspace.querySelector('.level-result-slot')).toBe(slotAtMount);
+    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
+    expect(within(result).getByText('Victoire')).toBeVisible();
+    expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
+
+    // The slot's CSS reserves height regardless of content — this is what
+    // makes the DOM-identity guarantee above actually prevent a resize in a
+    // real browser (verified manually; jsdom does no layout).
+    expect(styles).toMatch(/\.level-result-slot\s*\{[^}]*min-height:\s*\d/s);
+
+    // Disparition: replaying returns to construction. The slot stays
+    // mounted (same node) with its content cleared, and the camera — fit to
+    // the same scene and the same canvas size throughout — never changed.
+    fireEvent.click(within(result).getByRole('button', { name: 'Rejouer le niveau' }));
+
+    expect(workspace.querySelector('.level-result-slot')).toBe(slotAtMount);
+    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
+    expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
+  });
+
+  it('après un vrai redimensionnement du canvas signalé par le ResizeObserver, la caméra garde toute la scène visible (non-régression B1)', () => {
+    // B5 must not weaken what B1 fixed: a genuine size change of the canvas
+    // (the ResizeObserver's actual purpose) still has to produce a complete
+    // `fitCameraToScene`, which is what guarantees the whole scene rectangle
+    // stays contained in the canvas (tested on its own in
+    // `board-camera.test.ts`). Cross-checking the DOM-observed zoom against a
+    // direct call to that same pure function is a stronger assertion than
+    // "the zoom changed": it pins down *which* framing was produced, not just
+    // that some recomputation happened.
+    interface FakeResizeObserverInstance {
+      readonly callback: ResizeObserverCallback;
+    }
+    const instances: FakeResizeObserverInstance[] = [];
+    class FakeResizeObserver {
+      readonly callback: ResizeObserverCallback;
+      constructor(callback: ResizeObserverCallback) {
+        this.callback = callback;
+        instances.push(this);
+      }
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+
+    render(<App />);
+
+    const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
+      name: 'Rendu du plateau',
+    });
+    const initialZoom = Number(canvas.getAttribute('data-camera-zoom'));
+    expect(instances.length).toBeGreaterThan(0);
+
+    const shrunkCanvasSize = { width: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS, height: 150 };
+    const shrunkCanvasRect: DOMRect = {
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: shrunkCanvasSize.width,
+      bottom: shrunkCanvasSize.height,
+      width: shrunkCanvasSize.width,
+      height: shrunkCanvasSize.height,
+      toJSON() {
+        return this;
+      },
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      shrunkCanvasRect,
+    );
+
+    act(() => {
+      for (const instance of instances) {
+        instance.callback([], instance as unknown as ResizeObserver);
+      }
+    });
+
+    const resizedZoom = Number(canvas.getAttribute('data-camera-zoom'));
+    // The app starts on the embedded level 1 (B1); its declared scene is the
+    // ground truth for what "fully visible" means.
+    const expectedZoom = fitCameraToScene(levelOneScene, shrunkCanvasSize).pixelsPerWorldUnit;
+
+    expect(resizedZoom).not.toBe(initialZoom);
+    expect(resizedZoom).toBeCloseTo(expectedZoom, 6);
+  });
+
+  it('après un vrai redimensionnement de la fenêtre (rotation d’écran), la caméra garde toute la scène visible (non-régression B1)', () => {
+    // Same guarantee as above, through the other trigger use-board-camera.ts
+    // listens to: `window`'s own `resize` event (e.g. an orientation change),
+    // which predates B1 and must keep working exactly as it did.
+    render(<App />);
+
+    const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
+      name: 'Rendu du plateau',
+    });
+    const initialZoom = Number(canvas.getAttribute('data-camera-zoom'));
+
+    // A portrait/landscape flip of the stubbed 800 × 450 canvas.
+    const rotatedCanvasSize = { width: 450, height: 800 };
+    const rotatedCanvasRect: DOMRect = {
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: rotatedCanvasSize.width,
+      bottom: rotatedCanvasSize.height,
+      width: rotatedCanvasSize.width,
+      height: rotatedCanvasSize.height,
+      toJSON() {
+        return this;
+      },
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      rotatedCanvasRect,
+    );
+
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    const resizedZoom = Number(canvas.getAttribute('data-camera-zoom'));
+    const expectedZoom = fitCameraToScene(levelOneScene, rotatedCanvasSize).pixelsPerWorldUnit;
+
+    expect(resizedZoom).not.toBe(initialZoom);
+    expect(resizedZoom).toBeCloseTo(expectedZoom, 6);
   });
 });
