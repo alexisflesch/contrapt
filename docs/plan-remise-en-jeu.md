@@ -24,7 +24,7 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
 | A4 — Colliders en repère y-bas        | ✅   | `e19bf88`              |
 | A5 — Découper `App.tsx`               | ✅   | `2d446db`              |
 | B1 — Niveau 1 par défaut              | ✅   | `c486059`              |
-| B2 — Bornes du monde et fin de partie | ⬜   |                        |
+| B2 — Bornes du monde et fin de partie | ✅   | `900a15c`              |
 | B3 — Géométrie du niveau 1            | ⬜   |                        |
 | C1 — Fantôme de placement             | ⬜   |                        |
 | C2 — Ombre portée                     | ⬜   |                        |
@@ -519,7 +519,7 @@ que le statut a changé.
 
 ### B2 — Bornes du monde et fin de partie
 
-État : ⬜ À faire.
+État : ✅ **Fait** — commit `900a15c`.
 
 **Modèle : `sol` / effort `high`.**
 
