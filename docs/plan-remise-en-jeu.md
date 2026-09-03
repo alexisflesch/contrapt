@@ -27,7 +27,7 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
 | B2 — Bornes du monde et fin de partie | ✅   | `900a15c`              |
 | B3 — Géométrie du niveau 1            | ✅   | `5bc44ec`              |
 | B4 — Balle visible dans le panier     | ✅   | `e79d77f`              |
-| B5 — Recadrage stable pendant l'issue | ⬜   |                        |
+| B5 — Recadrage stable pendant l'issue | ✅   | `357beeb`              |
 | C1 — Fantôme de placement             | ⬜   |                        |
 | C2 — Ombre portée                     | ⬜   |                        |
 | C3 — Manipulation sur le plateau      | ⬜   |                        |
@@ -643,7 +643,10 @@ dessin indépendamment de l'ordre du document.
 
 ### B5 — Le recadrage automatique ne doit pas faire bouger la scène pendant la lecture
 
-État : ⬜ À faire.
+État : ✅ **Fait** — commit `357beeb`. Réservation permanente (toutes phases),
+pas seulement hors construction : la première version ne faisait que déplacer
+le redimensionnement au clic sur Tester plutôt que de l'éliminer, corrigé après
+un essai en direct.
 
 **Modèle : `terra` / effort `medium`.**
 
