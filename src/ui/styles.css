@@ -411,6 +411,22 @@ h1 {
   background: var(--surface);
 }
 
+/*
+ * Signalé par l'utilisateur en jouant, après B5 : même défaut, même
+ * correctif. Mesuré en Chromium réel (poutre sélectionnée, les 3 boutons
+ * Déplacer/Tourner/Supprimer, le pire cas de famille) : 197px à 320px de
+ * large — les boutons repassent alors sur une seconde ligne sous le titre.
+ * 200px couvre ce cas avec une faible marge ; revoir cette valeur si le
+ * panneau gagne un bouton ou un libellé plus long.
+ */
+.context-panel-slot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
 .context-action {
   min-width: 44px;
   min-height: 44px;

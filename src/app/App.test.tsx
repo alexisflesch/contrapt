@@ -1204,4 +1204,61 @@ describe('coque Contrapt!', () => {
     expect(resizedZoom).not.toBe(initialZoom);
     expect(resizedZoom).toBeCloseTo(expectedZoom, 6);
   });
+
+  it('réserve en permanence l’espace du panneau contextuel, comme B5 l’a fait pour le résultat', () => {
+    // Signalé par l'utilisateur en jouant, après B5 : le panneau contextuel
+    // (« Objet sélectionné : … », affiché dès qu'un placement existe, car
+    // c'est le seul objet qu'un placement peut sélectionner aujourd'hui — le
+    // clic de sélection sur le plateau est C3, pas encore livré) est un flex
+    // sibling monté/démonté sous `.scene-frame` exactement comme l'était
+    // `LevelResult` avant B5 : sa disparition/apparition redimensionne le
+    // plateau et redéclenche le `ResizeObserver`. Même défaut, même
+    // correctif : un wrapper toujours monté, jamais démonté.
+    render(<App />);
+    openEmbeddedWorkshop();
+
+    const workspace = screen.getByRole('region', { name: 'Espace de construction' });
+    const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
+      name: 'Rendu du plateau',
+    });
+    const zoomAtMount = canvas.getAttribute('data-camera-zoom');
+
+    // Réservé dès le premier rendu, avant tout placement.
+    const slotAtMount = workspace.querySelector('.context-panel-slot');
+    expect(slotAtMount).not.toBeNull();
+    expect(screen.queryByText(/Objet sélectionné/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Poutre courte' }));
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 225,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 225,
+    });
+
+    // Le placement se sélectionne automatiquement : le panneau apparaît, mais
+    // dans le même nœud DOM réservé, sans jamais en créer un nouveau.
+    expect(workspace.querySelector('.context-panel-slot')).toBe(slotAtMount);
+    expect(screen.getByText('Objet sélectionné : Poutre')).toBeVisible();
+    expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+
+    // Annuler retire le placement, donc sa sélection : le panneau disparaît,
+    // le nœud réservé reste, le cadrage n'a pas bougé.
+    expect(workspace.querySelector('.context-panel-slot')).toBe(slotAtMount);
+    expect(screen.queryByText(/Objet sélectionné/)).not.toBeInTheDocument();
+    expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
+
+    expect(styles).toMatch(/\.context-panel-slot\s*\{[^}]*min-height:\s*\d/s);
+  });
 });
