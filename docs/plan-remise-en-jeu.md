@@ -21,7 +21,7 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
 | A1 — ADR 0007                         | ✅   | `cdab65b`              |
 | A2 — `LevelDocument v2` et migration  | ✅   | `09bf926`              |
 | A3 — Caméra, panoramique, pincement   | ✅   | `06b6f50`              |
-| A4 — Colliders en repère y-bas        | ⬜   |                        |
+| A4 — Colliders en repère y-bas        | ✅   | `e19bf88`              |
 | A5 — Découper `App.tsx`               | ⬜   |                        |
 | B1 — Niveau 1 par défaut              | ⬜   |                        |
 | B2 — Bornes du monde et fin de partie | ⬜   |                        |
@@ -393,7 +393,10 @@ canvas ; un point écran au centre du canvas se reconvertit au centre de la scè
 
 ### A4 — Remettre les colliders dans le repère y-bas
 
-État : ⬜ À faire.
+État : ✅ **Fait** — commit `e19bf88`. A retrouvé et corrigé au passage
+`familyVisuals.seesaw` dans `board-renderer.ts` (empreinte réelle 3 × 0,82,
+non centrée sur le pivot), un travail né de cette tâche mais qu'A3, déjà
+intégrée, ne pouvait plus absorber.
 
 **Modèle : `sol` / effort `high`.** (« Adaptateur physique, boucle à pas fixe,
 déterminisme ».)
