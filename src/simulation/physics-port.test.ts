@@ -12,6 +12,34 @@ import {
 
 const FIXED_STEP_SECONDS = 1 / 60;
 
+/**
+ * ADR 0007 - Repère du monde : `y` croît vers le bas. Les valeurs ci-dessous
+ * décrivent la géométrie attendue vue du domaine, en unités monde, sans jamais
+ * importer les constantes de l'adaptateur physique : un test qui relirait les
+ * constantes de production ne prouverait rien.
+ */
+/** ADR 0007 - empreinte figée du panier : 1,5 × 1,1, colliders compris. */
+const BASKET_HALF_FOOTPRINT_WIDTH = 0.75;
+const BASKET_HALF_FOOTPRINT_HEIGHT = 0.55;
+/** Face intérieure du fond du panier, sous l'origine du corps. */
+const BASKET_INTERIOR_FLOOR_OFFSET_Y = 0.39;
+const BALL_RADIUS = 0.3;
+const BEAM_HALF_THICKNESS = 0.125;
+const SEESAW_BOARD_HALF_THICKNESS = 0.12;
+/** Hauteur totale du socle de la bascule, posé sous le pivot. */
+const SEESAW_BASE_HEIGHT = 0.7;
+/** Un corps au repos s'enfonce du « linear slop » de Planck avant de se stabiliser. */
+const CONTACT_TOLERANCE = 0.02;
+/** Assez de pas pour qu'une chute d'environ trois unités se stabilise complètement. */
+const SETTLING_FIXED_STEPS = 300;
+
+const expectCloseTo = (actual: number, expected: number, tolerance = CONTACT_TOLERANCE): void => {
+  expect(
+    Math.abs(actual - expected),
+    `attendu ${String(expected)} à ${String(tolerance)} près, obtenu ${String(actual)}`,
+  ).toBeLessThanOrEqual(tolerance);
+};
+
 const permissions = { move: false, rotate: false, remove: false } as const;
 
 const createLevelDocument = (ballY = 8): LevelDocument =>
@@ -91,15 +119,15 @@ const createBasketSensorLevelDocument = (): LevelDocument =>
       {
         id: 'ball-1',
         type: 'ball',
-        // The ball starts above the inverted basket and falls into its sensor.
-        transform: { position: { x: 0, y: -6.8 }, rotation: 0 },
+        // The ball starts above the basket mouth and falls into its sensor.
+        transform: { position: { x: 0, y: -7.2 }, rotation: 0 },
         props: {},
         permissions,
       },
       {
         id: 'basket-1',
         type: 'basket',
-        transform: { position: { x: 0, y: -6 }, rotation: Math.PI },
+        transform: { position: { x: 0, y: -6 }, rotation: 0 },
         props: {},
         permissions,
       },
@@ -110,17 +138,21 @@ const createBasketSensorLevelDocument = (): LevelDocument =>
     scene: { min: { x: -10, y: -10 }, max: { x: 10, y: 12 } },
   });
 
-const createBasketSensorExitLevelDocument = (basketX = 0): LevelDocument =>
+/**
+ * The ball is released just above the basket mouth: it crosses the sensor
+ * volume for several fixed steps before its first solid contact with the
+ * basket floor. That window is what proves a sensor bends no trajectory.
+ */
+const createSensorOnlyContactLevelDocument = (basketX = 0): LevelDocument =>
   levelDocumentSchema.parse({
     schemaVersion: 2,
-    id: 'physics-port-inverted-basket-sensor',
-    metadata: { title: 'Contrat de sortie du capteur panier' },
+    id: 'physics-port-sensor-only-contact',
+    metadata: { title: 'Contrat de contact capteur seul' },
     objects: [
       {
         id: 'ball-1',
         type: 'ball',
-        // The ball starts inside the sensor and leaves through the open lower side.
-        transform: { position: { x: 0, y: -5.9 }, rotation: 0 },
+        transform: { position: { x: 0, y: -7.1 }, rotation: 0 },
         props: {},
         permissions,
       },
@@ -136,6 +168,147 @@ const createBasketSensorExitLevelDocument = (basketX = 0): LevelDocument =>
     goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
     buildZones: [{ min: { x: -10, y: -10 }, max: { x: 10, y: 12 } }],
     scene: { min: { x: -10, y: -10 }, max: { x: 10, y: 12 } },
+  });
+
+/**
+ * A basket tilted well past the friction angle: the ball enters its sensor,
+ * bounces on the inner face and is expelled through the mouth. It only ever
+ * crosses the sensor, so the goal must stay pending.
+ */
+const createTiltedBasketLevelDocument = (): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-tilted-basket',
+    metadata: { title: 'Contrat de traversée du capteur' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 0, y: -3 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 0, y: 0 }, rotation: Math.PI / 3 },
+        props: {},
+        permissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: -6, y: -6 }, max: { x: 6, y: 6 } },
+  });
+
+/**
+ * Drops a ball onto a basket rotated by `rotation`. Turning the basket and
+ * letting the ball settle on whatever face now points up measures that face's
+ * distance to the basket origin, which is how the frozen footprint is checked
+ * without reading a single production constant.
+ */
+const createBasketDropLevelDocument = (
+  rotation: number,
+  ball: { readonly x: number; readonly y: number } = { x: 0, y: -3 },
+): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-basket-drop',
+    metadata: { title: 'Contrat de chute sur le panier' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: ball.x, y: ball.y }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 0, y: 0 }, rotation },
+        props: {},
+        permissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: -6, y: -6 }, max: { x: 6, y: 6 } },
+  });
+
+/** Same probe, applied to the seesaw: the basket only carries the goal. */
+const createSeesawDropLevelDocument = (rotation: number): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-seesaw-drop',
+    metadata: { title: 'Contrat de chute sur la bascule' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 0, y: -3 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'seesaw-1',
+        type: 'seesaw',
+        transform: { position: { x: 0, y: 0 }, rotation },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 8, y: 0 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: -10, y: -10 }, max: { x: 10, y: 10 } },
+  });
+
+/**
+ * A free fall of about 32 units reaches 25 m/s, which covers 0,42 unité par pas
+ * fixe — bien plus que l'épaisseur de 0,25 d'une poutre.
+ */
+const createHighSpeedBeamLevelDocument = (): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-high-speed-beam',
+    metadata: { title: 'Contrat de non-traversée de poutre' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 0, y: -33 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'beam-1',
+        type: 'beam',
+        transform: { position: { x: 0, y: 0 }, rotation: 0 },
+        props: { size: 'medium' },
+        permissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 8, y: 0 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: -10, y: -35 }, max: { x: 10, y: 5 } },
   });
 
 const createSeesawImpactLevelDocument = (): LevelDocument =>
@@ -238,6 +411,17 @@ const body = (
     throw new Error(`Corps absent de l’état : ${placementId}/${role}`);
   }
   return found;
+};
+
+/** Runs a level until everything has come to rest, then reads the ball back. */
+const settledBall = (level: LevelDocument): SimulationBodyState => {
+  const session = createSimulationSession(level, { fixedStepSeconds: FIXED_STEP_SECONDS });
+  try {
+    session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+    return body(session.readState(), 'ball-1', 'primary');
+  } finally {
+    session.destroy();
+  }
 };
 
 const withSession = (
@@ -436,13 +620,13 @@ describe('port physique candidat-neutre', () => {
     });
   });
 
-  it('expose la sortie du capteur inversé comme un événement du dernier pas', () => {
-    const level = createBasketSensorExitLevelDocument();
+  it('expose la sortie du capteur comme un événement du dernier pas', () => {
+    const level = createTiltedBasketLevelDocument();
 
     withSession(level, (session) => {
       let leftEvent: SimulationSensorEvent | undefined;
 
-      for (let step = 0; step < 60 && leftEvent === undefined; step += 1) {
+      for (let step = 0; step < 200 && leftEvent === undefined; step += 1) {
         session.advanceFixedSteps(1);
         const state = session.readState();
 
@@ -553,17 +737,19 @@ describe('port physique candidat-neutre', () => {
   });
 
   it('ne modifie pas la trajectoire lors d’un contact avec un capteur seul', () => {
-    const sensorSession = createSimulationSession(createBasketSensorExitLevelDocument(), {
+    const sensorSession = createSimulationSession(createSensorOnlyContactLevelDocument(), {
       fixedStepSeconds: FIXED_STEP_SECONDS,
     });
-    const unobstructedSession = createSimulationSession(createBasketSensorExitLevelDocument(10), {
+    const unobstructedSession = createSimulationSession(createSensorOnlyContactLevelDocument(10), {
       fixedStepSeconds: FIXED_STEP_SECONDS,
     });
     let sensorEventObserved = false;
     let unobstructedEventObserved = false;
 
     try {
-      for (let step = 0; step < 60; step += 1) {
+      // The window stops before the ball reaches the basket floor: past that
+      // first solid contact the trajectories legitimately diverge.
+      for (let step = 0; step < 24; step += 1) {
         sensorSession.advanceFixedSteps(1);
         unobstructedSession.advanceFixedSteps(1);
 
@@ -620,6 +806,150 @@ describe('port physique candidat-neutre', () => {
       colliders: 0,
       joints: 0,
       sensors: 0,
+    });
+  });
+
+  it('fait tomber la balle dans le panier au lieu de la laisser rouler sur son couvercle', () => {
+    // Symptôme observé à l'écran : la balle roulait sur le panier. Le fond
+    // était posé au-dessus du centre, donc dans le repère y-bas le panier
+    // était un U retourné, couvercle plein vers le haut.
+    const ball = settledBall(createBasketDropLevelDocument(0));
+
+    expect(ball.position.y).toBeGreaterThan(-BASKET_HALF_FOOTPRINT_HEIGHT);
+    expect(ball.position.y).toBeLessThan(BASKET_HALF_FOOTPRINT_HEIGHT);
+    expectCloseTo(ball.position.y, BASKET_INTERIOR_FLOOR_OFFSET_Y - BALL_RADIUS);
+    expect(Math.abs(ball.position.x)).toBeLessThan(BASKET_HALF_FOOTPRINT_WIDTH - BALL_RADIUS);
+  });
+
+  it('tient dans l’empreinte figée du panier, 1,5 × 1,1 unités monde', () => {
+    // Le panier est tourné face par face : la balle se pose sur celle qui
+    // regarde le haut de l'écran, et sa hauteur de repos mesure la distance
+    // de cette face à l'origine du corps.
+    const restingHeightAgainstFace = (rotation: number): number =>
+      settledBall(createBasketDropLevelDocument(rotation)).position.y;
+
+    expectCloseTo(
+      restingHeightAgainstFace(Math.PI / 2),
+      -(BASKET_HALF_FOOTPRINT_WIDTH + BALL_RADIUS),
+    );
+    expectCloseTo(
+      restingHeightAgainstFace(-Math.PI / 2),
+      -(BASKET_HALF_FOOTPRINT_WIDTH + BALL_RADIUS),
+    );
+    expectCloseTo(restingHeightAgainstFace(Math.PI), -(BASKET_HALF_FOOTPRINT_HEIGHT + BALL_RADIUS));
+
+    // Le bord du panier n'est atteignable qu'en posant la balle sur le haut
+    // d'une paroi : à l'endroit, la balle lâchée au centre tombe dedans.
+    const restingOnRim = settledBall(
+      createBasketDropLevelDocument(0, {
+        x: 0.7,
+        y: -(BASKET_HALF_FOOTPRINT_HEIGHT + BALL_RADIUS),
+      }),
+    );
+    expectCloseTo(restingOnRim.position.y, -(BASKET_HALF_FOOTPRINT_HEIGHT + BALL_RADIUS));
+  });
+
+  it('pose le socle de la bascule sous son pivot, jamais au travers du tablier', () => {
+    const restingOnBoard = settledBall(createSeesawDropLevelDocument(0));
+    expectCloseTo(restingOnBoard.position.y, -(SEESAW_BOARD_HALF_THICKNESS + BALL_RADIUS));
+
+    // Bascule retournée : le socle passe au-dessus du pivot et arrête la balle
+    // à sa hauteur totale, ce qui mesure de combien il descend à l'endroit.
+    const restingOnBase = settledBall(createSeesawDropLevelDocument(Math.PI));
+    expectCloseTo(restingOnBase.position.y, -(SEESAW_BASE_HEIGHT + BALL_RADIUS));
+  });
+
+  it('ne laisse pas une balle lancée à 25 m/s traverser une poutre', () => {
+    withSession(createHighSpeedBeamLevelDocument(), (session) => {
+      let maximumFallSpeed = 0;
+
+      for (let step = 0; step < SETTLING_FIXED_STEPS; step += 1) {
+        session.advanceFixedSteps(1);
+        const ball = body(session.readState(), 'ball-1', 'primary');
+        maximumFallSpeed = Math.max(maximumFallSpeed, ball.linearVelocity.y);
+        expect(ball.position.y).toBeLessThan(-BEAM_HALF_THICKNESS);
+      }
+
+      expect(maximumFallSpeed).toBeGreaterThanOrEqual(25);
+      expectCloseTo(
+        body(session.readState(), 'ball-1', 'primary').position.y,
+        -(BEAM_HALF_THICKNESS + BALL_RADIUS),
+      );
+    });
+  });
+
+  it('n’accorde aucun succès à une balle qui ne fait que traverser le capteur', () => {
+    withSession(createTiltedBasketLevelDocument(), (session) => {
+      let enteredSensor = false;
+      let leftSensor = false;
+
+      for (let step = 0; step < 600; step += 1) {
+        session.advanceFixedSteps(1);
+        for (const event of session.readState().events) {
+          if (event.placementId !== 'ball-1' || event.targetId !== 'basket-1') continue;
+          enteredSensor ||= event.type === 'object-entered-sensor';
+          leftSensor ||= event.type === 'object-left-sensor';
+        }
+        expect(session.readGoalEvaluation().status).toBe('pending');
+      }
+
+      expect(enteredSensor).toBe(true);
+      expect(leftSensor).toBe(true);
+    });
+  });
+
+  it('exige un maintien d’une demi-seconde, soit trente pas fixes, avant le succès', () => {
+    withSession(createBasketSensorLevelDocument(), (session) => {
+      let entryFixedStep: number | undefined;
+
+      for (let step = 0; step < 60 && entryFixedStep === undefined; step += 1) {
+        session.advanceFixedSteps(1);
+        entryFixedStep = session
+          .readState()
+          .events.find(
+            (event): event is SimulationSensorEntryEvent =>
+              isSensorEntryEvent(event) &&
+              event.placementId === 'ball-1' &&
+              event.targetId === 'basket-1',
+          )?.fixedStep;
+      }
+
+      if (entryFixedStep === undefined) {
+        throw new Error('Aucun événement d’entrée du panier n’a été produit.');
+      }
+
+      const stepsBeforeSuccess = entryFixedStep + 29 - session.readState().fixedStep;
+      expect(stepsBeforeSuccess).toBeGreaterThanOrEqual(0);
+      session.advanceFixedSteps(stepsBeforeSuccess);
+
+      expect(session.readGoalEvaluation()).toEqual({
+        status: 'pending',
+        enteredAtFixedStep: entryFixedStep,
+      });
+
+      session.advanceFixedSteps(1);
+
+      expect(session.readGoalEvaluation()).toEqual({
+        status: 'succeeded',
+        enteredAtFixedStep: entryFixedStep,
+      });
+    });
+  });
+
+  it('endort une balle immobile au lieu de la laisser vibrer indéfiniment', () => {
+    withSession(createBasketDropLevelDocument(0), (session) => {
+      session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+      const settled = body(session.readState(), 'ball-1', 'primary');
+
+      expect(Math.abs(settled.linearVelocity.x)).toBe(0);
+      expect(Math.abs(settled.linearVelocity.y)).toBe(0);
+      expect(Math.abs(settled.angularVelocity)).toBe(0);
+
+      session.advanceFixedSteps(60);
+      const later = body(session.readState(), 'ball-1', 'primary');
+
+      expect(later.position).toEqual(settled.position);
+      expect(later.rotation).toBe(settled.rotation);
     });
   });
 

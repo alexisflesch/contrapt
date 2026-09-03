@@ -244,6 +244,19 @@ describe('projection du plateau', () => {
     expect(levelDocument.objects.every((object) => !('assetPath' in object))).toBe(true);
   });
 
+  it('centre la destination de la bascule sur son empreinte réelle, pas sur son pivot (A4)', () => {
+    const projection = projectLevel(levelDocument);
+    const seesaw = projection.objects.find((object) => object.family === 'seesaw');
+    if (seesaw === undefined) throw new Error('La bascule est absente de la projection.');
+
+    // Empreinte mesurée par A4 (simulation-session.ts) : socle x∈[-0,25,0,25]
+    // y∈[0,+0,70], tablier x∈[-1,5,1,5] y∈[-0,12,+0,12] — union 3 × 0,82,
+    // sommet à y=-0,12 relatif au pivot. Le socle étant posé sous le pivot et
+    // non centré dessus, cette destination ne peut pas être symétrique comme
+    // pour les trois autres familles.
+    expect(seesaw.destination).toEqual({ x: -1.5, y: -0.12, width: 3, height: 0.82 });
+  });
+
   it('convertit les positions monde avec une origine et une échelle uniques', () => {
     expect(worldToPixels({ x: 12, y: 8 }, viewport)).toEqual({ x: 8, y: 12 });
     expect(worldToPixels({ x: 10, y: 5 }, viewport)).toEqual({ x: 0, y: 0 });

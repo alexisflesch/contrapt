@@ -108,6 +108,11 @@ interface SensorRecord {
   readonly targetId: string;
 }
 
+/* ADR 0007 - Repère du monde : `y` croît vers le bas, comme à l'écran. Tout
+ * offset de collider se lit donc « vers le bas quand il est positif ». Une
+ * géométrie écrite en `y` vers le haut est un bug, et se corrige ici, jamais
+ * par une rotation compensatoire dans le contenu. */
+
 const GRAVITY = 9.81;
 const BALL_RADIUS = 0.3;
 const BEAM_HALF_THICKNESS = 0.125;
@@ -116,19 +121,36 @@ const BEAM_LENGTHS = {
   medium: 4,
   long: 6,
 };
+/** Half of the frozen 1,5 × 1,1 basket footprint (ADR 0007), walls included. */
 const BASKET_HALF_WIDTH = 0.75;
+const BASKET_WALL_HALF_HEIGHT = 0.55;
 const BASKET_SENSOR_HALF_HEIGHT = 0.5;
 const BASKET_WALL_HALF_THICKNESS = 0.08;
-const BASKET_WALL_HALF_HEIGHT = 0.55;
+/**
+ * Walls and floor are inset by their own half thickness so that their outer
+ * faces land exactly on the frozen footprint: the sprite drawn by the board
+ * renderer and the collider then cover the same rectangle, with no per-asset
+ * correction factor.
+ */
+const BASKET_WALL_OFFSET_X = BASKET_HALF_WIDTH - BASKET_WALL_HALF_THICKNESS;
+const BASKET_FLOOR_OFFSET_Y = BASKET_WALL_HALF_HEIGHT - BASKET_WALL_HALF_THICKNESS;
 const SEESAW_BOARD_HALF_LENGTH = 1.5;
 const SEESAW_BOARD_HALF_THICKNESS = 0.12;
 const SEESAW_BASE_HALF_WIDTH = 0.25;
 const SEESAW_BASE_HALF_HEIGHT = 0.35;
+/** The base stands under the pivot, which is where the board is hinged. */
+const SEESAW_BASE_OFFSET_Y = SEESAW_BASE_HALF_HEIGHT;
 const SEESAW_ANGLE_LIMIT = Math.PI / 6;
-/** Global game rule: the target ball must remain in its basket for three complete fixed steps. */
-const BASKET_GOAL_HOLD_DURATION_IN_FIXED_STEPS = 3;
+/**
+ * Global game rule: the target ball must remain in its basket for thirty
+ * complete fixed steps, half a second at 60 Hz. A ball merely crossing the
+ * sensor must not win.
+ */
+const BASKET_GOAL_HOLD_DURATION_IN_FIXED_STEPS = 30;
 
-const createPhysicsWorld = () => new World({ gravity: new Vec2(0, GRAVITY) });
+const createPhysicsWorld = () =>
+  // Sleeping is what stops a settled ball from vibrating forever.
+  new World({ gravity: new Vec2(0, GRAVITY), allowSleep: true });
 
 const assertPositiveFinite = (value: number, label: string): void => {
   if (!Number.isFinite(value) || value <= 0) {
@@ -344,6 +366,10 @@ class PlanckSimulationSession implements SimulationSession {
       type: 'dynamic',
       position: new Vec2(position.x, position.y),
       angle: rotation,
+      // The ball is the only fast body of the game: continuous collision keeps
+      // it from tunnelling through a 0,25 unit beam or a 0,24 unit seesaw board.
+      bullet: true,
+      allowSleep: true,
     });
     this.#bodies.push({ placementId, role: 'primary', handle: body });
     this.#createFixture(body, {
@@ -362,15 +388,13 @@ class PlanckSimulationSession implements SimulationSession {
     });
     this.#bodies.push({ placementId, role: 'primary', handle: body });
 
-    this.#createFixture(body, {
-      shape: new Box(BASKET_HALF_WIDTH, BASKET_WALL_HALF_THICKNESS, new Vec2(0, -0.5), 0),
-      friction: 0.4,
-    });
+    // Floor at the bottom, walls rising on both sides, mouth open upwards:
+    // in a `y`-down world the floor offset is positive.
     this.#createFixture(body, {
       shape: new Box(
+        BASKET_HALF_WIDTH,
         BASKET_WALL_HALF_THICKNESS,
-        BASKET_WALL_HALF_HEIGHT,
-        new Vec2(-BASKET_HALF_WIDTH, 0),
+        new Vec2(0, BASKET_FLOOR_OFFSET_Y),
         0,
       ),
       friction: 0.4,
@@ -379,7 +403,16 @@ class PlanckSimulationSession implements SimulationSession {
       shape: new Box(
         BASKET_WALL_HALF_THICKNESS,
         BASKET_WALL_HALF_HEIGHT,
-        new Vec2(BASKET_HALF_WIDTH, 0),
+        new Vec2(-BASKET_WALL_OFFSET_X, 0),
+        0,
+      ),
+      friction: 0.4,
+    });
+    this.#createFixture(body, {
+      shape: new Box(
+        BASKET_WALL_HALF_THICKNESS,
+        BASKET_WALL_HALF_HEIGHT,
+        new Vec2(BASKET_WALL_OFFSET_X, 0),
         0,
       ),
       friction: 0.4,
@@ -426,7 +459,12 @@ class PlanckSimulationSession implements SimulationSession {
       { placementId, role: 'board', handle: board },
     );
     this.#createFixture(base, {
-      shape: new Box(SEESAW_BASE_HALF_WIDTH, SEESAW_BASE_HALF_HEIGHT),
+      shape: new Box(
+        SEESAW_BASE_HALF_WIDTH,
+        SEESAW_BASE_HALF_HEIGHT,
+        new Vec2(0, SEESAW_BASE_OFFSET_Y),
+        0,
+      ),
       friction: 0.5,
     });
     this.#createFixture(board, {

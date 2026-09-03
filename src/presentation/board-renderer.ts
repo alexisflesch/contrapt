@@ -77,11 +77,16 @@ const familyVisuals = {
     width: 1.5,
     height: 1.1,
   },
-  seesaw: {
-    width: 3,
-    height: 0.94,
-  },
-} satisfies Record<Exclude<SpriteFamily, 'beam'>, FamilyVisual>;
+} satisfies Record<Exclude<SpriteFamily, 'beam' | 'seesaw'>, FamilyVisual>;
+
+/**
+ * A4 (ADR 0007) poses the seesaw's base under the pivot rather than centered
+ * on it, so its collider footprint is not centered on the placement's origin
+ * the way the other three families are: base at y ∈ [0, +0.70], board at
+ * y ∈ [-0.12, +0.12], union 3 × 0.82 with its top edge at y = -0.12 relative
+ * to the pivot. `centeredDestination` cannot express that asymmetry.
+ */
+const seesawDestination: BoardDestination = { x: -1.5, y: -0.12, width: 3, height: 0.82 };
 
 /* These dimensions mirror the colliders in simulation-session without importing
  * the physics adapter into presentation. */
@@ -98,30 +103,25 @@ const centeredDestination = ({ width, height }: FamilyVisual): BoardDestination 
   height,
 });
 
-const visualForObject = (object: LevelDocument['objects'][number]): FamilyVisual => {
-  if (object.type === 'beam') {
-    return beamVisuals[object.props.size];
-  }
+const destinationForObject = (object: LevelDocument['objects'][number]): BoardDestination => {
+  if (object.type === 'beam') return centeredDestination(beamVisuals[object.props.size]);
+  if (object.type === 'seesaw') return seesawDestination;
 
-  return familyVisuals[object.type];
+  return centeredDestination(familyVisuals[object.type]);
 };
 
 export const projectLevel = (document: LevelDocument): BoardProjection => ({
-  objects: document.objects.map((object) => {
-    const visual = visualForObject(object);
-
-    return {
-      id: object.id,
-      family: object.type,
-      assetPath: spriteAssetPath(object.type, 2),
-      position: {
-        x: object.transform.position.x,
-        y: object.transform.position.y,
-      },
-      rotation: object.transform.rotation,
-      destination: centeredDestination(visual),
-    };
-  }),
+  objects: document.objects.map((object) => ({
+    id: object.id,
+    family: object.type,
+    assetPath: spriteAssetPath(object.type, 2),
+    position: {
+      x: object.transform.position.x,
+      y: object.transform.position.y,
+    },
+    rotation: object.transform.rotation,
+    destination: destinationForObject(object),
+  })),
 });
 
 export const worldToPixels = (position: BoardPoint, viewport: BoardViewport): BoardPoint => ({
