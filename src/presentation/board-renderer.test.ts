@@ -53,6 +53,13 @@ const createBeamDocument = (size: BeamSize) =>
     ],
   });
 
+/**
+ * Renders `document` and returns the destination Canvas rectangle drawn for
+ * its (single) beam. Locates the beam's `drawImage` op by its position in
+ * `projection.objects` rather than assuming it is drawn last: B4 introduced
+ * a draw order where a ball is drawn after every non-ball object, so "last
+ * drawn" no longer means "last in the document" once a ball is present.
+ */
 const renderDestination = async (
   document: Parameters<typeof projectLevel>[0],
   renderViewport: BoardViewport,
@@ -65,6 +72,7 @@ const renderDestination = async (
   const { context, operations } = createContext();
   const spriteLoader = createPendingSpriteLoader();
   spriteLoader.setReady();
+  const projection = projectLevel(document);
   const renderer = createBoardRenderer({
     canvas: { width: 0, height: 0 },
     context,
@@ -72,15 +80,21 @@ const renderDestination = async (
     spriteLoader: spriteLoader.loader,
   });
 
-  await renderer.render(projectLevel(document));
+  await renderer.render(projection);
 
   const drawOperations = operations.filter(
     (candidate): candidate is Extract<Operation, { readonly kind: 'drawImage' }> =>
       candidate.kind === 'drawImage',
   );
-  const operation = drawOperations[drawOperations.length - 1];
+  const beamIndex = projection.objects.findIndex(
+    (object: ProjectedObject) => object.family === 'beam',
+  );
+  if (beamIndex === -1) {
+    throw new Error('Aucune poutre n’est présente dans la projection.');
+  }
+  const operation = drawOperations[beamIndex];
   if (operation === undefined) {
-    throw new Error('Aucune opération drawImage n’a été enregistrée.');
+    throw new Error('Aucune opération drawImage n’a été enregistrée pour la poutre.');
   }
 
   const [x, y, width, height] = operation.values.slice(-4);
@@ -94,6 +108,38 @@ const renderDestination = async (
   }
 
   return { x, y, width, height };
+};
+
+const drawnFamilyOrder = async (
+  document: Parameters<typeof projectLevel>[0],
+): Promise<readonly SpriteFamily[]> => {
+  const { context, operations } = createContext();
+  const spriteLoader = createPendingSpriteLoader();
+  spriteLoader.setReady();
+  const renderer = createBoardRenderer({
+    canvas: { width: 0, height: 0 },
+    context,
+    viewport,
+    spriteLoader: spriteLoader.loader,
+  });
+
+  await renderer.render(projectLevel(document));
+
+  const drawOperations = operations.filter(
+    (candidate): candidate is Extract<Operation, { readonly kind: 'drawImage' }> =>
+      candidate.kind === 'drawImage',
+  );
+
+  return drawOperations.map((operation) => {
+    const source = operation.values[0];
+    const entry = (
+      Object.entries(spriteLoader.sprites) as ReadonlyArray<[SpriteFamily, unknown]>
+    ).find(([, sprite]) => sprite === source);
+    if (entry === undefined) {
+      throw new Error('Le sprite dessiné est introuvable parmi les sprites chargés.');
+    }
+    return entry[0];
+  });
 };
 
 const viewport = {
@@ -229,11 +275,14 @@ describe('projection du plateau', () => {
   it('contient les quatre familles et porte les assets visuels hors du document', () => {
     const projection = projectLevel(levelDocument);
 
+    // Ordre de dessin (B4), pas ordre du document : une balle est toujours
+    // projetée après tout objet non-balle, ici ball-1 passe donc en dernier
+    // bien qu'il soit le premier objet du document.
     expect(projection.objects.map((object: ProjectedObject) => object.family)).toEqual([
-      'ball',
       'basket',
       'beam',
       'seesaw',
+      'ball',
     ]);
     expect(
       projection.objects.every((object: ProjectedObject) => typeof object.assetPath === 'string'),
@@ -332,7 +381,8 @@ describe('renderer Canvas 2D du plateau', () => {
 
     await Promise.resolve();
     expect(operations.some((operation) => operation.kind === 'drawImage')).toBe(false);
-    expect(spriteLoader.requestedFamilies).toEqual(['ball', 'basket', 'beam', 'seesaw']);
+    // Ordre de dessin (B4) : basket, beam, seesaw, puis ball en dernier.
+    expect(spriteLoader.requestedFamilies).toEqual(['basket', 'beam', 'seesaw', 'ball']);
 
     spriteLoader.release();
     await rendering;
@@ -359,6 +409,8 @@ describe('renderer Canvas 2D du plateau', () => {
       kind: 'setTransform',
       values: [2, 0, 0, 2, 0, 0],
     });
+    // Ordre de dessin (B4) : basket, beam, seesaw, puis ball en dernier — pas
+    // l'ordre du document (ball, basket, beam, seesaw).
     expect(
       operations
         .filter(
@@ -367,10 +419,10 @@ describe('renderer Canvas 2D du plateau', () => {
         )
         .map((operation) => operation.values),
     ).toEqual([
-      [8, 12],
       [16, 16],
       [24, 20],
       [32, 24],
+      [8, 12],
     ]);
     expect(
       operations
@@ -379,7 +431,7 @@ describe('renderer Canvas 2D du plateau', () => {
             operation.kind === 'rotate',
         )
         .map((operation) => operation.values),
-    ).toEqual([[0], [0], [Math.PI / 4], [0]]);
+    ).toEqual([[0], [Math.PI / 4], [0], [0]]);
 
     const drawOperations = operations.filter(
       (operation): operation is Extract<Operation, { readonly kind: 'drawImage' }> =>
@@ -402,6 +454,87 @@ describe('renderer Canvas 2D du plateau', () => {
 
       expect(drawOperation.values[0]).toBe(spriteLoader.sprites[object.family]);
     }
+  });
+
+  it('dessine la balle après le panier même listée avant lui dans le document (B4)', async () => {
+    const document = levelDocumentSchema.parse({
+      schemaVersion: 2,
+      id: 'b4-ball-before-basket',
+      metadata: { title: 'Balle avant panier' },
+      objects: [
+        {
+          id: 'ball-1',
+          type: 'ball',
+          transform: { position: { x: 4, y: 4 }, rotation: 0 },
+          props: {},
+          permissions: { move: false, rotate: false, remove: false },
+        },
+        {
+          id: 'basket-1',
+          type: 'basket',
+          transform: { position: { x: 4, y: 4 }, rotation: 0 },
+          props: {},
+          permissions: { move: false, rotate: false, remove: false },
+        },
+      ],
+      inventory: [],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [],
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 8 } },
+    });
+
+    const order = await drawnFamilyOrder(document);
+
+    expect(order).toEqual(['basket', 'ball']);
+  });
+
+  it('conserve l’ordre du document entre deux objets qui ne sont pas des balles', async () => {
+    const document = levelDocumentSchema.parse({
+      schemaVersion: 2,
+      id: 'b4-non-ball-order',
+      metadata: { title: 'Poutre et bascule' },
+      objects: [
+        {
+          id: 'seesaw-1',
+          type: 'seesaw',
+          transform: { position: { x: 4, y: 4 }, rotation: 0 },
+          props: {},
+          permissions: { move: false, rotate: false, remove: false },
+        },
+        {
+          id: 'beam-1',
+          type: 'beam',
+          transform: { position: { x: 4, y: 4 }, rotation: 0 },
+          props: { size: 'medium' },
+          permissions: { move: false, rotate: false, remove: false },
+        },
+        {
+          id: 'ball-1',
+          type: 'ball',
+          transform: { position: { x: 1, y: 1 }, rotation: 0 },
+          props: {},
+          permissions: { move: false, rotate: false, remove: false },
+        },
+        {
+          id: 'basket-1',
+          type: 'basket',
+          transform: { position: { x: 7, y: 7 }, rotation: 0 },
+          props: {},
+          permissions: { move: false, rotate: false, remove: false },
+        },
+      ],
+      inventory: [],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [],
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 8 } },
+    });
+
+    const order = await drawnFamilyOrder(document);
+
+    // seesaw-1 puis beam-1 : leur ordre relatif dans le document est conservé.
+    // basket-1 aussi, car seul un objet « balle » est déplacé par le tri.
+    // ball-1 est déplacé après tous les autres bien qu'il soit au 3e rang.
+    expect(order).toEqual(['seesaw', 'beam', 'basket', 'ball']);
   });
 
   it('expose une API de rendu sans victoire ni sérialisation', () => {

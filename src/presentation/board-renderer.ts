@@ -110,18 +110,54 @@ const destinationForObject = (object: LevelDocument['objects'][number]): BoardDe
   return centeredDestination(familyVisuals[object.type]);
 };
 
+/**
+ * Presentation-only draw order (B4/ADR 0007): higher draws later, i.e. on
+ * top. `basket` is the only visual "container" among the four families — an
+ * object can end up rendered inside its silhouette — so it must never be
+ * drawn after the thing it contains. Ranking every family explicitly (rather
+ * than a single "is it a ball" flag) keeps the rule exhaustive: adding a
+ * fifth family forces a decision here instead of silently inheriting
+ * document order. This never touches `document.objects` or `LevelDocument`;
+ * the domain stays unaware that a draw order exists.
+ */
+const drawOrderByFamily: Record<SpriteFamily, number> = {
+  basket: 0,
+  beam: 0,
+  seesaw: 0,
+  ball: 1,
+};
+
+const byDrawOrderThenDocumentOrder = (
+  a: { readonly family: SpriteFamily; readonly documentIndex: number },
+  b: { readonly family: SpriteFamily; readonly documentIndex: number },
+): number => {
+  const orderDelta = drawOrderByFamily[a.family] - drawOrderByFamily[b.family];
+  return orderDelta !== 0 ? orderDelta : a.documentIndex - b.documentIndex;
+};
+
 export const projectLevel = (document: LevelDocument): BoardProjection => ({
-  objects: document.objects.map((object) => ({
-    id: object.id,
-    family: object.type,
-    assetPath: spriteAssetPath(object.type, 2),
-    position: {
-      x: object.transform.position.x,
-      y: object.transform.position.y,
-    },
-    rotation: object.transform.rotation,
-    destination: destinationForObject(object),
-  })),
+  objects: document.objects
+    .map((object, documentIndex) => ({
+      documentIndex,
+      projected: {
+        id: object.id,
+        family: object.type,
+        assetPath: spriteAssetPath(object.type, 2),
+        position: {
+          x: object.transform.position.x,
+          y: object.transform.position.y,
+        },
+        rotation: object.transform.rotation,
+        destination: destinationForObject(object),
+      },
+    }))
+    .sort((a, b) =>
+      byDrawOrderThenDocumentOrder(
+        { family: a.projected.family, documentIndex: a.documentIndex },
+        { family: b.projected.family, documentIndex: b.documentIndex },
+      ),
+    )
+    .map(({ projected }) => projected),
 });
 
 export const worldToPixels = (position: BoardPoint, viewport: BoardViewport): BoardPoint => ({
