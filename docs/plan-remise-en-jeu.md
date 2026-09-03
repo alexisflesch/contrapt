@@ -25,7 +25,7 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
 | A5 — Découper `App.tsx`               | ✅   | `2d446db`              |
 | B1 — Niveau 1 par défaut              | ✅   | `c486059`              |
 | B2 — Bornes du monde et fin de partie | ✅   | `900a15c`              |
-| B3 — Géométrie du niveau 1            | ⬜   |                        |
+| B3 — Géométrie du niveau 1            | ✅   | `5bc44ec`              |
 | C1 — Fantôme de placement             | ⬜   |                        |
 | C2 — Ombre portée                     | ⬜   |                        |
 | C3 — Manipulation sur le plateau      | ⬜   |                        |
@@ -50,6 +50,11 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
   qui appartiennent au périmètre de A3. La promesse « chaque tâche finit par
   `pnpm check` verte » est fausse pour une tâche qui modifie un contrat
   partagé ; A2 et A3 forment une paire.
+- **Un parcours Playwright `--project=desktop` échoue par diff de capture
+  d'écran** (`place au tactile puis annule le placement…`, scène atelier),
+  confirmé préexistant à B3 par comparaison avec le code d'avant la tâche.
+  Hors du gate (`pnpm check` ne lance que `--project=mobile`), non
+  encore rattaché à une tranche.
 
 ---
 
@@ -548,7 +553,7 @@ produit l'issue « temps écoulé » ; aucune des deux ne modifie le document é
 
 ### B3 — Recaler la géométrie du niveau 1
 
-État : ⬜ À faire.
+État : ✅ **Fait** — commit `5bc44ec`. Phase B terminée.
 
 **Modèle : `luna` / effort `high`.** (« Écrire un JSON de niveau depuis une spec
 écrite ».)
