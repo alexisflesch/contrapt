@@ -14,8 +14,15 @@ function subscribeToSideLayout(onChange: () => void) {
 function getSideLayoutSnapshot() {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
 
+  // Kept in sync with styles.css's `(orientation: landscape) and
+  // (min-width: 680px) and (min-height: 480px)` breakpoint (D4,
+  // plan-remise-en-jeu.md § 6): a plain width threshold sent a portrait
+  // tablet onto the side-panel layout, and a plain landscape+width
+  // threshold admitted a landscape phone too short to fit three columns.
   return (
-    window.innerWidth >= 680 || (window.innerWidth >= 560 && window.innerWidth > window.innerHeight)
+    window.innerWidth >= 680 &&
+    window.innerHeight >= 480 &&
+    window.innerWidth > window.innerHeight
   );
 }
 

@@ -128,6 +128,8 @@ interface BoardViewProps {
   readonly boardCanvasRef: RefObject<HTMLCanvasElement | null>;
   readonly placementPreview: PlacementPreview | null;
   readonly boardPointerHandlers: BoardPointerHandlers;
+  /** Width ÷ height of the level's own scene rectangle — see `.board-scene-row` in styles.css. */
+  readonly sceneAspectRatio: number;
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
   readonly onFitToScene: () => void;
@@ -152,6 +154,7 @@ export function BoardView({
   boardCanvasRef,
   placementPreview,
   boardPointerHandlers,
+  sceneAspectRatio,
   onZoomIn,
   onZoomOut,
   onFitToScene,
@@ -234,52 +237,64 @@ export function BoardView({
 
   return (
     <>
-      <div
-        className="scene-frame"
-        ref={boardRef}
-        role="region"
-        aria-label="Plateau de jeu"
-        {...boardPointerHandlers}
-      >
-        <canvas
-          ref={boardCanvasRef}
-          className="board-canvas"
-          role="img"
-          aria-label="Rendu du plateau"
-          data-simulation-step={
-            simulationState === null ? undefined : String(simulationState.fixedStep)
-          }
-          data-simulation-ball-position={
-            simulationBall === undefined
-              ? undefined
-              : `${String(simulationBall.position.x)},${String(simulationBall.position.y)}`
-          }
-          data-camera-zoom={String(camera.pixelsPerWorldUnit)}
-        />
-        {placementPreview !== null && session.phase === 'construction' && (
-          <div
-            className={`placement-preview placement-preview-${placementPreview.kind.toLowerCase()}${
-              placementPreview.isValid ? '' : ' placement-preview-invalid'
-            }`}
+      {/*
+        D4 (plan-remise-en-jeu.md § 6): `.board-scene-row` stretches to fill
+        whatever height the surrounding chrome leaves, and `.scene-frame`
+        (aspect-ratio locked to the level's own scene, via the inline style
+        below) sizes itself within that row instead of stretching to an
+        arbitrary box — the camera's own `fitCameraToScene` "contain" already
+        never crops the scene, but a box shaped like the scene wastes no
+        pixels on letterboxing either.
+      */}
+      <div className="board-scene-row">
+        <div
+          className="scene-frame"
+          ref={boardRef}
+          role="region"
+          aria-label="Plateau de jeu"
+          style={{ aspectRatio: String(sceneAspectRatio) }}
+          {...boardPointerHandlers}
+        >
+          <canvas
+            ref={boardCanvasRef}
+            className="board-canvas"
             role="img"
-            aria-label={`Aperçu de placement : ${placementPreview.kind}`}
-            data-position={`${String(placementPreview.worldPosition.x)},${String(
-              placementPreview.worldPosition.y,
-            )}#${String(placementPreview.revision)}`}
-            data-valid={placementPreview.isValid}
-            style={{
-              left: `${String(placementPreview.screenPosition.x)}px`,
-              top: `${String(placementPreview.screenPosition.y)}px`,
-            }}
-          >
-            <span aria-hidden="true" />
-          </div>
-        )}
-        {placementPreview?.isValid === true && session.phase === 'construction' && (
-          <p className="placement-preview-status" role="status">
-            Aperçu de placement valide
-          </p>
-        )}
+            aria-label="Rendu du plateau"
+            data-simulation-step={
+              simulationState === null ? undefined : String(simulationState.fixedStep)
+            }
+            data-simulation-ball-position={
+              simulationBall === undefined
+                ? undefined
+                : `${String(simulationBall.position.x)},${String(simulationBall.position.y)}`
+            }
+            data-camera-zoom={String(camera.pixelsPerWorldUnit)}
+          />
+          {placementPreview !== null && session.phase === 'construction' && (
+            <div
+              className={`placement-preview placement-preview-${placementPreview.kind.toLowerCase()}${
+                placementPreview.isValid ? '' : ' placement-preview-invalid'
+              }`}
+              role="img"
+              aria-label={`Aperçu de placement : ${placementPreview.kind}`}
+              data-position={`${String(placementPreview.worldPosition.x)},${String(
+                placementPreview.worldPosition.y,
+              )}#${String(placementPreview.revision)}`}
+              data-valid={placementPreview.isValid}
+              style={{
+                left: `${String(placementPreview.screenPosition.x)}px`,
+                top: `${String(placementPreview.screenPosition.y)}px`,
+              }}
+            >
+              <span aria-hidden="true" />
+            </div>
+          )}
+          {placementPreview?.isValid === true && session.phase === 'construction' && (
+            <p className="placement-preview-status" role="status">
+              Aperçu de placement valide
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="camera-controls" aria-label="Cadrage du plateau">

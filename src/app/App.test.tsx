@@ -627,10 +627,19 @@ describe('coque Contrapt!', () => {
     expect(screen.getByText('Mode éditeur')).toBeVisible();
   });
 
-  it('présente le catalogue comme un panneau latéral ouvert en paysage', () => {
+  it('présente le catalogue comme un panneau latéral ouvert sur une tablette ou un poste de bureau en paysage', () => {
+    // Réécrit depuis « … ouvert en paysage », qui stubbait 844 × 390 (un
+    // téléphone en paysage) : D4 (plan-remise-en-jeu.md § 6, écart constaté)
+    // a resserré `use-side-layout.ts` pour exiger aussi une hauteur réelle
+    // (`innerHeight >= 480`), pas seulement la largeur et l'orientation — un
+    // essai en navigateur réel à 844 × 390 a montré la mise en page à trois
+    // colonnes (catalogue + plateau + panneau) trop à l'étroit : la barre
+    // d'actions se repliait sur trois lignes et le plateau devenait minuscule.
+    // Un téléphone en paysage garde donc le tiroir en bas ; ce test vérifie
+    // désormais le format qui a réellement la place pour un panneau latéral.
     vi.stubGlobal('matchMedia', () => ({ matches: false }));
-    vi.stubGlobal('innerWidth', 844);
-    vi.stubGlobal('innerHeight', 390);
+    vi.stubGlobal('innerWidth', 1180);
+    vi.stubGlobal('innerHeight', 820);
 
     render(<App />);
     openEmbeddedWorkshop();
@@ -640,6 +649,23 @@ describe('coque Contrapt!', () => {
     );
     expect(screen.getByRole('button', { name: /Balle/ })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Fermer le catalogue' })).not.toBeInTheDocument();
+  });
+
+  it('garde le catalogue en tiroir repliable sur un téléphone en paysage, trop court pour un panneau latéral', () => {
+    // Nouveau test compagnon du précédent (D4, plan-remise-en-jeu.md § 6) :
+    // verrouille explicitement le cas qui a motivé le resserrement du seuil,
+    // pour qu'il ne régresse pas silencieusement si le seuil bouge à nouveau.
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    vi.stubGlobal('innerWidth', 844);
+    vi.stubGlobal('innerHeight', 390);
+
+    render(<App />);
+    openEmbeddedWorkshop();
+
+    expect(screen.getByRole('region', { name: 'Objets disponibles' })).toHaveClass(
+      'object-drawer-collapsed',
+    );
+    expect(screen.getByRole('button', { name: 'Ouvrir le catalogue' })).toBeVisible();
   });
 
   it('active le parcours de placement par toucher d’une carte, séparément du plateau', () => {

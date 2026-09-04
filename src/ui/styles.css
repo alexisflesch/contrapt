@@ -172,8 +172,10 @@ h1 {
 }
 
 .workspace-toolbar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
+  flex: 0 0 auto;
   align-items: center;
   row-gap: 8px;
   gap: 8px;
@@ -194,12 +196,29 @@ h1 {
   color: var(--ink);
 }
 
+/*
+ * D4 (plan-remise-en-jeu.md § 6): a transient refusal/feedback message used
+ * to be laid out in flow (`flex: 1 0 100%`), so its appearance/disappearance
+ * changed `.workspace-toolbar`'s own height — and since the toolbar shares a
+ * column with `.board-scene-row` (`flex: 1`), that shrank or grew the board
+ * every time a message showed up. It is a toast now: positioned outside
+ * normal flow, so it never changes any sibling's size.
+ */
 .toolbar-feedback {
-  flex: 1 0 100%;
-  margin: 0;
+  position: absolute;
+  z-index: 6;
+  top: 100%;
+  right: 0;
+  left: 0;
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border: 2px solid var(--accent-strong);
+  border-radius: 10px;
   color: var(--accent-strong);
+  background: var(--surface-raised);
   font-size: 12px;
   line-height: 1.35;
+  box-shadow: 0 6px 16px rgb(61 52 48 / 16%);
 }
 
 .toolbar-button,
@@ -238,11 +257,40 @@ h1 {
   background: var(--accent);
 }
 
+/*
+ * D4 (plan-remise-en-jeu.md § 6): `.board-scene-row` is the flexible region
+ * that actually competes for space with the rest of the board column's
+ * chrome — `align-items: stretch` (the flex default) gives `.scene-frame` a
+ * definite height to derive its width from via `aspect-ratio`, and
+ * `justify-content: center` centers the result when the row is wider than
+ * the scene needs. `.scene-frame` itself never grows past its own ratio, so
+ * it is never stretched into a shape unrelated to the level it draws.
+ */
+.board-scene-row {
+  display: flex;
+  /*
+   * Not `min-height: 0`: `.scene-frame`'s own `min-height: 128px` floor only
+   * protects it from shrinking below a usable size if *this* row — the flex
+   * item that actually competes for space in `.workspace`'s column — carries
+   * the same floor. Without it, the row could be squeezed to near 0 by tall
+   * siblings while `.scene-frame` still enforced its 128px inside it, which
+   * overflowed the row's `overflow: hidden` box and let `.status-slot`
+   * (positioned right after) receive taps meant for the board underneath.
+   */
+  min-height: 128px;
+  flex: 1 1 auto;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+}
+
 .scene-frame {
   position: relative;
   display: grid;
+  min-width: 0;
   min-height: 128px;
-  flex: 1;
+  max-width: 100%;
+  max-height: 100%;
   overflow: hidden;
   place-items: center;
   border: 2px solid var(--line-strong);
@@ -471,6 +519,34 @@ h1 {
   color: var(--ink);
   font-size: 13px;
   font-weight: 700;
+}
+
+/*
+ * D4 (plan-remise-en-jeu.md § 6): the level-1 scene (8 × 5.5, ADR 0007 §
+ * 2.2) is landscape-shaped. On a narrow portrait phone, `.scene-frame`'s own
+ * aspect-ratio (see `.board-scene-row`) is then capped by width rather than
+ * height, leaving unused vertical space either side of it. This hint costs
+ * one line and is not blocking — a player who ignores it still has a fully
+ * visible, correctly-scaled board.
+ */
+.landscape-hint {
+  display: none;
+}
+
+@media (orientation: portrait) and (max-width: 600px) {
+  .landscape-hint {
+    display: block;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 6px 10px;
+    border: 2px solid var(--accent-soft);
+    border-radius: 10px;
+    color: var(--muted-ink);
+    background: var(--surface-raised);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+  }
 }
 
 /*
@@ -749,7 +825,22 @@ h1 {
   text-align: center;
 }
 
-@media (min-width: 680px), (orientation: landscape) and (min-width: 560px) {
+/*
+ * D4 (plan-remise-en-jeu.md § 6, écart constaté § "Écarts constatés depuis
+ * l'écriture du plan"): the side-panel layout (toolbox left, board, objective
+ * + properties right — three columns competing for width) needs real width
+ * *and* real height to be worth it, not just width. A plain `min-width` let
+ * a portrait tablet (820px wide, plenty of height) onto this layout, where
+ * it produced a narrow board next to a mostly empty panel — the original
+ * bug this rule caused. `min-height` alone would then wrongly admit a
+ * landscape *phone* (myriad widths, ~390-430px tall): three columns at that
+ * width leaves so little for the board and its toolbar that buttons wrap
+ * onto their own rows. Both together track "is there room for three
+ * columns", which is what the layout actually needs: a portrait tablet
+ * fails on orientation, a landscape phone fails on height, only real
+ * tablets/desktops pass both.
+ */
+@media (orientation: landscape) and (min-width: 680px) and (min-height: 480px) {
   .app-header {
     min-height: 76px;
     padding-right: 24px;
@@ -772,13 +863,13 @@ h1 {
   .object-drawer {
     position: relative;
     inset: auto;
-    width: min(360px, 37vw);
-    flex: 0 0 min(360px, 37vw);
+    width: min(300px, 34vw);
+    flex: 0 0 min(300px, 34vw);
     height: auto;
     max-height: 100%;
     overflow: hidden;
     border-top: 0;
-    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
     box-shadow: none;
     transition: none;
   }
@@ -789,6 +880,65 @@ h1 {
 
   .object-list {
     grid-template-columns: 1fr;
+  }
+
+  /*
+   * D4 (plan-remise-en-jeu.md § 6): the reference layout is three zones —
+   * toolbox (`.object-drawer`, now `.app-main`'s first flex child, to the
+   * left), board, and a right-hand panel for objective + status — none of
+   * which shares vertical space with another. `.workspace` becomes the grid
+   * that draws the line between "board column" and "panel column": every
+   * child below keeps its existing class and component, only its grid
+   * placement changes, so nothing here touches the DOM order the tests
+   * above rely on (`compareDocumentPosition`, `workspace.querySelector`).
+   *
+   * `minmax(0, 1fr)` on the middle row, not bare `1fr`: a grid `fr` track's
+   * automatic minimum is `auto` (i.e. its content's size), so a tall
+   * `.status-slot` in the panel column would otherwise grow the whole row —
+   * and shrink `.board-scene-row` right along with it, the exact bug this
+   * task exists to remove. `minmax(0, …)` floors that minimum at zero, and
+   * `.status-slot` scrolls internally instead.
+   */
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 20px;
+    row-gap: 12px;
+  }
+
+  .landscape-hint {
+    display: none;
+  }
+
+  .level-objective {
+    grid-area: 1 / 2 / 2 / 3;
+    align-self: start;
+  }
+
+  .workspace-toolbar {
+    grid-area: 1 / 1 / 2 / 2;
+  }
+
+  .board-scene-row {
+    grid-area: 2 / 1 / 3 / 2;
+  }
+
+  .camera-controls {
+    grid-area: 3 / 1 / 4 / 2;
+  }
+
+  .status-slot {
+    grid-area: 2 / 2 / 4 / 3;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .status-slot > * {
+    width: 100%;
   }
 }
 

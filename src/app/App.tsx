@@ -58,6 +58,12 @@ export function App() {
   // correct for any future level that also ships without an inventory.
   const hasInventory = currentEditorAttempt(session).document.inventory.length > 0;
 
+  // D4 (plan-remise-en-jeu.md § 6): the board keeps the level's own scene
+  // ratio instead of stretching into whatever box the surrounding chrome
+  // leaves behind — see `.board-scene-row`/`.scene-frame` in styles.css.
+  const scene = currentEditorAttempt(session).document.scene;
+  const sceneAspectRatio = (scene.max.x - scene.min.x) / (scene.max.y - scene.min.y);
+
   const loadLevelOne = (): void => {
     const levelOne = embeddedLevels[0];
     if (levelOne === undefined) {
@@ -114,10 +120,32 @@ export function App() {
           onLaunchLevelOne={loadLevelOne}
           onOpenWorkshop={loadWorkshop}
         />
+        {hasInventory && (
+          <ObjectDrawer
+            session={session}
+            selectedObject={pointers.placementTool?.kind}
+            isDrawerOpen={isDrawerOpen}
+            isSideLayout={isSideLayout}
+            isPlacementActive={pointers.placementTool !== null}
+            onToggleDrawer={() => {
+              setIsDrawerOpen((current) => !current);
+            }}
+            onCloseDrawer={() => {
+              setIsDrawerOpen(false);
+            }}
+            onSelectKind={(kind) => {
+              pointers.activatePlacement(kind);
+              setIsDrawerOpen(false);
+            }}
+          />
+        )}
         <section
           className={`workspace${hasInventory ? '' : ' workspace-no-drawer'}`}
           aria-label="Espace de construction"
         >
+          <p className="landscape-hint" role="note">
+            Astuce : tournez votre téléphone pour un plateau plus grand.
+          </p>
           {session.mode === 'resolution' && (
             <section className="level-objective" aria-label="Objectif du niveau">
               Faire entrer la balle dans le panier
@@ -145,6 +173,7 @@ export function App() {
             boardCanvasRef={boardCamera.boardCanvasRef}
             placementPreview={pointers.placementPreview}
             boardPointerHandlers={pointers.boardPointerHandlers}
+            sceneAspectRatio={sceneAspectRatio}
             onZoomIn={boardCamera.zoomIn}
             onZoomOut={boardCamera.zoomOut}
             onFitToScene={boardCamera.fitCameraToCurrentScene}
@@ -173,6 +202,13 @@ export function App() {
             renders its content or `null`, and this wrapper — never
             conditionally rendered — is what actually reserves the height,
             once, sized to the larger of the two, not their sum.
+
+            Mise en page (plan-remise-en-jeu.md § 6, D4) : sur grand écran,
+            `.status-slot` quitte la colonne du plateau — la grille de
+            `.workspace` le place dans la colonne latérale droite, aux côtés
+            de `.level-objective`, pour que son contenu ne partage plus jamais
+            l'espace vertical du plateau. Sur petit écran, il reste en flux
+            normal sous le plateau, comme avant.
           */}
           <div className="status-slot">
             <LevelResult
@@ -188,25 +224,6 @@ export function App() {
             />
           </div>
         </section>
-        {hasInventory && (
-          <ObjectDrawer
-            session={session}
-            selectedObject={pointers.placementTool?.kind}
-            isDrawerOpen={isDrawerOpen}
-            isSideLayout={isSideLayout}
-            isPlacementActive={pointers.placementTool !== null}
-            onToggleDrawer={() => {
-              setIsDrawerOpen((current) => !current);
-            }}
-            onCloseDrawer={() => {
-              setIsDrawerOpen(false);
-            }}
-            onSelectKind={(kind) => {
-              pointers.activatePlacement(kind);
-              setIsDrawerOpen(false);
-            }}
-          />
-        )}
       </main>
     </div>
   );
