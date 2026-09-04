@@ -1,6 +1,10 @@
 export type SpriteFamily = 'ball' | 'basket' | 'beam' | 'seesaw';
+export type SpriteAsset = Exclude<SpriteFamily, 'basket'> | 'basket-back' | 'basket-front';
 type SpriteScale = 2 | 3;
 type SpriteLoadState = 'idle' | 'loading' | 'ready' | 'failed';
+
+export const spriteAssetsForFamily = (family: SpriteFamily): readonly SpriteAsset[] =>
+  family === 'basket' ? ['basket-back', 'basket-front'] : [family];
 
 export type DecodedSprite = Readonly<{
   readonly width: number;
@@ -35,7 +39,7 @@ type SpriteLoaderOptions = Readonly<{
 
 export type SpriteLoader = Readonly<{
   readonly getState: (family: SpriteFamily) => SpriteLoadState;
-  readonly getSprite: (family: SpriteFamily) => DecodedSprite | undefined;
+  readonly getSprite: (asset: SpriteAsset) => DecodedSprite | undefined;
   readonly loadForFamilies: (families: readonly SpriteFamily[]) => Promise<void>;
 }>;
 
@@ -53,15 +57,16 @@ const createSpriteRecord = (): SpriteRecord => ({
   promise: undefined,
 });
 
-const createRecords = (): Record<SpriteFamily, SpriteRecord> => ({
+const createRecords = (): Record<SpriteAsset, SpriteRecord> => ({
   ball: createSpriteRecord(),
-  basket: createSpriteRecord(),
+  'basket-back': createSpriteRecord(),
+  'basket-front': createSpriteRecord(),
   beam: createSpriteRecord(),
   seesaw: createSpriteRecord(),
 });
 
-export const spriteAssetPath = (family: SpriteFamily, scale: SpriteScale): string =>
-  `./assets/sprites/${family}@${String(scale)}x.png`;
+export const spriteAssetPath = (asset: SpriteAsset, scale: SpriteScale): string =>
+  `./assets/sprites/${asset}@${String(scale)}x.png`;
 
 const toError = (reason: unknown): Error =>
   reason instanceof Error ? reason : new Error(String(reason));
@@ -90,8 +95,8 @@ export const createImageBitmapSpriteDecoder =
 export const createSpriteLoader = ({ scale, decode }: SpriteLoaderOptions): SpriteLoader => {
   const records = createRecords();
 
-  const loadFamily = (family: SpriteFamily): Promise<void> => {
-    const record = records[family];
+  const loadAsset = (asset: SpriteAsset): Promise<void> => {
+    const record = records[asset];
 
     if (record.state === 'ready') {
       return Promise.resolve();
@@ -109,7 +114,7 @@ export const createSpriteLoader = ({ scale, decode }: SpriteLoaderOptions): Spri
 
     let decoded: Promise<DecodedSprite>;
     try {
-      decoded = decode(spriteAssetPath(family, scale));
+      decoded = decode(spriteAssetPath(asset, scale));
     } catch (error: unknown) {
       const failure = toError(error);
       record.sprite = undefined;
@@ -134,16 +139,22 @@ export const createSpriteLoader = ({ scale, decode }: SpriteLoaderOptions): Spri
     return record.promise;
   };
 
-  const getState = (family: SpriteFamily): SpriteLoadState => records[family].state;
+  const getState = (family: SpriteFamily): SpriteLoadState => {
+    const states = spriteAssetsForFamily(family).map((asset) => records[asset].state);
+    if (states.some((state) => state === 'failed')) return 'failed';
+    if (states.every((state) => state === 'ready')) return 'ready';
+    if (states.some((state) => state === 'loading')) return 'loading';
+    return 'idle';
+  };
 
-  const getSprite = (family: SpriteFamily): DecodedSprite | undefined => {
-    const record = records[family];
+  const getSprite = (asset: SpriteAsset): DecodedSprite | undefined => {
+    const record = records[asset];
     return record.state === 'ready' ? record.sprite : undefined;
   };
 
   const loadForFamilies = async (families: readonly SpriteFamily[]): Promise<void> => {
-    const uniqueFamilies = [...new Set(families)];
-    await Promise.all(uniqueFamilies.map(loadFamily));
+    const uniqueAssets = [...new Set(families.flatMap((family) => spriteAssetsForFamily(family)))];
+    await Promise.all(uniqueAssets.map(loadAsset));
   };
 
   return {

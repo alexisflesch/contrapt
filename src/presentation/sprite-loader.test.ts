@@ -5,6 +5,7 @@ import {
   createImageBitmapSpriteDecoder,
   createSpriteLoader,
   spriteAssetPath,
+  spriteAssetsForFamily,
 } from './sprite-loader';
 
 const spriteFamilies = ['ball', 'basket', 'beam', 'seesaw'] as const;
@@ -145,6 +146,7 @@ describe('sprite loader contract', () => {
   it.each(spriteScales)('loads every family from the local %sx convention', async (scale) => {
     const pendingByPath = new Map<string, Deferred<DecodedSpriteFixture>>();
     const decodedByPath = new Map<string, DecodedSpriteFixture>();
+    const spriteAssets = spriteFamilies.flatMap(spriteAssetsForFamily);
 
     const decoder = vi.fn((path: string): Promise<DecodedSpriteFixture> => {
       const pending = pendingByPath.get(path);
@@ -154,8 +156,8 @@ describe('sprite loader contract', () => {
       return pending.promise;
     });
 
-    for (const family of spriteFamilies) {
-      const path = spriteAssetPath(family, scale);
+    for (const asset of spriteAssets) {
+      const path = spriteAssetPath(asset, scale);
       pendingByPath.set(path, createDeferred<DecodedSpriteFixture>());
       decodedByPath.set(path, {
         width: 64 * scale,
@@ -169,14 +171,16 @@ describe('sprite loader contract', () => {
 
     for (const family of spriteFamilies) {
       expect(loader.getState(family)).toBe('loading');
-      expect(loader.getSprite(family)).toBeUndefined();
-      expect(decoder).toHaveBeenCalledWith(spriteAssetPath(family, scale));
+      if (family !== 'basket') expect(loader.getSprite(family)).toBeUndefined();
+    }
+    for (const asset of spriteAssets) {
+      expect(decoder).toHaveBeenCalledWith(spriteAssetPath(asset, scale));
     }
 
-    expect(decoder.mock.calls).toHaveLength(spriteFamilies.length);
+    expect(decoder.mock.calls).toHaveLength(spriteAssets.length);
 
-    for (const family of spriteFamilies) {
-      const path = spriteAssetPath(family, scale);
+    for (const asset of spriteAssets) {
+      const path = spriteAssetPath(asset, scale);
       const pending = pendingByPath.get(path);
       const decoded = decodedByPath.get(path);
       if (pending === undefined || decoded === undefined) {
@@ -187,10 +191,12 @@ describe('sprite loader contract', () => {
 
     await load;
 
+    for (const asset of spriteAssets) {
+      const path = spriteAssetPath(asset, scale);
+      expect(loader.getSprite(asset)).toBe(decodedByPath.get(path));
+    }
     for (const family of spriteFamilies) {
-      const path = spriteAssetPath(family, scale);
       expect(loader.getState(family)).toBe('ready');
-      expect(loader.getSprite(family)).toBe(decodedByPath.get(path));
     }
   });
 
@@ -206,21 +212,23 @@ describe('sprite loader contract', () => {
     });
 
     for (const family of spriteFamilies) {
-      const path = spriteAssetPath(family, 2);
-      pendingByPath.set(path, createDeferred<DecodedSpriteFixture>());
-      decodedByPath.set(path, { width: 128, height: 96 });
+      for (const asset of spriteAssetsForFamily(family)) {
+        const path = spriteAssetPath(asset, 2);
+        pendingByPath.set(path, createDeferred<DecodedSpriteFixture>());
+        decodedByPath.set(path, { width: 128, height: 96 });
+      }
     }
 
     const loader = createSpriteLoader({ scale: 2, decode: decoder });
     const firstLoad = loader.loadForFamilies(spriteFamilies);
     const secondLoad = loader.loadForFamilies(['ball', 'ball', 'basket']);
 
-    expect(decoder).toHaveBeenCalledTimes(spriteFamilies.length);
+    expect(decoder).toHaveBeenCalledTimes(spriteFamilies.flatMap(spriteAssetsForFamily).length);
     expect(loader.getState('ball')).toBe('loading');
     expect(loader.getSprite('ball')).toBeUndefined();
 
-    for (const family of spriteFamilies) {
-      const path = spriteAssetPath(family, 2);
+    for (const asset of spriteFamilies.flatMap(spriteAssetsForFamily)) {
+      const path = spriteAssetPath(asset, 2);
       const pending = pendingByPath.get(path);
       const decoded = decodedByPath.get(path);
       if (pending === undefined || decoded === undefined) {
@@ -233,6 +241,12 @@ describe('sprite loader contract', () => {
 
     expect(loader.getState('ball')).toBe('ready');
     expect(loader.getSprite('ball')).toBe(decodedByPath.get(spriteAssetPath('ball', 2)));
+    expect(loader.getSprite('basket-back')).toBe(
+      decodedByPath.get(spriteAssetPath('basket-back', 2)),
+    );
+    expect(loader.getSprite('basket-front')).toBe(
+      decodedByPath.get(spriteAssetPath('basket-front', 2)),
+    );
   });
 
   it('exposes failed after a decoder rejection', async () => {

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   spriteAssetPath,
   type DecodedSprite,
+  type SpriteAsset,
   type SpriteFamily,
   type SpriteLoader,
 } from './sprite-loader';
@@ -25,6 +26,7 @@ type Operation =
 
 type ProjectedObject = Readonly<{
   readonly family: SpriteFamily;
+  readonly assetKey: SpriteAsset;
   readonly assetPath: string;
   readonly destination: Readonly<{
     readonly x: number;
@@ -110,9 +112,9 @@ const renderDestination = async (
   return { x, y, width, height };
 };
 
-const drawnFamilyOrder = async (
+const drawnAssetOrder = async (
   document: Parameters<typeof projectLevel>[0],
-): Promise<readonly SpriteFamily[]> => {
+): Promise<readonly SpriteAsset[]> => {
   const { context, operations } = createContext();
   const spriteLoader = createPendingSpriteLoader();
   spriteLoader.setReady();
@@ -133,7 +135,7 @@ const drawnFamilyOrder = async (
   return drawOperations.map((operation) => {
     const source = operation.values[0];
     const entry = (
-      Object.entries(spriteLoader.sprites) as ReadonlyArray<[SpriteFamily, unknown]>
+      Object.entries(spriteLoader.sprites) as ReadonlyArray<[SpriteAsset, unknown]>
     ).find(([, sprite]) => sprite === source);
     if (entry === undefined) {
       throw new Error('Le sprite dessiné est introuvable parmi les sprites chargés.');
@@ -223,14 +225,15 @@ const createContext = (): {
 const createPendingSpriteLoader = (): {
   readonly loader: SpriteLoader;
   readonly requestedFamilies: SpriteFamily[];
-  readonly sprites: Readonly<Record<SpriteFamily, DecodedSprite>>;
+  readonly sprites: Readonly<Record<SpriteAsset, DecodedSprite>>;
   readonly release: () => void;
   readonly setReady: () => void;
 } => {
   const requestedFamilies: SpriteFamily[] = [];
-  const sprites: Readonly<Record<SpriteFamily, DecodedSprite>> = {
+  const sprites: Readonly<Record<SpriteAsset, DecodedSprite>> = {
     ball: { width: 64, height: 32 },
-    basket: { width: 64, height: 32 },
+    'basket-back': { width: 64, height: 32 },
+    'basket-front': { width: 64, height: 32 },
     beam: { width: 64, height: 32 },
     seesaw: { width: 64, height: 32 },
   };
@@ -247,8 +250,8 @@ const createPendingSpriteLoader = (): {
       void family;
       return ready ? 'ready' : 'loading';
     },
-    getSprite: (family: SpriteFamily) => {
-      return ready ? sprites[family] : undefined;
+    getSprite: (asset: SpriteAsset) => {
+      return ready ? sprites[asset] : undefined;
     },
     loadForFamilies: async (families: readonly SpriteFamily[]): Promise<void> => {
       requestedFamilies.push(...families);
@@ -275,20 +278,20 @@ describe('projection du plateau', () => {
   it('contient les quatre familles et porte les assets visuels hors du document', () => {
     const projection = projectLevel(levelDocument);
 
-    // Ordre de dessin (B4), pas ordre du document : une balle est toujours
-    // projetée après tout objet non-balle, ici ball-1 passe donc en dernier
-    // bien qu'il soit le premier objet du document.
-    expect(projection.objects.map((object: ProjectedObject) => object.family)).toEqual([
-      'basket',
+    // Ordre de dessin, pas ordre du document : la balle est entre les deux
+    // calques du panier.
+    expect(projection.objects.map((object: ProjectedObject) => object.assetKey)).toEqual([
+      'basket-back',
       'beam',
       'seesaw',
       'ball',
+      'basket-front',
     ]);
     expect(
       projection.objects.every((object: ProjectedObject) => typeof object.assetPath === 'string'),
     ).toBe(true);
     expect(projection.objects.map((object) => object.assetPath)).toEqual(
-      projection.objects.map((object) => spriteAssetPath(object.family, 2)),
+      projection.objects.map((object) => spriteAssetPath(object.assetKey, 2)),
     );
     expect(levelDocument.objects.every((object) => !('assetPath' in object))).toBe(true);
   });
@@ -409,8 +412,8 @@ describe('renderer Canvas 2D du plateau', () => {
       kind: 'setTransform',
       values: [2, 0, 0, 2, 0, 0],
     });
-    // Ordre de dessin (B4) : basket, beam, seesaw, puis ball en dernier — pas
-    // l'ordre du document (ball, basket, beam, seesaw).
+    // Ordre de dessin : calques arrière, balle, puis lèvres avant — pas
+    // l'ordre du document.
     expect(
       operations
         .filter(
@@ -423,6 +426,7 @@ describe('renderer Canvas 2D du plateau', () => {
       [24, 20],
       [32, 24],
       [8, 12],
+      [16, 16],
     ]);
     expect(
       operations
@@ -431,7 +435,7 @@ describe('renderer Canvas 2D du plateau', () => {
             operation.kind === 'rotate',
         )
         .map((operation) => operation.values),
-    ).toEqual([[0], [Math.PI / 4], [0], [0]]);
+    ).toEqual([[0], [Math.PI / 4], [0], [0], [0]]);
 
     const drawOperations = operations.filter(
       (operation): operation is Extract<Operation, { readonly kind: 'drawImage' }> =>
@@ -452,11 +456,11 @@ describe('renderer Canvas 2D du plateau', () => {
         continue;
       }
 
-      expect(drawOperation.values[0]).toBe(spriteLoader.sprites[object.family]);
+      expect(drawOperation.values[0]).toBe(spriteLoader.sprites[object.assetKey]);
     }
   });
 
-  it('dessine la balle après le panier même listée avant lui dans le document (B4)', async () => {
+  it('dessine le panier arrière, la balle, puis le panier avant', async () => {
     const document = levelDocumentSchema.parse({
       schemaVersion: 2,
       id: 'b4-ball-before-basket',
@@ -483,9 +487,9 @@ describe('renderer Canvas 2D du plateau', () => {
       scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 8 } },
     });
 
-    const order = await drawnFamilyOrder(document);
+    const order = await drawnAssetOrder(document);
 
-    expect(order).toEqual(['basket', 'ball']);
+    expect(order).toEqual(['basket-back', 'ball', 'basket-front']);
   });
 
   it('conserve l’ordre du document entre deux objets qui ne sont pas des balles', async () => {
@@ -529,12 +533,11 @@ describe('renderer Canvas 2D du plateau', () => {
       scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 8 } },
     });
 
-    const order = await drawnFamilyOrder(document);
+    const order = await drawnAssetOrder(document);
 
-    // seesaw-1 puis beam-1 : leur ordre relatif dans le document est conservé.
-    // basket-1 aussi, car seul un objet « balle » est déplacé par le tri.
-    // ball-1 est déplacé après tous les autres bien qu'il soit au 3e rang.
-    expect(order).toEqual(['seesaw', 'beam', 'basket', 'ball']);
+    // Les éléments de fond conservent leur ordre document, puis la balle, puis
+    // la lèvre avant du panier.
+    expect(order).toEqual(['seesaw', 'beam', 'basket-back', 'ball', 'basket-front']);
   });
 
   it('expose une API de rendu sans victoire ni sérialisation', () => {

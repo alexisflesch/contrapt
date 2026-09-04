@@ -1,5 +1,11 @@
 import type { LevelDocument } from '../domain/level-document';
-import { spriteAssetPath, type SpriteFamily, type SpriteLoader } from './sprite-loader';
+import {
+  spriteAssetPath,
+  spriteAssetsForFamily,
+  type SpriteAsset,
+  type SpriteFamily,
+  type SpriteLoader,
+} from './sprite-loader';
 
 type BoardPoint = Readonly<{
   readonly x: number;
@@ -52,6 +58,7 @@ export type BoardDestination = Readonly<{
 export type ProjectedBoardObject = Readonly<{
   readonly id: string;
   readonly family: SpriteFamily;
+  readonly assetKey: SpriteAsset;
   readonly assetPath: string;
   readonly position: BoardPoint;
   readonly rotation: number;
@@ -112,49 +119,71 @@ const destinationForObject = (object: LevelDocument['objects'][number]): BoardDe
 
 /**
  * Presentation-only draw order (B4/ADR 0007): higher draws later, i.e. on
- * top. `basket` is the only visual "container" among the four families — an
- * object can end up rendered inside its silhouette — so it must never be
- * drawn after the thing it contains. Ranking every family explicitly (rather
- * than a single "is it a ball" flag) keeps the rule exhaustive: adding a
- * fifth family forces a decision here instead of silently inheriting
- * document order. This never touches `document.objects` or `LevelDocument`;
- * the domain stays unaware that a draw order exists.
+ * top. The basket is split into a rear layer and a front lip so a ball can be
+ * visibly nested inside it. Ranking visual assets explicitly keeps the rule
+ * exhaustive: adding a fifth family or layer forces a decision here instead
+ * of silently inheriting document order. This never touches `document.objects`
+ * or `LevelDocument`; the domain stays unaware that a draw order exists.
  */
-const drawOrderByFamily: Record<SpriteFamily, number> = {
-  basket: 0,
+const drawOrderByAsset: Record<SpriteAsset, number> = {
+  'basket-back': 0,
   beam: 0,
   seesaw: 0,
   ball: 1,
+  'basket-front': 2,
 };
 
 const byDrawOrderThenDocumentOrder = (
-  a: { readonly family: SpriteFamily; readonly documentIndex: number },
-  b: { readonly family: SpriteFamily; readonly documentIndex: number },
+  a: {
+    readonly assetKey: SpriteAsset;
+    readonly documentIndex: number;
+    readonly layerIndex: number;
+  },
+  b: {
+    readonly assetKey: SpriteAsset;
+    readonly documentIndex: number;
+    readonly layerIndex: number;
+  },
 ): number => {
-  const orderDelta = drawOrderByFamily[a.family] - drawOrderByFamily[b.family];
-  return orderDelta !== 0 ? orderDelta : a.documentIndex - b.documentIndex;
+  const orderDelta = drawOrderByAsset[a.assetKey] - drawOrderByAsset[b.assetKey];
+  if (orderDelta !== 0) return orderDelta;
+
+  const documentDelta = a.documentIndex - b.documentIndex;
+  return documentDelta !== 0 ? documentDelta : a.layerIndex - b.layerIndex;
 };
 
 export const projectLevel = (document: LevelDocument): BoardProjection => ({
   objects: document.objects
-    .map((object, documentIndex) => ({
-      documentIndex,
-      projected: {
-        id: object.id,
-        family: object.type,
-        assetPath: spriteAssetPath(object.type, 2),
-        position: {
-          x: object.transform.position.x,
-          y: object.transform.position.y,
+    .flatMap((object, documentIndex) =>
+      spriteAssetsForFamily(object.type).map((assetKey, layerIndex) => ({
+        documentIndex,
+        layerIndex,
+        projected: {
+          id: object.id,
+          family: object.type,
+          assetKey,
+          assetPath: spriteAssetPath(assetKey, 2),
+          position: {
+            x: object.transform.position.x,
+            y: object.transform.position.y,
+          },
+          rotation: object.transform.rotation,
+          destination: destinationForObject(object),
         },
-        rotation: object.transform.rotation,
-        destination: destinationForObject(object),
-      },
-    }))
+      })),
+    )
     .sort((a, b) =>
       byDrawOrderThenDocumentOrder(
-        { family: a.projected.family, documentIndex: a.documentIndex },
-        { family: b.projected.family, documentIndex: b.documentIndex },
+        {
+          assetKey: a.projected.assetKey,
+          documentIndex: a.documentIndex,
+          layerIndex: a.layerIndex,
+        },
+        {
+          assetKey: b.projected.assetKey,
+          documentIndex: b.documentIndex,
+          layerIndex: b.layerIndex,
+        },
       ),
     )
     .map(({ projected }) => projected),
@@ -207,9 +236,9 @@ export const createBoardRenderer = ({
     context.setTransform(viewport.devicePixelRatio, 0, 0, viewport.devicePixelRatio, 0, 0);
 
     for (const object of projection.objects) {
-      const sprite = spriteLoader.getSprite(object.family);
+      const sprite = spriteLoader.getSprite(object.assetKey);
       if (sprite === undefined) {
-        throw new Error(`Le sprite « ${object.family} » n’est pas disponible après chargement.`);
+        throw new Error(`Le sprite « ${object.assetKey} » n’est pas disponible après chargement.`);
       }
 
       const position = worldToPixels(object.position, viewport);
