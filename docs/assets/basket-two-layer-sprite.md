@@ -47,22 +47,32 @@ Intégration retenue :
   convention existante) : sert de fond plein, visible quand rien n'occulte le
   panier.
 - `basket-front@2x.png` ← `panier-transparent.png`, même recadrage, **puis
-  post-traité** : la zone évidée d'origine ne descendait qu'à ~37 % de la
-  hauteur du cadre, alors que la balle au repos (physique) occupe ~31 % à
-  ~86 %. Le reste de la paroi basse (37 %–100 %), qui aurait recouvert plus de
-  la moitié de la balle, a été effacé (alpha mis à 0) pour ne garder que
-  l'anneau du rebord (haut du cadre jusqu'à 20 %). La balle est donc
-  entièrement visible, au prix de l'effet d'emboîtement (aucune paroi ne passe
-  devant elle) — arbitrage délibéré en faveur de « nettement visible », qui
-  est un critère bloquant du projet (`plan-remise-en-jeu.md` § 9), au
-  détriment d'un raffinement visuel. Le panier vide (sans balle) n'est pas
-  affecté : `basket-back` reste plein partout où `basket-front` est désormais
-  transparent.
+  post-traité en deux passes** :
+  1. Une première passe a effacé toute la paroi basse (37 %–100 %) pour ne
+     garder que l'anneau du rebord (0–20 %), rendant la balle entièrement
+     visible mais flottant devant le panier, sans aucune occlusion — signalé
+     par l'auteur en jouant comme lisant « la balle devant le panier », pas
+     dedans.
+  2. Correction : l'anneau du rebord (0–20 %) est conservé tel quel, la
+     fenêtre reste ouverte de 20 % à 60 % (la balle y est visible sur toute
+     sa moitié haute), puis de 60 % à 100 % le calque redevient opaque — non
+     pas en restaurant l'art d'origine de `panier-transparent` (perdu, le
+     fichier source a été supprimé après la première intégration), mais en
+     reprenant directement les pixels de `basket-back@2x.png` à cet endroit
+     (même cadrage, même échelle, alignement vérifié au pixel près, donc
+     recollage invisible). Résultat : la moitié haute de la balle est
+     nettement visible, la moitié basse est occultée par la paroi avant —
+     l'effet d'emboîtement recherché à l'origine, sans reproduire le défaut
+     initial (balle quasi entièrement enterrée, elle, sur 90 % de sa hauteur).
 
-Si une régénération future veut restaurer un vrai effet d'emboîtement, il
-faudra un panier dont la zone visible/évidée descend nettement plus bas
-(idéalement jusqu'à ~85 % de la hauteur du cadre) — ce que ni cette
-génération ni la précédente ne fournissaient.
+  Le panier vide (sans balle) n'est pas affecté par ces deux passes :
+  `basket-back` reste plein partout, et la bande 60–100 % de `basket-front`
+  lui est désormais identique pixel pour pixel.
+
+Si une régénération future veut restaurer un vrai effet d'emboîtement sans ce
+bricolage, il faudra un panier dont la zone visible/évidée descend nettement
+plus bas dans l'art d'origine (jusqu'à ~85 % de la hauteur du cadre) — ce que
+ni cette génération ni la précédente ne fournissaient nativement.
 
 ## Le problème
 
