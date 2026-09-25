@@ -35,6 +35,7 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/decisions/0005-construction-attempt.md`     | 51      | provenance éphémère d'une tentative (accepté)                           |
 | `docs/decisions/0006-board-renderer.md`           | 101     | renderer du plateau et pipeline de sprites (accepté)                    |
 | `docs/decisions/0007-world-scale-and-camera.md`   | 234     | repère du monde, scène, caméra, échelle des sprites (accepté)           |
+| `docs/decisions/0008-client-side-routing.md`      | 78      | routage côté client, schéma d'URL (accepté)                             |
 
 Sources de vérité exécutables, prioritaires sur toute prose :
 
@@ -62,6 +63,7 @@ Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans rai
 | Conformité physique, arbitrage moteur          | ADR 0002, `catalogue-initial.md` § Tests contractuels                                                     | `test/conformance/`                    |
 | Rendu du plateau, cadrage, projection          | ADR 0007, ADR 0006, `architecture.md` § Rendu et interface                                                | `src/presentation/`                    |
 | Interface tactile, tiroir, gestes              | `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile                             | `src/ui/`, `src/app/`                  |
+| Routage, navigation, schéma d'URL              | ADR 0008                                                                                                  | `src/app/`                             |
 | Contenu d'un niveau                            | `levels/initial-progression.md` (section du niveau), `catalogue-initial.md`, ADR 0007 § Scène d'un niveau | `src/content/levels/`                  |
 | Parcours end-to-end                            | `mobile-editor-interactions.md` § Scénarios d'acceptation, `qualite.md` § Tests end-to-end                | `e2e/`                                 |
 | Stockage, import/export, codec URL             | `architecture.md` § Stockage et partage, `cahier-des-charges.md` § Persistance                            | `src/infrastructure/`                  |

@@ -137,6 +137,15 @@ const levelDocumentFixture = levelDocumentSchema.parse({
 });
 
 describe('sprite loader contract', () => {
+  it('resolves sprite paths from the site root, not the current route (ADR 0008)', () => {
+    // A relative path (`./assets/...`) resolves against whatever URL the
+    // browser is currently on. Client-side routing (ADR 0008) puts the app
+    // at nested paths like `/levels/level-1-laisser-tomber/play`, where a
+    // relative sprite path silently 404s instead of loading — it only ever
+    // worked by coincidence when the app lived solely at `/`.
+    expect(spriteAssetPath('ball', 2)).toBe('/assets/sprites/ball@2x.png');
+  });
+
   it('keeps assets outside the LevelDocument', () => {
     const keys = collectObjectKeys(levelDocumentFixture);
 

@@ -1,4 +1,6 @@
 import type { AttemptFailureReason, AttemptOutcome } from '../domain/attempt-failure-evaluator';
+import { Button } from './Button';
+import { Panel } from './Panel';
 
 interface LevelResultProps {
   /** How the attempt ended; `null` while none has concluded. */
@@ -20,39 +22,42 @@ const failureExplanations: Record<AttemptFailureReason, string> = {
 
 /**
  * The banner shown once a level's simulation has concluded, won or lost.
- * Renders `null` when there is nothing to show — `App.tsx` mounts this
- * alongside `ContextPanel` inside one shared, always-mounted `.status-slot`
- * (see the note there): the two are mutually exclusive by phase, so a
- * per-component reservation here would double-reserve space nothing ever
- * fills at the same time as the other.
+ * Renders `null` when there is nothing to show — `BoardShell` mounts this
+ * through `InspectorDrawer` inside one shared, always-mounted `.status-slot`
+ * whose size is reserved up front, so the banner appearing never resizes
+ * the board (B5).
  */
 export function LevelResult({ outcome, onReplay, onReset, onReturnToLevels }: LevelResultProps) {
   if (outcome === null) return null;
 
   if (outcome.outcome === 'lost') {
     return (
-      <section className="level-result level-result-failure" aria-label="Résultat du niveau">
-        <strong>Échec</strong>
+      <Panel className="level-result level-result-failure" label="Résultat du niveau" title="Échec">
         <p className="level-result-reason">{failureExplanations[outcome.reason]}</p>
-        <button className="primary-button" type="button" onClick={onReset}>
-          Réinitialiser
-        </button>
-        <button className="context-action" type="button" onClick={onReturnToLevels}>
-          Retour aux niveaux
-        </button>
-      </section>
+        <div className="level-result-actions">
+          <Button tone="reset" onClick={onReset}>
+            <span aria-hidden="true">↺</span>
+            Réinitialiser
+          </Button>
+          <Button onClick={onReturnToLevels}>Retour aux niveaux</Button>
+        </div>
+      </Panel>
     );
   }
 
   return (
-    <section className="level-result level-result-victory" aria-label="Résultat du niveau">
-      <strong>Victoire</strong>
-      <button className="primary-button" type="button" onClick={onReplay}>
-        Rejouer le niveau
-      </button>
-      <button className="context-action" type="button" onClick={onReturnToLevels}>
-        Retour aux niveaux
-      </button>
-    </section>
+    <Panel
+      className="level-result level-result-victory"
+      label="Résultat du niveau"
+      title="Victoire"
+    >
+      <div className="level-result-actions">
+        <Button tone="go" onClick={onReplay}>
+          <span aria-hidden="true">↺</span>
+          Rejouer le niveau
+        </Button>
+        <Button onClick={onReturnToLevels}>Retour aux niveaux</Button>
+      </div>
+    </Panel>
   );
 }

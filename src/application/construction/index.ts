@@ -4,6 +4,7 @@ export {
   placeFromInventory,
   removePlacement,
   rotatePlacement,
+  updatePlacementProperties,
 } from './construction-attempt';
 
 export type {

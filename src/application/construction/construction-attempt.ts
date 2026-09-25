@@ -1,3 +1,4 @@
+import { beamPropertiesSchema } from '../../domain/object-family-registry';
 import { levelDocumentSchema, type LevelDocument } from '../../domain/level-document';
 import type { Command, CommandState } from '../history';
 
@@ -17,6 +18,7 @@ export type ConstructionErrorCode =
   | 'inventory-provenance-missing'
   | 'inventory-source-not-found'
   | 'inventory-provenance-mismatch'
+  | 'properties-not-permitted'
   | 'invalid-level-document';
 
 /**
@@ -37,6 +39,7 @@ interface ConstructionCommand extends Command<ConstructionAttempt> {
 }
 
 type Placement = LevelDocument['objects'][number];
+type BeamPlacement = Extract<Placement, { readonly type: 'beam' }>;
 type InventoryEntry = LevelDocument['inventory'][number];
 type Transform = Placement['transform'];
 type WorldPosition = Transform['position'];
@@ -63,6 +66,16 @@ interface RotatePlacementInput {
 interface RemovePlacementInput {
   readonly context: ConstructionContext;
   readonly placementId: string;
+}
+
+/**
+ * Persistent property editing is deliberately limited to beam sizes in v1.
+ * Other object families have no author-editable properties yet.
+ */
+interface UpdatePlacementPropertiesInput {
+  readonly context: ConstructionContext;
+  readonly placementId: string;
+  readonly props: BeamPlacement['props'];
 }
 
 const deepFreeze = <Value>(value: Value): Value => {
@@ -230,6 +243,32 @@ export const rotatePlacement = (input: RotatePlacementInput): ConstructionComman
   },
 });
 
+export const updatePlacementProperties = (
+  input: UpdatePlacementPropertiesInput,
+): ConstructionCommand => ({
+  execute: (state) => {
+    const properties = beamPropertiesSchema.safeParse(input.props);
+    if (!properties.success) return reject('invalid-level-document');
+
+    if (input.context === 'player') return reject('properties-not-permitted');
+
+    const placement = state.document.objects.find(({ id }) => id === input.placementId);
+    if (placement === undefined) return reject('placement-not-found');
+
+    if (placement.type === 'beam' && placement.props.size === properties.data.size) {
+      return { status: 'accepted', state };
+    }
+
+    const documentCandidate = {
+      ...state.document,
+      objects: state.document.objects.map((entry) =>
+        entry.id === placement.id ? { ...entry, props: properties.data } : entry,
+      ),
+    };
+    return acceptCandidate(documentCandidate, state.provenance);
+  },
+});
+
 export const removePlacement = (input: RemovePlacementInput): ConstructionCommand => ({
   execute: (state) => {
     const placement = state.document.objects.find(({ id }) => id === input.placementId);
@@ -253,7 +292,9 @@ export const removePlacement = (input: RemovePlacementInput): ConstructionComman
     if (sourceId !== undefined) {
       const source = state.document.inventory.find(({ id }) => id === sourceId);
       if (source === undefined) return reject('inventory-source-not-found');
-      if (!definitionsMatch(placement, source)) return reject('inventory-provenance-mismatch');
+      if (input.context === 'player' && !definitionsMatch(placement, source)) {
+        return reject('inventory-provenance-mismatch');
+      }
 
       inventoryCandidate = state.document.inventory.map((entry) =>
         entry.id === source.id ? { ...entry, quantity: entry.quantity + 1 } : entry,

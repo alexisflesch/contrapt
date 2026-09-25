@@ -116,6 +116,15 @@ const createCanvasContextAdapter = (context: CanvasRenderingContext2D): BoardCan
 
     context.drawImage(source, x, y, width, height);
   },
+  strokeRect: (x, y, width, height) => {
+    context.strokeRect(x, y, width, height);
+  },
+  get lineWidth() {
+    return context.lineWidth;
+  },
+  set lineWidth(value: number) {
+    context.lineWidth = value;
+  },
 });
 
 interface BoardViewProps {
@@ -128,8 +137,6 @@ interface BoardViewProps {
   readonly boardCanvasRef: RefObject<HTMLCanvasElement | null>;
   readonly placementPreview: PlacementPreview | null;
   readonly boardPointerHandlers: BoardPointerHandlers;
-  /** Width ÷ height of the level's own scene rectangle — see `.board-scene-row` in styles.css. */
-  readonly sceneAspectRatio: number;
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
   readonly onFitToScene: () => void;
@@ -154,7 +161,6 @@ export function BoardView({
   boardCanvasRef,
   placementPreview,
   boardPointerHandlers,
-  sceneAspectRatio,
   onZoomIn,
   onZoomOut,
   onFitToScene,
@@ -209,7 +215,24 @@ export function BoardView({
             simulationAttempt !== null && simulation !== null
               ? projectSimulationDocument(simulationAttempt.document, simulation)
               : (simulationAttempt ?? currentEditorAttempt(currentSession)).document;
-          await renderer.render(projectLevel(displayedDocument));
+          const projection = projectLevel(displayedDocument);
+          const selectedPlacementId = currentSession.selectedPlacementId;
+          const projectionWithEffectiveCapabilities =
+            currentSession.mode === 'creation' && selectedPlacementId !== null
+              ? {
+                  ...projection,
+                  objects: projection.objects.map((object) =>
+                    object.id === selectedPlacementId && object.family === 'beam'
+                      ? { ...object, rotatable: true }
+                      : object,
+                  ),
+                }
+              : projection;
+          await renderer.render(
+            currentSession.phase === 'construction' && selectedPlacementId !== null
+              ? { ...projectionWithEffectiveCapabilities, selectedPlacementId }
+              : projectionWithEffectiveCapabilities,
+          );
         })
         .catch(() => undefined);
     };
@@ -238,13 +261,10 @@ export function BoardView({
   return (
     <>
       {/*
-        D4 (plan-remise-en-jeu.md § 6): `.board-scene-row` stretches to fill
-        whatever height the surrounding chrome leaves, and `.scene-frame`
-        (aspect-ratio locked to the level's own scene, via the inline style
-        below) sizes itself within that row instead of stretching to an
-        arbitrary box — the camera's own `fitCameraToScene` "contain" already
-        never crops the scene, but a box shaped like the scene wastes no
-        pixels on letterboxing either.
+        D4 (plan-remise-en-jeu.md § 6, arbitrated by the product owner): the
+        frame fills all the space the surrounding chrome leaves, so no dead
+        zone is left around the board; the camera's own `fitCameraToScene`
+        "contain" keeps the whole scene visible and centred inside it.
       */}
       <div className="board-scene-row">
         <div
@@ -252,7 +272,6 @@ export function BoardView({
           ref={boardRef}
           role="region"
           aria-label="Plateau de jeu"
-          style={{ aspectRatio: String(sceneAspectRatio) }}
           {...boardPointerHandlers}
         >
           <canvas

@@ -1,38 +1,76 @@
-import type { EditorSession } from '../application/editor-session/editor-session';
+import { useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { Button } from './Button';
 
 interface AppHeaderProps {
-  readonly sessionMode: EditorSession['mode'];
-  readonly isMenuOpen: boolean;
-  readonly onToggleMenu: () => void;
+  readonly title: string;
+  readonly subtitle: string;
+  /** Optional screen-specific control placed before the ☰ menu button. */
+  readonly action?: ReactNode;
 }
 
-/** The app's brand lockup, current level/mode label, and the menu toggle. */
-export function AppHeader({ sessionMode, isMenuOpen, onToggleMenu }: AppHeaderProps) {
+/**
+ * The app's brand lockup, current screen label, and the ☰ navigation menu.
+ * Every destination is a real route (ADR 0008): selecting one navigates
+ * away, which unmounts this component along with its own open/closed state
+ * — no explicit "close the menu" step is needed after a selection.
+ */
+export function AppHeader({ title, subtitle, action }: AppHeaderProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
   return (
     <header className="app-header">
       <div className="brand-lockup">
         <span className="brand-mark" aria-hidden="true">
           +
         </span>
-        <h1>Contrapt!</h1>
+        <h1 className="brand-name">Contrapt!</h1>
       </div>
       <p className="level-label">
-        <span>
-          {sessionMode === 'creation' ? 'Éditeur de niveaux' : 'Niveau 1 · Laisser tomber'}
-        </span>
-        <span className="level-mode">
-          {sessionMode === 'creation' ? 'Mode éditeur' : 'Mode joueur'}
-        </span>
+        <span className="level-title">{title}</span>
+        <span className="level-mode">{subtitle}</span>
       </p>
-      <button
-        className="icon-button"
-        type="button"
-        aria-label="Ouvrir le menu"
-        aria-expanded={isMenuOpen}
-        onClick={onToggleMenu}
-      >
-        <span aria-hidden="true">☰</span>
-      </button>
+      <div className="header-actions">
+        {action}
+        <button
+          className="icon-button"
+          type="button"
+          aria-label="Ouvrir le menu"
+          aria-expanded={isMenuOpen}
+          onClick={() => {
+            setIsMenuOpen((open) => !open);
+          }}
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
+      </div>
+      {isMenuOpen && (
+        <nav className="level-menu" aria-label="Menu principal">
+          <Button
+            onClick={() => {
+              void navigate('/levels');
+            }}
+          >
+            Liste des niveaux
+          </Button>
+          <Button
+            onClick={() => {
+              void navigate('/editor');
+            }}
+          >
+            Atelier de construction
+          </Button>
+          <Button
+            onClick={() => {
+              void navigate('/settings');
+            }}
+          >
+            Paramètres
+          </Button>
+        </nav>
+      )}
     </header>
   );
 }

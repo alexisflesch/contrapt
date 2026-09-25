@@ -3,6 +3,7 @@ import {
   type EditorSession,
 } from '../application/editor-session/editor-session';
 import type { ObjectKind } from '../app/object-catalog';
+import { Button } from './Button';
 
 interface SimulationControlsProps {
   readonly session: EditorSession;
@@ -46,45 +47,47 @@ export function SimulationControls({
       {session.phase === 'construction' && (
         <>
           {hasInventory && (
-            <>
-              <button
+            <div className="toolbar-group">
+              <Button
                 className="toolbar-button"
-                type="button"
                 disabled={session.history.past.length === 0}
                 onClick={onUndo}
               >
                 <span aria-hidden="true">↶</span>
-                Annuler
-              </button>
-              <button
+                <span className="toolbar-button-label">Annuler</span>
+              </Button>
+              <Button
                 className="toolbar-button"
-                type="button"
                 disabled={session.history.future.length === 0}
                 onClick={onRedo}
               >
                 <span aria-hidden="true">↷</span>
-                Rétablir
-              </button>
-            </>
+                <span className="toolbar-button-label">Rétablir</span>
+              </Button>
+            </div>
           )}
           {activePlacementKind !== null && (
             <div className="toolbar-status" aria-live="polite">
-              Placement actif : {activePlacementKind}.
-              <button className="placement-cancel" type="button" onClick={onCancelPlacement}>
-                Annuler le placement
-              </button>
+              <span className="toolbar-status-text">Placement actif : {activePlacementKind}.</span>
+              <Button className="placement-cancel" onClick={onCancelPlacement}>
+                {/* Short visible form for narrow toolbars; the accessible name stays the full label. */}
+                <span className="placement-cancel-short" aria-hidden="true">
+                  ✕<span className="placement-cancel-kind"> {activePlacementKind}</span>
+                </span>
+                <span className="placement-cancel-label">Annuler le placement</span>
+              </Button>
             </div>
           )}
-          <button className="primary-button" type="button" onClick={onLaunchSimulation}>
+          <Button tone="go" className="toolbar-primary" onClick={onLaunchSimulation}>
             <span aria-hidden="true">▶</span>
             Tester
-          </button>
+          </Button>
         </>
       )}
 
       {session.phase !== 'construction' && (
         <div className="toolbar-status" aria-live="polite">
-          <strong>
+          <strong className="toolbar-status-text">
             {session.phase === 'running'
               ? 'Simulation en cours'
               : session.phase === 'paused'
@@ -92,18 +95,21 @@ export function SimulationControls({
                 : 'Simulation terminée'}
           </strong>
           {session.phase === 'running' && (
-            <button className="placement-cancel" type="button" onClick={onPause}>
+            <Button tone="pause" onClick={onPause}>
+              <span aria-hidden="true">❚❚</span>
               Mettre en pause
-            </button>
+            </Button>
           )}
           {session.phase === 'paused' && (
-            <button className="placement-cancel" type="button" onClick={onResume}>
+            <Button tone="go" onClick={onResume}>
+              <span aria-hidden="true">▶</span>
               Reprendre
-            </button>
+            </Button>
           )}
-          <button className="placement-cancel" type="button" onClick={onRestoreConstruction}>
+          <Button tone="reset" onClick={onRestoreConstruction}>
+            <span aria-hidden="true">↺</span>
             Réinitialiser
-          </button>
+          </Button>
         </div>
       )}
 

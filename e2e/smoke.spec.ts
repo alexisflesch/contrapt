@@ -20,9 +20,11 @@ test('affiche la coque Contrapt! sur un écran mobile, prête à jouer le niveau
   await expect(page.getByText('Mode joueur')).toBeVisible();
   const board = page.getByRole('region', { name: 'Plateau de jeu' });
   await expect(board).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Objectif du niveau' })).toContainText(
+  await page.getByRole('button', { name: 'Voir l’objectif' }).click();
+  await expect(page.getByRole('dialog', { name: 'Objectif du niveau' })).toContainText(
     'Faire entrer la balle dans le panier',
   );
+  await page.getByRole('button', { name: 'Fermer l’objectif' }).click();
   await expect(board.getByRole('img', { name: 'Rendu du plateau' })).toBeVisible();
 
   // Level 1 ships with an empty inventory (`initial-progression.md` §
@@ -263,7 +265,7 @@ test.describe('coque sur le petit viewport supporté', () => {
     await openWorkshopFromMenu(page);
 
     await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
-    await page.getByRole('button', { name: 'Poutre courte' }).tap();
+    await page.getByRole('button', { name: 'Poutre moyenne' }).tap();
 
     const board = page.getByRole('region', { name: 'Plateau de jeu' });
     const renderer = board.getByRole('img', { name: 'Rendu du plateau' });
@@ -292,7 +294,7 @@ test.describe('coque sur le petit viewport supporté', () => {
     const renderingBeforePlacement = await renderer.screenshot();
 
     await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
-    await page.getByRole('button', { name: 'Poutre courte' }).tap();
+    await page.getByRole('button', { name: 'Poutre moyenne' }).tap();
     await board.tap({ position: { x: 160, y: 120 } });
 
     await expect(page.getByRole('button', { name: 'Annuler' })).toBeEnabled();

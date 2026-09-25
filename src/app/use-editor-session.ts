@@ -1,8 +1,6 @@
 import { useCallback, useRef, useState, type RefObject } from 'react';
 
-import { createConstructionAttempt } from '../application/construction/construction-attempt';
 import {
-  createEditorSession,
   currentEditorAttempt,
   executeEditorCommand,
   redoEditorCommand,
@@ -10,29 +8,17 @@ import {
   undoEditorCommand,
   type EditorSession,
 } from '../application/editor-session/editor-session';
-import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
-
-/**
- * B1 (plan-remise-en-jeu.md § 4): the app opens directly on level 1 in
- * resolution mode, not the free-creation workshop. The workshop remains
- * reachable from the ☰ menu (`App.tsx`'s `loadWorkshop`). The fallback to the
- * workshop below only matters if `embeddedLevels` were ever empty, which
- * `embedded-levels.ts` structurally never allows — `noUncheckedIndexedAccess`
- * still requires handling it explicitly rather than asserting it away.
- */
-const initialSession = (): EditorSession => {
-  const levelOne = embeddedLevels[0];
-  return levelOne === undefined
-    ? createEditorSession('creation', createConstructionAttempt(embeddedWorkshopDocument))
-    : createEditorSession('resolution', createConstructionAttempt(levelOne));
-};
 
 /** Translates an `EditorActionResult` rejection reason into user-facing feedback. */
 const refusalMessage = (reason: string): string =>
   reason === 'outside-build-zone'
-    ? 'Placement refusé : choisissez une position dans la zone de construction.'
-    : 'Placement refusé : cette action est indisponible.';
+    ? 'Action refusée : choisissez une position dans la zone de construction.'
+    : reason === 'move-not-permitted' || reason === 'rotate-not-permitted'
+      ? 'Action indisponible : cet objet est verrouillé.'
+      : reason === 'remove-not-permitted' || reason === 'goal-object-protected'
+        ? 'Suppression indisponible pour cet objet.'
+        : 'Cette action est indisponible.';
 
 interface EditorSessionController {
   readonly session: EditorSession;
@@ -57,9 +43,16 @@ interface EditorSessionController {
  * the pointer gestures that drive it (`use-board-pointers.ts`); this hook
  * exposes `sessionRef` and `updateSession` so those gestures can read and
  * write the session without owning it.
+ *
+ * `createInitialSession` is only read as `useState`'s lazy initializer: it
+ * runs once, on mount. A route that loads a different document (a different
+ * level, or the workshop) remounts its `BoardShell` with a fresh `key`
+ * instead of asking this hook to react to a changed initializer.
  */
-export function useEditorSession(): EditorSessionController {
-  const [session, setSession] = useState<EditorSession>(initialSession);
+export function useEditorSession(
+  createInitialSession: () => EditorSession,
+): EditorSessionController {
+  const [session, setSession] = useState<EditorSession>(createInitialSession);
   const [feedback, setFeedback] = useState<string | null>(null);
   const sessionRef = useRef(session);
 

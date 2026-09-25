@@ -26,7 +26,9 @@ type BoardCanvas = {
 };
 
 /** The renderer only depends on the Canvas 2D operations it actually uses. */
-export type BoardCanvasContext = Readonly<{
+export type BoardCanvasContext = {
+  /** Allows richer Canvas test doubles without widening the renderer's API. */
+  readonly [additionalCanvasOperation: string]: unknown;
   readonly save: () => void;
   readonly restore: () => void;
   readonly setTransform: (
@@ -39,6 +41,13 @@ export type BoardCanvasContext = Readonly<{
   ) => void;
   readonly translate: (x: number, y: number) => void;
   readonly rotate: (radians: number) => void;
+  lineWidth?: number;
+  readonly strokeRect?: (
+    destinationX: number,
+    destinationY: number,
+    destinationWidth: number,
+    destinationHeight: number,
+  ) => void;
   readonly drawImage: (
     source: unknown,
     destinationX: number,
@@ -46,7 +55,7 @@ export type BoardCanvasContext = Readonly<{
     destinationWidth: number,
     destinationHeight: number,
   ) => void;
-}>;
+};
 
 export type BoardDestination = Readonly<{
   readonly x: number;
@@ -62,12 +71,18 @@ export type ProjectedBoardObject = Readonly<{
   readonly assetPath: string;
   readonly position: BoardPoint;
   readonly rotation: number;
+  /** Document order, retained for deterministic presentation interactions. */
+  readonly placementOrder: number;
+  /** Permission projected for presentation-only affordances. */
+  readonly rotatable: boolean;
   /** Bounds in world units, centered on `position`, for rendering and editor framing. */
   readonly destination: BoardDestination;
 }>;
 
 export type BoardProjection = Readonly<{
   readonly objects: readonly ProjectedBoardObject[];
+  /** Ephemeral selection state; it is never part of `LevelDocument`. */
+  readonly selectedPlacementId?: string;
 }>;
 
 type FamilyVisual = Readonly<{
@@ -152,8 +167,8 @@ const byDrawOrderThenDocumentOrder = (
   return documentDelta !== 0 ? documentDelta : a.layerIndex - b.layerIndex;
 };
 
-export const projectLevel = (document: LevelDocument): BoardProjection => ({
-  objects: document.objects
+export const projectLevel = (document: LevelDocument): BoardProjection => {
+  const objects = document.objects
     .flatMap((object, documentIndex) =>
       spriteAssetsForFamily(object.type).map((assetKey, layerIndex) => ({
         documentIndex,
@@ -168,6 +183,8 @@ export const projectLevel = (document: LevelDocument): BoardProjection => ({
             y: object.transform.position.y,
           },
           rotation: object.transform.rotation,
+          placementOrder: documentIndex,
+          rotatable: object.permissions.rotate,
           destination: destinationForObject(object),
         },
       })),
@@ -186,8 +203,10 @@ export const projectLevel = (document: LevelDocument): BoardProjection => ({
         },
       ),
     )
-    .map(({ projected }) => projected),
-});
+    .map(({ projected }) => projected);
+
+  return { objects };
+};
 
 export const worldToPixels = (position: BoardPoint, viewport: BoardViewport): BoardPoint => ({
   x: (position.x - viewport.origin.x) * viewport.pixelsPerWorldUnit,
@@ -222,6 +241,57 @@ const requiredFamilies = (projection: BoardProjection): readonly SpriteFamily[] 
   ...new Set(projection.objects.map((object) => object.family)),
 ];
 
+export const ROTATION_HANDLE_SIZE_CSS_PIXELS = 44;
+const SELECTION_LINE_WIDTH_CSS_PIXELS = 2;
+export const ROTATION_HANDLE_DISTANCE_CSS_PIXELS = 32;
+
+export const rotationHandleBounds = (
+  object: ProjectedBoardObject,
+  viewport: BoardViewport,
+): BoardDestination => {
+  const center = worldToPixels(object.position, viewport);
+
+  return {
+    x: center.x - ROTATION_HANDLE_SIZE_CSS_PIXELS / 2,
+    y: center.y - ROTATION_HANDLE_DISTANCE_CSS_PIXELS - ROTATION_HANDLE_SIZE_CSS_PIXELS / 2,
+    width: ROTATION_HANDLE_SIZE_CSS_PIXELS,
+    height: ROTATION_HANDLE_SIZE_CSS_PIXELS,
+  };
+};
+
+const selectedObject = (projection: BoardProjection): ProjectedBoardObject | undefined => {
+  if (projection.selectedPlacementId === undefined) return undefined;
+
+  return projection.objects.find((object) => object.id === projection.selectedPlacementId);
+};
+
+const drawSelection = (
+  context: BoardCanvasContext,
+  object: ProjectedBoardObject,
+  viewport: BoardViewport,
+): void => {
+  if (context.strokeRect === undefined) return;
+
+  const position = worldToPixels(object.position, viewport);
+  const destination = destinationToPixels(object.destination, viewport);
+
+  context.save();
+  context.translate(position.x, position.y);
+  context.rotate(object.rotation);
+  if (context.lineWidth !== undefined) {
+    context.lineWidth = SELECTION_LINE_WIDTH_CSS_PIXELS;
+  }
+  context.strokeRect(destination.x, destination.y, destination.width, destination.height);
+  context.restore();
+
+  if (!object.rotatable) return;
+
+  const handle = rotationHandleBounds(object, viewport);
+  context.save();
+  context.strokeRect(handle.x, handle.y, handle.width, handle.height);
+  context.restore();
+};
+
 export const createBoardRenderer = ({
   canvas,
   context,
@@ -249,6 +319,11 @@ export const createBoardRenderer = ({
       context.rotate(object.rotation);
       context.drawImage(sprite.source !== undefined ? sprite.source : sprite, x, y, width, height);
       context.restore();
+    }
+
+    const selection = selectedObject(projection);
+    if (selection !== undefined) {
+      drawSelection(context, selection, viewport);
     }
   },
 });

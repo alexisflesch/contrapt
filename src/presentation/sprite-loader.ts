@@ -66,7 +66,7 @@ const createRecords = (): Record<SpriteAsset, SpriteRecord> => ({
 });
 
 export const spriteAssetPath = (asset: SpriteAsset, scale: SpriteScale): string =>
-  `./assets/sprites/${asset}@${String(scale)}x.png`;
+  `/assets/sprites/${asset}@${String(scale)}x.png`;
 
 const toError = (reason: unknown): Error =>
   reason instanceof Error ? reason : new Error(String(reason));

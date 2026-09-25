@@ -8,6 +8,7 @@ import {
   placeFromInventory,
   removePlacement,
   rotatePlacement,
+  updatePlacementProperties,
   type ConstructionAttempt,
   type ConstructionContext,
   type ConstructionErrorCode,
@@ -309,6 +310,123 @@ describe('ConstructionAttempt', () => {
     if (result.status !== 'accepted') return;
     expect(result.state.document.objects.some(({ id }) => id === 'fixed-beam')).toBe(false);
     expect(result.state.document.inventory[0]?.quantity).toBe(1);
+  });
+
+  it('lets the author change a beam size immutably', () => {
+    const attempt = createConstructionAttempt(createLevel());
+
+    const result = updatePlacementProperties({
+      context: 'author',
+      placementId: 'fixed-beam',
+      props: { size: 'long' },
+    }).execute(attempt);
+
+    expect(result.status).toBe('accepted');
+    if (result.status !== 'accepted') return;
+    expect(result.state.document.objects.find(({ id }) => id === 'fixed-beam')?.props).toEqual({
+      size: 'long',
+    });
+    expect(attempt.document.objects.find(({ id }) => id === 'fixed-beam')?.props).toEqual({
+      size: 'medium',
+    });
+    expect(result.state).not.toBe(attempt);
+  });
+
+  it('records one atomic beam-size command and supports undo and redo', () => {
+    const initialAttempt = createConstructionAttempt(createLevel());
+    const history = createHistory(initialAttempt);
+
+    const changed = executeCommand(
+      history,
+      updatePlacementProperties({
+        context: 'author',
+        placementId: 'fixed-beam',
+        props: { size: 'short' },
+      }),
+    );
+
+    expect(changed.status).toBe('accepted');
+    if (changed.status !== 'accepted') return;
+    expect(changed.recorded).toBe(true);
+    expect(changed.history.past).toHaveLength(1);
+    expect(
+      changed.history.state.document.objects.find(({ id }) => id === 'fixed-beam')?.props,
+    ).toEqual({ size: 'short' });
+
+    const undone = undo(changed.history);
+    expect(undone.status).toBe('accepted');
+    if (undone.status !== 'accepted') return;
+    expect(undone.history.state).toEqual(initialAttempt);
+
+    const redone = redo(undone.history);
+    expect(redone.status).toBe('accepted');
+    if (redone.status !== 'accepted') return;
+    expect(
+      redone.history.state.document.objects.find(({ id }) => id === 'fixed-beam')?.props,
+    ).toEqual({ size: 'short' });
+  });
+
+  it('does not record a no-op beam-size update', () => {
+    const history = createHistory(createConstructionAttempt(createLevel()));
+
+    const result = executeCommand(
+      history,
+      updatePlacementProperties({
+        context: 'author',
+        placementId: 'fixed-beam',
+        props: { size: 'medium' },
+      }),
+    );
+
+    expect(result).toEqual({ status: 'accepted', history, recorded: false });
+  });
+
+  it('rejects a missing placement with a stable reason', () => {
+    const attempt = createConstructionAttempt(createLevel());
+
+    expect(
+      updatePlacementProperties({
+        context: 'author',
+        placementId: 'missing-beam',
+        props: { size: 'long' },
+      }).execute(attempt),
+    ).toEqual({ status: 'rejected', reason: 'placement-not-found' });
+  });
+
+  it('does not let the player change a persistent beam property', () => {
+    const attempt = createConstructionAttempt(createLevel());
+
+    expect(
+      updatePlacementProperties({
+        context: 'player',
+        placementId: 'fixed-beam',
+        props: { size: 'long' },
+      }).execute(attempt),
+    ).toEqual({ status: 'rejected', reason: 'properties-not-permitted' });
+  });
+
+  it('rejects unknown properties and properties from another family at the type boundary', () => {
+    const attempt = createConstructionAttempt(createLevel());
+    const unknownPropertyCommand = updatePlacementProperties({
+      context: 'author',
+      placementId: 'fixed-beam',
+      // @ts-expect-error beam properties are strict and expose only size
+      props: { size: 'long', unknown: true },
+    });
+    expect(unknownPropertyCommand.execute(attempt)).toEqual({
+      status: 'rejected',
+      reason: 'invalid-level-document',
+    });
+
+    const otherFamilyCommand = updatePlacementProperties({
+      context: 'author',
+      placementId: 'goal-ball',
+      props: { size: 'long' },
+    });
+    expect(otherFamilyCommand.execute(attempt)).toEqual({
+      status: 'rejected',
+      reason: 'invalid-level-document',
+    });
   });
 
   it('rejects a produced document that fails the LevelDocument schema', () => {

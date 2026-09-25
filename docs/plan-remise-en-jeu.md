@@ -4,6 +4,9 @@ Statut : plan d'exécution, écrit après essai réel de l'application dans un
 navigateur (desktop 1440 × 900, tablette 820 × 1180 et 1180 × 820, téléphone
 390 × 844, 844 × 390 et 320 × 568).
 
+La référence `ee99b245-f82e-4090-992b-15305004f8a3.png` guide seulement la
+composition générale ; elle n'ajoute aucun contrôle hors cahier des charges.
+
 Ce document **ne remplace pas `backlog.md`**, qui reste autorité sur le découpage
 des tranches. Il ordonne et détaille l'exécution des tranches T3, T4b et T5 en
 partant de ce qui est réellement observable aujourd'hui, et il signale les
@@ -14,7 +17,8 @@ de `.codex/skills/orchestrate/references/routing.md` (`luna`, `terra`, `sol`).
 
 ## Suivi
 
-Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarré.
+Mis à jour à chaque intégration. `⏳` = agent en cours, `✅` = livré et vérifié,
+`◐` = partiel, `⬜` = restant.
 
 | Tâche                                 | État | Commit                 |
 | ------------------------------------- | ---- | ---------------------- |
@@ -28,15 +32,28 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
 | B3 — Géométrie du niveau 1            | ✅   | `5bc44ec`              |
 | B4 — Balle visible dans le panier     | ✅   | `e79d77f`              |
 | B5 — Recadrage stable pendant l'issue | ✅   | `357beeb`              |
-| C1 — Fantôme de placement             | ⬜   |                        |
+| C1 — Fantôme de placement             | ◐    | projection existante   |
 | C2 — Ombre portée                     | ⬜   |                        |
 | C3 — Manipulation sur le plateau      | ⬜   |                        |
-| D1 — Pipeline de sprites              | ⬜   | assets bruts `c72c8cc` |
+| D1 — Pipeline de sprites              | ◐    | assets bruts `c72c8cc` |
 | D2 — Régénérer les sprites            | ⬜   | assets bruts `c72c8cc` |
 | D3 — Fond suivant la caméra           | ⬜   |                        |
-| D4 — Mise en page des trois formats   | ⬜   |                        |
+| D4 — Mise en page des trois formats   | ✅   |                        |
 | E1 — Niveau 2                         | ⬜   |                        |
 | E2 — Niveaux 3 à 8                    | ⬜   |                        |
+| F1 — Routage côté client (ADR 0008)   | ✅   |                        |
+
+Lecture synthétique : A1–A5, B1–B5, T4a et F1 sont livrés ; C1 et D1 ont une
+base partielle ; C2, C3, D2, D3, D4 et E1–E2 restent à faire. `etat.md` est
+obsolète sur caméra et échelle : il sera corrigé après intégration du code
+concerné, pas dans ce plan.
+
+F1 (remarque auteur du 25 septembre 2026) installe le routage côté client
+décrit par [l'ADR 0008](decisions/0008-client-side-routing.md) : URL
+adressables pour la liste des niveaux, un niveau joué, l'atelier et les
+réglages. Hors du découpage A–E de ce plan et des tranches T3/T4b/T5 de
+`backlog.md`, donc suivi séparément ici plutôt que d'être forcé dans l'une
+d'elles.
 
 ### Écarts constatés depuis l'écriture du plan
 
@@ -75,6 +92,15 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `⬜` = pas démarr�
   ne se passe, ce qui est correct (elle n'est pas la cible) mais rien à
   l'écran ne dit au joueur laquelle est suivie. Défaut de clarté réel, à
   rattacher à une tranche d'interface plutôt qu'à B2.
+- **Le scrim de `InspectorDrawer` intercepte les taps hors de lui-même**,
+  constaté en isolant F1 par bissection (bug préexistant à F1, pas introduit
+  par elle) : dès qu'un placement est sélectionné sur petit écran, `.inspector-scrim`
+  bloque le bouton « Annuler » de la barre d'outils au-dessus, et le bandeau
+  de résultat peut chevaucher le bas du plateau. Deux parcours Playwright
+  `--project=mobile` (`place au tactile puis annule le placement…`,
+  `le bandeau de victoire ne recouvre pas le plateau`) échouent à cause de
+  cela, indépendamment de tout autre changement. Non rattaché à une tranche ;
+  candidat pour C2/C3 ou D4, qui touchent déjà cette zone.
 
 ---
 
@@ -203,6 +229,12 @@ l'empreinte du collider, donc `drawImage` étire arbitrairement.
   484 × 128 px en téléphone paysage (844 × 390) ; plateau portrait 358 × 450 pour
   une scène qui est un panorama ; panneau latéral de 303 px sur une tablette
   portrait de 820, laissant un plateau étroit et un panneau vide aux trois quarts.
+- **Composition des grands formats incomplète.** La référence suggère une scène
+  centrale stable encadrée, un rail catalogue à gauche et un rail objectif puis
+  propriétés contextuelles à droite. Dans la capture desktop actuelle, l'objectif
+  flotte au-dessus et aucun rail droit n'existe. Mesure supplémentaire : à
+  844 × 390, le plateau actuel fait environ **226 × 127 px**, malgré une grande
+  zone vide. Ces constats orientent D4 sans copier les contrôles de la référence.
 
 ### 1.7 Ce qui est sain et doit être préservé
 
@@ -292,6 +324,31 @@ comportement retiré**. La règle de ce plan :
 > liste nommément chaque test réécrit et pourquoi.
 
 ---
+
+### 2.6 Composition responsive et manipulation cible
+
+En grande largeur, la scène reste centrale et stable, encadrée par le rail
+catalogue à gauche et par le rail des propriétés contextuelles (et du résultat)
+à droite. **L'objectif n'occupe plus d'espace permanent** (décision de l'auteur,
+25 septembre 2026) : sur tous les formats, un bouton « ? » de l'en-tête (« Voir
+l'objectif ») l'ouvre dans une boîte de dialogue modale, fermable par une action
+visible et par un toucher sur le fond. `mobile-editor-interactions.md` n'exige
+qu'« un accès à l'objectif », et le plateau récupère l'espace.
+Sur les formats compacts, ces rails deviennent des tiroirs superposés au viewport :
+bottom sheets en portrait, tiroirs latéraux en paysage. Leur ouverture ne réduit
+pas la scène et ne change pas le contenu monde ; un scrim et une action visible
+permettent de les fermer.
+
+Tout resize ou changement d'orientation conserve le même document et une caméra
+en unités monde, puis applique un cadrage `contain` laissant toute la scène
+accessible. Aucun feedback, tiroir ou panneau ne doit provoquer de recadrage
+induit. Un clic/toucher sur un objet existant le sélectionne, un drag direct le
+déplace et une poignée explicite le tourne. Le bloc visible actuel « Objet
+sélectionné / Déplacer / Supprimer » disparaît. Le rail droit desktop devient le
+panneau « Propriétés » de l'objet sélectionné ; sur petit écran, le même contenu
+devient un tiroir contextuel compact. Il n'affiche et ne modifie que les
+propriétés réellement supportées par le contrat de la famille et son registre,
+et conserve l'action de suppression accessible et annulable.
 
 ## 3. Phase A — Fondations
 
@@ -522,6 +579,9 @@ vide. L'éditeur reste accessible par le menu ☰.
 Conformément à `levels/initial-progression.md` § Niveau 1 :
 
 - l'objectif est affiché en permanence, court, non bloquant, sans dialogue ;
+  **(remplacé le 25 septembre 2026 par l'auteur : l'objectif s'ouvre à la
+  demande dans une boîte de dialogue depuis l'en-tête, voir § 2.6 ; aucune
+  source d'autorité n'exigeait l'affichage permanent)**
 - l'inventaire est vide, donc **le tiroir n'est pas affiché du tout** — il ne doit
   pas suggérer qu'une construction est nécessaire ;
 - les actions disponibles sont exactement : Tester, Pause, Reprendre,
@@ -688,7 +748,8 @@ redimensionnement de fenêtre (non-régression du bug de B1).
 
 ### C1 — Le fantôme de placement est le vrai objet
 
-État : ⬜ À faire.
+État : ◐ Partiel — la projection temporaire existe ; le rendu fantôme et la
+suppression de l'overlay CSS restent à faire.
 
 **Modèle : `terra` / effort `high`.**
 
@@ -770,6 +831,16 @@ puis sprite — et l'absence d'ombre sous un fantôme invalide.
 
 État : ⬜ À faire.
 
+**Décision actée :** le bloc actuellement visible « Objet sélectionné / Déplacer /
+Supprimer » disparaît. Sur desktop, cliquer un objet le sélectionne et ouvre ou
+alimente le panneau « Propriétés » du rail droit, inspiré de la référence ; sur
+petit écran, ce même contenu devient un tiroir contextuel compact. Le panneau ne
+promet aucune propriété absente du schéma ou du registre : il expose seulement
+les propriétés effectivement supportées par le contrat de la famille sélectionnée
+et permet de supprimer l'objet. Le déplacement est direct par drag sur la scène,
+sans bouton « Déplacer » ; les alternatives accessibles de rotation et de
+déplacement par pas restent disponibles lorsque le contrat les autorise.
+
 **Modèle : `terra` / effort `high`.**
 
 Écrit dans `src/presentation/`, `src/app/`, `src/ui/`, `e2e/`.
@@ -823,8 +894,14 @@ Remplace les pastilles et les boutons-poignées par ce qu'exige
    création, snapping ou angle libre, l'état courant étant visible dans le
    panneau.
 
-5. **Supprimer** les boutons « Déplacer la … » et « Tourner à droite » du panneau
-   contextuel, ainsi que la bande `.scene-objects`.
+5. Supprimer le bloc actuel et le bouton « Déplacer », tout en conservant le rail
+   droit « Propriétés » sur grand écran et le tiroir contextuel compact sur petit
+   écran. Exposer uniquement les propriétés supportées par le schéma et le
+   registre de la famille ; conserver « Supprimer » comme action contextuelle
+   accessible, annoncée, justifiée et annulable, ainsi que les alternatives de
+   rotation/déplacement autorisées. La bande `.scene-objects` et « Tourner à
+   droite » disparaissent ; aucune suppression ne devient cachée dans un menu ou
+   un geste.
 
 6. **Corriger au passage** le message de refus générique de
    `use-editor-session.ts` (`refusalMessage`) : il préfixe tout refus par
@@ -842,6 +919,10 @@ plateau.
 **Sortie vérifiable :** un parcours Playwright tactile sur 320 × 568 pose une
 poutre, la glisse, la fait pivoter à la poignée, annule deux fois et rétablit
 deux fois, en n'utilisant que le plateau et le panneau contextuel.
+
+Le même comportement est vérifié par clic souris sur un grand format : un objet
+existant est sélectionnable par clic, déplaçable par drag direct, et aucun panneau
+de statut redondant ne revient.
 
 ---
 
@@ -889,12 +970,16 @@ même planche » (catalogue initial, et la bascule est elle-même un tablier de
 bois) utilisent des palettes sans rapport. Repris explicitement dans la
 description de `seesaw*@2x.png` ci-dessous.
 
-**Panier en deux calques.** B4 corrige la balle invisible (ordre de dessin),
-mais avec un seul sprite de panier une balle posée dedans ne peut que flotter
-par-dessus, jamais paraître nichée à l'intérieur. Brief séparé, destiné à
-l'agent de génération d'assets, avec la convention de dimensions/ancrage exacte
-et ce que le câblage renderer devra faire ensuite :
-[`docs/assets/basket-two-layer-sprite.md`](assets/basket-two-layer-sprite.md).
+**Panier en deux calques — ✅ résolu le 25 septembre 2026.** B4 corrige la
+balle invisible (ordre de dessin), mais avec un seul sprite de panier une
+balle posée dedans ne peut que flotter par-dessus, jamais paraître nichée à
+l'intérieur. Brief séparé, destiné à l'agent de génération d'assets, avec la
+convention de dimensions/ancrage exacte et ce que le câblage renderer devra
+faire ensuite : [`docs/assets/basket-two-layer-sprite.md`](assets/basket-two-layer-sprite.md),
+dont la section « Résolu » documente l'intégration réellement livrée (deux
+nouvelles images fournies par l'auteur, recadrées/mises à l'échelle, avec un
+arbitrage délibéré : la balle prime sur l'effet d'emboîtement — voir ce
+document pour le détail et ce qu'une régénération future devrait viser).
 Non bloquant pour le reste de D2 — le panier à un seul calque reste utilisable
 en attendant.
 
@@ -952,7 +1037,15 @@ projeté suit le zoom, et un test visuel Playwright compare deux niveaux de zoom
 
 ### D4 — Mise en page des trois formats
 
-État : ⬜ À faire.
+État : ✅ Livré (session du 25 septembre 2026, agent visuel + retours directs de
+l'auteur en jouant). Décision actée par l'auteur : le plateau **remplit
+l'espace vertical disponible** plutôt que de garder strictement le ratio de la
+scène (voir la règle mise à jour ci-dessous, qui remplace la précédente). Deux
+bugs remontés en direct pendant cette même session ont été corrigés dans le
+même changement : l'apparition du bouton « Annuler le placement » déplaçait la
+scène (même famille de bug que B1/B5, même remède : réserver l'espace plutôt
+que de laisser un nouveau sibling apparaître) et l'espace vertical vide
+au-dessous du plateau dans l'atelier.
 
 **Modèle : `terra` / effort `medium`.**
 
@@ -967,10 +1060,35 @@ Mesures actuelles à corriger, relevées en session :
 | Tablette portrait 820 × 1180 | panneau latéral de 303 px vide aux 3/4, plateau étroit     | tiroir bas comme en téléphone portrait, plateau pleine largeur |
 | Tablette paysage 1180 × 820  | acceptable                                                 | panneau latéral conservé                                       |
 
+La cible de composition est explicite : à 1440 × 900, scène centrale stable,
+catalogue à gauche, panneau « Propriétés » contextuel et résultat à droite ; à
+1180 × 820, conserver ces rails seulement s'ils restent utiles. À 820 × 1180,
+passer aux tiroirs superposés plutôt qu'à un rail latéral vide. À 844 × 390 et
+390 × 844, employer respectivement un tiroir latéral et un bottom sheet ; à
+320 × 568, conserver les mêmes fonctions avec des commandes regroupées mais
+visibles.
+
 Règles à appliquer :
 
-- le plateau garde le ratio de la scène du niveau et se centre, plutôt que de
-  remplir un rectangle arbitraire ;
+- **(mise à jour, remplace la règle d'origine)** le plateau remplit l'espace
+  vertical disponible plutôt que de garder strictement le ratio de la scène ;
+  la scène reste centrée à l'intérieur, cadrée en `contain`, le reste étant du
+  fond plutôt qu'un rectangle arbitraire imposé au plateau. Décidé par
+  l'auteur en session le 25 septembre 2026, en réaction directe à l'espace
+  vertical vide constaté dans l'atelier ; un tiroir ouvert continue de se
+  superposer sans réduire cette surface ;
+- tout resize et toute orientation recalculent un cadrage `contain` qui garde la
+  scène entière accessible et conserve le même contenu monde, sans recadrage
+  déclenché par un feedback, un tiroir, un panneau ou le résultat ;
+- sur grande largeur, le panneau « Propriétés » et le résultat forment un rail
+  droit distinct du catalogue ; sur petit format, les propriétés deviennent un
+  tiroir et le résultat une bande réservée sous le plateau, pas des éléments
+  flottants au-dessus de la scène ;
+- **(mise à jour du 25 septembre 2026)** l'objectif n'a ni rail, ni bande, ni
+  carte permanente : un bouton d'en-tête l'ouvre dans une boîte de dialogue
+  modale (`role="dialog"`, `aria-modal`, focus sur la fermeture, Échap, toucher
+  sur le fond, focus rendu au déclencheur). La seule réservation restante sous
+  le plateau est celle du bandeau de résultat, exigée par B5 ;
 - le seuil de bascule tiroir-bas / panneau-latéral dépend de la **largeur
   disponible**, pas d'un `innerWidth >= 680` global
   ([App.tsx:241-249](../src/app/App.tsx#L241-L249)) qui envoie une tablette
@@ -980,9 +1098,13 @@ Règles à appliquer :
 - `env(safe-area-inset-*)` sur les quatre barres ;
 - toute cible tactile ≥ 44 × 44 px CSS, ce qui est déjà testé et doit le rester.
 
-**Sortie vérifiable :** un parcours Playwright par format vérifie l'absence de
-débordement horizontal, la visibilité des actions essentielles, et la surface
-minimale du plateau.
+**Matrice de validation :** les six viewports `1440 × 900`, `1180 × 820`,
+`820 × 1180`, `844 × 390`, `390 × 844` et `320 × 568`. Pour chacun, un test
+vérifie l'absence de débordement horizontal, la scène entièrement accessible par
+`contain`, la visibilité des actions essentielles et l'absence de recadrage quand
+feedback, tiroir, panneau ou orientation changent. Les deux derniers formats
+doivent être rejoués tactilement ; le desktop doit aussi couvrir sélection et
+drag direct.
 
 ---
 
@@ -1021,11 +1143,10 @@ que dit déjà `backlog.md` § T5, et l'expérience de ce plan lui donne raison.
 
 ```
 A1 ──> A2 ──> A3 ──┐
-       A4 ─────────┼──> A5 ──> B1 ──> B3 ──> C1 ──> C2
-       B2 ─────────┘                   │      C3 ──> E1 ──> E2
-                                       └────> D1 ──> D2
-                                              D3
-                                              D4
+       A4 ─────────┼──> A5 ──> B1 ──> B3 ──> C1 ──> C3 ──> D4 ──> E1 ──> E2
+       B2 ─────────┘                   ├──> C2
+                                       ├──> D1 ──> D2
+                                       └──> D3
 ```
 
 - **A1 seule d'abord.** C'est le contrat commun ; tout ce qui suit s'y réfère.
@@ -1033,10 +1154,23 @@ A1 ──> A2 ──> A3 ──┐
   l'autre, aucun fichier commun.
 - **A3 dépend de A2** (elle a besoin du champ `scene`).
 - **A5 après A3 et A4**, jamais avant : refactorer du code faux le fige.
-- **C2, C3, D1, D3, D4 sont parallélisables** une fois C1 intégrée, dans des
-  worktrees distincts : leurs zones d'écriture ne se croisent pas.
+- **L'intégration est séquentielle sur la surface UI.** Après A1–A5 et B1–B5,
+  intégrer C1, puis C3 (sélection/manipulation), puis D4 (composition responsive) ;
+  D4 doit reprendre les contrats de tiroir et de caméra déjà verts. C2, D1 et D3
+  peuvent être préparées en parallèle dans des worktrees distincts, mais chacune
+  est intégrée et vérifiée avant de rendre C1/C3/D4 disponible au lot suivant.
 - **D2 dépend de D1** (le script de validation est le critère d'acceptation des
   images).
+
+Chaque sous-tâche a un propriétaire d'écriture unique et un périmètre de fichiers
+explicitement fermé ; les revues ou mesures peuvent être parallèles, jamais deux
+écritures concurrentes sur le même périmètre. La séquence locale est toujours :
+test rouge ciblant le comportement, vérification de l'échec pour la bonne raison,
+implémentation minimale, test vert, puis refactor sans changement de comportement.
+Chaque sous-agent exécute `pnpm check:fast` sur sa sous-tâche et joint le résultat
+à son rapport. L'orchestrateur lance `pnpm check` **une seule fois**, après
+l'intégration complète de la tranche et de ses sous-tâches. Un test réécrit doit
+être nommé dans le rapport de son propriétaire.
 
 ## 9. Le point d'arrêt qui compte
 

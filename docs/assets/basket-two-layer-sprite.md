@@ -5,6 +5,65 @@ Ce document est un brief court pour un agent de génération d'assets (Codex ou
 convention à respecter. Le câblage renderer correspondant est noté en bas, à
 faire séparément.
 
+## État actuel constaté (25 septembre 2026)
+
+Le câblage renderer décrit plus bas comme « à faire séparément » **existe déjà** :
+`board-renderer.ts` dessine `basket-back` → `ball` → `basket-front` dans cet
+ordre (`drawOrderByAsset`). Le défaut n'est donc plus dans le code, il est dans
+les deux fichiers PNG actuels, diagnostiqué en jouant :
+
+- **Les deux calques sont inversés** par rapport à la convention ci-dessous :
+  `basket-back@2x.png` contient actuellement le rebord avant, et
+  `basket-front@2x.png` contient la paroi arrière intérieure — l'exact
+  contraire de ce que demande ce brief.
+- **Perspective 3/4**, pas la vue strictement de côté exigée plus bas :
+  l'ouverture du panier occupe environ le tiers supérieur de l'image, alors que
+  la balle au repos (donnée par la physique, `BASKET_FLOOR_OFFSET_Y` dans
+  `simulation-session.ts`) se trouve à environ 86 % de la hauteur du panier.
+  Résultat observé : la balle apparaît à moitié enterrée dans le tressage
+  plutôt que nichée dans l'ouverture.
+
+Toute régénération doit donc, en plus de respecter la convention ci-dessous,
+vérifier que le point de coupe avant/arrière et la hauteur du rebord avant
+restent cohérents avec la position de repos physique de la balle — sous peine
+de reproduire le même défaut avec un art différent. Pas de changement de
+`simulation-session.ts` prévu pour compenser ceci (décision de l'auteur :
+corriger par l'art, pas par la physique).
+
+## Résolu (25 septembre 2026)
+
+L'auteur a fourni deux nouvelles images à la racine du dépôt,
+`panier-plein.png` (panier plein, tressage intérieur opaque) et
+`panier-transparent.png` (même panier, intérieur découpé/transparent) —
+générées différemment de ce que ce brief anticipait : pas une coupe haut/bas,
+mais un panier complet en deux variantes (plein / évidé), toutes deux au même
+cadrage et à la même échelle l'une que l'autre (vérifié par bbox de seuil
+d'alpha, alignées à 1 px près).
+
+Intégration retenue :
+
+- `basket-back@2x.png` ← `panier-plein.png` (recadré sur la silhouette, mis à
+  l'échelle 192 × 141, ancrage haut du rebord / bas de la base identique à la
+  convention existante) : sert de fond plein, visible quand rien n'occulte le
+  panier.
+- `basket-front@2x.png` ← `panier-transparent.png`, même recadrage, **puis
+  post-traité** : la zone évidée d'origine ne descendait qu'à ~37 % de la
+  hauteur du cadre, alors que la balle au repos (physique) occupe ~31 % à
+  ~86 %. Le reste de la paroi basse (37 %–100 %), qui aurait recouvert plus de
+  la moitié de la balle, a été effacé (alpha mis à 0) pour ne garder que
+  l'anneau du rebord (haut du cadre jusqu'à 20 %). La balle est donc
+  entièrement visible, au prix de l'effet d'emboîtement (aucune paroi ne passe
+  devant elle) — arbitrage délibéré en faveur de « nettement visible », qui
+  est un critère bloquant du projet (`plan-remise-en-jeu.md` § 9), au
+  détriment d'un raffinement visuel. Le panier vide (sans balle) n'est pas
+  affecté : `basket-back` reste plein partout où `basket-front` est désormais
+  transparent.
+
+Si une régénération future veut restaurer un vrai effet d'emboîtement, il
+faudra un panier dont la zone visible/évidée descend nettement plus bas
+(idéalement jusqu'à ~85 % de la hauteur du cadre) — ce que ni cette
+génération ni la précédente ne fournissaient.
+
 ## Le problème
 
 Le panier est actuellement un seul sprite plat et opaque (`basket@2x.png`,

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { embeddedLevels } from '../content/embedded-levels';
 import { fitCameraToScene } from '../presentation/board-camera';
+import { ROTATION_HANDLE_DISTANCE_CSS_PIXELS } from '../presentation/board-renderer';
 import styles from '../ui/styles.css?raw';
 
 import { App } from './App';
@@ -65,6 +66,7 @@ const createAnimationFrameHarness = () => {
 
 const openEmbeddedLevelOne = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
   fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
 };
 
@@ -84,6 +86,27 @@ const levelOneScene = (() => {
 const openEmbeddedWorkshop = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
   fireEvent.click(screen.getByRole('button', { name: 'Atelier de construction' }));
+};
+
+const placeWorkshopBeam = (): HTMLElement => {
+  openEmbeddedWorkshop();
+  fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Poutre moyenne' }));
+
+  const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+  firePointerEvent(board, 'pointerdown', {
+    pointerId: 1,
+    pointerType: 'touch',
+    clientX: 400,
+    clientY: 225,
+  });
+  firePointerEvent(board, 'pointerup', {
+    pointerId: 1,
+    pointerType: 'touch',
+    clientX: 400,
+    clientY: 225,
+  });
+  return board;
 };
 
 const advanceSimulationToResult = (
@@ -147,12 +170,54 @@ const boardCanvasRect: DOMRect = {
 
 describe('coque Contrapt!', () => {
   beforeEach(() => {
+    // `BrowserRouter` (ADR 0008) reads the real `window.location`, which
+    // jsdom keeps across tests in this file — without this reset, a test
+    // that navigates away (e.g. `openEmbeddedWorkshop`) leaks its route into
+    // whichever test renders `<App />` next.
+    window.history.replaceState(null, '', '/');
     vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(boardCanvasRect);
   });
 
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+  });
+
+  it('ouvre l’objectif dans une boîte de dialogue modale et rend le focus en la fermant', () => {
+    render(<App />);
+
+    const trigger = screen.getByRole('button', { name: 'Voir l’objectif' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = screen.getByRole('dialog', { name: 'Objectif du niveau' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveTextContent('Faire entrer la balle dans le panier');
+    const close = within(dialog).getByRole('button', { name: 'Fermer l’objectif' });
+    expect(close).toHaveFocus();
+
+    // Tab reste dans la boîte de dialogue.
+    fireEvent.keyDown(close, { key: 'Tab' });
+    expect(close).toHaveFocus();
+
+    fireEvent.click(close);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('ferme la boîte de dialogue de l’objectif par Échap ou par un toucher sur le fond', () => {
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Voir l’objectif' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Voir l’objectif' }));
+    const backdrop = container.ownerDocument.querySelector('.dialog-scrim');
+    expect(backdrop).not.toBeNull();
+    if (backdrop !== null) fireEvent.click(backdrop);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('démarre en mode résolution sur le niveau 1, sans tiroir ni actions d’édition', () => {
@@ -167,9 +232,11 @@ describe('coque Contrapt!', () => {
     expect(screen.getByText('Niveau 1 · Laisser tomber')).toBeVisible();
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
-    expect(screen.getByRole('region', { name: 'Objectif du niveau' })).toHaveTextContent(
-      'Faire entrer la balle dans le panier',
-    );
+    // L'objectif n'occupe plus d'espace permanent : il est accessible par un
+    // bouton explicite (`mobile-editor-interactions.md` § Organisation de
+    // l'écran : « un accès à l'objectif »).
+    expect(screen.queryByText('Faire entrer la balle dans le panier')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Voir l’objectif' })).toBeVisible();
 
     expect(screen.queryByRole('region', { name: 'Objets disponibles' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ouvrir le catalogue' })).not.toBeInTheDocument();
@@ -474,12 +541,40 @@ describe('coque Contrapt!', () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
     expect(within(levelList).getByText('Niveau 1 · Laisser tomber')).toBeVisible();
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
     expect(within(levelList).queryByText(/Niveau 2/i)).not.toBeInTheDocument();
+  });
+
+  it('navigue vers une page de réglages dédiée depuis le menu (ADR 0008)', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Paramètres' }));
+
+    expect(window.location.pathname).toBe('/settings');
+    expect(screen.getByRole('region', { name: 'Paramètres' })).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Plateau de jeu' })).not.toBeInTheDocument();
+  });
+
+  it('adresse chaque écran par sa propre URL et ouvre directement dessus au chargement (ADR 0008)', () => {
+    window.history.replaceState(null, '', '/editor');
+    render(<App />);
+
+    expect(screen.getByText('Éditeur de niveaux')).toBeVisible();
+    expect(screen.getByText('Mode éditeur')).toBeVisible();
+  });
+
+  it('redirige une route inconnue vers la liste des niveaux (ADR 0008)', () => {
+    window.history.replaceState(null, '', '/une-route-qui-nexiste-pas');
+    render(<App />);
+
+    expect(window.location.pathname).toBe('/levels');
+    expect(screen.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
   });
 
   it('lance la fixture embarquée en mode joueur et annonce la victoire après des RAF contrôlés', () => {
@@ -489,9 +584,11 @@ describe('coque Contrapt!', () => {
     openEmbeddedLevelOne();
 
     expect(screen.getByText('Mode joueur')).toBeVisible();
-    expect(screen.getByRole('region', { name: 'Objectif du niveau' })).toHaveTextContent(
+    fireEvent.click(screen.getByRole('button', { name: 'Voir l’objectif' }));
+    expect(screen.getByRole('dialog', { name: 'Objectif du niveau' })).toHaveTextContent(
       'Faire entrer la balle dans le panier',
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer l’objectif' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
     advanceSimulationToResult(animationFrames);
@@ -1263,7 +1360,7 @@ describe('coque Contrapt!', () => {
     expect(screen.queryByText(/Objet sélectionné/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Poutre courte' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Poutre moyenne' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     firePointerEvent(board, 'pointerdown', {
@@ -1284,7 +1381,9 @@ describe('coque Contrapt!', () => {
     // second à côté.
     expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
     expect(workspace.querySelectorAll('.status-slot')).toHaveLength(1);
-    expect(screen.getByText('Objet sélectionné : Poutre')).toBeVisible();
+    const propertiesPanel = screen.getByRole('region', { name: 'Propriétés de Poutre' });
+    expect(within(propertiesPanel).getByText('Propriétés')).toBeVisible();
+    expect(within(propertiesPanel).getByText('Poutre')).toBeVisible();
     expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
 
     fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
@@ -1294,5 +1393,362 @@ describe('coque Contrapt!', () => {
     expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
     expect(screen.queryByText(/Objet sélectionné/)).not.toBeInTheDocument();
     expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
+  });
+
+  it('sélectionne un objet existant au toucher puis désélectionne au toucher du vide', () => {
+    render(<App />);
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    // Level 1 is fitted into the stubbed 800 × 450 canvas: ball-1 at (4, 1)
+    // is therefore near (400, 88) CSS px.
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 88,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 88,
+    });
+
+    const lockedPanel = screen.getByRole('region', { name: 'Propriétés de Balle' });
+    expect(lockedPanel).toBeVisible();
+    expect(lockedPanel).toHaveTextContent(/verrouill|indisponible/i);
+    expect(
+      within(lockedPanel).queryByRole('button', {
+        name: /Supprimer|Rotation|gauche|droite|haut|bas/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'mouse',
+      clientX: 120,
+      clientY: 400,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'mouse',
+      clientX: 120,
+      clientY: 400,
+    });
+
+    expect(screen.queryByRole('region', { name: 'Propriétés de Balle' })).not.toBeInTheDocument();
+  });
+
+  it('affiche les propriétés accessibles d’une poutre sans action Déplacer', () => {
+    render(<App />);
+    placeWorkshopBeam();
+
+    const panel = screen.getByRole('region', { name: 'Propriétés de Poutre' });
+    expect(panel).toBeVisible();
+    expect(within(panel).queryByRole('button', { name: /Déplacer/i })).not.toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: /Supprimer la poutre/i })).toBeVisible();
+    expect(within(panel).getByRole('button', { name: 'Rotation négative' })).toBeVisible();
+    expect(within(panel).getByRole('button', { name: 'Rotation positive' })).toBeVisible();
+    for (const direction of ['gauche', 'droite', 'haut', 'bas']) {
+      expect(within(panel).getByRole('button', { name: new RegExp(direction, 'i') })).toBeVisible();
+    }
+  });
+
+  it('déplace directement une poutre en une seule entrée d’historique sans déplacer la caméra', () => {
+    render(<App />);
+    const board = placeWorkshopBeam();
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+    const zoomBeforeDrag = canvas.getAttribute('data-camera-zoom');
+
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 225,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 500,
+      clientY: 265,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 500,
+      clientY: 265,
+    });
+
+    expect(undoButton).toBeEnabled();
+    expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomBeforeDrag);
+
+    // One direct drag is one command: the first undo restores the original
+    // placement, while the second undo removes the placement itself.
+    fireEvent.click(undoButton);
+    expect(screen.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
+    fireEvent.click(undoButton);
+    expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).not.toBeInTheDocument();
+
+    // A camera pan would move this fixed workshop object away from its known
+    // screen position. It must remain selectable after the object drag.
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 3,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 48,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 3,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 48,
+    });
+    expect(screen.getByRole('region', { name: 'Propriétés de Balle' })).toBeVisible();
+  });
+
+  it('annule un déplacement direct sur pointercancel sans entrée d’historique', () => {
+    render(<App />);
+    const board = placeWorkshopBeam();
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    expect(screen.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
+
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 225,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 500,
+      clientY: 265,
+    });
+    firePointerEvent(board, 'pointercancel', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 500,
+      clientY: 265,
+    });
+
+    expect(undoButton).toBeEnabled();
+    fireEvent.click(undoButton);
+    expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Placement refusé/i })).not.toBeInTheDocument();
+  });
+
+  it('expose la taille d’une poutre et annule le changement Longue en une commande', () => {
+    render(<App />);
+    placeWorkshopBeam();
+
+    const panel = screen.getByRole('region', { name: 'Propriétés de Poutre' });
+    const sizeControl = within(panel).getByRole('combobox', { name: /longueur|taille/i });
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+
+    expect(within(sizeControl).getByRole('option', { name: 'Courte' })).toBeInTheDocument();
+    expect(within(sizeControl).getByRole('option', { name: 'Moyenne' })).toBeInTheDocument();
+    expect(within(sizeControl).getByRole('option', { name: 'Longue' })).toBeInTheDocument();
+    expect(sizeControl).toHaveValue('medium');
+
+    fireEvent.change(sizeControl, { target: { value: 'long' } });
+    expect(sizeControl).toHaveValue('long');
+
+    // The size edit is atomic: undo restores the initially placed medium beam,
+    // and a second undo is still required to remove the placement itself.
+    fireEvent.click(undoButton);
+    expect(within(panel).getByRole('combobox', { name: /longueur|taille/i })).toHaveValue('medium');
+    fireEvent.click(undoButton);
+    expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).not.toBeInTheDocument();
+  });
+
+  it('en mode auteur permet de sélectionner et déplacer le sol verrouillé du futur joueur', () => {
+    render(<App />);
+    openEmbeddedWorkshop();
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    // workshop-floor is at (8, 8). The workshop scene is fitted at 48 px/unit
+    // in this 800 × 450 fixture, hence the centre is (384, 384) CSS px.
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 384,
+      clientY: 384,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 384,
+      clientY: 384,
+    });
+
+    const panel = screen.getByRole('region', { name: 'Propriétés de Poutre' });
+    expect(panel).not.toHaveTextContent(/verrouill/i);
+    expect(within(panel).getByRole('button', { name: 'Rotation négative' })).toBeVisible();
+    expect(within(panel).getByRole('button', { name: 'Rotation positive' })).toBeVisible();
+    expect(within(panel).getByRole('button', { name: /Supprimer la poutre/i })).toBeVisible();
+
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 384,
+      clientY: 384,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 430,
+      clientY: 350,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 430,
+      clientY: 350,
+    });
+    expect(undoButton).toBeEnabled();
+  });
+
+  it('en mode auteur rend interactive la poignée de rotation du sol malgré rotate=false', () => {
+    render(<App />);
+    openEmbeddedWorkshop();
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 384,
+      clientY: 384,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 384,
+      clientY: 384,
+    });
+
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    const handleY = 384 - ROTATION_HANDLE_DISTANCE_CSS_PIXELS;
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 384,
+      clientY: handleY,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: handleY,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: handleY,
+    });
+
+    expect(undoButton).toBeEnabled();
+    fireEvent.click(undoButton);
+    expect(screen.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
+  });
+
+  it('annule atomiquement un drag lorsqu’un second pointeur arrive sur l’objet', () => {
+    render(<App />);
+    const board = placeWorkshopBeam();
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 225,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 500,
+      clientY: 265,
+    });
+    // The first pointer's temporary projection is now at (500, 265); a
+    // second touch there must cancel the move before camera pinch handling.
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 3,
+      pointerType: 'touch',
+      clientX: 500,
+      clientY: 265,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 3,
+      pointerType: 'touch',
+      clientX: 500,
+      clientY: 265,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 500,
+      clientY: 265,
+    });
+
+    // Only the original placement remains in history: undo removes it rather
+    // than first undoing a committed move.
+    fireEvent.click(undoButton);
+    expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).not.toBeInTheDocument();
+  });
+
+  it('déplace une poutre par sa poignée de rotation en une commande et annule la projection', () => {
+    render(<App />);
+    const board = placeWorkshopBeam();
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+
+    // The handle is 32 CSS px above the beam centre (400, 225), as defined by
+    // the renderer's fixed-distance handle contract.
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 193,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 420,
+      clientY: 193,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 420,
+      clientY: 193,
+    });
+
+    // One rotation command: undo leaves the placed beam selected, and the
+    // following undo removes the placement itself.
+    fireEvent.click(undoButton);
+    expect(screen.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
+
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 3,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 193,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 3,
+      pointerType: 'touch',
+      clientX: 420,
+      clientY: 193,
+    });
+    firePointerEvent(board, 'pointercancel', {
+      pointerId: 3,
+      pointerType: 'touch',
+      clientX: 420,
+      clientY: 193,
+    });
+
+    fireEvent.click(undoButton);
+    expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).not.toBeInTheDocument();
   });
 });

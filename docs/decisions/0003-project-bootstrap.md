@@ -274,7 +274,8 @@ projection visuelle avant le choix physique, sans inventer une fausse simulation
 - Planck.js ou Rapier 2D, conformément à l'ADR 0002 ;
 - bibliothèque et stratégie exactes de service worker/PWA ;
 - wrapper IndexedDB ;
-- routeur, gestionnaire d'état ou bibliothèque de composants, si un besoin apparaît ;
+- gestionnaire d'état ou bibliothèque de composants, si un besoin apparaît
+  (le routeur est tranché par [l'ADR 0008](0008-client-side-routing.md)) ;
 - CSS Modules, CSS natif structuré ou autre convention de styles ;
 - emplacement interne définitif des modules d'objets ;
 - navigateurs, téléphones et budgets chiffrés de bundle/performance ;

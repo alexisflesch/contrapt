@@ -1,5 +1,18 @@
 import type { EditorSession } from '../application/editor-session/editor-session';
 import { objectKinds, type ObjectKind } from '../app/object-catalog';
+import {
+  spriteAssetPath,
+  spriteAssetsForFamily,
+  type SpriteFamily,
+} from '../presentation/sprite-loader';
+
+/** The same sprites the board draws, so a catalogue card looks like the object it places. */
+const spriteFamilyByKind: Readonly<Record<ObjectKind, SpriteFamily>> = {
+  Balle: 'ball',
+  Panier: 'basket',
+  Poutre: 'beam',
+  Bascule: 'seesaw',
+};
 
 interface ObjectDrawerProps {
   readonly session: EditorSession;
@@ -31,7 +44,7 @@ export function ObjectDrawer({
         <button
           className="drawer-scrim"
           type="button"
-          aria-label="Fermer le catalogue"
+          aria-label="Fermer"
           onClick={onCloseDrawer}
         />
       )}
@@ -57,6 +70,16 @@ export function ObjectDrawer({
           >
             <span aria-hidden="true">{drawerIsExpanded ? '⌄' : '⌃'}</span>
           </button>
+          {drawerIsExpanded && !isSideLayout && (
+            <button
+              className="drawer-close"
+              type="button"
+              aria-label="Fermer le catalogue"
+              onClick={onCloseDrawer}
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          )}
         </div>
 
         <div className="drawer-content">
@@ -67,17 +90,16 @@ export function ObjectDrawer({
                 key={kind}
                 type="button"
                 disabled={session.phase !== 'construction'}
-                aria-label={kind === 'Poutre' ? 'Poutre courte' : kind}
+                aria-label={kind === 'Poutre' ? 'Poutre moyenne' : kind}
                 aria-pressed={selectedObject === kind}
                 onClick={() => {
                   onSelectKind(kind);
                 }}
               >
-                <span
-                  className={`object-shape object-shape-${kind.toLowerCase()}`}
-                  aria-hidden="true"
-                >
-                  <span />
+                <span className="object-thumb" aria-hidden="true">
+                  {spriteAssetsForFamily(spriteFamilyByKind[kind]).map((asset) => (
+                    <img key={asset} src={spriteAssetPath(asset, 2)} alt="" draggable={false} />
+                  ))}
                 </span>
                 <span className="object-card-copy">
                   <strong>{kind}</strong>
@@ -91,9 +113,7 @@ export function ObjectDrawer({
           </div>
 
           <p className="drawer-hint" aria-live="polite" hidden={!drawerIsExpanded}>
-            {selectedObject === undefined
-              ? 'Touchez un objet pour le sélectionner.'
-              : `Objet sélectionné : ${selectedObject}.`}
+            Touchez un objet pour le sélectionner.
           </p>
         </div>
       </section>

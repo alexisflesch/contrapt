@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { embeddedWorkshopDocument } from '../content/embedded-levels';
 import {
   spriteAssetPath,
   type DecodedSprite,
@@ -22,6 +23,9 @@ type Operation =
   | { readonly kind: 'restore' }
   | { readonly kind: 'translate'; readonly values: readonly number[] }
   | { readonly kind: 'rotate'; readonly values: readonly number[] }
+  | { readonly kind: 'lineWidth'; readonly values: readonly number[] }
+  | { readonly kind: 'strokeRect'; readonly values: readonly number[] }
+  | { readonly kind: 'fillRect'; readonly values: readonly number[] }
   | { readonly kind: 'drawImage'; readonly values: readonly unknown[] };
 
 type ProjectedObject = Readonly<{
@@ -197,6 +201,7 @@ const createContext = (): {
   readonly operations: Operation[];
 } => {
   const operations: Operation[] = [];
+  let lineWidth = 1;
 
   const context = {
     save: (): void => {
@@ -213,6 +218,19 @@ const createContext = (): {
     },
     rotate: (...values: [number]): void => {
       operations.push({ kind: 'rotate', values });
+    },
+    get lineWidth(): number {
+      return lineWidth;
+    },
+    set lineWidth(value: number) {
+      lineWidth = value;
+      operations.push({ kind: 'lineWidth', values: [value] });
+    },
+    strokeRect: (...values: [number, number, number, number]): void => {
+      operations.push({ kind: 'strokeRect', values });
+    },
+    fillRect: (...values: [number, number, number, number]): void => {
+      operations.push({ kind: 'fillRect', values });
     },
     drawImage: (...values: readonly unknown[]): void => {
       operations.push({ kind: 'drawImage', values });
@@ -552,5 +570,131 @@ describe('renderer Canvas 2D du plateau', () => {
 
     expect('hasWon' in renderer).toBe(false);
     expect('serialize' in renderer).toBe(false);
+  });
+
+  it('dessine la sélection avec une épaisseur CSS fixe et une poignée de rotation tactile distincte', async () => {
+    const renderSelected = async (
+      selectedPlacementId: string,
+      pixelsPerWorldUnit: number,
+    ): Promise<readonly Operation[]> => {
+      const { context, operations } = createContext();
+      const spriteLoader = createPendingSpriteLoader();
+      spriteLoader.setReady();
+      const renderer = createBoardRenderer({
+        canvas: { width: 0, height: 0 },
+        context,
+        viewport: { ...viewport, pixelsPerWorldUnit },
+        spriteLoader: spriteLoader.loader,
+      });
+
+      // Selection is view state: it is deliberately carried by the
+      // projection rather than persisted in LevelDocument.
+      const projection = { ...projectLevel(levelDocument), selectedPlacementId };
+      await renderer.render(projection);
+      return operations;
+    };
+
+    const atTwoPixels = await renderSelected('beam-1', 2);
+    const atFourPixels = await renderSelected('beam-1', 4);
+    const rectangleOperations = (operations: readonly Operation[]) =>
+      operations.filter(
+        (
+          operation,
+        ): operation is Extract<Operation, { readonly kind: 'strokeRect' | 'fillRect' }> =>
+          operation.kind === 'strokeRect' || operation.kind === 'fillRect',
+      );
+
+    const twoPixelRects = rectangleOperations(atTwoPixels);
+    const fourPixelRects = rectangleOperations(atFourPixels);
+
+    // The selected medium beam's 4 × 0.25 world-unit footprint is outlined;
+    // the 44 × 44 CSS-pixel rectangle is its separate rotation handle.
+    expect(
+      twoPixelRects.some((operation) => {
+        const [, , width, height] = operation.values;
+        return width === 8 && height === 0.5;
+      }),
+    ).toBe(true);
+    expect(
+      fourPixelRects.some((operation) => {
+        const [, , width, height] = operation.values;
+        return width === 44 && height === 44;
+      }),
+    ).toBe(true);
+    expect(
+      fourPixelRects.some((operation) => {
+        const [, , width, height] = operation.values;
+        return width === 16 && height === 1;
+      }),
+    ).toBe(true);
+
+    const twoPixelLineWidths = atTwoPixels
+      .filter(
+        (operation): operation is Extract<Operation, { readonly kind: 'lineWidth' }> =>
+          operation.kind === 'lineWidth',
+      )
+      .map((operation) => operation.values[0]);
+    const fourPixelLineWidths = atFourPixels
+      .filter(
+        (operation): operation is Extract<Operation, { readonly kind: 'lineWidth' }> =>
+          operation.kind === 'lineWidth',
+      )
+      .map((operation) => operation.values[0]);
+    expect(twoPixelLineWidths.length).toBeGreaterThan(0);
+    expect(twoPixelLineWidths).toEqual(fourPixelLineWidths);
+  });
+
+  it('ne dessine pas de poignée de rotation pour un objet non rotatable sélectionné', async () => {
+    const { context, operations } = createContext();
+    const spriteLoader = createPendingSpriteLoader();
+    spriteLoader.setReady();
+    const renderer = createBoardRenderer({
+      canvas: { width: 0, height: 0 },
+      context,
+      viewport,
+      spriteLoader: spriteLoader.loader,
+    });
+
+    const projection = { ...projectLevel(levelDocument), selectedPlacementId: 'ball-1' };
+    await renderer.render(projection);
+
+    const handle = operations.find(
+      (operation) =>
+        (operation.kind === 'strokeRect' || operation.kind === 'fillRect') &&
+        operation.values[2] === 44 &&
+        operation.values[3] === 44,
+    );
+    expect(handle).toBeUndefined();
+  });
+
+  it('dessine la poignée quand la projection effective rend la rotation disponible', async () => {
+    const { context, operations } = createContext();
+    const spriteLoader = createPendingSpriteLoader();
+    spriteLoader.setReady();
+    const renderer = createBoardRenderer({
+      canvas: { width: 0, height: 0 },
+      context,
+      viewport,
+      spriteLoader: spriteLoader.loader,
+    });
+
+    const sourceProjection = projectLevel(embeddedWorkshopDocument);
+    const projection = {
+      ...sourceProjection,
+      objects: sourceProjection.objects.map((object) =>
+        object.family === 'beam' ? { ...object, rotatable: true } : object,
+      ),
+      selectedPlacementId: 'workshop-floor',
+    };
+    await renderer.render(projection);
+
+    expect(
+      operations.find(
+        (operation) =>
+          (operation.kind === 'strokeRect' || operation.kind === 'fillRect') &&
+          operation.values[2] === 44 &&
+          operation.values[3] === 44,
+      ),
+    ).toBeDefined();
   });
 });
