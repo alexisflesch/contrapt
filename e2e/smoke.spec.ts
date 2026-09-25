@@ -35,9 +35,7 @@ test('affiche la coque Contrapt! sur un écran mobile, prête à jouer le niveau
   await expect(page.getByRole('button', { name: 'Rétablir' })).toHaveCount(0);
 });
 
-test('ouvre l’atelier depuis le menu et expose les quatre familles du catalogue', async ({
-  page,
-}) => {
+test('ouvre l’atelier depuis le menu et expose les familles du catalogue', async ({ page }) => {
   await page.goto('/');
   await openWorkshopFromMenu(page);
 
@@ -50,7 +48,15 @@ test('ouvre l’atelier depuis le menu et expose les quatre familles du catalogu
     await openCatalogueButton.click();
   }
 
-  for (const objectName of ['Balle', 'Panier', 'Poutre', 'Bascule']) {
+  for (const objectName of [
+    'Balle',
+    'Panier',
+    'Poutre',
+    'Bascule',
+    'Masse',
+    'Levier',
+    'Convoyeur',
+  ]) {
     await expect(page.getByRole('button', { name: new RegExp(objectName) })).toBeVisible();
   }
 });

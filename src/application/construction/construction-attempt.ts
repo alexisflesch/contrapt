@@ -1,4 +1,4 @@
-import { beamPropertiesSchema } from '../../domain/object-family-registry';
+import { initialObjectFamilyRegistry } from '../../domain/object-family-registry';
 import { levelDocumentSchema, type LevelDocument } from '../../domain/level-document';
 import type { Command, CommandState } from '../history';
 
@@ -19,6 +19,9 @@ export type ConstructionErrorCode =
   | 'inventory-source-not-found'
   | 'inventory-provenance-mismatch'
   | 'properties-not-permitted'
+  | 'wiring-not-permitted'
+  | 'wire-already-connected'
+  | 'wire-not-found'
   | 'invalid-level-document';
 
 /**
@@ -39,7 +42,6 @@ interface ConstructionCommand extends Command<ConstructionAttempt> {
 }
 
 type Placement = LevelDocument['objects'][number];
-type BeamPlacement = Extract<Placement, { readonly type: 'beam' }>;
 type InventoryEntry = LevelDocument['inventory'][number];
 type Transform = Placement['transform'];
 type WorldPosition = Transform['position'];
@@ -69,13 +71,27 @@ interface RemovePlacementInput {
 }
 
 /**
- * Persistent property editing is deliberately limited to beam sizes in v1.
- * Other object families have no author-editable properties yet.
+ * Persistent properties are author-only: a beam's size, a lever's starting
+ * position, a conveyor's direction. They are checked against the schema of
+ * the placement's own family.
  */
 interface UpdatePlacementPropertiesInput {
   readonly context: ConstructionContext;
   readonly placementId: string;
-  readonly props: BeamPlacement['props'];
+  readonly props: Placement['props'];
+}
+
+/** Wiring is an authoring act in v1 (ADR 0009): the player never edits circuits. */
+interface ConnectControlWireInput {
+  readonly context: ConstructionContext;
+  readonly wireId: string;
+  readonly sourceId: string;
+  readonly targetId: string;
+}
+
+interface DisconnectControlWireInput {
+  readonly context: ConstructionContext;
+  readonly wireId: string;
 }
 
 const deepFreeze = <Value>(value: Value): Value => {
@@ -126,12 +142,18 @@ const isCentreInsideBuildZone = (document: LevelDocument, position: WorldPositio
       position.x >= min.x && position.x <= max.x && position.y >= min.y && position.y <= max.y,
   );
 
+/** Properties are flat objects of strings, so comparing their entries is exact. */
+const samePropertyValues = (
+  left: Readonly<Record<string, unknown>>,
+  right: Readonly<Record<string, unknown>>,
+): boolean =>
+  Object.keys(left).length === Object.keys(right).length &&
+  Object.entries(left).every(([key, value]) => right[key] === value);
+
 const definitionsMatch = (placement: Placement, inventoryEntry: InventoryEntry): boolean => {
   if (placement.type !== inventoryEntry.type) return false;
 
-  const propertiesMatch =
-    placement.type !== 'beam' ||
-    (inventoryEntry.type === 'beam' && placement.props.size === inventoryEntry.props.size);
+  const propertiesMatch = samePropertyValues(placement.props, inventoryEntry.props);
 
   return (
     propertiesMatch &&
@@ -247,15 +269,16 @@ export const updatePlacementProperties = (
   input: UpdatePlacementPropertiesInput,
 ): ConstructionCommand => ({
   execute: (state) => {
-    const properties = beamPropertiesSchema.safeParse(input.props);
-    if (!properties.success) return reject('invalid-level-document');
-
     if (input.context === 'player') return reject('properties-not-permitted');
 
     const placement = state.document.objects.find(({ id }) => id === input.placementId);
     if (placement === undefined) return reject('placement-not-found');
 
-    if (placement.type === 'beam' && placement.props.size === properties.data.size) {
+    const family = initialObjectFamilyRegistry.get(placement.type);
+    const properties = family?.propertiesSchema.safeParse(input.props);
+    if (properties?.success !== true) return reject('invalid-level-document');
+
+    if (samePropertyValues(placement.props, input.props)) {
       return { status: 'accepted', state };
     }
 
@@ -305,10 +328,47 @@ export const removePlacement = (input: RemovePlacementInput): ConstructionComman
       ...state.document,
       objects: state.document.objects.filter(({ id }) => id !== placement.id),
       inventory: inventoryCandidate,
+      // A wire never outlives either of its ends.
+      wires: state.document.wires.filter(
+        ({ sourceId, targetId }) => sourceId !== placement.id && targetId !== placement.id,
+      ),
     };
     const provenance = Object.fromEntries(
       Object.entries(state.provenance).filter(([placementId]) => placementId !== placement.id),
     );
     return acceptCandidate(documentCandidate, provenance);
+  },
+});
+
+export const connectControlWire = (input: ConnectControlWireInput): ConstructionCommand => ({
+  execute: (state) => {
+    if (input.context === 'player') return reject('wiring-not-permitted');
+    if (state.document.wires.some(({ targetId }) => targetId === input.targetId)) {
+      return reject('wire-already-connected');
+    }
+
+    const documentCandidate = {
+      ...state.document,
+      wires: [
+        ...state.document.wires,
+        { id: input.wireId, sourceId: input.sourceId, targetId: input.targetId },
+      ],
+    };
+    return acceptCandidate(documentCandidate, state.provenance);
+  },
+});
+
+export const disconnectControlWire = (input: DisconnectControlWireInput): ConstructionCommand => ({
+  execute: (state) => {
+    if (input.context === 'player') return reject('wiring-not-permitted');
+    if (!state.document.wires.some(({ id }) => id === input.wireId)) {
+      return reject('wire-not-found');
+    }
+
+    const documentCandidate = {
+      ...state.document,
+      wires: state.document.wires.filter(({ id }) => id !== input.wireId),
+    };
+    return acceptCandidate(documentCandidate, state.provenance);
   },
 });

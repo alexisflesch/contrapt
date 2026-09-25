@@ -20,12 +20,13 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | ------------------------------------------------- | ------- | ----------------------------------------------------------------------- |
 | `AGENTS.md`                                       | 91      | règles applicables à tout changement, invariants non négociables        |
 | `docs/backlog.md`                                 | 125     | découpage des tranches, dépendances, tranche courante                   |
-| `docs/cahier-des-charges.md`                      | 412     | vision produit, périmètre, hors-périmètre                               |
+| `docs/cahier-des-charges.md`                      | 416     | vision produit, périmètre, hors-périmètre                               |
 | `docs/etat.md`                                    | 141     | ce qui est livré, les dettes, la dernière gate                          |
 | `docs/plan-remise-en-jeu.md`                      | 1067    | ordre d'exécution des tranches T3/T4b/T5, constaté par essai navigateur |
 | `docs/architecture.md`                            | 213     | couches, dépendances, états distincts, modèle d'objet                   |
 | `docs/qualite.md`                                 | 149     | stratégie de test, niveaux de test, gates                               |
-| `docs/catalogue-initial.md`                       | 173     | contrats des quatre familles d'objets                                   |
+| `docs/catalogue-initial.md`                       | 246     | contrats des sept familles d'objets                                     |
+| `docs/contrapt_control_wires_v1.md`               | 125     | spécification fonctionnelle des fils levier → convoyeur                 |
 | `docs/mobile-editor-interactions.md`              | 491     | gestes, états d'interface, scénarios d'acceptation tactiles             |
 | `docs/levels/initial-progression.md`              | 421     | spécification des huit premiers niveaux                                 |
 | `docs/decisions/0001-product-foundations.md`      | 33      | fondations produit (accepté)                                            |
@@ -34,8 +35,9 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/decisions/0004-level-document-v1.md`        | 103     | contrat persistant `LevelDocument v1` (accepté)                         |
 | `docs/decisions/0005-construction-attempt.md`     | 51      | provenance éphémère d'une tentative (accepté)                           |
 | `docs/decisions/0006-board-renderer.md`           | 101     | renderer du plateau et pipeline de sprites (accepté)                    |
-| `docs/decisions/0007-world-scale-and-camera.md`   | 234     | repère du monde, scène, caméra, échelle des sprites (accepté)           |
+| `docs/decisions/0007-world-scale-and-camera.md`   | 269     | repère du monde, scène, caméra, échelle des sprites (accepté)           |
 | `docs/decisions/0008-client-side-routing.md`      | 78      | routage côté client, schéma d'URL (accepté)                             |
+| `docs/decisions/0009-control-wires.md`            | 90      | fils de commande : modèle, rendu, câblage (accepté)                     |
 
 Sources de vérité exécutables, prioritaires sur toute prose :
 
@@ -48,6 +50,8 @@ Sources de vérité exécutables, prioritaires sur toute prose :
 | Frontières de couches  | `src/architecture/layer-boundaries.test.ts`            |
 | Scripts et gates       | `package.json`                                         |
 | Niveaux embarqués      | `src/content/levels/*.json`                            |
+| Géométrie des familles | `src/domain/family-geometry.ts`                        |
+| Export des sprites     | `art/build-sprites.py`                                 |
 
 ## Routage par tâche
 
@@ -62,6 +66,8 @@ Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans rai
 | Port physique, boucle à pas fixe, déterminisme | ADR 0002, `qualite.md` § Déterminisme, `architecture.md` § Simulation                                     | `src/simulation/`, `test/conformance/` |
 | Conformité physique, arbitrage moteur          | ADR 0002, `catalogue-initial.md` § Tests contractuels                                                     | `test/conformance/`                    |
 | Rendu du plateau, cadrage, projection          | ADR 0007, ADR 0006, `architecture.md` § Rendu et interface                                                | `src/presentation/`                    |
+| Assets, sprites, export depuis `art/`          | ADR 0007 § Amendement du 25 septembre 2026, `art/build-sprites.py`                                        | `art/`, `public/assets/`               |
+| Fils de commande, levier, convoyeur            | ADR 0009, `contrapt_control_wires_v1.md`, `catalogue-initial.md` § Levier, § Convoyeur                    | `src/domain/`, `src/presentation/`     |
 | Interface tactile, tiroir, gestes              | `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile                             | `src/ui/`, `src/app/`                  |
 | Routage, navigation, schéma d'URL              | ADR 0008                                                                                                  | `src/app/`                             |
 | Contenu d'un niveau                            | `levels/initial-progression.md` (section du niveau), `catalogue-initial.md`, ADR 0007 § Scène d'un niveau | `src/content/levels/`                  |

@@ -99,6 +99,9 @@ interface UseBoardPointersOptions {
   readonly updateCamera: (next: Camera) => void;
   readonly readCanvasRect: () => DOMRect | null;
   readonly readCanvasSizeInCss: () => CanvasSizeInCss | null;
+  /** While a lever waits for its conveyor, a tap names a target instead of selecting. */
+  readonly wiringSourceRef: RefObject<string | null>;
+  readonly onWiringTap: (placementId: string | null) => void;
 }
 
 interface BoardPointersController {
@@ -135,6 +138,8 @@ export function useBoardPointers({
   updateCamera,
   readCanvasRect,
   readCanvasSizeInCss,
+  wiringSourceRef,
+  onWiringTap,
 }: UseBoardPointersOptions): BoardPointersController {
   const [placementTool, setPlacementTool] = useState<PlacementTool | null>(null);
   const [placementPreview, setPlacementPreview] = useState<PlacementPreview | null>(null);
@@ -685,6 +690,10 @@ export function useBoardPointers({
               )
             : projection.objects;
         const localPoint = { x: point.x - boardRect.left, y: point.y - boardRect.top };
+        if (wiringSourceRef.current !== null) {
+          onWiringTap(hitTestBoard(localPoint, objects, viewport));
+          return;
+        }
         const rotationTarget = objects.find(
           (object) =>
             object.family === 'beam' && hitTestRotationHandle(localPoint, object, viewport),

@@ -232,3 +232,38 @@ dette, pas une livraison.
 - [ADR 0004 - Contrat persistant `LevelDocument v1`](0004-level-document-v1.md)
 - [ADR 0006 - Renderer du plateau et pipeline de sprites](0006-board-renderer.md)
 - [Interactions mobiles](../mobile-editor-interactions.md) § Navigation du plateau
+
+## Amendement du 25 septembre 2026 — sprites en calques et nouveaux assets
+
+Les prototypes ci-dessus sont remplacés par des sources dessinées, rangées dans
+`art/assets/`, et exportées par `art/build-sprites.py` (Python, Pillow, numpy,
+pngquant ; hors de la gate). Les PNG produits sont commités ; le test
+`src/presentation/sprite-assets.test.ts` vérifie chaque dimension contre la
+géométrie projetée, et le budget de 60 Ko.
+
+**Une famille peut être faite de plusieurs calques** pour qu'une partie bouge
+seule. La convention devient : _la boîte alpha du cadre commun d'un calque est
+exactement l'empreinte monde que la projection lui attribue_. Chaque calque
+suit l'une de trois poses : celle du placement (pièce immobile), celle du corps
+simulé, ou la position du corps sans sa rotation (ombrage et reflet qui restent
+face à la lumière).
+
+| Famille   | Calques, de l'arrière à l'avant                       | Empreinte monde (origine)                         |
+| --------- | ----------------------------------------------------- | ------------------------------------------------- |
+| balle     | `ball-base`, `ball-spin` (tourne), `ball-highlight`   | 0,6 × 0,6 (centre)                                |
+| panier    | `basket-back`, `basket-front`                         | 1,5 × 1,1 (centre)                                |
+| poutre    | `beam` (inchangé)                                     | 2, 4 ou 6 × 0,25 (centre)                         |
+| bascule   | `seesaw-fulcrum` (immobile), `seesaw-beam` (pivote)   | ensemble 3 × 0,82 (pivot)                         |
+| masse     | `mass-10kg`                                           | 0,8 × 0,772 (centre)                              |
+| levier    | `lever-base` (immobile), `lever-handle` (pivote)      | socle 0,8 × 0,414, poignée 0,35 × 1,0 (pivot)     |
+| convoyeur | `conveyor-belt` ou `conveyor-belt-left`, `conveyor-frame` | 3 × 0,58 (centre)                             |
+
+La bande du convoyeur fait exception au cadre commun : son sprite couvre la
+fenêtre du cadre plus une période exacte du motif (77 px), et le renderer fait
+glisser son rectangle source pour la faire défiler. Chaque famille a aussi une
+vignette pré-composée, `thumbs/<famille>.png`, pour le tiroir du catalogue.
+
+Les colliders polygonaux (pied de la bascule, masse, socle du levier) sont
+mesurés sur les sources par le même script et vivent dans
+`src/domain/family-geometry.ts`, source unique des empreintes pour la physique
+comme pour le rendu.

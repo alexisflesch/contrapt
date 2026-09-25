@@ -110,7 +110,11 @@ describe('hit-test pur du plateau', () => {
     ]);
 
     const candidates = projectLevel(document).objects.filter((object) => object.id === 'seesaw-1');
-    expect(candidates).toHaveLength(1);
+    // Fulcrum and board are two layers of one target sharing the whole footprint.
+    expect(candidates.map((candidate) => candidate.destination)).toEqual([
+      { x: -1.5, y: -0.12, width: 3, height: 0.82 },
+      { x: -1.5, y: -0.12, width: 3, height: 0.82 },
+    ]);
     expect(hitTestBoard({ x: 80, y: 40 }, projectLevel(document).objects, viewport)).toBe(
       'seesaw-1',
     );

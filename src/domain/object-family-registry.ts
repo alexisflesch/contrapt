@@ -6,6 +6,18 @@ export const beamPropertiesSchema = z.strictObject({
   size: z.enum(['short', 'medium', 'long']),
 });
 export const seesawPropertiesSchema = z.strictObject({});
+/** One sprite and one physical mass per weight; a new weight extends the enum. */
+export const massPropertiesSchema = z.strictObject({
+  weight: z.enum(['10kg']),
+});
+/** Where the handle stands when the simulation starts; objects may push it afterwards. */
+export const leverPropertiesSchema = z.strictObject({
+  position: z.enum(['left', 'center', 'right']),
+});
+/** The belt's direction when no lever commands it (ADR 0009). */
+export const conveyorPropertiesSchema = z.strictObject({
+  direction: z.enum(['left', 'stopped', 'right']),
+});
 
 type ObjectFamilyCapability = 'movable' | 'rotatable' | 'sensor' | 'sized';
 
@@ -118,5 +130,35 @@ export const initialObjectFamilyRegistry = createObjectFamilyRegistry([
     },
     capabilities: ['movable'],
     propertiesSchema: seesawPropertiesSchema,
+  },
+  {
+    id: 'mass',
+    dataVersion: 1,
+    catalogue: {
+      label: 'Masse',
+      description: 'Un poids lourd qui fait basculer',
+    },
+    capabilities: ['movable'],
+    propertiesSchema: massPropertiesSchema,
+  },
+  {
+    id: 'lever',
+    dataVersion: 1,
+    catalogue: {
+      label: 'Levier',
+      description: 'Commande un convoyeur : gauche, arrêt, droite',
+    },
+    capabilities: ['movable'],
+    propertiesSchema: leverPropertiesSchema,
+  },
+  {
+    id: 'conveyor',
+    dataVersion: 1,
+    catalogue: {
+      label: 'Convoyeur',
+      description: 'Un tapis qui entraîne ce qu’il porte',
+    },
+    capabilities: ['movable'],
+    propertiesSchema: conveyorPropertiesSchema,
   },
 ]);

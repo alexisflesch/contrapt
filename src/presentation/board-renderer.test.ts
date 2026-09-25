@@ -14,6 +14,9 @@ import {
   projectLevel,
   worldToPixels,
   type BoardCanvasContext,
+  type BoardConveyorBelt,
+  type BoardPose,
+  type BoardSimulationView,
   type BoardViewport,
 } from './board-renderer';
 
@@ -26,7 +29,11 @@ type Operation =
   | { readonly kind: 'lineWidth'; readonly values: readonly number[] }
   | { readonly kind: 'strokeRect'; readonly values: readonly number[] }
   | { readonly kind: 'fillRect'; readonly values: readonly number[] }
-  | { readonly kind: 'drawImage'; readonly values: readonly unknown[] };
+  | { readonly kind: 'drawImage'; readonly values: readonly unknown[] }
+  | { readonly kind: 'beginPath' }
+  | { readonly kind: 'stroke' }
+  | { readonly kind: 'globalAlpha'; readonly values: readonly number[] }
+  | { readonly kind: 'fillText'; readonly values: readonly unknown[] };
 
 type ProjectedObject = Readonly<{
   readonly family: SpriteFamily;
@@ -37,6 +44,14 @@ type ProjectedObject = Readonly<{
     readonly y: number;
     readonly width: number;
     readonly height: number;
+  }>;
+  readonly layer: Readonly<{
+    readonly destination: Readonly<{
+      readonly x: number;
+      readonly y: number;
+      readonly width: number;
+      readonly height: number;
+    }>;
   }>;
 }>;
 
@@ -202,6 +217,7 @@ const createContext = (): {
 } => {
   const operations: Operation[] = [];
   let lineWidth = 1;
+  let globalAlpha = 1;
 
   const context = {
     save: (): void => {
@@ -235,6 +251,37 @@ const createContext = (): {
     drawImage: (...values: readonly unknown[]): void => {
       operations.push({ kind: 'drawImage', values });
     },
+    drawImageRegion: (...values: readonly unknown[]): void => {
+      operations.push({ kind: 'drawImage', values });
+    },
+    get globalAlpha(): number {
+      return globalAlpha;
+    },
+    set globalAlpha(value: number) {
+      globalAlpha = value;
+      operations.push({ kind: 'globalAlpha', values: [value] });
+    },
+    strokeStyle: '',
+    fillStyle: '',
+    lineCap: 'butt',
+    lineJoin: 'miter',
+    font: '',
+    textAlign: 'start',
+    textBaseline: 'alphabetic',
+    beginPath: (): void => {
+      operations.push({ kind: 'beginPath' });
+    },
+    moveTo: (): void => undefined,
+    lineTo: (): void => undefined,
+    arcTo: (): void => undefined,
+    arc: (): void => undefined,
+    stroke: (): void => {
+      operations.push({ kind: 'stroke' });
+    },
+    fill: (): void => undefined,
+    fillText: (...values: readonly unknown[]): void => {
+      operations.push({ kind: 'fillText', values });
+    },
   } satisfies BoardCanvasContext;
 
   return { context, operations };
@@ -249,11 +296,20 @@ const createPendingSpriteLoader = (): {
 } => {
   const requestedFamilies: SpriteFamily[] = [];
   const sprites: Readonly<Record<SpriteAsset, DecodedSprite>> = {
-    ball: { width: 64, height: 32 },
+    'ball-base': { width: 64, height: 32 },
+    'ball-spin': { width: 64, height: 32 },
+    'ball-highlight': { width: 64, height: 32 },
     'basket-back': { width: 64, height: 32 },
     'basket-front': { width: 64, height: 32 },
     beam: { width: 64, height: 32 },
-    seesaw: { width: 64, height: 32 },
+    'seesaw-fulcrum': { width: 64, height: 32 },
+    'seesaw-beam': { width: 64, height: 32 },
+    'mass-10kg': { width: 64, height: 32 },
+    'lever-base': { width: 64, height: 32 },
+    'lever-handle': { width: 64, height: 32 },
+    'conveyor-belt': { width: 64, height: 32 },
+    'conveyor-belt-left': { width: 64, height: 32 },
+    'conveyor-frame': { width: 64, height: 32 },
   };
   let ready = false;
   let releasePending: () => void = () => {
@@ -292,7 +348,115 @@ const createPendingSpriteLoader = (): {
   };
 };
 
+const simulationView = (
+  poses: readonly (readonly [string, BoardPose])[],
+  belts: readonly (readonly [string, BoardConveyorBelt])[] = [],
+): BoardSimulationView => ({ bodyPoses: new Map(poses), conveyorBelts: new Map(belts) });
+
+const lockedPermissions = { move: false, rotate: false, remove: false } as const;
+
+/** A lever wired to a conveyor, with the goal pair out of the way. */
+const createWiredDocument = (
+  leverPosition: 'left' | 'center' | 'right',
+  conveyorDirection: 'left' | 'stopped' | 'right',
+) =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'wired-presentation',
+    metadata: { title: 'Levier et convoyeur' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 1, y: 1 }, rotation: 0 },
+        props: {},
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 1, y: 7 }, rotation: 0 },
+        props: {},
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'lever-1',
+        type: 'lever',
+        transform: { position: { x: 2, y: 4 }, rotation: 0 },
+        props: { position: leverPosition },
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'conveyor-1',
+        type: 'conveyor',
+        transform: { position: { x: 7, y: 5 }, rotation: 0 },
+        props: { direction: conveyorDirection },
+        permissions: lockedPermissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: 0, y: 0 }, max: { x: 10, y: 8 } },
+    wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
+  });
+
+const layerOf = (projection: ReturnType<typeof projectLevel>, asset: SpriteAsset) => {
+  const found = projection.objects.find((object) => object.assetKey === asset);
+  if (found === undefined) throw new Error(`Calque « ${asset} » absent.`);
+  return found.layer;
+};
+
 describe('projection du plateau', () => {
+  it('pose la poignée du levier à sa position de départ, sur un socle immobile', () => {
+    const projection = projectLevel(createWiredDocument('right', 'stopped'));
+
+    expect(layerOf(projection, 'lever-handle').rotation).toBeCloseTo(Math.PI / 4);
+    expect(layerOf(projection, 'lever-base').rotation).toBe(0);
+    const handlePose = { position: { x: 2, y: 4 }, rotation: -0.5 };
+    expect(
+      layerOf(
+        projectLevel(
+          createWiredDocument('right', 'stopped'),
+          simulationView([['lever-1', handlePose]]),
+        ),
+        'lever-handle',
+      ).rotation,
+    ).toBe(-0.5);
+  });
+
+  it('montre la bande du convoyeur dans son sens, derrière le cadre', () => {
+    const construction = projectLevel(createWiredDocument('center', 'left'));
+    const assets = construction.objects
+      .filter((object) => object.family === 'conveyor')
+      .map((object) => object.assetKey);
+
+    expect(assets).toEqual(['conveyor-belt-left', 'conveyor-frame']);
+    expect(layerOf(construction, 'conveyor-belt-left').source?.x).toBe(0);
+  });
+
+  it('fait défiler la bande d’après le déplacement simulé', () => {
+    const projection = projectLevel(
+      createWiredDocument('center', 'stopped'),
+      simulationView([], [['conveyor-1', { offset: 0.15, facing: 1 }]]),
+    );
+    const belt = layerOf(projection, 'conveyor-belt');
+
+    // A belt moving right shifts its pattern right: the source window moves left.
+    expect(belt.source?.width).toBe(247);
+    expect(belt.source?.x).toBeCloseTo(77 * (1 - 0.15 / 0.6006));
+  });
+
+  it('route les fils avec leur lettre de circuit, hors du document', () => {
+    const projection = projectLevel(createWiredDocument('center', 'stopped'));
+
+    expect(projection.wires).toEqual([
+      expect.objectContaining({ id: 'wire-1', label: 'A', circuitIndex: 0 }),
+    ]);
+    expect(projection.wires[0]?.points[0]).toEqual({ x: 2.4, y: 4.05 });
+    expect(projection.wires[0]?.points.at(-1)).toEqual({ x: 5.5, y: 5 });
+  });
+
   it('contient les quatre familles et porte les assets visuels hors du document', () => {
     const projection = projectLevel(levelDocument);
 
@@ -301,8 +465,11 @@ describe('projection du plateau', () => {
     expect(projection.objects.map((object: ProjectedObject) => object.assetKey)).toEqual([
       'basket-back',
       'beam',
-      'seesaw',
-      'ball',
+      'seesaw-fulcrum',
+      'seesaw-beam',
+      'ball-base',
+      'ball-spin',
+      'ball-highlight',
       'basket-front',
     ]);
     expect(
@@ -325,6 +492,36 @@ describe('projection du plateau', () => {
     // non centré dessus, cette destination ne peut pas être symétrique comme
     // pour les trois autres familles.
     expect(seesaw.destination).toEqual({ x: -1.5, y: -0.12, width: 3, height: 0.82 });
+  });
+
+  it('laisse le pied de la bascule en place quand le tablier pivote', () => {
+    const boardPose = { position: { x: 18, y: 11 }, rotation: 0.4 };
+    const projection = projectLevel(levelDocument, simulationView([['seesaw-1', boardPose]]));
+    const layer = (asset: string) => {
+      const found = projection.objects.find((object) => object.assetKey === asset);
+      if (found === undefined) throw new Error(`Calque « ${asset} » absent.`);
+      return found.layer;
+    };
+
+    expect(layer('seesaw-beam').rotation).toBe(0.4);
+    expect(layer('seesaw-beam').destination).toEqual({ x: -1.5, y: -0.12, width: 3, height: 0.24 });
+    expect(layer('seesaw-fulcrum').rotation).toBe(0);
+    expect(layer('seesaw-fulcrum').destination.y).toBeCloseTo(0.12);
+  });
+
+  it('fait tourner le motif de la balle sans faire tourner son ombrage ni son reflet', () => {
+    const ballPose = { position: { x: 13, y: 9 }, rotation: 2 };
+    const projection = projectLevel(levelDocument, simulationView([['ball-1', ballPose]]));
+    const ballLayers = projection.objects.filter((object) => object.family === 'ball');
+
+    expect(ballLayers.map((object) => [object.assetKey, object.layer.rotation])).toEqual([
+      ['ball-base', 0],
+      ['ball-spin', 2],
+      ['ball-highlight', 0],
+    ]);
+    expect(ballLayers.every((object) => object.layer.position.x === 13)).toBe(true);
+    // Hit-test and selection keep reading the placement, not the moving body.
+    expect(ballLayers.every((object) => object.position.x === 12)).toBe(true);
   });
 
   it('convertit les positions monde avec une origine et une échelle uniques', () => {
@@ -443,6 +640,9 @@ describe('renderer Canvas 2D du plateau', () => {
       [16, 16],
       [24, 20],
       [32, 24],
+      [32, 24],
+      [8, 12],
+      [8, 12],
       [8, 12],
       [16, 16],
     ]);
@@ -453,7 +653,7 @@ describe('renderer Canvas 2D du plateau', () => {
             operation.kind === 'rotate',
         )
         .map((operation) => operation.values),
-    ).toEqual([[0], [Math.PI / 4], [0], [0], [0]]);
+    ).toEqual([[0], [Math.PI / 4], [0], [0], [0], [0], [0], [0]]);
 
     const drawOperations = operations.filter(
       (operation): operation is Extract<Operation, { readonly kind: 'drawImage' }> =>
@@ -462,10 +662,10 @@ describe('renderer Canvas 2D du plateau', () => {
     expect(drawOperations).toHaveLength(projection.objects.length);
     expect(drawOperations.map((operation) => operation.values.slice(-4))).toEqual(
       projection.objects.map((object: ProjectedObject) => [
-        object.destination.x * viewport.pixelsPerWorldUnit,
-        object.destination.y * viewport.pixelsPerWorldUnit,
-        object.destination.width * viewport.pixelsPerWorldUnit,
-        object.destination.height * viewport.pixelsPerWorldUnit,
+        object.layer.destination.x * viewport.pixelsPerWorldUnit,
+        object.layer.destination.y * viewport.pixelsPerWorldUnit,
+        object.layer.destination.width * viewport.pixelsPerWorldUnit,
+        object.layer.destination.height * viewport.pixelsPerWorldUnit,
       ]),
     );
     for (const [index, object] of projection.objects.entries()) {
@@ -507,7 +707,13 @@ describe('renderer Canvas 2D du plateau', () => {
 
     const order = await drawnAssetOrder(document);
 
-    expect(order).toEqual(['basket-back', 'ball', 'basket-front']);
+    expect(order).toEqual([
+      'basket-back',
+      'ball-base',
+      'ball-spin',
+      'ball-highlight',
+      'basket-front',
+    ]);
   });
 
   it('conserve l’ordre du document entre deux objets qui ne sont pas des balles', async () => {
@@ -555,7 +761,67 @@ describe('renderer Canvas 2D du plateau', () => {
 
     // Les éléments de fond conservent leur ordre document, puis la balle, puis
     // la lèvre avant du panier.
-    expect(order).toEqual(['seesaw', 'beam', 'basket-back', 'ball', 'basket-front']);
+    expect(order).toEqual([
+      'seesaw-fulcrum',
+      'seesaw-beam',
+      'beam',
+      'basket-back',
+      'ball-base',
+      'ball-spin',
+      'ball-highlight',
+      'basket-front',
+    ]);
+  });
+
+  it('dessine les fils sous les objets, avec leur lettre aux deux bouts', async () => {
+    const { context, operations } = createContext();
+    const spriteLoader = createPendingSpriteLoader();
+    spriteLoader.setReady();
+    const renderer = createBoardRenderer({
+      canvas: { width: 0, height: 0 },
+      context,
+      viewport,
+      spriteLoader: spriteLoader.loader,
+    });
+
+    await renderer.render(projectLevel(createWiredDocument('center', 'stopped')));
+
+    const firstSprite = operations.findIndex((operation) => operation.kind === 'drawImage');
+    const firstStroke = operations.findIndex((operation) => operation.kind === 'stroke');
+    expect(firstStroke).toBeGreaterThanOrEqual(0);
+    expect(firstStroke).toBeLessThan(firstSprite);
+    expect(
+      operations
+        .filter(
+          (operation): operation is Extract<Operation, { readonly kind: 'fillText' }> =>
+            operation.kind === 'fillText',
+        )
+        .map((operation) => operation.values[0]),
+    ).toEqual(['A', 'A']);
+  });
+
+  it('atténue les fils pendant la simulation', async () => {
+    const { context, operations } = createContext();
+    const spriteLoader = createPendingSpriteLoader();
+    spriteLoader.setReady();
+    const renderer = createBoardRenderer({
+      canvas: { width: 0, height: 0 },
+      context,
+      viewport,
+      spriteLoader: spriteLoader.loader,
+    });
+
+    await renderer.render(
+      projectLevel(createWiredDocument('center', 'stopped'), simulationView([])),
+    );
+
+    const alphas = operations
+      .filter(
+        (operation): operation is Extract<Operation, { readonly kind: 'globalAlpha' }> =>
+          operation.kind === 'globalAlpha',
+      )
+      .map((operation) => operation.values[0]);
+    expect(alphas.some((alpha) => alpha !== undefined && alpha < 0.5)).toBe(true);
   });
 
   it('expose une API de rendu sans victoire ni sérialisation', () => {

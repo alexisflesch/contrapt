@@ -1,11 +1,25 @@
 import type { LevelDocument } from '../domain/level-document';
 
+const placementNames: Readonly<Record<LevelDocument['objects'][number]['type'], string>> = {
+  ball: 'Balle',
+  basket: 'Panier',
+  beam: 'Poutre',
+  seesaw: 'Bascule',
+  mass: 'Masse',
+  lever: 'Levier',
+  conveyor: 'Convoyeur',
+};
+
+const masculineTypes: ReadonlySet<LevelDocument['objects'][number]['type']> = new Set([
+  'basket',
+  'lever',
+  'conveyor',
+]);
+
 /** The French display name for a placed object, shared by `BoardView` and `ContextPanel`. */
 export const placementName = (object: LevelDocument['objects'][number]): string =>
-  object.type === 'ball'
-    ? 'Balle'
-    : object.type === 'basket'
-      ? 'Panier'
-      : object.type === 'beam'
-        ? 'Poutre'
-        : 'Bascule';
+  placementNames[object.type];
+
+/** « la poutre », « le panier » : the name with its definite article, in lower case. */
+export const placementNameWithArticle = (object: LevelDocument['objects'][number]): string =>
+  `${masculineTypes.has(object.type) ? 'le' : 'la'} ${placementNames[object.type].toLowerCase()}`;

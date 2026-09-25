@@ -26,6 +26,10 @@ const BASKET_INTERIOR_FLOOR_OFFSET_Y = 0.39;
 const BALL_RADIUS = 0.3;
 const BEAM_HALF_THICKNESS = 0.125;
 const SEESAW_BOARD_HALF_THICKNESS = 0.12;
+/** ADR 0007 : empreinte de la masse, 0,8 × 0,772, centrée sur son origine. */
+const MASS_HALF_FOOTPRINT_HEIGHT = 0.386;
+/** Vitesse du tapis d'un convoyeur en marche, en unités monde par seconde. */
+const CONVEYOR_SPEED = 1.5;
 /** Hauteur totale du socle de la bascule, posé sous le pivot. */
 const SEESAW_BASE_HEIGHT = 0.7;
 /** Un corps au repos s'enfonce du « linear slop » de Planck avant de se stabiliser. */
@@ -245,7 +249,7 @@ const createBasketDropLevelDocument = (
   });
 
 /** Same probe, applied to the seesaw: the basket only carries the goal. */
-const createSeesawDropLevelDocument = (rotation: number): LevelDocument =>
+const createSeesawDropLevelDocument = (rotation: number, ballX = 0): LevelDocument =>
   levelDocumentSchema.parse({
     schemaVersion: 2,
     id: 'physics-port-seesaw-drop',
@@ -254,7 +258,7 @@ const createSeesawDropLevelDocument = (rotation: number): LevelDocument =>
       {
         id: 'ball-1',
         type: 'ball',
-        transform: { position: { x: 0, y: -3 }, rotation: 0 },
+        transform: { position: { x: ballX, y: -3 }, rotation: 0 },
         props: {},
         permissions,
       },
@@ -498,6 +502,230 @@ const body = (
   }
   return found;
 };
+
+const mass = (id: string, position: { readonly x: number; readonly y: number }) => ({
+  id,
+  type: 'mass',
+  transform: { position, rotation: 0 },
+  props: { weight: '10kg' },
+  permissions,
+});
+
+/** A mass dropped on a long beam, and a ball resting on a seesaw that a mass falls onto. */
+const createMassLevelDocument = (): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-mass',
+    metadata: { title: 'Contrat de la masse' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: -1.3, y: -0.5 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'seesaw-1',
+        type: 'seesaw',
+        transform: { position: { x: 0, y: 0 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      // Lâchée de peu : sur la planche inclinée, la balle roulerait hors du
+      // bout avant l'impact d'une masse tombée de plus haut.
+      mass('mass-catapult', { x: 1.3, y: -1.5 }),
+      {
+        id: 'beam-1',
+        type: 'beam',
+        transform: { position: { x: 20, y: 0 }, rotation: 0 },
+        props: { size: 'long' },
+        permissions,
+      },
+      mass('mass-resting', { x: 20, y: -2 }),
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: -20, y: 0 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: -30, y: -30 }, max: { x: 30, y: 30 } },
+  });
+
+type LeverPosition = 'left' | 'center' | 'right';
+type ConveyorDirection = 'left' | 'stopped' | 'right';
+
+interface WiringScene {
+  readonly conveyor: ConveyorDirection;
+  readonly lever?: LeverPosition;
+  /** Where a ball is dropped from, if any; otherwise it waits far away. */
+  readonly ballDrop?: { readonly x: number; readonly y: number };
+}
+
+/**
+ * A conveyor at the origin carrying a mass, and a lever at (6, 0) wired to it
+ * when `lever` is given. The goal ball and basket sit out of the way unless
+ * the ball is dropped on the lever.
+ */
+const createWiringLevelDocument = ({ conveyor, lever, ballDrop }: WiringScene): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-wiring',
+    metadata: { title: 'Contrat du levier et du convoyeur' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: ballDrop ?? { x: -20, y: 20 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: -20, y: 22 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'conveyor-1',
+        type: 'conveyor',
+        transform: { position: { x: 0, y: 0 }, rotation: 0 },
+        props: { direction: conveyor },
+        permissions,
+      },
+      mass('mass-1', { x: 0, y: -0.7 }),
+      ...(lever === undefined
+        ? []
+        : [
+            {
+              id: 'lever-1',
+              type: 'lever',
+              transform: { position: { x: 6, y: 0 }, rotation: 0 },
+              props: { position: lever },
+              permissions,
+            },
+          ]),
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: -30, y: -30 }, max: { x: 30, y: 30 } },
+    wires:
+      lever === undefined ? [] : [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
+  });
+
+const massXAfter = (scene: WiringScene, steps: number): number => {
+  const session = createSimulationSession(createWiringLevelDocument(scene), {
+    fixedStepSeconds: FIXED_STEP_SECONDS,
+  });
+  try {
+    session.advanceFixedSteps(steps);
+    return body(session.readState(), 'mass-1', 'primary').position.x;
+  } finally {
+    session.destroy();
+  }
+};
+
+const device = (snapshot: SimulationSnapshot, placementId: string) => {
+  const found = snapshot.devices.find((candidate) => candidate.placementId === placementId);
+  if (found === undefined) throw new Error(`Dispositif absent de l’état : ${placementId}`);
+  return found;
+};
+
+/**
+ * A running conveyor, then a flat long beam level with its top: the belt
+ * hands the ball over to the beam with some speed.
+ */
+const createRollingLevelDocument = (): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-rolling',
+    metadata: { title: 'Contrat du roulement' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: -4.2, y: -1 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'conveyor-1',
+        type: 'conveyor',
+        transform: { position: { x: -3, y: 0 }, rotation: 0 },
+        props: { direction: 'right' },
+        permissions,
+      },
+      {
+        id: 'beam-1',
+        type: 'beam',
+        // Top flush with the belt: 0,29 above the conveyor's centre.
+        transform: { position: { x: 1.5, y: -0.165 }, rotation: 0 },
+        props: { size: 'long' },
+        permissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 20, y: 20 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: -30, y: -30 }, max: { x: 30, y: 30 } },
+  });
+
+/** A short ramp that launches the ball onto a long flat beam at the origin. */
+const createRampLevelDocument = (): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-ramp',
+    metadata: { title: 'Contrat de la pente' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: -4.6, y: -1.5 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      {
+        id: 'ramp',
+        type: 'beam',
+        // Right end resting on the flat beam's left end.
+        transform: { position: { x: -3.95, y: -0.42 }, rotation: 0.3 },
+        props: { size: 'short' },
+        permissions,
+      },
+      {
+        id: 'floor',
+        type: 'beam',
+        transform: { position: { x: 0, y: 0 }, rotation: 0 },
+        props: { size: 'long' },
+        permissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 20, y: 20 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: -30, y: -30 }, max: { x: 30, y: 30 } },
+  });
 
 /** Runs a level until everything has come to rest, then reads the ball back. */
 const settledBall = (level: LevelDocument): SimulationBodyState => {
@@ -945,6 +1173,15 @@ describe('port physique candidat-neutre', () => {
     expectCloseTo(restingOnBase.position.y, -(SEESAW_BASE_HEIGHT + BALL_RADIUS));
   });
 
+  it('donne au pied de la bascule la silhouette effilée de son sprite', () => {
+    // Couchée d'un quart de tour, la bascule présente le flanc de son pied
+    // vers le haut. Une boîte offrirait un palier plat où la balle resterait ;
+    // le pied effilé la fait glisser vers le tablier.
+    const ball = settledBall(createSeesawDropLevelDocument(Math.PI / 2, -0.62));
+
+    expect(ball.position.x).toBeGreaterThan(-0.5);
+  });
+
   it('ne laisse pas une balle lancée à 25 m/s traverser une poutre', () => {
     withSession(createHighSpeedBeamLevelDocument(), (session) => {
       let maximumFallSpeed = 0;
@@ -1123,6 +1360,128 @@ describe('port physique candidat-neutre', () => {
     } finally {
       session.destroy();
     }
+  });
+
+  it('pose une masse sur une poutre à la hauteur de son empreinte', () => {
+    withSession(createMassLevelDocument(), (session) => {
+      session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+      const resting = body(session.readState(), 'mass-resting', 'primary');
+
+      expect(resting.bodyType).toBe('dynamic');
+      expectCloseTo(resting.position.y, -(BEAM_HALF_THICKNESS + MASS_HALF_FOOTPRINT_HEIGHT));
+      expectCloseTo(resting.position.x, 20);
+    });
+  });
+
+  it('catapulte la balle quand la masse tombe sur l’autre bout de la bascule', () => {
+    withSession(createMassLevelDocument(), (session) => {
+      const start = body(session.readState(), 'ball-1', 'primary').position.y;
+      let highest = start;
+      for (let step = 0; step < 120; step += 1) {
+        session.advanceFixedSteps(1);
+        highest = Math.min(highest, body(session.readState(), 'ball-1', 'primary').position.y);
+      }
+
+      // Le bout de la planche ne monte que de 1,3 entre ses deux butées :
+      // au-delà, c'est l'élan donné par les dix kilos qui lance la balle.
+      expect(start - highest).toBeGreaterThan(1.5);
+    });
+  });
+
+  it('entraîne ce que porte le convoyeur dans son sens, et rien quand il est arrêté', () => {
+    // Une seconde de tapis : la masse, posée au bout d'une demi-seconde,
+    // parcourt ensuite une bonne fraction de la vitesse du tapis.
+    expect(massXAfter({ conveyor: 'right' }, 60)).toBeGreaterThan(0.4);
+    expect(massXAfter({ conveyor: 'left' }, 60)).toBeLessThan(-0.4);
+    expectCloseTo(massXAfter({ conveyor: 'stopped' }, 60), 0);
+  });
+
+  it('fait obéir un convoyeur relié au levier plutôt qu’à son propre sens', () => {
+    expect(massXAfter({ conveyor: 'left', lever: 'right' }, 60)).toBeGreaterThan(0.4);
+    expectCloseTo(massXAfter({ conveyor: 'right', lever: 'center' }, 60), 0);
+  });
+
+  it('tient la poignée du levier dans sa position de départ', () => {
+    for (const position of ['left', 'center', 'right'] as const) {
+      withSession(
+        createWiringLevelDocument({ conveyor: 'stopped', lever: position }),
+        (session) => {
+          session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+
+          expect(device(session.readState(), 'lever-1')).toEqual({
+            placementId: 'lever-1',
+            kind: 'lever',
+            position,
+          });
+          // Butées à 45° de la verticale, pas au-delà : la poignée ne se couche jamais.
+          const expectedAngle = { left: -Math.PI / 4, center: 0, right: Math.PI / 4 }[position];
+          expectCloseTo(
+            body(session.readState(), 'lever-1', 'handle').rotation,
+            expectedAngle,
+            0.05,
+          );
+        },
+      );
+    }
+  });
+
+  it('bascule le levier sous l’impact d’une balle, et le convoyeur suit en pleine simulation', () => {
+    const level = createWiringLevelDocument({
+      conveyor: 'stopped',
+      lever: 'center',
+      // Juste à gauche du sommet du pommeau : le choc chasse le pommeau vers
+      // la droite, au-delà de mi-course, et le cran de droite le retient.
+      ballDrop: { x: 5.88, y: -3 },
+    });
+
+    withSession(level, (session) => {
+      expect(device(session.readState(), 'conveyor-1')).toMatchObject({ direction: 0 });
+
+      session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+      const state = session.readState();
+
+      expect(device(state, 'lever-1')).toMatchObject({ position: 'right' });
+      expect(device(state, 'conveyor-1')).toMatchObject({ direction: 1 });
+      expect(body(state, 'mass-1', 'primary').position.x).toBeGreaterThan(0.2);
+    });
+  });
+
+  it('fait défiler la bande d’une distance déterministe, remise à zéro au reset', () => {
+    withSession(createWiringLevelDocument({ conveyor: 'left' }), (session) => {
+      session.advanceFixedSteps(60);
+      const offset = device(session.readState(), 'conveyor-1');
+
+      expect(offset).toMatchObject({ kind: 'conveyor', direction: -1, facing: -1 });
+      expect(offset.kind === 'conveyor' && offset.beltOffset).toBeCloseTo(-CONVEYOR_SPEED);
+
+      session.reset();
+      expect(device(session.readState(), 'conveyor-1')).toMatchObject({ beltOffset: 0 });
+    });
+  });
+
+  it('emporte une balle presque à la vitesse du tapis, au lieu de la faire tourner sur place', () => {
+    withSession(createRollingLevelDocument(), (session) => {
+      session.advanceFixedSteps(90);
+      const ball = body(session.readState(), 'ball-1', 'primary');
+
+      expect(ball.linearVelocity.x).toBeGreaterThan(0.8 * CONVEYOR_SPEED);
+    });
+  });
+
+  it('arrête une balle qui roule sur une poutre plate, par résistance au roulement', () => {
+    withSession(createRampLevelDocument(), (session) => {
+      session.advanceFixedSteps(60);
+      const launched = body(session.readState(), 'ball-1', 'primary');
+      expect(launched.linearVelocity.x).toBeGreaterThan(1);
+
+      session.advanceFixedSteps(15 * 60);
+      const ball = body(session.readState(), 'ball-1', 'primary');
+
+      // Toujours sur la poutre, et immobile.
+      expectCloseTo(ball.position.y, -(BEAM_HALF_THICKNESS + BALL_RADIUS));
+      expect(ball.position.x).toBeLessThan(3);
+      expect(Math.abs(ball.linearVelocity.x)).toBeLessThan(0.02);
+    });
   });
 
   it('fait pivoter la planche après un impact puis revient à son angle initial', () => {

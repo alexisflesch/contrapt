@@ -4,6 +4,9 @@ import {
   ballPropertiesSchema,
   basketPropertiesSchema,
   beamPropertiesSchema,
+  conveyorPropertiesSchema,
+  leverPropertiesSchema,
+  massPropertiesSchema,
   seesawPropertiesSchema,
 } from './object-family-registry';
 
@@ -23,6 +26,7 @@ const MAX_DESCRIPTION_LENGTH = 2_000;
 const MAX_OBJECTS = 512;
 const MAX_INVENTORY_ENTRIES = 128;
 const MAX_BUILD_ZONES = 64;
+const MAX_WIRES = 128;
 const MAX_INVENTORY_QUANTITY = 999;
 const MAX_WORLD_COORDINATE = 1_000_000;
 const MAX_ROTATION_RADIANS = 100_000;
@@ -90,6 +94,21 @@ const objectPlacementSchema = z.discriminatedUnion('type', [
     type: z.literal('seesaw'),
     props: seesawPropertiesSchema,
   }),
+  z.strictObject({
+    ...placementFields,
+    type: z.literal('mass'),
+    props: massPropertiesSchema,
+  }),
+  z.strictObject({
+    ...placementFields,
+    type: z.literal('lever'),
+    props: leverPropertiesSchema,
+  }),
+  z.strictObject({
+    ...placementFields,
+    type: z.literal('conveyor'),
+    props: conveyorPropertiesSchema,
+  }),
 ]);
 
 const inventoryFields = {
@@ -119,7 +138,32 @@ const inventoryEntrySchema = z.discriminatedUnion('type', [
     type: z.literal('seesaw'),
     props: seesawPropertiesSchema,
   }),
+  z.strictObject({
+    ...inventoryFields,
+    type: z.literal('mass'),
+    props: massPropertiesSchema,
+  }),
+  z.strictObject({
+    ...inventoryFields,
+    type: z.literal('lever'),
+    props: leverPropertiesSchema,
+  }),
+  z.strictObject({
+    ...inventoryFields,
+    type: z.literal('conveyor'),
+    props: conveyorPropertiesSchema,
+  }),
 ]);
+
+/**
+ * ADR 0009: a direct link from a controller to a device. Only the relation
+ * is stored; route, colour and circuit letter are derived when drawing.
+ */
+const controlWireSchema = z.strictObject({
+  id: identifierSchema,
+  sourceId: identifierSchema,
+  targetId: identifierSchema,
+});
 
 const basketGoalSchema = z.strictObject({
   type: z.literal('basket'),
@@ -219,6 +263,8 @@ const levelDocumentV2StructureSchema = z.strictObject({
   schemaVersion: z.literal(LEVEL_DOCUMENT_SCHEMA_VERSION),
   ...sharedDocumentFields,
   scene: sceneSchema,
+  /** Optional on input so that documents written before ADR 0009 stay valid v2. */
+  wires: z.array(controlWireSchema).max(MAX_WIRES).default([]),
 });
 
 type ObjectPlacement = z.infer<typeof objectPlacementSchema>;
@@ -270,6 +316,51 @@ const addRotationPermissionIssues = (
         message: `La rotation n’est pas disponible pour la famille « ${entry.type} ».`,
       });
     }
+  });
+};
+
+type ControlWire = z.infer<typeof controlWireSchema>;
+
+/**
+ * ADR 0009: a wire goes from a placed lever to a placed conveyor, and a
+ * conveyor obeys at most one lever, so that its direction is never ambiguous.
+ */
+const addControlWireIssues = (
+  objects: readonly ObjectPlacement[],
+  wires: readonly ControlWire[],
+  issues: LevelDocumentValidationIssue[],
+): void => {
+  const placementsById = new Map(objects.map((placement) => [placement.id, placement]));
+  const wireIds = new Set<string>();
+  const commandedTargets = new Set<string>();
+
+  wires.forEach((wire, index) => {
+    if (wireIds.has(wire.id)) {
+      issues.push({
+        path: ['wires', index, 'id'],
+        message: `L’identifiant de fil « ${wire.id} » est déjà utilisé.`,
+      });
+    }
+    wireIds.add(wire.id);
+
+    if (placementsById.get(wire.sourceId)?.type !== 'lever') {
+      issues.push({
+        path: ['wires', index, 'sourceId'],
+        message: 'Un fil doit partir d’un levier placé.',
+      });
+    }
+    if (placementsById.get(wire.targetId)?.type !== 'conveyor') {
+      issues.push({
+        path: ['wires', index, 'targetId'],
+        message: 'Un fil doit arriver sur un convoyeur placé.',
+      });
+    } else if (commandedTargets.has(wire.targetId)) {
+      issues.push({
+        path: ['wires', index, 'targetId'],
+        message: `Le convoyeur « ${wire.targetId} » est déjà commandé par un levier.`,
+      });
+    }
+    commandedTargets.add(wire.targetId);
   });
 };
 
@@ -388,6 +479,7 @@ export const levelDocumentSchema = levelDocumentV2StructureSchema.superRefine(
     const issues: LevelDocumentValidationIssue[] = [];
     addLevelDocumentRelationIssues(document, issues);
     addSceneContainmentIssues(document, issues);
+    addControlWireIssues(document.objects, document.wires, issues);
     for (const issue of issues) {
       context.addIssue({ code: 'custom', path: [...issue.path], message: issue.message });
     }
@@ -414,7 +506,7 @@ export const levelDocumentSchema = levelDocumentV2StructureSchema.superRefine(
  * forces a caller to handle the failure at the type level instead of being
  * able to forget it.
  */
-export type LevelDocumentMigrationResult =
+type LevelDocumentMigrationResult =
   | { readonly status: 'migrated'; readonly document: LevelDocument }
   | {
       readonly status: 'scene-too-large';
@@ -474,6 +566,7 @@ export const migrateLevelDocumentV1ToV2 = (
     document: {
       ...document,
       schemaVersion: LEVEL_DOCUMENT_SCHEMA_VERSION,
+      wires: [],
       scene: {
         min: { x: xRange.min, y: yRange.min },
         max: { x: xRange.max, y: yRange.max },

@@ -6,3 +6,6 @@ test-results/
 .vite/
 *.tsbuildinfo
 .DS_Store
+
+# Métadonnées Windows copiées depuis WSL
+*:Zone.Identifier

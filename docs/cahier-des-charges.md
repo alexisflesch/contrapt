@@ -163,17 +163,21 @@ Les gestes, états, conflits et scénarios d’acceptation complets sont défini
 
 ## Catalogue initial exact
 
-Le premier vocabulaire visible contient exactement quatre familles : balle,
-panier, poutre et bascule. Une taille de poutre n’est pas une famille différente,
+Le premier vocabulaire visible contenait exactement quatre familles : balle,
+panier, poutre et bascule. Il s'étend le 25 septembre 2026 à la masse, au levier
+et au convoyeur, reliés par des fils de commande
+([ADR 0009](decisions/0009-control-wires.md)). Une taille de poutre n’est pas une famille différente,
 la bascule ne demande ni connexion manuelle ni réglage de joint, et en v1 seule
 une poutre est rotatable par commande. Les propriétés physiques, dimensions et
 rendus sont définis dans le jeu et non dans chaque document de niveau. Les rôles,
 les modèles physiques et les contrats de test de chaque famille font autorité
 dans [le catalogue initial](catalogue-initial.md).
 
-La gravité fournit seule l’énergie des premiers puzzles. Il n’y a initialement ni
-interrupteur, ni ventilateur, ni moteur. Blocs, dominos, roues libres, ressorts,
-cordes, poulies, engrenages, électricité, fluides, corps déformables et destruction
+La gravité fournit seule l’énergie des premiers puzzles. Le convoyeur est le
+premier dispositif actif ; il n’y a toujours ni interrupteur, ni ventilateur, ni
+moteur, et l’électricité se limite à des liaisons directes levier → convoyeur.
+Blocs, dominos, roues libres, ressorts, cordes, poulies, engrenages, circuits
+électriques au-delà de ces liaisons, fluides, corps déformables et destruction
 sont reportés jusqu’à ce qu’un besoin de gameplay les justifie.
 
 Ce catalogue décrit le premier jalon, non une séparation durable en modes de jeu.

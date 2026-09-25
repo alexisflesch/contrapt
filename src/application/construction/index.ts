@@ -1,5 +1,7 @@
 export {
+  connectControlWire,
   createConstructionAttempt,
+  disconnectControlWire,
   movePlacement,
   placeFromInventory,
   removePlacement,

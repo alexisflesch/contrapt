@@ -26,6 +26,7 @@ const validLevel = {
   goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
   buildZones: [],
   scene: { min: { x: -4, y: -2 }, max: { x: 4, y: 6 } },
+  wires: [],
 };
 
 const file = (filePath: string, value: unknown): ContentLevelFile => ({ filePath, value });

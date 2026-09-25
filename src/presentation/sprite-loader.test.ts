@@ -6,6 +6,7 @@ import {
   createSpriteLoader,
   spriteAssetPath,
   spriteAssetsForFamily,
+  spriteThumbnailPath,
 } from './sprite-loader';
 
 const spriteFamilies = ['ball', 'basket', 'beam', 'seesaw'] as const;
@@ -143,7 +144,13 @@ describe('sprite loader contract', () => {
     // at nested paths like `/levels/level-1-laisser-tomber/play`, where a
     // relative sprite path silently 404s instead of loading — it only ever
     // worked by coincidence when the app lived solely at `/`.
-    expect(spriteAssetPath('ball', 2)).toBe('/assets/sprites/ball@2x.png');
+    expect(spriteAssetPath('ball-base', 2)).toBe('/assets/sprites/ball-base@2x.png');
+  });
+
+  it('splits the ball and the seesaw into layers drawn back to front', () => {
+    expect(spriteAssetsForFamily('ball')).toEqual(['ball-base', 'ball-spin', 'ball-highlight']);
+    expect(spriteAssetsForFamily('seesaw')).toEqual(['seesaw-fulcrum', 'seesaw-beam']);
+    expect(spriteThumbnailPath('seesaw')).toBe('/assets/sprites/thumbs/seesaw.png');
   });
 
   it('keeps assets outside the LevelDocument', () => {
@@ -180,9 +187,9 @@ describe('sprite loader contract', () => {
 
     for (const family of spriteFamilies) {
       expect(loader.getState(family)).toBe('loading');
-      if (family !== 'basket') expect(loader.getSprite(family)).toBeUndefined();
     }
     for (const asset of spriteAssets) {
+      expect(loader.getSprite(asset)).toBeUndefined();
       expect(decoder).toHaveBeenCalledWith(spriteAssetPath(asset, scale));
     }
 
@@ -234,7 +241,7 @@ describe('sprite loader contract', () => {
 
     expect(decoder).toHaveBeenCalledTimes(spriteFamilies.flatMap(spriteAssetsForFamily).length);
     expect(loader.getState('ball')).toBe('loading');
-    expect(loader.getSprite('ball')).toBeUndefined();
+    expect(loader.getSprite('ball-base')).toBeUndefined();
 
     for (const asset of spriteFamilies.flatMap(spriteAssetsForFamily)) {
       const path = spriteAssetPath(asset, 2);
@@ -249,7 +256,7 @@ describe('sprite loader contract', () => {
     await Promise.all([firstLoad, secondLoad]);
 
     expect(loader.getState('ball')).toBe('ready');
-    expect(loader.getSprite('ball')).toBe(decodedByPath.get(spriteAssetPath('ball', 2)));
+    expect(loader.getSprite('ball-spin')).toBe(decodedByPath.get(spriteAssetPath('ball-spin', 2)));
     expect(loader.getSprite('basket-back')).toBe(
       decodedByPath.get(spriteAssetPath('basket-back', 2)),
     );
@@ -275,8 +282,8 @@ describe('sprite loader contract', () => {
   });
 
   it('adapts injectable asset fetching and bitmap creation in Node', async () => {
-    const path = spriteAssetPath('ball', 2);
-    const blob: SpriteAssetBlob = { name: 'ball@2x.png' };
+    const path = spriteAssetPath('ball-base', 2);
+    const blob: SpriteAssetBlob = { name: 'ball-base@2x.png' };
     const bitmap: DecodedBitmapFixture = {
       width: 128,
       height: 96,

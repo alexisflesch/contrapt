@@ -18,7 +18,9 @@ const refusalMessage = (reason: string): string =>
       ? 'Action indisponible : cet objet est verrouillé.'
       : reason === 'remove-not-permitted' || reason === 'goal-object-protected'
         ? 'Suppression indisponible pour cet objet.'
-        : 'Cette action est indisponible.';
+        : reason === 'wire-already-connected'
+          ? 'Ce convoyeur est déjà commandé par un levier.'
+          : 'Cette action est indisponible.';
 
 interface EditorSessionController {
   readonly session: EditorSession;

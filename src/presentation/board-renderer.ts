@@ -1,4 +1,17 @@
+import {
+  ballGeometry,
+  basketGeometry,
+  beamGeometry,
+  conveyorGeometry,
+  leverAngle,
+  leverFootprint,
+  leverGeometry,
+  massGeometry,
+  seesawGeometry,
+} from '../domain/family-geometry';
 import type { LevelDocument } from '../domain/level-document';
+import { projectWires, type ProjectedWire } from './control-wires';
+import { drawWireLabels, drawWires, type WireCanvas } from './wire-renderer';
 import {
   spriteAssetPath,
   spriteAssetsForFamily,
@@ -55,13 +68,73 @@ export type BoardCanvasContext = {
     destinationWidth: number,
     destinationHeight: number,
   ) => void;
-};
+  /** `drawImage` with a source rectangle, for a sprite that slides behind a window. */
+  readonly drawImageRegion: (
+    source: unknown,
+    sourceX: number,
+    sourceY: number,
+    sourceWidth: number,
+    sourceHeight: number,
+    destinationX: number,
+    destinationY: number,
+    destinationWidth: number,
+    destinationHeight: number,
+  ) => void;
+} & Partial<Omit<WireCanvas, 'save' | 'restore' | 'lineWidth'>>;
 
-export type BoardDestination = Readonly<{
+/** A context able to draw wires: every optional path and text operation is there. */
+const canDrawWires = (context: BoardCanvasContext): context is BoardCanvasContext & WireCanvas =>
+  context.lineWidth !== undefined &&
+  context.globalAlpha !== undefined &&
+  typeof context.beginPath === 'function' &&
+  typeof context.moveTo === 'function' &&
+  typeof context.lineTo === 'function' &&
+  typeof context.arcTo === 'function' &&
+  typeof context.arc === 'function' &&
+  typeof context.stroke === 'function' &&
+  typeof context.fill === 'function' &&
+  typeof context.fillText === 'function';
+
+type BoardDestination = Readonly<{
   readonly x: number;
   readonly y: number;
   readonly width: number;
   readonly height: number;
+}>;
+
+export type BoardPose = Readonly<{
+  readonly position: BoardPoint;
+  readonly rotation: number;
+}>;
+
+/**
+ * Pose of each placement's moving body while a simulation runs, keyed by
+ * placement id: the ball, the seesaw's board. Absent, a body rests at its
+ * placement.
+ */
+type BoardBodyPoses = ReadonlyMap<string, BoardPose>;
+
+export type BoardConveyorBelt = Readonly<{
+  /** Signed distance the belt has travelled, in world units. */
+  readonly offset: number;
+  /** Which way the chevrons point: the belt's last direction of travel. */
+  readonly facing: -1 | 1;
+}>;
+
+/** What a running simulation adds to the document when it is drawn. */
+export type BoardSimulationView = Readonly<{
+  readonly bodyPoses: BoardBodyPoses;
+  readonly conveyorBelts: ReadonlyMap<string, BoardConveyorBelt>;
+}>;
+
+/** One sprite layer of a placement, as it is drawn. */
+type ProjectedLayer = Readonly<{
+  readonly position: BoardPoint;
+  readonly rotation: number;
+  /** Sprite bounds in world units, relative to the layer's position and rotation. */
+  readonly destination: BoardDestination;
+  /** Part of the sprite to draw, in sprite pixels; the whole sprite when absent. */
+  readonly source?: BoardDestination;
 }>;
 
 export type ProjectedBoardObject = Readonly<{
@@ -69,67 +142,165 @@ export type ProjectedBoardObject = Readonly<{
   readonly family: SpriteFamily;
   readonly assetKey: SpriteAsset;
   readonly assetPath: string;
+  /** Placement pose, which selection and hit-testing follow. */
   readonly position: BoardPoint;
   readonly rotation: number;
   /** Document order, retained for deterministic presentation interactions. */
   readonly placementOrder: number;
   /** Permission projected for presentation-only affordances. */
   readonly rotatable: boolean;
-  /** Bounds in world units, centered on `position`, for rendering and editor framing. */
+  /** Whole-object footprint in world units, relative to `position`, for selection and framing. */
   readonly destination: BoardDestination;
+  readonly layer: ProjectedLayer;
 }>;
 
-export type BoardProjection = Readonly<{
+type BoardProjection = Readonly<{
   readonly objects: readonly ProjectedBoardObject[];
+  /** Derived routes of the control wires (ADR 0009), drawn under the objects. */
+  readonly wires: readonly ProjectedWire[];
+  /** While a simulation runs, wires fade so they do not clutter the machine. */
+  readonly wiresDimmed: boolean;
   /** Ephemeral selection state; it is never part of `LevelDocument`. */
   readonly selectedPlacementId?: string;
 }>;
 
-type FamilyVisual = Readonly<{
-  readonly width: number;
-  readonly height: number;
-}>;
-
-const familyVisuals = {
-  ball: {
-    width: 0.6,
-    height: 0.6,
-  },
-  basket: {
-    width: 1.5,
-    height: 1.1,
-  },
-} satisfies Record<Exclude<SpriteFamily, 'beam' | 'seesaw'>, FamilyVisual>;
+type Placement = LevelDocument['objects'][number];
 
 /**
- * A4 (ADR 0007) poses the seesaw's base under the pivot rather than centered
- * on it, so its collider footprint is not centered on the placement's origin
- * the way the other three families are: base at y ∈ [0, +0.70], board at
- * y ∈ [-0.12, +0.12], union 3 × 0.82 with its top edge at y = -0.12 relative
- * to the pivot. `centeredDestination` cannot express that asymmetry.
+ * How a layer follows its placement: `placement` never moves (the seesaw's
+ * fulcrum), `body` follows the simulated body, and `upright-body` follows its
+ * position only, so shading and highlights keep facing the light while the
+ * ball rolls.
  */
-const seesawDestination: BoardDestination = { x: -1.5, y: -0.12, width: 3, height: 0.82 };
+type LayerPoseSource = 'placement' | 'body' | 'upright-body';
 
-/* These dimensions mirror the colliders in simulation-session without importing
- * the physics adapter into presentation. */
-const beamVisuals = {
-  short: { width: 2, height: 0.25 },
-  medium: { width: 4, height: 0.25 },
-  long: { width: 6, height: 0.25 },
-} satisfies Record<'short' | 'medium' | 'long', FamilyVisual>;
+const layerPoseSources: Record<SpriteAsset, LayerPoseSource> = {
+  'ball-base': 'upright-body',
+  'ball-spin': 'body',
+  'ball-highlight': 'upright-body',
+  'basket-back': 'body',
+  'basket-front': 'body',
+  beam: 'body',
+  'seesaw-fulcrum': 'placement',
+  'seesaw-beam': 'body',
+  'mass-10kg': 'body',
+  'lever-base': 'placement',
+  'lever-handle': 'body',
+  'conveyor-belt': 'placement',
+  'conveyor-belt-left': 'placement',
+  'conveyor-frame': 'placement',
+};
 
-const centeredDestination = ({ width, height }: FamilyVisual): BoardDestination => ({
-  x: -width / 2,
-  y: -height / 2,
-  width,
-  height,
-});
+/**
+ * The conveyor's belt shows through the frame's window (measured on the art
+ * by `art/build-sprites.py`). Its sprite is the window plus one period of
+ * chevrons, so scrolling is only a matter of sliding the source rectangle.
+ */
+const CONVEYOR_BELT_WINDOW: BoardDestination = {
+  x: -0.9614,
+  y: -0.1306,
+  width: 1.9243,
+  height: 0.2007,
+};
+const CONVEYOR_BELT_PERIOD = 0.6006;
+const CONVEYOR_BELT_SPRITE = { windowWidth: 247, period: 77, height: 26 } as const;
 
-const destinationForObject = (object: LevelDocument['objects'][number]): BoardDestination => {
-  if (object.type === 'beam') return centeredDestination(beamVisuals[object.props.size]);
-  if (object.type === 'seesaw') return seesawDestination;
+const conveyorBeltSource = (offset: number): BoardDestination => {
+  // A belt moving right carries its pattern right, so the window slides left.
+  const phase = ((-offset % CONVEYOR_BELT_PERIOD) + CONVEYOR_BELT_PERIOD) % CONVEYOR_BELT_PERIOD;
+  return {
+    x: (phase / CONVEYOR_BELT_PERIOD) * CONVEYOR_BELT_SPRITE.period,
+    y: 0,
+    width: CONVEYOR_BELT_SPRITE.windowWidth,
+    height: CONVEYOR_BELT_SPRITE.height,
+  };
+};
 
-  return centeredDestination(familyVisuals[object.type]);
+const conveyorBeltAt = (
+  object: Placement,
+  view: BoardSimulationView | undefined,
+): BoardConveyorBelt =>
+  view?.conveyorBelts.get(object.id) ?? {
+    offset: 0,
+    facing: object.type === 'conveyor' && object.props.direction === 'left' ? -1 : 1,
+  };
+
+/** The layers an object shows now: both belts are loaded, one is drawn. */
+const layerAssetsFor = (
+  object: Placement,
+  view: BoardSimulationView | undefined,
+): readonly SpriteAsset[] => {
+  if (object.type !== 'conveyor') return spriteAssetsForFamily(object.type);
+  const belt = conveyorBeltAt(object, view).facing === -1 ? 'conveyor-belt-left' : 'conveyor-belt';
+  return [belt, 'conveyor-frame'];
+};
+
+/** Whole-object footprint (ADR 0007), shared with the colliders through `family-geometry`. */
+const footprintForObject = (object: Placement): BoardDestination => {
+  switch (object.type) {
+    case 'ball':
+      return ballGeometry.footprint;
+    case 'basket':
+      return basketGeometry.footprint;
+    case 'beam':
+      return beamGeometry.footprints[object.props.size];
+    case 'seesaw':
+      return seesawGeometry.footprint;
+    case 'mass':
+      return massGeometry.footprint;
+    case 'lever':
+      return leverFootprint(object.props.position);
+    case 'conveyor':
+      return conveyorGeometry.footprint;
+  }
+};
+
+/** Layers that do not fill the whole footprint; every other layer does. */
+const partialLayerDestinations: Partial<Record<SpriteAsset, BoardDestination>> = {
+  'seesaw-fulcrum': seesawGeometry.fulcrum.footprint,
+  'seesaw-beam': seesawGeometry.board.footprint,
+  'lever-base': leverGeometry.base.footprint,
+  'lever-handle': leverGeometry.handle.footprint,
+  'conveyor-belt': CONVEYOR_BELT_WINDOW,
+  'conveyor-belt-left': CONVEYOR_BELT_WINDOW,
+};
+
+const layerDestination = (object: Placement, asset: SpriteAsset): BoardDestination =>
+  partialLayerDestinations[asset] ?? footprintForObject(object);
+
+/** Where a moving body rests before the simulation: a lever's handle leans to its start. */
+const restingBodyRotation = (object: Placement): number =>
+  object.transform.rotation + (object.type === 'lever' ? leverAngle(object.props.position) : 0);
+
+const projectLayer = (
+  object: Placement,
+  asset: SpriteAsset,
+  view: BoardSimulationView | undefined,
+): ProjectedLayer => {
+  const placementPose = {
+    position: { x: object.transform.position.x, y: object.transform.position.y },
+    rotation: object.transform.rotation,
+  };
+  const body = view?.bodyPoses.get(object.id) ?? {
+    position: placementPose.position,
+    rotation: restingBodyRotation(object),
+  };
+  const source = layerPoseSources[asset];
+  const pose =
+    source === 'placement'
+      ? placementPose
+      : source === 'body'
+        ? body
+        : { position: body.position, rotation: 0 };
+
+  const projected = {
+    position: { x: pose.position.x, y: pose.position.y },
+    rotation: pose.rotation,
+    destination: layerDestination(object, asset),
+  };
+  return asset === 'conveyor-belt' || asset === 'conveyor-belt-left'
+    ? { ...projected, source: conveyorBeltSource(conveyorBeltAt(object, view).offset) }
+    : projected;
 };
 
 /**
@@ -143,8 +314,17 @@ const destinationForObject = (object: LevelDocument['objects'][number]): BoardDe
 const drawOrderByAsset: Record<SpriteAsset, number> = {
   'basket-back': 0,
   beam: 0,
-  seesaw: 0,
-  ball: 1,
+  'seesaw-fulcrum': 0,
+  'seesaw-beam': 0,
+  'mass-10kg': 0,
+  'lever-base': 0,
+  'lever-handle': 0,
+  'conveyor-belt': 0,
+  'conveyor-belt-left': 0,
+  'conveyor-frame': 0,
+  'ball-base': 1,
+  'ball-spin': 1,
+  'ball-highlight': 1,
   'basket-front': 2,
 };
 
@@ -167,10 +347,18 @@ const byDrawOrderThenDocumentOrder = (
   return documentDelta !== 0 ? documentDelta : a.layerIndex - b.layerIndex;
 };
 
-export const projectLevel = (document: LevelDocument): BoardProjection => {
+/**
+ * Projects a document on the board. `simulation` is given while a
+ * simulation runs: moving bodies, belts and wires then follow it, while the
+ * document itself is never rewritten.
+ */
+export const projectLevel = (
+  document: LevelDocument,
+  simulation?: BoardSimulationView,
+): BoardProjection => {
   const objects = document.objects
     .flatMap((object, documentIndex) =>
-      spriteAssetsForFamily(object.type).map((assetKey, layerIndex) => ({
+      layerAssetsFor(object, simulation).map((assetKey, layerIndex) => ({
         documentIndex,
         layerIndex,
         projected: {
@@ -185,7 +373,8 @@ export const projectLevel = (document: LevelDocument): BoardProjection => {
           rotation: object.transform.rotation,
           placementOrder: documentIndex,
           rotatable: object.permissions.rotate,
-          destination: destinationForObject(object),
+          destination: footprintForObject(object),
+          layer: projectLayer(object, assetKey, simulation),
         },
       })),
     )
@@ -205,7 +394,11 @@ export const projectLevel = (document: LevelDocument): BoardProjection => {
     )
     .map(({ projected }) => projected);
 
-  return { objects };
+  return {
+    objects,
+    wires: projectWires(document, footprintForObject),
+    wiresDimmed: simulation !== undefined,
+  };
 };
 
 export const worldToPixels = (position: BoardPoint, viewport: BoardViewport): BoardPoint => ({
@@ -213,7 +406,7 @@ export const worldToPixels = (position: BoardPoint, viewport: BoardViewport): Bo
   y: (position.y - viewport.origin.y) * viewport.pixelsPerWorldUnit,
 });
 
-export const worldLengthToPixels = (length: number, viewport: BoardViewport): number =>
+const worldLengthToPixels = (length: number, viewport: BoardViewport): number =>
   length * viewport.pixelsPerWorldUnit;
 
 const destinationToPixels = (
@@ -241,7 +434,7 @@ const requiredFamilies = (projection: BoardProjection): readonly SpriteFamily[] 
   ...new Set(projection.objects.map((object) => object.family)),
 ];
 
-export const ROTATION_HANDLE_SIZE_CSS_PIXELS = 44;
+const ROTATION_HANDLE_SIZE_CSS_PIXELS = 44;
 const SELECTION_LINE_WIDTH_CSS_PIXELS = 2;
 export const ROTATION_HANDLE_DISTANCE_CSS_PIXELS = 32;
 
@@ -305,20 +498,50 @@ export const createBoardRenderer = ({
     canvas.height = Math.round(viewport.cssHeight * viewport.devicePixelRatio);
     context.setTransform(viewport.devicePixelRatio, 0, 0, viewport.devicePixelRatio, 0, 0);
 
+    const wireContext = canDrawWires(context) ? context : undefined;
+    const toScreen = (point: BoardPoint): BoardPoint => worldToPixels(point, viewport);
+    const wireOptions = {
+      dimmed: projection.wiresDimmed,
+      focusId: projection.selectedPlacementId,
+    };
+    if (wireContext !== undefined) {
+      drawWires(wireContext, projection.wires, toScreen, wireOptions);
+    }
+
     for (const object of projection.objects) {
       const sprite = spriteLoader.getSprite(object.assetKey);
       if (sprite === undefined) {
         throw new Error(`Le sprite « ${object.assetKey} » n’est pas disponible après chargement.`);
       }
 
-      const position = worldToPixels(object.position, viewport);
-      const { x, y, width, height } = destinationToPixels(object.destination, viewport);
+      const position = worldToPixels(object.layer.position, viewport);
+      const { x, y, width, height } = destinationToPixels(object.layer.destination, viewport);
 
       context.save();
       context.translate(position.x, position.y);
-      context.rotate(object.rotation);
-      context.drawImage(sprite.source !== undefined ? sprite.source : sprite, x, y, width, height);
+      context.rotate(object.layer.rotation);
+      const image = sprite.source !== undefined ? sprite.source : sprite;
+      const region = object.layer.source;
+      if (region === undefined) {
+        context.drawImage(image, x, y, width, height);
+      } else {
+        context.drawImageRegion(
+          image,
+          region.x,
+          region.y,
+          region.width,
+          region.height,
+          x,
+          y,
+          width,
+          height,
+        );
+      }
       context.restore();
+    }
+
+    if (wireContext !== undefined) {
+      drawWireLabels(wireContext, projection.wires, toScreen, wireOptions);
     }
 
     const selection = selectedObject(projection);

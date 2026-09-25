@@ -1,6 +1,6 @@
 # État du dépôt — Contrapt!
 
-Dernière mise à jour : 2 septembre 2026.
+Dernière mise à jour : 25 septembre 2026.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tranche
@@ -75,7 +75,22 @@ structurante nécessite une décision documentée.
   embarqués, leurs références et l’unicité des identifiants de niveau.
 - Un seul contenu exécutable est présent : le JSON du niveau 1 « Laisser tomber ».
   Il est valide et exposé par le catalogue embarqué.
-- La coque DOM mobile possède les quatre cartes de catalogue, une présentation 2D
+- Assets du 25 septembre 2026 : les sources de `art/assets/` sont exportées par
+  `art/build-sprites.py` à la convention de l’ADR 0007 (amendement : sprites en
+  calques). La balle a un motif qui tourne sous un ombrage et un reflet fixes ;
+  la bascule a un pied immobile et une planche qui pivote, et son pied devient
+  un polygone mesuré. Les empreintes vivent dans `src/domain/family-geometry.ts`,
+  partagées par la physique et le rendu ; un test vérifie les PNG contre elles.
+- Trois familles s’ajoutent : masse (10 kg réels), levier à trois crans et
+  convoyeur. Les fils de commande levier → convoyeur (ADR 0009,
+  `docs/contrapt_control_wires_v1.md`) sont validés dans le document, créés et
+  supprimés par commandes annulables, simulés à chaque pas fixe, routés
+  orthogonalement avec ponts et lettres de circuit, et reliés au toucher depuis
+  le panneau Propriétés. L’atelier en propose un inventaire.
+- La balle subit une résistance au roulement, que Planck ne fournit pas : elle
+  s’arrête sur une poutre plate et un convoyeur l’emporte presque à la vitesse
+  du tapis, au lieu de la faire tourner sur place.
+- La coque DOM mobile possède les cartes de catalogue, une présentation 2D
   plate et le véritable tiroir replié/ouvert avec scrim ; elle s’adapte en panneau
   latéral. Des tests de composants et un parcours Playwright 320 × 568 couvrent les
   états essentiels du tiroir et l’absence de débordement horizontal.
@@ -111,12 +126,12 @@ structurante nécessite une décision documentée.
   document d’atelier de `src/app/App.tsx`, écrit en coordonnées de type pixel,
   qui viole l’invariant « les positions du domaine sont exprimées en unités du
   monde » ; l’ADR 0007 acte sa suppression.
-- Les quatre PNG de `public/assets/sprites` ne sont pas des sprites utilisables :
-  environ 3,8 Mo au total, fond noir opaque et halo pour `beam@2x.png`,
-  perspective 3/4 pour `basket@2x.png`, et aucune correspondance entre la boîte
-  alpha et l’empreinte du collider. Ils ne respectent ni la convention de sprite
-  de l’ADR 0007, ni la 2D plate de l’ADR 0006, et sont à reproduire plutôt qu’à
-  ajuster.
+- La poutre n’a pas encore de source dessinée : `beam@2x.png` reste l’ancien
+  sprite, étiré pour les trois longueurs. `art/build-sprites.py` dépend de
+  Pillow, numpy et pngquant, hors du dépôt ; il n’est pas lancé par la gate.
+- Le câblage est réservé à l’auteur : en résolution, un levier ou un convoyeur
+  pris dans l’inventaire ne peut pas être relié. Aucun niveau de campagne
+  n’utilise encore masse, levier ou convoyeur.
 - Le fond `public/assets/backgrounds/board-generic-v0.png` est posé en
   `background-size: cover` CSS : il ne suit ni le zoom ni le panoramique et sa
   grille ne dit rien de l’échelle réelle du monde.
@@ -134,8 +149,8 @@ structurante nécessite une décision documentée.
 
 ## Dernière exécution de la gate
 
-La dernière gate complète `pnpm check` a été exécutée avec succès le 2 septembre
-2026 : typecheck, lint, formatage, Knip, validation du niveau embarqué, 147 tests
-Vitest, build Vite et 2 parcours Playwright Chromium tactiles, dont le viewport
-320 × 568. Cette mesure décrit l’état présent du dépôt et devra naturellement
-être réexécutée après toute reprise.
+La dernière gate complète `pnpm check` a été exécutée avec succès le 25 septembre
+2026 : typecheck, lint, formatage, Knip (après retrait de cinq exports inutilisés
+hérités), validation du contenu embarqué, 333 tests Vitest, build Vite et 29
+parcours Playwright du projet mobile. Cette mesure décrit l’état présent du dépôt
+et devra naturellement être réexécutée après toute reprise.

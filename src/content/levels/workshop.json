@@ -3,7 +3,7 @@
   "id": "free-workshop",
   "metadata": {
     "title": "Atelier de niveau",
-    "description": "Le point de départ de la création libre : une scène 16 × 9 avec un sol, une balle et un panier de démonstration, et un inventaire abondant des quatre familles."
+    "description": "Le point de départ de la création libre : une scène 16 × 9 avec un sol, une balle et un panier de démonstration, et un inventaire abondant de toutes les familles."
   },
   "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 16, "y": 9 } },
   "objects": [
@@ -55,6 +55,27 @@
       "id": "inventory-seesaw",
       "type": "seesaw",
       "props": {},
+      "quantity": 99,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    },
+    {
+      "id": "inventory-mass",
+      "type": "mass",
+      "props": { "weight": "10kg" },
+      "quantity": 99,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    },
+    {
+      "id": "inventory-lever",
+      "type": "lever",
+      "props": { "position": "center" },
+      "quantity": 99,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    },
+    {
+      "id": "inventory-conveyor",
+      "type": "conveyor",
+      "props": { "direction": "stopped" },
       "quantity": 99,
       "permissions": { "move": true, "rotate": false, "remove": true }
     }

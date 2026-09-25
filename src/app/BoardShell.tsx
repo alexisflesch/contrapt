@@ -18,6 +18,7 @@ import { Dialog } from '../ui/Dialog';
 import { SimulationControls } from '../ui/SimulationControls';
 import { useBoardCamera } from './use-board-camera';
 import { useBoardPointers } from './use-board-pointers';
+import { useWiringTool } from './use-wiring-tool';
 import { useEditorSession } from './use-editor-session';
 import { useIsSideLayout } from './use-side-layout';
 import { useSimulationRunner } from './use-simulation-runner';
@@ -51,6 +52,7 @@ export function BoardShell({ initialDocument, mode, title, subtitle }: BoardShel
     executeCommand,
   } = useEditorSession(() => createEditorSession(mode, createConstructionAttempt(initialDocument)));
   const boardCamera = useBoardCamera(currentScene);
+  const wiring = useWiringTool({ sessionRef, executeCommand, setFeedback });
   const pointers = useBoardPointers({
     sessionRef,
     updateSession,
@@ -61,6 +63,8 @@ export function BoardShell({ initialDocument, mode, title, subtitle }: BoardShel
     updateCamera: boardCamera.updateCamera,
     readCanvasRect: boardCamera.readCanvasRect,
     readCanvasSizeInCss: boardCamera.readCanvasSizeInCss,
+    wiringSourceRef: wiring.wiringSourceRef,
+    onWiringTap: wiring.completeWiring,
   });
   const simulation = useSimulationRunner({ sessionRef, updateSession, setFeedback, pointers });
   const isSideLayout = useIsSideLayout();
@@ -186,6 +190,9 @@ export function BoardShell({ initialDocument, mode, title, subtitle }: BoardShel
                 <ContextPanel
                   session={session}
                   onExecuteCommand={executeCommand}
+                  wiringSourceId={wiring.wiringSourceId}
+                  onStartWiring={wiring.startWiring}
+                  onCancelWiring={wiring.cancelWiring}
                   {...(!isSideLayout
                     ? {
                         onClose: () => {

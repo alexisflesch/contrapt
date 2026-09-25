@@ -7,13 +7,17 @@ import {
 } from './object-family-registry';
 
 describe('registre des familles d’objet', () => {
-  it('enregistre exactement les quatre familles du catalogue initial', () => {
+  it('enregistre les familles du catalogue dans l’ordre du tiroir', () => {
     expect(initialObjectFamilyRegistry.definitions.map(({ id }) => id)).toEqual([
       'ball',
       'basket',
       'beam',
       'seesaw',
+      'mass',
+      'lever',
+      'conveyor',
     ]);
+    expect(initialObjectFamilyRegistry.get('mass')?.catalogue.label).toBe('Masse');
 
     expect(initialObjectFamilyRegistry.get('ball')?.catalogue.label).toBe('Balle');
     expect(initialObjectFamilyRegistry.get('basket')?.catalogue.label).toBe('Panier');
@@ -31,6 +35,7 @@ describe('registre des familles d’objet', () => {
       'sized',
     ]);
     expect(initialObjectFamilyRegistry.get('seesaw')?.capabilities).toEqual(['movable']);
+    expect(initialObjectFamilyRegistry.get('mass')?.capabilities).toEqual(['movable']);
   });
 
   it('valide les propriétés sérialisables propres à chaque famille', () => {
@@ -49,6 +54,20 @@ describe('registre des familles d’objet', () => {
     }
     expect(beam?.propertiesSchema.safeParse({ size: 'extra-long' }).success).toBe(false);
     expect(beam?.propertiesSchema.safeParse({}).success).toBe(false);
+
+    const mass = initialObjectFamilyRegistry.get('mass');
+    expect(mass?.propertiesSchema.safeParse({ weight: '10kg' }).success).toBe(true);
+    expect(mass?.propertiesSchema.safeParse({}).success).toBe(false);
+
+    const lever = initialObjectFamilyRegistry.get('lever');
+    for (const position of ['left', 'center', 'right']) {
+      expect(lever?.propertiesSchema.safeParse({ position }).success).toBe(true);
+    }
+    const conveyor = initialObjectFamilyRegistry.get('conveyor');
+    for (const direction of ['left', 'stopped', 'right']) {
+      expect(conveyor?.propertiesSchema.safeParse({ direction }).success).toBe(true);
+    }
+    expect(conveyor?.propertiesSchema.safeParse({ direction: 'up' }).success).toBe(false);
   });
 
   it('refuse les identifiants de famille dupliqués', () => {

@@ -1,9 +1,11 @@
 import {
+  disconnectControlWire,
   movePlacement,
   removePlacement,
   rotatePlacement,
   updatePlacementProperties,
 } from '../application/construction/construction-attempt';
+import { controlCircuits } from '../domain/control-circuits';
 import {
   currentEditorAttempt,
   type EditorSession,
@@ -11,12 +13,16 @@ import {
 } from '../application/editor-session/editor-session';
 import { Button } from './Button';
 import { Panel } from './Panel';
-import { placementName } from './placement-name';
+import { placementName, placementNameWithArticle } from './placement-name';
 
 interface ContextPanelProps {
   readonly session: EditorSession;
   readonly onExecuteCommand: (command: Parameters<typeof executeEditorCommand>[1]) => void;
   readonly onClose?: () => void;
+  /** The lever waiting for a conveyor tap, if a link is being made (ADR 0009). */
+  readonly wiringSourceId?: string | null;
+  readonly onStartWiring?: (sourceId: string) => void;
+  readonly onCancelWiring?: () => void;
 }
 
 const POSITION_STEP_IN_WORLD_UNITS = 0.25;
@@ -30,6 +36,12 @@ const beamSizeFromValue = (value: string): BeamSize | null => {
   return null;
 };
 
+const leverPositionFromValue = (value: string): 'left' | 'center' | 'right' | null =>
+  value === 'left' || value === 'center' || value === 'right' ? value : null;
+
+const conveyorDirectionFromValue = (value: string): 'left' | 'stopped' | 'right' | null =>
+  value === 'left' || value === 'stopped' || value === 'right' ? value : null;
+
 /**
  * The panel for the currently selected placement: move, rotate (beams only)
  * and remove. Renders `null` when nothing is selected or outside
@@ -40,7 +52,14 @@ const beamSizeFromValue = (value: string): BeamSize | null => {
  * avoids reserving two independent blocks of dead space for content that can
  * never appear at the same time.
  */
-export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPanelProps) {
+export function ContextPanel({
+  session,
+  onExecuteCommand,
+  onClose,
+  wiringSourceId = null,
+  onStartWiring,
+  onCancelWiring,
+}: ContextPanelProps) {
   const displayedAttempt = currentEditorAttempt(session);
   const selectedPlacement = displayedAttempt.document.objects.find(
     (object) => object.id === session.selectedPlacementId,
@@ -52,6 +71,17 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
   const canMove = canEdit || selectedPlacement.permissions.move;
   const canRotate = canEdit || selectedPlacement.permissions.rotate;
   const canRemove = canEdit || selectedPlacement.permissions.remove;
+  const { wires } = displayedAttempt.document;
+  const circuits = controlCircuits(wires);
+  const circuitLabel = (sourceId: string): string =>
+    circuits.find((circuit) => circuit.sourceId === sourceId)?.label ?? '';
+  const connectedWires = wires.filter(
+    ({ sourceId, targetId }) =>
+      sourceId === selectedPlacement.id || targetId === selectedPlacement.id,
+  );
+  const disconnect = (wireId: string): void => {
+    onExecuteCommand(disconnectControlWire({ context: 'author', wireId }));
+  };
 
   const moveSteps = [
     ['gauche', '←', -POSITION_STEP_IN_WORLD_UNITS, 0],
@@ -158,6 +188,98 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
           </select>
         </label>
       )}
+      {selectedPlacement.type === 'lever' && canEdit && (
+        <label className="context-size-control">
+          Position de départ
+          <select
+            aria-label="Position de départ"
+            value={selectedPlacement.props.position}
+            onChange={(event) => {
+              const position = leverPositionFromValue(event.target.value);
+              if (position === null) return;
+              onExecuteCommand(
+                updatePlacementProperties({
+                  context: 'author',
+                  placementId: selectedPlacement.id,
+                  props: { position },
+                }),
+              );
+            }}
+          >
+            <option value="left">Gauche</option>
+            <option value="center">Centre</option>
+            <option value="right">Droite</option>
+          </select>
+        </label>
+      )}
+      {selectedPlacement.type === 'conveyor' && canEdit && connectedWires.length === 0 && (
+        <label className="context-size-control">
+          Sens du tapis
+          <select
+            aria-label="Sens du tapis"
+            value={selectedPlacement.props.direction}
+            onChange={(event) => {
+              const direction = conveyorDirectionFromValue(event.target.value);
+              if (direction === null) return;
+              onExecuteCommand(
+                updatePlacementProperties({
+                  context: 'author',
+                  placementId: selectedPlacement.id,
+                  props: { direction },
+                }),
+              );
+            }}
+          >
+            <option value="left">Vers la gauche</option>
+            <option value="stopped">Arrêté</option>
+            <option value="right">Vers la droite</option>
+          </select>
+        </label>
+      )}
+      {connectedWires.length > 0 && (
+        <ul className="context-circuits" aria-label="Circuits">
+          {connectedWires.map((wire, index) => {
+            const label = circuitLabel(wire.sourceId);
+            const name =
+              connectedWires.length === 1
+                ? `Délier le circuit ${label}`
+                : `Délier le circuit ${label} (fil ${String(index + 1)})`;
+            return (
+              <li key={wire.id}>
+                <span>Circuit {label}</span>
+                {selectedPlacement.type === 'conveyor' && <span> : commandé par un levier</span>}
+                {canEdit && (
+                  <Button
+                    aria-label={name}
+                    onClick={() => {
+                      disconnect(wire.id);
+                    }}
+                  >
+                    Délier
+                  </Button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {selectedPlacement.type === 'lever' &&
+        canEdit &&
+        onStartWiring !== undefined &&
+        (wiringSourceId === selectedPlacement.id ? (
+          <div className="context-wiring" role="status">
+            <p>Touchez le convoyeur à relier à ce levier.</p>
+            <Button onClick={onCancelWiring}>Annuler la liaison</Button>
+          </div>
+        ) : (
+          <Button
+            onClick={() => {
+              onStartWiring(selectedPlacement.id);
+            }}
+          >
+            Relier à un convoyeur
+          </Button>
+        ))}
       {canRemove && (
         <Button
           className="context-delete"
@@ -170,7 +292,7 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
             );
           }}
         >
-          Supprimer la {placementName(selectedPlacement).toLowerCase()}
+          Supprimer {placementNameWithArticle(selectedPlacement)}
         </Button>
       )}
     </Panel>

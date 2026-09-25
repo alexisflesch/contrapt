@@ -57,6 +57,36 @@ const validLevel: LevelDocument = {
   goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
   buildZones: [{ min: { x: -10, y: -2 }, max: { x: 10, y: 15 } }],
   scene: { min: { x: -12, y: -4 }, max: { x: 12, y: 17 } },
+  wires: [],
+};
+
+const lockedPermissions = { move: false, rotate: false, remove: false } as const;
+
+const lever = (id: string, position: 'left' | 'center' | 'right' = 'center') => ({
+  id,
+  type: 'lever',
+  transform: { position: { x: -6, y: 8 }, rotation: 0 },
+  props: { position },
+  permissions: lockedPermissions,
+});
+
+const conveyor = (id: string, direction: 'left' | 'stopped' | 'right' = 'stopped') => ({
+  id,
+  type: 'conveyor',
+  transform: { position: { x: 6, y: 8 }, rotation: 0 },
+  props: { direction },
+  permissions: lockedPermissions,
+});
+
+const withWires = (objects: readonly unknown[], wires: readonly unknown[]): unknown => ({
+  ...validLevel,
+  objects: [...validLevel.objects, ...objects],
+  wires,
+});
+
+const issuePaths = (candidate: unknown): readonly string[] => {
+  const parsed = levelDocumentSchema.safeParse(candidate);
+  return parsed.success ? [] : parsed.error.issues.map((issue) => issue.path.join('.'));
 };
 
 describe('LevelDocument v2', () => {
@@ -73,6 +103,81 @@ describe('LevelDocument v2', () => {
       'beam',
       'seesaw',
     ]);
+  });
+
+  it('accepte une masse posée ou en inventaire, avec son poids', () => {
+    const mass = {
+      type: 'mass',
+      props: { weight: '10kg' },
+      permissions: { move: true, rotate: false, remove: true },
+    } as const;
+    const parsed = levelDocumentSchema.safeParse({
+      ...validLevel,
+      objects: [
+        ...validLevel.objects,
+        { ...mass, id: 'mass-1', transform: { position: { x: 1, y: 1 }, rotation: 0 } },
+      ],
+      inventory: [...validLevel.inventory, { ...mass, id: 'inventory-mass', quantity: 2 }],
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(
+      levelDocumentSchema.safeParse({
+        ...validLevel,
+        objects: [
+          ...validLevel.objects,
+          {
+            ...mass,
+            id: 'mass-1',
+            props: { weight: '11kg' },
+            transform: { position: { x: 1, y: 1 }, rotation: 0 },
+          },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepte un levier relié à un convoyeur, chacun avec son état initial', () => {
+    const parsed = levelDocumentSchema.safeParse(
+      withWires(
+        [lever('lever-1', 'right'), conveyor('conveyor-1', 'left')],
+        [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
+      ),
+    );
+
+    expect(parsed.success).toBe(true);
+    expect(levelDocumentSchema.safeParse({ ...validLevel, wires: undefined }).data?.wires).toEqual(
+      [],
+    );
+  });
+
+  it('refuse un fil qui ne va pas d’un levier placé vers un convoyeur placé', () => {
+    expect(
+      issuePaths(
+        withWires(
+          [lever('lever-1'), conveyor('conveyor-1')],
+          [
+            { id: 'wire-1', sourceId: 'conveyor-1', targetId: 'lever-1' },
+            { id: 'wire-2', sourceId: 'lever-1', targetId: 'missing' },
+          ],
+        ),
+      ),
+    ).toEqual(['wires.0.sourceId', 'wires.0.targetId', 'wires.1.targetId']);
+  });
+
+  it('refuse deux leviers sur un même convoyeur et les identifiants de fil dupliqués', () => {
+    expect(
+      issuePaths(
+        withWires(
+          [lever('lever-1'), lever('lever-2'), conveyor('conveyor-1'), conveyor('conveyor-2')],
+          [
+            { id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' },
+            { id: 'wire-2', sourceId: 'lever-2', targetId: 'conveyor-1' },
+            { id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-2' },
+          ],
+        ),
+      ),
+    ).toEqual(['wires.1.targetId', 'wires.2.id']);
   });
 
   it('refuse les champs inconnus et les propriétés qui ne correspondent pas à la famille', () => {

@@ -62,6 +62,7 @@ const createLevel = (): LevelDocument => ({
   goal: { type: 'basket', ballId: 'goal-ball', basketId: 'goal-basket' },
   buildZones: [{ min: { x: 0, y: 0 }, max: { x: 10, y: 10 } }],
   scene: { min: { x: -5, y: -5 }, max: { x: 15, y: 15 } },
+  wires: [],
 });
 
 const createSession = (): EditorSession =>

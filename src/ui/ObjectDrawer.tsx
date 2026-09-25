@@ -1,17 +1,16 @@
 import type { EditorSession } from '../application/editor-session/editor-session';
 import { objectKinds, type ObjectKind } from '../app/object-catalog';
-import {
-  spriteAssetPath,
-  spriteAssetsForFamily,
-  type SpriteFamily,
-} from '../presentation/sprite-loader';
+import { spriteThumbnailPath, type SpriteFamily } from '../presentation/sprite-loader';
 
-/** The same sprites the board draws, so a catalogue card looks like the object it places. */
+/** The same art the board draws, pre-composed, so a catalogue card looks like the object it places. */
 const spriteFamilyByKind: Readonly<Record<ObjectKind, SpriteFamily>> = {
   Balle: 'ball',
   Panier: 'basket',
   Poutre: 'beam',
   Bascule: 'seesaw',
+  Masse: 'mass',
+  Levier: 'lever',
+  Convoyeur: 'conveyor',
 };
 
 interface ObjectDrawerProps {
@@ -59,7 +58,7 @@ export function ObjectDrawer({
             <span className="eyebrow">Catalogue</span>
             <h2>Objets disponibles</h2>
           </div>
-          <span className="object-count">4 familles</span>
+          <span className="object-count">{objectKinds.length} familles</span>
           <button
             className="drawer-toggle"
             type="button"
@@ -97,9 +96,11 @@ export function ObjectDrawer({
                 }}
               >
                 <span className="object-thumb" aria-hidden="true">
-                  {spriteAssetsForFamily(spriteFamilyByKind[kind]).map((asset) => (
-                    <img key={asset} src={spriteAssetPath(asset, 2)} alt="" draggable={false} />
-                  ))}
+                  <img
+                    src={spriteThumbnailPath(spriteFamilyByKind[kind])}
+                    alt=""
+                    draggable={false}
+                  />
                 </span>
                 <span className="object-card-copy">
                   <strong>{kind}</strong>

@@ -786,6 +786,34 @@ select:focus-visible {
   transform: rotate(12deg);
 }
 
+.placement-preview-masse > span {
+  width: 22px;
+  height: 21px;
+  clip-path: polygon(50% 0, 93% 20%, 100% 72%, 67% 100%, 33% 100%, 0 72%, 7% 20%);
+  background: var(--night-700);
+}
+
+.placement-preview-levier > span {
+  width: 6px;
+  height: 24px;
+  border-radius: 3px;
+  background: var(--night-700);
+  box-shadow: 0 -8px 0 2px var(--reset);
+}
+
+.placement-preview-convoyeur {
+  width: 74px;
+  height: 30px;
+  border-radius: 10px;
+}
+
+.placement-preview-convoyeur > span {
+  width: 58px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--night-700);
+}
+
 .placement-preview-invalid {
   border-color: var(--danger);
   opacity: 0.55;
@@ -971,6 +999,39 @@ select:focus-visible {
   border-radius: var(--radius-m);
   color: var(--ink);
   background: var(--panel-bg-raised);
+}
+
+.context-circuits {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-s);
+}
+
+.context-circuits li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.context-circuits li > span:first-child {
+  font-weight: 700;
+}
+
+.context-circuits button {
+  margin-left: auto;
+}
+
+.context-wiring {
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--text-s);
+}
+
+.context-wiring p {
+  margin: 0;
 }
 
 .context-delete {

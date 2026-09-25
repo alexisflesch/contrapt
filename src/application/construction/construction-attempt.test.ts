@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import type { LevelDocument } from '../../domain/level-document';
 import { createHistory, executeCommand, redo, undo } from '../history';
 import {
+  connectControlWire,
   createConstructionAttempt,
+  disconnectControlWire,
   movePlacement,
   placeFromInventory,
   removePlacement,
@@ -68,7 +70,42 @@ const createLevel = (): LevelDocument => ({
   // Wide enough to still contain the author-mode moves in this file, which
   // deliberately go far outside the player build zone (up to ±20).
   scene: { min: { x: -25, y: -25 }, max: { x: 25, y: 25 } },
+  wires: [],
 });
+
+const lockedPermissions = { move: false, rotate: false, remove: false } as const;
+
+/** A lever and two conveyors placed by the author, none of them wired yet. */
+const createWiringLevel = (): LevelDocument => {
+  const level = createLevel();
+  return {
+    ...level,
+    objects: [
+      ...level.objects,
+      {
+        id: 'lever-1',
+        type: 'lever',
+        props: { position: 'center' },
+        transform: { position: { x: 1, y: 8 }, rotation: 0 },
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'conveyor-1',
+        type: 'conveyor',
+        props: { direction: 'stopped' },
+        transform: { position: { x: 6, y: 8 }, rotation: 0 },
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'conveyor-2',
+        type: 'conveyor',
+        props: { direction: 'right' },
+        transform: { position: { x: 6, y: 2 }, rotation: 0 },
+        permissions: lockedPermissions,
+      },
+    ],
+  };
+};
 
 const placeBeam = (context: ConstructionContext = 'player') =>
   placeFromInventory({
@@ -469,5 +506,104 @@ describe('ConstructionAttempt', () => {
     const removalRedone = redo(removalUndone.history);
     if (removalRedone.status !== 'accepted') throw new Error('removal redo should exist');
     expect(removalRedone.history.state).toEqual(initialAttempt);
+  });
+});
+
+describe('fils de commande', () => {
+  const connect = (targetId: string, wireId = 'wire-1', context: ConstructionContext = 'author') =>
+    connectControlWire({ context, wireId, sourceId: 'lever-1', targetId });
+
+  it('relie un levier à un convoyeur, annulable et rétablissable', () => {
+    const initial = createConstructionAttempt(createWiringLevel());
+    const connected = executeCommand(createHistory(initial), connect('conveyor-1'));
+
+    expect(connected.status).toBe('accepted');
+    if (connected.status !== 'accepted') return;
+    expect(connected.history.state.document.wires).toEqual([
+      { id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' },
+    ]);
+
+    const undone = undo(connected.history);
+    if (undone.status !== 'accepted') throw new Error('undo refusé');
+    expect(undone.history.state.document.wires).toEqual([]);
+  });
+
+  it('refuse un fil invalide, un doublon, et un joueur qui câble', () => {
+    const attempt = createConstructionAttempt(createWiringLevel());
+    const connected = connect('conveyor-1').execute(attempt);
+    if (connected.status !== 'accepted') throw new Error('fil refusé');
+
+    expect(connect('goal-ball', 'wire-2').execute(attempt)).toEqual({
+      status: 'rejected',
+      reason: 'invalid-level-document',
+    });
+    expect(connect('conveyor-1', 'wire-2').execute(connected.state)).toEqual({
+      status: 'rejected',
+      reason: 'wire-already-connected',
+    });
+    expect(connect('conveyor-2', 'wire-2', 'player').execute(attempt)).toEqual({
+      status: 'rejected',
+      reason: 'wiring-not-permitted',
+    });
+  });
+
+  it('délie un fil par son identifiant', () => {
+    const attempt = createConstructionAttempt(createWiringLevel());
+    const connected = connect('conveyor-1').execute(attempt);
+    if (connected.status !== 'accepted') throw new Error('fil refusé');
+
+    const result = disconnectControlWire({ context: 'author', wireId: 'wire-1' }).execute(
+      connected.state,
+    );
+
+    expect(result.status).toBe('accepted');
+    if (result.status !== 'accepted') return;
+    expect(result.state.document.wires).toEqual([]);
+    expect(
+      disconnectControlWire({ context: 'author', wireId: 'wire-1' }).execute(result.state),
+    ).toEqual({ status: 'rejected', reason: 'wire-not-found' });
+  });
+
+  it('retire les fils d’un objet supprimé, dans la même commande', () => {
+    const attempt = createConstructionAttempt(createWiringLevel());
+    const connected = connect('conveyor-1').execute(attempt);
+    if (connected.status !== 'accepted') throw new Error('fil refusé');
+
+    const result = removePlacement({ context: 'author', placementId: 'conveyor-1' }).execute(
+      connected.state,
+    );
+
+    expect(result.status).toBe('accepted');
+    if (result.status !== 'accepted') return;
+    expect(result.state.document.wires).toEqual([]);
+  });
+
+  it('change la position initiale d’un levier et le sens d’un convoyeur', () => {
+    const attempt = createConstructionAttempt(createWiringLevel());
+
+    const lever = updatePlacementProperties({
+      context: 'author',
+      placementId: 'lever-1',
+      props: { position: 'left' },
+    }).execute(attempt);
+    const conveyor = updatePlacementProperties({
+      context: 'author',
+      placementId: 'conveyor-1',
+      props: { direction: 'left' },
+    }).execute(attempt);
+
+    expect(lever.status === 'accepted' && lever.state.document.objects[3]?.props).toEqual({
+      position: 'left',
+    });
+    expect(conveyor.status === 'accepted' && conveyor.state.document.objects[4]?.props).toEqual({
+      direction: 'left',
+    });
+    expect(
+      updatePlacementProperties({
+        context: 'author',
+        placementId: 'lever-1',
+        props: { direction: 'left' },
+      }).execute(attempt),
+    ).toEqual({ status: 'rejected', reason: 'invalid-level-document' });
   });
 });

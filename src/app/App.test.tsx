@@ -88,26 +88,28 @@ const openEmbeddedWorkshop = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Atelier de construction' }));
 };
 
-const placeWorkshopBeam = (): HTMLElement => {
-  openEmbeddedWorkshop();
-  fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Poutre moyenne' }));
+const tapBoard = (board: HTMLElement, clientX: number, clientY: number): void => {
+  firePointerEvent(board, 'pointerdown', { pointerId: 1, pointerType: 'touch', clientX, clientY });
+  firePointerEvent(board, 'pointerup', { pointerId: 1, pointerType: 'touch', clientX, clientY });
+};
+
+/** Places an object from the open workshop's catalogue with a tap at (x, y). */
+const placeFromCatalogue = (catalogueCard: string, clientX = 400, clientY = 225): HTMLElement => {
+  const toggle = screen.queryByRole('button', { name: 'Ouvrir le catalogue' });
+  if (toggle !== null) fireEvent.click(toggle);
+  fireEvent.click(screen.getByRole('button', { name: catalogueCard }));
 
   const board = screen.getByRole('region', { name: 'Plateau de jeu' });
-  firePointerEvent(board, 'pointerdown', {
-    pointerId: 1,
-    pointerType: 'touch',
-    clientX: 400,
-    clientY: 225,
-  });
-  firePointerEvent(board, 'pointerup', {
-    pointerId: 1,
-    pointerType: 'touch',
-    clientX: 400,
-    clientY: 225,
-  });
+  tapBoard(board, clientX, clientY);
   return board;
 };
+
+const placeWorkshopObject = (catalogueCard: string): HTMLElement => {
+  openEmbeddedWorkshop();
+  return placeFromCatalogue(catalogueCard);
+};
+
+const placeWorkshopBeam = (): HTMLElement => placeWorkshopObject('Poutre moyenne');
 
 const advanceSimulationToResult = (
   animationFrames: ReturnType<typeof createAnimationFrameHarness>,
@@ -248,7 +250,7 @@ describe('coque Contrapt!', () => {
     }
   });
 
-  it('ouvre l’atelier depuis le menu et expose le plateau et les quatre familles du catalogue', () => {
+  it('ouvre l’atelier depuis le menu et expose le plateau et les familles du catalogue', () => {
     // Réécrit depuis « présente le plateau et les quatre familles du
     // catalogue » : ce test décrivait l'atelier comme écran d'accueil, un
     // comportement que B1 supprime explicitement. L'atelier reste
@@ -267,6 +269,9 @@ describe('coque Contrapt!', () => {
     expect(screen.getByRole('button', { name: /Panier/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Poutre/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Bascule/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Masse/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Levier/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Convoyeur/ })).toBeVisible();
   });
 
   it('rend un canvas accessible superposé au plateau et conserve son aide tactile', () => {
@@ -1437,6 +1442,50 @@ describe('coque Contrapt!', () => {
     });
 
     expect(screen.queryByRole('region', { name: 'Propriétés de Balle' })).not.toBeInTheDocument();
+  });
+
+  it('place une masse depuis l’inventaire de l’atelier', () => {
+    render(<App />);
+    placeWorkshopObject('Masse');
+
+    const panel = screen.getByRole('region', { name: 'Propriétés de Masse' });
+    expect(within(panel).getByRole('button', { name: /Supprimer la masse/i })).toBeVisible();
+    expect(within(panel).queryByRole('button', { name: /Rotation/ })).not.toBeInTheDocument();
+  });
+
+  it('relie un levier à un convoyeur au toucher, puis délie le circuit', () => {
+    render(<App />);
+    openEmbeddedWorkshop();
+    // Atelier 16 × 9 ajusté au canvas 800 × 450 : 50 px par unité monde.
+    const board = placeFromCatalogue('Convoyeur', 600, 225);
+    placeFromCatalogue('Levier', 200, 225);
+
+    const leverPanel = screen.getByRole('region', { name: 'Propriétés de Levier' });
+    fireEvent.click(within(leverPanel).getByRole('button', { name: 'Relier à un convoyeur' }));
+    expect(within(leverPanel).getByRole('button', { name: 'Supprimer le levier' })).toBeVisible();
+    expect(within(leverPanel).getByText(/Touchez le convoyeur/)).toBeVisible();
+
+    tapBoard(board, 600, 225);
+
+    const wiredPanel = screen.getByRole('region', { name: 'Propriétés de Levier' });
+    expect(within(wiredPanel).getByText('Circuit A')).toBeVisible();
+    fireEvent.click(within(wiredPanel).getByRole('button', { name: 'Délier le circuit A' }));
+    expect(within(wiredPanel).queryByText('Circuit A')).not.toBeInTheDocument();
+  });
+
+  it('règle la position de départ d’un levier et le sens d’un convoyeur', () => {
+    render(<App />);
+    placeWorkshopObject('Levier');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Position de départ' }), {
+      target: { value: 'left' },
+    });
+    expect(screen.getByRole('combobox', { name: 'Position de départ' })).toHaveValue('left');
+
+    placeFromCatalogue('Convoyeur', 600, 225);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sens du tapis' }), {
+      target: { value: 'right' },
+    });
+    expect(screen.getByRole('combobox', { name: 'Sens du tapis' })).toHaveValue('right');
   });
 
   it('affiche les propriétés accessibles d’une poutre sans action Déplacer', () => {

@@ -4,12 +4,12 @@ import {
   currentEditorAttempt,
   type EditorSession,
 } from '../application/editor-session/editor-session';
-import type { LevelDocument } from '../domain/level-document';
 import type { BoardPointerHandlers, PlacementPreview } from '../app/use-board-pointers';
 import {
   createBoardRenderer,
   projectLevel,
   type BoardCanvasContext,
+  type BoardSimulationView,
 } from '../presentation/board-renderer';
 import type { Camera } from '../presentation/board-camera';
 import {
@@ -19,49 +19,27 @@ import {
   type SpriteDecoder,
   type SpriteLoader,
 } from '../presentation/sprite-loader';
-import {
-  type SimulationBodyState,
-  type SimulationSnapshot,
-} from '../simulation/simulation-session';
-
-const shouldReplaceSimulationBody = (
-  current: SimulationBodyState | undefined,
-  candidate: SimulationBodyState,
-): boolean => current === undefined || candidate.role === 'board' || current.role === 'base';
+import { type SimulationSnapshot } from '../simulation/simulation-session';
 
 /**
- * Creates the render-only projection of a running simulation. The editor
- * snapshot remains untouched and the physics adapter remains outside the
- * domain/presentation boundary.
+ * Collects what a running simulation moves — the ball, the seesaw's board,
+ * a lever's handle, a conveyor's belt. The simulated document itself is
+ * never rewritten: static parts keep reading their placement.
  */
-const projectSimulationDocument = (
-  document: LevelDocument,
-  simulation: SimulationSnapshot,
-): LevelDocument => {
-  const bodiesByPlacementId = new Map<string, SimulationBodyState>();
-  for (const body of simulation.bodies) {
-    const current = bodiesByPlacementId.get(body.placementId);
-    if (shouldReplaceSimulationBody(current, body)) {
-      bodiesByPlacementId.set(body.placementId, body);
-    }
-  }
-
-  return {
-    ...document,
-    objects: document.objects.map((object) => {
-      const body = bodiesByPlacementId.get(object.id);
-      if (body === undefined) return object;
-
-      return {
-        ...object,
-        transform: {
-          position: { ...body.position },
-          rotation: body.rotation,
-        },
-      };
-    }),
-  };
-};
+const simulationView = (simulation: SimulationSnapshot): BoardSimulationView => ({
+  bodyPoses: new Map(
+    simulation.bodies
+      .filter((body) => body.role !== 'base')
+      .map((body) => [body.placementId, { position: body.position, rotation: body.rotation }]),
+  ),
+  conveyorBelts: new Map(
+    simulation.devices.flatMap((device) =>
+      device.kind === 'conveyor'
+        ? [[device.placementId, { offset: device.beltOffset, facing: device.facing }] as const]
+        : [],
+    ),
+  ),
+});
 
 const isImageBitmapSource = (source: unknown): source is ImageBitmap =>
   typeof ImageBitmap !== 'undefined' && source instanceof ImageBitmap;
@@ -115,6 +93,85 @@ const createCanvasContextAdapter = (context: CanvasRenderingContext2D): BoardCan
     }
 
     context.drawImage(source, x, y, width, height);
+  },
+  drawImageRegion: (source, sx, sy, sw, sh, x, y, width, height) => {
+    if (!isImageBitmapSource(source)) {
+      throw new Error('Le renderer a reçu une source de sprite non exploitable.');
+    }
+
+    context.drawImage(source, sx, sy, sw, sh, x, y, width, height);
+  },
+  beginPath: () => {
+    context.beginPath();
+  },
+  moveTo: (x, y) => {
+    context.moveTo(x, y);
+  },
+  lineTo: (x, y) => {
+    context.lineTo(x, y);
+  },
+  arcTo: (x1, y1, x2, y2, radius) => {
+    context.arcTo(x1, y1, x2, y2, radius);
+  },
+  arc: (x, y, radius, startAngle, endAngle, counterclockwise) => {
+    context.arc(x, y, radius, startAngle, endAngle, counterclockwise);
+  },
+  stroke: () => {
+    context.stroke();
+  },
+  fill: () => {
+    context.fill();
+  },
+  fillText: (text, x, y) => {
+    context.fillText(text, x, y);
+  },
+  get globalAlpha() {
+    return context.globalAlpha;
+  },
+  set globalAlpha(value: number) {
+    context.globalAlpha = value;
+  },
+  get strokeStyle() {
+    return typeof context.strokeStyle === 'string' ? context.strokeStyle : '';
+  },
+  set strokeStyle(value: string) {
+    context.strokeStyle = value;
+  },
+  get fillStyle() {
+    return typeof context.fillStyle === 'string' ? context.fillStyle : '';
+  },
+  set fillStyle(value: string) {
+    context.fillStyle = value;
+  },
+  get lineCap() {
+    return context.lineCap;
+  },
+  set lineCap(value: CanvasLineCap) {
+    context.lineCap = value;
+  },
+  get lineJoin() {
+    return context.lineJoin;
+  },
+  set lineJoin(value: CanvasLineJoin) {
+    context.lineJoin = value;
+  },
+  get font() {
+    return context.font;
+  },
+  set font(value: string) {
+    context.font = value;
+  },
+  get textAlign() {
+    return context.textAlign;
+  },
+  set textAlign(value: CanvasTextAlign) {
+    context.textAlign = value;
+  },
+  get textBaseline() {
+    return context.textBaseline;
+  },
+  set textBaseline(value: CanvasTextBaseline) {
+    context.textBaseline = value;
   },
   strokeRect: (x, y, width, height) => {
     context.strokeRect(x, y, width, height);
@@ -211,11 +268,14 @@ export function BoardView({
           const currentSession = sessionRef.current;
           const simulation = simulationStateRef.current;
           const simulationAttempt = currentSession.simulationSnapshot;
-          const displayedDocument =
+          const displayedDocument = (simulationAttempt ?? currentEditorAttempt(currentSession))
+            .document;
+          const projection = projectLevel(
+            displayedDocument,
             simulationAttempt !== null && simulation !== null
-              ? projectSimulationDocument(simulationAttempt.document, simulation)
-              : (simulationAttempt ?? currentEditorAttempt(currentSession)).document;
-          const projection = projectLevel(displayedDocument);
+              ? simulationView(simulation)
+              : undefined,
+          );
           const selectedPlacementId = currentSession.selectedPlacementId;
           const projectionWithEffectiveCapabilities =
             currentSession.mode === 'creation' && selectedPlacementId !== null

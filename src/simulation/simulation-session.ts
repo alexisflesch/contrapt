@@ -1,6 +1,7 @@
 import {
   Box,
   Circle,
+  Polygon,
   RevoluteJoint,
   Vec2,
   World,
@@ -11,6 +12,18 @@ import {
   type Joint,
 } from 'planck';
 
+import {
+  ballGeometry,
+  basketGeometry,
+  beamGeometry,
+  conveyorGeometry,
+  leverAngle,
+  leverGeometry,
+  massGeometry,
+  seesawGeometry,
+  type LeverPosition,
+  type WorldPolygon,
+} from '../domain/family-geometry';
 import type { LevelDocument } from '../domain/level-document';
 import {
   advanceAttemptFailureEvaluation,
@@ -35,7 +48,7 @@ interface SimulationVector {
   readonly y: number;
 }
 
-type SimulationBodyRole = 'primary' | 'base' | 'board';
+type SimulationBodyRole = 'primary' | 'base' | 'board' | 'handle';
 type SimulationBodyType = 'static' | 'dynamic';
 
 export interface SimulationBodyState {
@@ -52,9 +65,32 @@ interface SimulationJointState {
   readonly placementId: string;
   readonly type: 'revolute';
   readonly bodyARole: 'base';
-  readonly bodyBRole: 'board';
+  readonly bodyBRole: 'board' | 'handle';
   readonly anchor: SimulationVector;
 }
+
+type ConveyorDirection = -1 | 0 | 1;
+
+/**
+ * ADR 0009: the observable state of controllers and devices after a step.
+ * A lever's position is read from its handle's angle; a conveyor's
+ * direction comes from its lever if wired, from its own property otherwise.
+ */
+type SimulationDeviceState =
+  | {
+      readonly placementId: string;
+      readonly kind: 'lever';
+      readonly position: LeverPosition;
+    }
+  | {
+      readonly placementId: string;
+      readonly kind: 'conveyor';
+      readonly direction: ConveyorDirection;
+      /** Last non-zero direction, so a stopped belt keeps facing where it went. */
+      readonly facing: -1 | 1;
+      /** Signed distance travelled by the belt since the start, in world units. */
+      readonly beltOffset: number;
+    };
 
 interface SimulationSensorEventFields {
   readonly placementId: string;
@@ -79,6 +115,7 @@ export interface SimulationSnapshot {
   readonly bodies: readonly SimulationBodyState[];
   readonly joints: readonly SimulationJointState[];
   readonly events: readonly SimulationSensorEvent[];
+  readonly devices: readonly SimulationDeviceState[];
 }
 
 interface SimulationResources {
@@ -114,6 +151,29 @@ interface BodyRecord {
 interface RevoluteJointRecord {
   readonly placementId: string;
   readonly handle: Joint;
+  readonly moving: 'board' | 'handle';
+}
+
+/** The one joint operation a lever's notches need. */
+interface LeverJoint {
+  readonly setMotorSpeed: (speed: number) => void;
+}
+
+interface LeverRecord {
+  readonly placementId: string;
+  readonly base: Body;
+  readonly handle: Body;
+  readonly joint: LeverJoint;
+}
+
+interface ConveyorRecord {
+  readonly placementId: string;
+  readonly body: Body;
+  readonly ownDirection: ConveyorDirection;
+  readonly leverId: string | undefined;
+  direction: ConveyorDirection;
+  facing: -1 | 1;
+  beltOffset: number;
 }
 
 interface SensorRecord {
@@ -126,16 +186,11 @@ interface SensorRecord {
  * par une rotation compensatoire dans le contenu. */
 
 const GRAVITY = 9.81;
-const BALL_RADIUS = 0.3;
-const BEAM_HALF_THICKNESS = 0.125;
-const BEAM_LENGTHS = {
-  short: 2,
-  medium: 4,
-  long: 6,
-};
+const BALL_RADIUS = ballGeometry.radius;
+const BEAM_HALF_THICKNESS = beamGeometry.thickness / 2;
 /** Half of the frozen 1,5 × 1,1 basket footprint (ADR 0007), walls included. */
-const BASKET_HALF_WIDTH = 0.75;
-const BASKET_WALL_HALF_HEIGHT = 0.55;
+const BASKET_HALF_WIDTH = basketGeometry.footprint.width / 2;
+const BASKET_WALL_HALF_HEIGHT = basketGeometry.footprint.height / 2;
 const BASKET_SENSOR_HALF_HEIGHT = 0.5;
 const BASKET_WALL_HALF_THICKNESS = 0.08;
 /**
@@ -146,13 +201,50 @@ const BASKET_WALL_HALF_THICKNESS = 0.08;
  */
 const BASKET_WALL_OFFSET_X = BASKET_HALF_WIDTH - BASKET_WALL_HALF_THICKNESS;
 const BASKET_FLOOR_OFFSET_Y = BASKET_WALL_HALF_HEIGHT - BASKET_WALL_HALF_THICKNESS;
-const SEESAW_BOARD_HALF_LENGTH = 1.5;
-const SEESAW_BOARD_HALF_THICKNESS = 0.12;
-const SEESAW_BASE_HALF_WIDTH = 0.25;
-const SEESAW_BASE_HALF_HEIGHT = 0.35;
-/** The base stands under the pivot, which is where the board is hinged. */
-const SEESAW_BASE_OFFSET_Y = SEESAW_BASE_HALF_HEIGHT;
+/** The fulcrum stands under the pivot, which is where the board is hinged. */
+const SEESAW_FULCRUM_VERTICES = seesawGeometry.fulcrum.polygon.map(({ x, y }) => new Vec2(x, y));
 const SEESAW_ANGLE_LIMIT = Math.PI / 6;
+/**
+ * Box2D has friction but no rolling resistance: a ball rolling without
+ * slipping keeps its energy forever, and on a belt friction mostly spins it
+ * in place. A resisting torque of `coefficient × m × g × r`, applied while
+ * the ball touches something, lets it come to rest and be carried along.
+ * The coefficient is a game value, higher than a real ball on wood, so that
+ * stops are readable on a small screen.
+ */
+const ROLLING_RESISTANCE_COEFFICIENT = 0.1;
+
+/** The printed weight is the physical mass, in kilograms (the ball weighs about 0,28). */
+const MASS_KILOGRAMS = { '10kg': 10 } as const;
+const MASS_VERTICES = massGeometry.polygon.map(({ x, y }) => new Vec2(x, y));
+
+const polygonArea = (polygon: WorldPolygon): number =>
+  Math.abs(
+    polygon.reduce((sum, point, index) => {
+      const next = polygon[(index + 1) % polygon.length] ?? point;
+      return sum + point.x * next.y - next.x * point.y;
+    }, 0),
+  ) / 2;
+
+const MASS_AREA = polygonArea(massGeometry.polygon);
+
+const LEVER_BASE_VERTICES = leverGeometry.base.polygon.map(({ x, y }) => new Vec2(x, y));
+/**
+ * The lever has three notches. A torque-limited motor pulls the handle to
+ * the notch it is closest to: enough to hold it upright against gravity
+ * (under 0,3 N·m this close to vertical), far too little to resist a ball.
+ * The side notches rest against the joint's limits.
+ */
+const LEVER_NOTCH_TORQUE = 0.35;
+/** Motor speed per radian away from the notch, in s⁻¹. */
+const LEVER_NOTCH_STIFFNESS = 12;
+/** Past this angle either side of upright, the lever reads as left or right. */
+const LEVER_SWITCH_ANGLE = leverGeometry.tilt / 2;
+const CONVEYOR_SPEED = 1.5;
+const conveyorDirections = { left: -1, stopped: 0, right: 1 } as const;
+
+const leverPositionFromAngle = (angle: number): LeverPosition =>
+  angle <= -LEVER_SWITCH_ANGLE ? 'left' : angle >= LEVER_SWITCH_ANGLE ? 'right' : 'center';
 /**
  * Global game rule: the target ball must remain in its basket for thirty
  * complete fixed steps, half a second at 60 Hz. A ball merely crossing the
@@ -218,6 +310,10 @@ class PlanckSimulationSession implements SimulationSession {
   #bodies: BodyRecord[] = [];
   #colliders = new Set<Fixture>();
   #joints: RevoluteJointRecord[] = [];
+  #balls: Body[] = [];
+  #levers: LeverRecord[] = [];
+  #conveyors: ConveyorRecord[] = [];
+  #conveyorFixtures = new Map<Fixture, ConveyorRecord>();
   #sensors = new Map<Fixture, SensorRecord>();
   #activeSensorContacts = new Map<string, number>();
   #events: SimulationSensorEvent[] = [];
@@ -233,6 +329,24 @@ class PlanckSimulationSession implements SimulationSession {
 
   readonly #onEndContact = (contact: Contact): void => {
     this.#updateSensorContact(contact, -1);
+  };
+
+  /**
+   * A running belt is a surface speed: Box2D's tangent speed drives what
+   * touches it without moving the static frame. The solver aims the
+   * velocity of B relative to A, along the tangent (normal.y, -normal.x), at
+   * that speed; only the belt's horizontal component is kept, so the frame's
+   * ends and underside do not drive anything.
+   */
+  readonly #onPreSolve = (contact: Contact): void => {
+    const onA = this.#conveyorFixtures.get(contact.getFixtureA());
+    const conveyor = onA ?? this.#conveyorFixtures.get(contact.getFixtureB());
+    if (conveyor === undefined || conveyor.direction === 0) return;
+
+    const normal = contact.getWorldManifold(null)?.normal;
+    if (normal === undefined) return;
+    const belt = conveyor.direction * CONVEYOR_SPEED;
+    contact.setTangentSpeed((onA === undefined ? -1 : 1) * belt * normal.y);
   };
 
   constructor(level: LevelDocument, fixedStepSeconds: number, attemptTimeoutSeconds: number) {
@@ -272,17 +386,35 @@ class PlanckSimulationSession implements SimulationSession {
           angularVelocity: handle.getAngularVelocity(),
         };
       }),
-      joints: this.#joints.map(({ placementId, handle }) => {
+      joints: this.#joints.map(({ placementId, handle, moving }) => {
         const anchor = handle.getAnchorA();
         return {
           placementId,
           type: 'revolute',
           bodyARole: 'base',
-          bodyBRole: 'board',
+          bodyBRole: moving,
           anchor: { x: anchor.x, y: anchor.y },
         };
       }),
       events: this.#events.map((event) => ({ ...event })),
+      devices: [
+        ...this.#levers.map(
+          (lever): SimulationDeviceState => ({
+            placementId: lever.placementId,
+            kind: 'lever',
+            position: this.#leverPosition(lever),
+          }),
+        ),
+        ...this.#conveyors.map(
+          ({ placementId, direction, facing, beltOffset }): SimulationDeviceState => ({
+            placementId,
+            kind: 'conveyor',
+            direction,
+            facing,
+            beltOffset,
+          }),
+        ),
+      ],
     };
   }
 
@@ -372,6 +504,7 @@ class PlanckSimulationSession implements SimulationSession {
     this.#world = world;
     world.on('begin-contact', this.#onBeginContact);
     world.on('end-contact', this.#onEndContact);
+    world.on('pre-solve', this.#onPreSolve);
 
     for (const placement of this.#level.objects) {
       switch (placement.type) {
@@ -404,8 +537,58 @@ class PlanckSimulationSession implements SimulationSession {
             placement.transform.rotation,
           );
           break;
+        case 'mass':
+          this.#createMass(
+            placement.id,
+            placement.transform.position,
+            placement.transform.rotation,
+            MASS_KILOGRAMS[placement.props.weight],
+          );
+          break;
+        case 'lever':
+          this.#createLever(
+            placement.id,
+            placement.transform.position,
+            placement.transform.rotation,
+            placement.props.position,
+          );
+          break;
+        case 'conveyor':
+          this.#createConveyor(
+            placement.id,
+            placement.transform.position,
+            placement.transform.rotation,
+            conveyorDirections[placement.props.direction],
+          );
+          break;
       }
     }
+    this.#commandConveyors();
+  }
+
+  /** Brakes each ball's spin while it rests on a surface, never past a standstill. */
+  #applyRollingResistance(): void {
+    for (const ball of this.#balls) {
+      const spin = ball.getAngularVelocity();
+      if (spin === 0 || !this.#isTouchingSomething(ball)) continue;
+
+      const available = ROLLING_RESISTANCE_COEFFICIENT * ball.getMass() * GRAVITY * BALL_RADIUS;
+      const stopping = (ball.getInertia() * Math.abs(spin)) / this.#fixedStepSeconds;
+      ball.applyTorque(-Math.sign(spin) * Math.min(available, stopping), false);
+    }
+  }
+
+  #isTouchingSomething(body: Body): boolean {
+    for (let edge = body.getContactList(); edge !== null; edge = edge.next ?? null) {
+      if (
+        edge.contact.isTouching() &&
+        !edge.contact.getFixtureA().isSensor() &&
+        !edge.contact.getFixtureB().isSensor()
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   #createBall(placementId: string, position: SimulationVector, rotation: number): void {
@@ -419,6 +602,7 @@ class PlanckSimulationSession implements SimulationSession {
       allowSleep: true,
     });
     this.#bodies.push({ placementId, role: 'primary', handle: body });
+    this.#balls.push(body);
     this.#createFixture(body, {
       shape: new Circle(BALL_RADIUS),
       density: 1,
@@ -475,7 +659,7 @@ class PlanckSimulationSession implements SimulationSession {
     placementId: string,
     position: SimulationVector,
     rotation: number,
-    size: keyof typeof BEAM_LENGTHS,
+    size: keyof typeof beamGeometry.footprints,
   ): void {
     const body = this.#requireWorld().createBody({
       type: 'static',
@@ -484,9 +668,163 @@ class PlanckSimulationSession implements SimulationSession {
     });
     this.#bodies.push({ placementId, role: 'primary', handle: body });
     this.#createFixture(body, {
-      shape: new Box(BEAM_LENGTHS[size] / 2, BEAM_HALF_THICKNESS),
+      shape: new Box(beamGeometry.footprints[size].width / 2, BEAM_HALF_THICKNESS),
       friction: 0.45,
     });
+  }
+
+  #createMass(
+    placementId: string,
+    position: SimulationVector,
+    rotation: number,
+    kilograms: number,
+  ): void {
+    const body = this.#requireWorld().createBody({
+      type: 'dynamic',
+      position: new Vec2(position.x, position.y),
+      angle: rotation,
+      allowSleep: true,
+    });
+    this.#bodies.push({ placementId, role: 'primary', handle: body });
+    this.#createFixture(body, {
+      shape: new Polygon(MASS_VERTICES),
+      density: kilograms / MASS_AREA,
+      friction: 0.6,
+      restitution: 0.05,
+    });
+  }
+
+  #createLever(
+    placementId: string,
+    position: SimulationVector,
+    rotation: number,
+    startPosition: LeverPosition,
+  ): void {
+    const world = this.#requireWorld();
+    const pivot = new Vec2(position.x, position.y);
+    const base = world.createBody({ type: 'static', position: pivot, angle: rotation });
+    // The handle's origin is the pivot too, so its angle is the lever's
+    // reading. It is created upright: the joint measures its limits from the
+    // angle the bodies have when it is made, and they must frame the vertical.
+    const handle = world.createBody({
+      type: 'dynamic',
+      position: pivot,
+      angle: rotation,
+      allowSleep: true,
+    });
+    this.#bodies.push(
+      { placementId, role: 'base', handle: base },
+      { placementId, role: 'handle', handle },
+    );
+    this.#createFixture(base, { shape: new Polygon(LEVER_BASE_VERTICES), friction: 0.5 });
+
+    const { stickHalfWidth, knobCenterY, knobRadius } = leverGeometry.handle;
+    this.#createFixture(handle, {
+      shape: new Box(stickHalfWidth, -knobCenterY / 2, new Vec2(0, knobCenterY / 2), 0),
+      density: 1,
+      friction: 0.4,
+    });
+    this.#createFixture(handle, {
+      shape: new Circle(new Vec2(0, knobCenterY), knobRadius),
+      density: 1,
+      friction: 0.4,
+    });
+
+    const joint = world.createJoint(
+      new RevoluteJoint(
+        {
+          enableLimit: true,
+          lowerAngle: -leverGeometry.tilt,
+          upperAngle: leverGeometry.tilt,
+          enableMotor: true,
+          motorSpeed: 0,
+          maxMotorTorque: LEVER_NOTCH_TORQUE,
+          collideConnected: false,
+        },
+        base,
+        handle,
+        pivot,
+      ),
+    );
+    if (joint === null) {
+      throw new Error(`Impossible de créer le pivot du levier « ${placementId} ».`);
+    }
+    handle.setTransform(pivot, rotation + leverAngle(startPosition));
+    this.#joints.push({ placementId, handle: joint, moving: 'handle' });
+    this.#levers.push({ placementId, base, handle, joint });
+  }
+
+  #createConveyor(
+    placementId: string,
+    position: SimulationVector,
+    rotation: number,
+    ownDirection: ConveyorDirection,
+  ): void {
+    const body = this.#requireWorld().createBody({
+      type: 'static',
+      position: new Vec2(position.x, position.y),
+      angle: rotation,
+    });
+    this.#bodies.push({ placementId, role: 'primary', handle: body });
+    const { width, height } = conveyorGeometry.footprint;
+    const fixture = this.#createFixture(body, {
+      shape: new Box(width / 2, height / 2),
+      friction: 0.8,
+    });
+    const record: ConveyorRecord = {
+      placementId,
+      body,
+      ownDirection,
+      leverId: this.#level.wires.find(({ targetId }) => targetId === placementId)?.sourceId,
+      direction: ownDirection,
+      facing: ownDirection === -1 ? -1 : 1,
+      beltOffset: 0,
+    };
+    this.#conveyors.push(record);
+    this.#conveyorFixtures.set(fixture, record);
+  }
+
+  #leverPosition({ base, handle }: LeverRecord): LeverPosition {
+    return leverPositionFromAngle(handle.getAngle() - base.getAngle());
+  }
+
+  /** Aims each lever's motor at its nearest notch before the step. */
+  #pullLeversToNotches(): void {
+    for (const lever of this.#levers) {
+      const angle = lever.handle.getAngle() - lever.base.getAngle();
+      const notch = leverAngle(leverPositionFromAngle(angle));
+      lever.joint.setMotorSpeed((notch - angle) * LEVER_NOTCH_STIFFNESS);
+    }
+  }
+
+  /** Reads every lever and sets the direction of the conveyors it commands. */
+  #commandConveyors(): void {
+    for (const conveyor of this.#conveyors) {
+      const lever =
+        conveyor.leverId === undefined
+          ? undefined
+          : this.#levers.find(({ placementId }) => placementId === conveyor.leverId);
+      const direction =
+        lever === undefined
+          ? conveyor.ownDirection
+          : conveyorDirections[
+              ({ left: 'left', center: 'stopped', right: 'right' } as const)[
+                this.#leverPosition(lever)
+              ]
+            ];
+      conveyor.direction = direction;
+      if (direction !== 0) {
+        conveyor.facing = direction;
+        this.#wakeBodiesOn(conveyor.body);
+      }
+    }
+  }
+
+  /** A body asleep on a stopped belt would otherwise ignore it starting. */
+  #wakeBodiesOn(body: Body): void {
+    for (let edge = body.getContactList(); edge !== null; edge = edge.next ?? null) {
+      edge.other?.setAwake(true);
+    }
   }
 
   #createSeesaw(placementId: string, position: SimulationVector, rotation: number): void {
@@ -506,16 +844,11 @@ class PlanckSimulationSession implements SimulationSession {
       { placementId, role: 'board', handle: board },
     );
     this.#createFixture(base, {
-      shape: new Box(
-        SEESAW_BASE_HALF_WIDTH,
-        SEESAW_BASE_HALF_HEIGHT,
-        new Vec2(0, SEESAW_BASE_OFFSET_Y),
-        0,
-      ),
+      shape: new Polygon(SEESAW_FULCRUM_VERTICES),
       friction: 0.5,
     });
     this.#createFixture(board, {
-      shape: new Box(SEESAW_BOARD_HALF_LENGTH, SEESAW_BOARD_HALF_THICKNESS),
+      shape: new Box(seesawGeometry.board.halfLength, seesawGeometry.board.halfThickness),
       density: 1,
       friction: 0.4,
     });
@@ -537,7 +870,7 @@ class PlanckSimulationSession implements SimulationSession {
     if (joint === null) {
       throw new Error(`Impossible de créer le pivot de la bascule « ${placementId} ».`);
     }
-    this.#joints.push({ placementId, handle: joint });
+    this.#joints.push({ placementId, handle: joint, moving: 'board' });
   }
 
   #createFixture(body: Body, definition: FixtureDef): Fixture {
@@ -550,7 +883,13 @@ class PlanckSimulationSession implements SimulationSession {
     const world = this.#requireWorld();
     this.#fixedStep += 1;
     this.#events = [];
+    this.#pullLeversToNotches();
+    this.#applyRollingResistance();
     world.step(this.#fixedStepSeconds);
+    for (const conveyor of this.#conveyors) {
+      conveyor.beltOffset += conveyor.direction * CONVEYOR_SPEED * this.#fixedStepSeconds;
+    }
+    this.#commandConveyors();
     this.#goalEvaluation = applyBasketGoalFacts(this.#goalEvaluation, this.#goalRule, this.#events);
     this.#goalEvaluation = advanceBasketGoalEvaluation(
       this.#goalEvaluation,
@@ -644,6 +983,7 @@ class PlanckSimulationSession implements SimulationSession {
 
     world.off('begin-contact', this.#onBeginContact);
     world.off('end-contact', this.#onEndContact);
+    world.off('pre-solve', this.#onPreSolve);
     for (const { handle } of [...this.#joints].reverse()) {
       world.destroyJoint(handle);
     }
@@ -655,6 +995,10 @@ class PlanckSimulationSession implements SimulationSession {
     this.#bodies = [];
     this.#colliders.clear();
     this.#joints = [];
+    this.#balls = [];
+    this.#levers = [];
+    this.#conveyors = [];
+    this.#conveyorFixtures.clear();
     this.#sensors.clear();
     this.#activeSensorContacts.clear();
   }

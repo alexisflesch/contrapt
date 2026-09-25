@@ -1,10 +1,31 @@
-export type SpriteFamily = 'ball' | 'basket' | 'beam' | 'seesaw';
-export type SpriteAsset = Exclude<SpriteFamily, 'basket'> | 'basket-back' | 'basket-front';
+/**
+ * Sprite layers of each family, back to front (ADR 0007 § Convention de
+ * sprite). A family drawn from several layers is split so that a part can
+ * move on its own: the seesaw's board pivots over a still fulcrum, and the
+ * ball's pattern spins under fixed shading and highlight.
+ */
+const spriteAssetsByFamily = {
+  ball: ['ball-base', 'ball-spin', 'ball-highlight'],
+  basket: ['basket-back', 'basket-front'],
+  beam: ['beam'],
+  seesaw: ['seesaw-fulcrum', 'seesaw-beam'],
+  mass: ['mass-10kg'],
+  lever: ['lever-base', 'lever-handle'],
+  // Both belts are loaded: which one is drawn depends on the belt's direction.
+  conveyor: ['conveyor-belt', 'conveyor-belt-left', 'conveyor-frame'],
+} as const;
+
+export type SpriteFamily = keyof typeof spriteAssetsByFamily;
+export type SpriteAsset = (typeof spriteAssetsByFamily)[SpriteFamily][number];
 type SpriteScale = 2 | 3;
 type SpriteLoadState = 'idle' | 'loading' | 'ready' | 'failed';
 
 export const spriteAssetsForFamily = (family: SpriteFamily): readonly SpriteAsset[] =>
-  family === 'basket' ? ['basket-back', 'basket-front'] : [family];
+  spriteAssetsByFamily[family];
+
+/** One pre-composed picture per family, for catalogue cards (built by `art/build-sprites.py`). */
+export const spriteThumbnailPath = (family: SpriteFamily): string =>
+  `/assets/sprites/thumbs/${family}.png`;
 
 export type DecodedSprite = Readonly<{
   readonly width: number;
@@ -57,13 +78,12 @@ const createSpriteRecord = (): SpriteRecord => ({
   promise: undefined,
 });
 
-const createRecords = (): Record<SpriteAsset, SpriteRecord> => ({
-  ball: createSpriteRecord(),
-  'basket-back': createSpriteRecord(),
-  'basket-front': createSpriteRecord(),
-  beam: createSpriteRecord(),
-  seesaw: createSpriteRecord(),
-});
+const createRecords = (): ReadonlyMap<SpriteAsset, SpriteRecord> =>
+  new Map(
+    Object.values(spriteAssetsByFamily)
+      .flat()
+      .map((asset) => [asset, createSpriteRecord()]),
+  );
 
 export const spriteAssetPath = (asset: SpriteAsset, scale: SpriteScale): string =>
   `/assets/sprites/${asset}@${String(scale)}x.png`;
@@ -95,8 +115,14 @@ export const createImageBitmapSpriteDecoder =
 export const createSpriteLoader = ({ scale, decode }: SpriteLoaderOptions): SpriteLoader => {
   const records = createRecords();
 
+  const recordFor = (asset: SpriteAsset): SpriteRecord => {
+    const record = records.get(asset);
+    if (record === undefined) throw new Error(`Sprite inconnu : ${asset}`);
+    return record;
+  };
+
   const loadAsset = (asset: SpriteAsset): Promise<void> => {
-    const record = records[asset];
+    const record = recordFor(asset);
 
     if (record.state === 'ready') {
       return Promise.resolve();
@@ -140,7 +166,7 @@ export const createSpriteLoader = ({ scale, decode }: SpriteLoaderOptions): Spri
   };
 
   const getState = (family: SpriteFamily): SpriteLoadState => {
-    const states = spriteAssetsForFamily(family).map((asset) => records[asset].state);
+    const states = spriteAssetsForFamily(family).map((asset) => recordFor(asset).state);
     if (states.some((state) => state === 'failed')) return 'failed';
     if (states.every((state) => state === 'ready')) return 'ready';
     if (states.some((state) => state === 'loading')) return 'loading';
@@ -148,7 +174,7 @@ export const createSpriteLoader = ({ scale, decode }: SpriteLoaderOptions): Spri
   };
 
   const getSprite = (asset: SpriteAsset): DecodedSprite | undefined => {
-    const record = records[asset];
+    const record = recordFor(asset);
     return record.state === 'ready' ? record.sprite : undefined;
   };
 
