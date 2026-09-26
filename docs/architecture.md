@@ -51,8 +51,9 @@ recréer. Cela ne restaure jamais un monde physique sérialisé dans le niveau.
 
 ## Enveloppe de niveau
 
-Le contrat persistant courant est `LevelDocument v1`. Il porte l'intention de
-niveau échangée entre campagne, résolution et création : objets placés,
+Le contrat persistant courant est `LevelDocument v2` : celui de l'ADR 0004,
+plus le rectangle de scène de l'ADR 0007 et les fils de commande de l'ADR 0009.
+Il porte l'intention de niveau échangée entre campagne, résolution et création : objets placés,
 inventaire, zones de construction et objectif, sans jamais sérialiser un monde
 physique ni un détail de rendu.
 
@@ -60,7 +61,7 @@ Le schéma Zod strict `src/domain/level-document.ts` est la source de vérité
 exécutable ; le type TypeScript est inféré du schéma afin d'éviter deux
 définitions divergentes. La forme exacte du contrat, les permissions par
 placement et entrée d'inventaire, les unités et les bornes techniques sont
-définies par l'ADR 0004 et ne sont pas répétées ici.
+définies par les ADR 0004, 0007 et 0009 et ne sont pas répétées ici.
 
 Chaque version persistante possède un décodeur strict et une migration vers la
 version courante. La pipeline est :
@@ -101,8 +102,10 @@ internes de la bascule, est défini dans `docs/catalogue-initial.md`.
 
 ### Placement persistant
 
-`objects` est une union Zod discriminée stricte sur `type` ; l'ADR 0004 fixe les
-variantes v1 et les propriétés propres à chaque type. Un placement ne contient que
+`objects` est une union Zod discriminée stricte sur `type` ; les variantes et
+leurs propriétés sont celles de `src/domain/level-document.ts` et
+`src/domain/object-family-registry.ts` (sept familles, voir
+`docs/catalogue-initial.md`). Un placement ne contient que
 son identifiant, son type, sa transformée en unités du monde, ses propriétés et
 ses permissions. Il ne contient ni version par objet, ni handle de moteur, ni
 objet graphique.
@@ -126,14 +129,16 @@ Le catalogue initial et ses capacités minimales sont détaillées dans
 
 ## Connexions
 
-`LevelDocument v1` ne contient pas de champ `connections`. La bascule reste un seul
-placement, même si sa future instance de simulation crée un pivot interne. Ajouter
-des pivots, ressorts, cordes, courroies ou liaisons logiques exigera un besoin de
-game design, un nouveau contrat de document et une migration explicite.
+La seule liaison persistante est le fil de commande levier → convoyeur
+(`wires`, ADR 0009) : une relation `{ id, sourceId, targetId }`, sans tracé ni
+couleur. La bascule reste un seul placement, même si son instance de simulation
+crée un pivot interne. Ajouter des pivots, ressorts, cordes, courroies ou
+liaisons logiques exigera un besoin de game design, un nouveau contrat de
+document et, si l'évolution est incompatible, une migration explicite.
 
 ## Objectifs
 
-La v1 contient exactement un seul objectif déclaratif : `goal.type === 'basket'`.
+Le document contient exactement un seul objectif déclaratif : `goal.type === 'basket'`.
 Il référence par identifiant une balle et un panier déjà placés. Le capteur et la
 durée de maintien qui l'évalue sont des détails globaux du jeu, pas du document.
 Les objectifs composés, séquencés ou paramétrés ne seront ajoutés qu'avec un besoin
@@ -195,14 +200,19 @@ Des ports distincts représentent :
 - l'import/export de fichier ;
 - l'encodage/decode de fragment URL.
 
-IndexedDB implémente le stockage local. Un futur service distant implémentera un
-nouveau repository sans entrer dans le domaine ou la simulation.
+`localStorage` implémente le stockage local derrière ces ports (ADR 0011, qui
+remplace l'IndexedDB envisagé au départ). Un adaptateur IndexedDB ou un futur
+service distant implémentera les mêmes ports sans entrer dans le domaine ou la
+simulation.
 
-Le codec URL ajoute version, algorithme, taille attendue et checksum. Il refuse une
-charge trop grande avant et après décompression. Les fragments inconnus ou invalides
-n'écrasent jamais un brouillon local.
+Le codec URL ajoute version, algorithme, taille attendue et checksum ; son format
+exact est fixé par l'ADR 0011. Il refuse une charge trop grande avant et après
+décompression. Les fragments inconnus ou invalides n'écrasent jamais un brouillon
+local.
 
 ## PWA et mises à jour
+
+Décision d'outillage et de flux de mise à jour : ADR 0012.
 
 Le service worker met en cache l'app shell, les assets locaux et la campagne
 embarquée. Une nouvelle version applicative ne doit pas prendre le contrôle au

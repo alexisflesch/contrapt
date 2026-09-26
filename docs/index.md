@@ -7,37 +7,42 @@ Un agent ne lit jamais `docs/` en entier. Il lit `AGENTS.md`, puis exactement la
 ligne de routage qui correspond à sa tâche.
 
 L'état réellement livré et les dettes sont dans `etat.md`. Le découpage en
-tranches délégables est dans `backlog.md`. L'ordre d'exécution détaillé des
-tranches restantes, établi après essai réel de l'application, est dans
-`plan-remise-en-jeu.md` ; il ne redéfinit aucun découpage.
+tranches est dans `backlog.md`. **Le travail restant, tâche par tâche et dans
+l'ordre, est dans `feuille-de-route-luna.md`** : c'est le point d'entrée d'un
+agent qui reprend l'implémentation. `plan-remise-en-jeu.md` est l'historique de
+la remise en jeu (phases A à F) ; on n'y lit que la section qu'une tâche cite.
 
 ## Autorité
 
 Une information a un seul propriétaire. En cas de divergence, le propriétaire
 gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 
-| Document                                          | ~lignes | Fait autorité sur                                                       |
-| ------------------------------------------------- | ------- | ----------------------------------------------------------------------- |
-| `AGENTS.md`                                       | 91      | règles applicables à tout changement, invariants non négociables        |
-| `docs/backlog.md`                                 | 125     | découpage des tranches, dépendances, tranche courante                   |
-| `docs/cahier-des-charges.md`                      | 416     | vision produit, périmètre, hors-périmètre                               |
-| `docs/etat.md`                                    | 141     | ce qui est livré, les dettes, la dernière gate                          |
-| `docs/plan-remise-en-jeu.md`                      | 1067    | ordre d'exécution des tranches T3/T4b/T5, constaté par essai navigateur |
-| `docs/architecture.md`                            | 213     | couches, dépendances, états distincts, modèle d'objet                   |
-| `docs/qualite.md`                                 | 149     | stratégie de test, niveaux de test, gates                               |
-| `docs/catalogue-initial.md`                       | 246     | contrats des sept familles d'objets                                     |
-| `docs/contrapt_control_wires_v1.md`               | 125     | spécification fonctionnelle des fils levier → convoyeur                 |
-| `docs/mobile-editor-interactions.md`              | 491     | gestes, états d'interface, scénarios d'acceptation tactiles             |
-| `docs/levels/initial-progression.md`              | 421     | spécification des huit premiers niveaux                                 |
-| `docs/decisions/0001-product-foundations.md`      | 33      | fondations produit (accepté)                                            |
-| `docs/decisions/0002-physics-engine-selection.md` | 123     | choix du moteur physique, Planck.js (accepté)                           |
-| `docs/decisions/0003-project-bootstrap.md`        | 308     | outillage, scripts, gates, politique de dépendances (accepté)           |
-| `docs/decisions/0004-level-document-v1.md`        | 103     | contrat persistant `LevelDocument v1` (accepté)                         |
-| `docs/decisions/0005-construction-attempt.md`     | 51      | provenance éphémère d'une tentative (accepté)                           |
-| `docs/decisions/0006-board-renderer.md`           | 101     | renderer du plateau et pipeline de sprites (accepté)                    |
-| `docs/decisions/0007-world-scale-and-camera.md`   | 269     | repère du monde, scène, caméra, échelle des sprites (accepté)           |
-| `docs/decisions/0008-client-side-routing.md`      | 78      | routage côté client, schéma d'URL (accepté)                             |
-| `docs/decisions/0009-control-wires.md`            | 90      | fils de commande : modèle, rendu, câblage (accepté)                     |
+| Document                                                  | ~lignes | Fait autorité sur                                                |
+| --------------------------------------------------------- | ------- | ---------------------------------------------------------------- |
+| `AGENTS.md`                                               | 102     | règles applicables à tout changement, invariants non négociables |
+| `docs/backlog.md`                                         | 138     | découpage des tranches, dépendances, tranche courante            |
+| `docs/cahier-des-charges.md`                              | 436     | vision produit, périmètre, hors-périmètre                        |
+| `docs/etat.md`                                            | 131     | ce qui est livré, les dettes, la dernière gate                   |
+| `docs/feuille-de-route-luna.md`                           | 652     | tâches restantes, leur ordre, règles de reprise, journal         |
+| `docs/plan-remise-en-jeu.md`                              | 1208    | historique A–F ; spécifications détaillées de C1, C2, D3         |
+| `docs/architecture.md`                                    | 223     | couches, dépendances, états distincts, modèle d'objet            |
+| `docs/qualite.md`                                         | 149     | stratégie de test, niveaux de test, gates                        |
+| `docs/catalogue-initial.md`                               | 239     | contrats des sept familles d'objets                              |
+| `docs/contrapt_control_wires_v1.md`                       | 125     | spécification fonctionnelle des fils levier → convoyeur          |
+| `docs/mobile-editor-interactions.md`                      | 491     | gestes, états d'interface, scénarios d'acceptation tactiles      |
+| `docs/levels/initial-progression.md`                      | 431     | campagne : 14 niveaux, géométries mesurées                       |
+| `docs/decisions/0001-product-foundations.md`              | 33      | fondations produit (accepté)                                     |
+| `docs/decisions/0002-physics-engine-selection.md`         | 126     | choix du moteur physique, Planck.js (accepté)                    |
+| `docs/decisions/0003-project-bootstrap.md`                | 309     | outillage, scripts, gates, politique de dépendances (accepté)    |
+| `docs/decisions/0004-level-document-v1.md`                | 103     | contrat `LevelDocument` v1 (accepté ; v2 : ADR 0007, code)       |
+| `docs/decisions/0005-construction-attempt.md`             | 51      | provenance éphémère d'une tentative (accepté)                    |
+| `docs/decisions/0006-board-renderer.md`                   | 101     | renderer du plateau et pipeline de sprites (accepté)             |
+| `docs/decisions/0007-world-scale-and-camera.md`           | 269     | repère du monde, scène, caméra, échelle des sprites (accepté)    |
+| `docs/decisions/0008-client-side-routing.md`              | 99      | routage côté client, schéma d'URL (accepté)                      |
+| `docs/decisions/0009-control-wires.md`                    | 90      | fils de commande : modèle, rendu, câblage (accepté)              |
+| `docs/decisions/0010-object-challenge-and-progression.md` | 92      | défi d'objets ✅/⭐/🏆, ouverture des niveaux (accepté)          |
+| `docs/decisions/0011-local-storage-and-url-sharing.md`    | 98      | `localStorage`, codec de fichier, partage par URL (accepté)      |
+| `docs/decisions/0012-pwa-service-worker.md`               | 47      | PWA, service worker, mises à jour (accepté)                      |
 
 Sources de vérité exécutables, prioritaires sur toute prose :
 
@@ -58,23 +63,25 @@ Sources de vérité exécutables, prioritaires sur toute prose :
 Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans raison
 écrite dans le rapport.
 
-| Tâche                                          | Lire                                                                                                      | Écrire dans                            |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| Format de niveau, schéma Zod, migration        | ADR 0004, ADR 0007 § Scène d'un niveau, `architecture.md` § Enveloppe de niveau, `level-document.ts`      | `src/domain/`                          |
-| Commande, historique, undo/redo, tentative     | ADR 0005, `architecture.md` § Commandes et historique                                                     | `src/application/`                     |
-| Nouvelle famille d'objet                       | `catalogue-initial.md`, `architecture.md` § Modèle d'objet, ADR 0004                                      | `src/domain/`, `src/simulation/`       |
-| Port physique, boucle à pas fixe, déterminisme | ADR 0002, `qualite.md` § Déterminisme, `architecture.md` § Simulation                                     | `src/simulation/`, `test/conformance/` |
-| Conformité physique, arbitrage moteur          | ADR 0002, `catalogue-initial.md` § Tests contractuels                                                     | `test/conformance/`                    |
-| Rendu du plateau, cadrage, projection          | ADR 0007, ADR 0006, `architecture.md` § Rendu et interface                                                | `src/presentation/`                    |
-| Assets, sprites, export depuis `art/`          | ADR 0007 § Amendement du 25 septembre 2026, `art/build-sprites.py`                                        | `art/`, `public/assets/`               |
-| Fils de commande, levier, convoyeur            | ADR 0009, `contrapt_control_wires_v1.md`, `catalogue-initial.md` § Levier, § Convoyeur                    | `src/domain/`, `src/presentation/`     |
-| Interface tactile, tiroir, gestes              | `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile                             | `src/ui/`, `src/app/`                  |
-| Routage, navigation, schéma d'URL              | ADR 0008                                                                                                  | `src/app/`                             |
-| Contenu d'un niveau                            | `levels/initial-progression.md` (section du niveau), `catalogue-initial.md`, ADR 0007 § Scène d'un niveau | `src/content/levels/`                  |
-| Parcours end-to-end                            | `mobile-editor-interactions.md` § Scénarios d'acceptation, `qualite.md` § Tests end-to-end                | `e2e/`                                 |
-| Stockage, import/export, codec URL             | `architecture.md` § Stockage et partage, `cahier-des-charges.md` § Persistance                            | `src/infrastructure/`                  |
-| Outillage, script, configuration, CI           | ADR 0003, `package.json`                                                                                  | racine                                 |
-| Décision structurante, nouvelle ADR            | `cahier-des-charges.md` § Décisions ouvertes, ADR concernée                                               | `docs/decisions/`                      |
+| Tâche                                          | Lire                                                                                                              | Écrire dans                                    |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Format de niveau, schéma Zod, migration        | ADR 0004, ADR 0007 § Scène d'un niveau, `architecture.md` § Enveloppe de niveau, `level-document.ts`              | `src/domain/`                                  |
+| Commande, historique, undo/redo, tentative     | ADR 0005, `architecture.md` § Commandes et historique                                                             | `src/application/`                             |
+| Nouvelle famille d'objet                       | `catalogue-initial.md`, `architecture.md` § Modèle d'objet, ADR 0004                                              | `src/domain/`, `src/simulation/`               |
+| Port physique, boucle à pas fixe, déterminisme | ADR 0002, `qualite.md` § Déterminisme, `architecture.md` § Simulation                                             | `src/simulation/`, `test/conformance/`         |
+| Conformité physique, arbitrage moteur          | ADR 0002, `catalogue-initial.md` § Tests contractuels                                                             | `test/conformance/`                            |
+| Rendu du plateau, cadrage, projection          | ADR 0007, ADR 0006, `architecture.md` § Rendu et interface                                                        | `src/presentation/`                            |
+| Assets, sprites, export depuis `art/`          | ADR 0007 § Amendement du 25 septembre 2026, `art/build-sprites.py`                                                | `art/`, `public/assets/`                       |
+| Fils de commande, levier, convoyeur            | ADR 0009, `contrapt_control_wires_v1.md`, `catalogue-initial.md` § Levier, § Convoyeur                            | `src/domain/`, `src/presentation/`             |
+| Interface tactile, tiroir, gestes              | `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile                                     | `src/ui/`, `src/app/`                          |
+| Routage, navigation, schéma d'URL              | ADR 0008                                                                                                          | `src/app/`                                     |
+| Contenu d'un niveau                            | `levels/initial-progression.md` (section du niveau), `feuille-de-route-luna.md` § 3, ADR 0007 § Scène d'un niveau | `src/content/levels/`                          |
+| Parcours end-to-end                            | `mobile-editor-interactions.md` § Scénarios d'acceptation, `qualite.md` § Tests end-to-end                        | `e2e/`                                         |
+| Stockage, import/export, codec URL             | ADR 0011, `architecture.md` § Stockage et partage                                                                 | `src/infrastructure/`, `src/application/`      |
+| Défi d'objets, progression de campagne         | ADR 0010, ADR 0011 § `localStorage`                                                                               | `src/application/progression/`, `src/content/` |
+| PWA, service worker                            | ADR 0012, ADR 0003                                                                                                | racine, `src/app/`                             |
+| Outillage, script, configuration, CI           | ADR 0003, `package.json`                                                                                          | racine                                         |
+| Décision structurante, nouvelle ADR            | `cahier-des-charges.md` § Décisions ouvertes, ADR concernée                                                       | `docs/decisions/`                              |
 
 ## Règles de lecture
 

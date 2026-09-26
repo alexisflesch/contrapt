@@ -1,5 +1,11 @@
 # Plan de remise en jeu — du prototype cassé au niveau 1 jouable
 
+> **Document historique depuis le 26 septembre 2026.** Les phases A, B, D4 et F1
+> sont livrées, C3 l'est pour l'essentiel. L'ordre du travail restant est dans
+> [`feuille-de-route-luna.md`](feuille-de-route-luna.md) ; ce plan ne sert plus
+> que de spécification détaillée pour C1, C2 et D3. L'état livré fait foi dans
+> [`etat.md`](etat.md).
+
 Statut : plan d'exécution, écrit après essai réel de l'application dans un
 navigateur (desktop 1440 × 900, tablette 820 × 1180 et 1180 × 820, téléphone
 390 × 844, 844 × 390 et 320 × 568).
@@ -34,19 +40,20 @@ Mis à jour à chaque intégration. `⏳` = agent en cours, `✅` = livré et v�
 | B5 — Recadrage stable pendant l'issue | ✅   | `357beeb`              |
 | C1 — Fantôme de placement             | ◐    | projection existante   |
 | C2 — Ombre portée                     | ⬜   |                        |
-| C3 — Manipulation sur le plateau      | ⬜   |                        |
-| D1 — Pipeline de sprites              | ◐    | assets bruts `c72c8cc` |
-| D2 — Régénérer les sprites            | ⬜   | assets bruts `c72c8cc` |
+| C3 — Manipulation sur le plateau      | ✅   | `d3ee520`, `7ebd85b`   |
+| D1 — Pipeline de sprites              | ✅   | `sprite-assets.test`   |
+| D2 — Régénérer les sprites            | ◐    | poutre non câblée      |
 | D3 — Fond suivant la caméra           | ⬜   |                        |
-| D4 — Mise en page des trois formats   | ✅   |                        |
+| D4 — Mise en page des trois formats   | ✅   | `d3ee520`              |
 | E1 — Niveau 2                         | ⬜   |                        |
 | E2 — Niveaux 3 à 8                    | ⬜   |                        |
-| F1 — Routage côté client (ADR 0008)   | ✅   |                        |
+| F1 — Routage côté client (ADR 0008)   | ✅   | `d3ee520`              |
 
-Lecture synthétique : A1–A5, B1–B5, T4a et F1 sont livrés ; C1 et D1 ont une
-base partielle ; C2, C3, D2, D3, D4 et E1–E2 restent à faire. `etat.md` est
-obsolète sur caméra et échelle : il sera corrigé après intégration du code
-concerné, pas dans ce plan.
+Lecture synthétique (26 septembre 2026) : A1–A5, B1–B5, C3, D1, D4 et F1 sont
+livrés. D1 a pris une autre forme que prévu : `art/build-sprites.py` exporte les
+sprites et `src/presentation/sprite-assets.test.ts` vérifie dimensions et budget
+dans la gate, sans script `validate-sprites.ts`. D2 est livré sauf la poutre
+(sprite unique étiré). C1, C2, D3 et E1–E2 restent : voir la feuille de route.
 
 F1 (remarque auteur du 25 septembre 2026) installe le routage côté client
 décrit par [l'ADR 0008](decisions/0008-client-side-routing.md) : URL

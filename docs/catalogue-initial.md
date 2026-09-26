@@ -183,13 +183,13 @@ le placement créé :
 ```ts
 interface InventoryEntry {
   id: string;
-  type: "ball" | "basket" | "beam" | "seesaw" | "mass" | "lever" | "conveyor";
+  type: 'ball' | 'basket' | 'beam' | 'seesaw' | 'mass' | 'lever' | 'conveyor';
   props:
     | {}
-    | { size: "short" | "medium" | "long" }
-    | { weight: "10kg" }
-    | { position: "left" | "center" | "right" }
-    | { direction: "left" | "stopped" | "right" };
+    | { size: 'short' | 'medium' | 'long' }
+    | { weight: '10kg' }
+    | { position: 'left' | 'center' | 'right' }
+    | { direction: 'left' | 'stopped' | 'right' };
   quantity: number;
   permissions: { move: boolean; rotate: boolean; remove: boolean };
 }
@@ -205,20 +205,10 @@ Les premiers niveaux peuvent n'offrir qu'une ou deux poutres. La balle, le panie
 et la bascule peuvent être placés par l'auteur avec leurs trois permissions à
 `false`, sans apparaître dans le tiroir du joueur.
 
-## Progression suggérée
+## Progression
 
-1. Une balle tombe seule dans un panier : apprendre lancement et reset.
-2. Placer une poutre courte sans devoir la tourner.
-3. Faire pivoter une poutre pour créer une pente.
-4. Choisir la bonne longueur de poutre.
-5. Enchaîner deux poutres et un rebond.
-6. Observer une bascule déjà placée et chargée par la balle.
-7. Déplacer une bascule sans modifier ses paramètres internes.
-8. Combiner plusieurs poutres et une bascule pour atteindre le panier.
-
-Cette liste décrit l'ordre pédagogique, pas encore le nombre final de niveaux. Une
-étape peut demander plusieurs niveaux si les tests utilisateurs montrent qu'un
-concept n'est pas acquis.
+La progression de la campagne et la géométrie mesurée de chaque niveau sont dans
+[`levels/initial-progression.md`](levels/initial-progression.md).
 
 ## Tests contractuels minimaux
 

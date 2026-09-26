@@ -1,421 +1,431 @@
-# Progression des huit premiers niveaux
+# Campagne — chapitres 1 et 2
 
-Statut : spécification pédagogique initiale. Les dimensions, angles, positions et
-constantes physiques seront fixés après les essais sur téléphone et la sélection
-du moteur physique.
+Statut : spécification de contenu, révisée le 26 septembre 2026. Elle remplace la
+progression initiale (niveaux « Laisser tomber », « Construire un pont »,
+« Choisir la longueur »…), écrite avant que la physique existe.
+
+Les géométries ci-dessous ont été **mesurées sur le moteur réel**
+(`createSimulationSession`, pas fixe 1/60 s, commit `7ebd85b`) avec un banc
+d’essai jetable. Elles sont un point de départ vérifié, pas un contrat : le JSON
+du niveau et son test de régression font foi une fois écrits. Si une mesure ne se
+reproduit pas, c’est le test qui a raison ; ajuster la géométrie, jamais les
+constantes physiques.
 
 ## Principes communs
 
-Ces huit niveaux utilisent uniquement la balle, le panier, les poutres de tailles
-discrètes et la bascule. Toutes les balles commencent au repos. La gravité est la
-seule source d'énergie : aucun objet ne reçoit de vitesse initiale ni d'impulsion
-cachée.
+- Scène de **8 × 5,5** (règle de contenu de l’ADR 0007), sauf mention contraire.
+  Repère : `x` vers la droite, `y` vers le bas, rotation positive = sens horaire
+  à l’écran (une poutre de rotation positive a son extrémité droite plus basse).
+- Toutes les balles commencent au repos. La gravité est la seule source
+  d’énergie, en dehors des convoyeurs.
+- Les objets fixes du décor ont leurs trois permissions à `false`.
+- **Chaque niveau demande au moins une action du joueur**, sauf le niveau 6 qui
+  présente la bascule. Lancer la simulation sans rien faire doit échouer : le
+  joueur apprend dès le niveau 1 que l’échec est normal et que « Réinitialiser »
+  existe.
+- Une solution ne repose jamais sur un rebond de précision, un tunneling ou un
+  réglage au pixel près : chaque solution de référence est accompagnée d’une
+  **fenêtre de robustesse** mesurée (grille de positions qui réussissent toutes).
+- Pour un objet dont le centre de rotation est son centre, un objet posé sur une
+  poutre a son centre à `½ épaisseur de la poutre + ½ hauteur de l’objet` au-dessus
+  de l’axe de la poutre (balle : 0,125 + 0,3 = 0,425, divisé par `cos θ` sur une
+  pente). Ajouter 0,01 de jeu pour éviter un chevauchement initial.
+- **Défi d’objets** (ADR 0010) : un niveau qui admet plusieurs solutions déclare
+  `challenge` ; les autres n’en ont pas et n’affichent que « Résolu ».
 
-Les descriptions de position sont intentionnellement relatives. Elles fixent le
-rôle des objets et les relations spatiales nécessaires au puzzle sans transformer
-des valeurs provisoires en contrat. Chaque solution de référence devra devenir
-une fixture exécutable lorsque les dimensions et constantes physiques auront été
-retenues.
+### Régression exigée pour chaque niveau
 
-Dans tous les niveaux :
+Écrite avec le harnais `src/content/level-regression.ts` (feuille de route, L4) :
 
-- lancer, mettre en pause, arrêter et réinitialiser la simulation sont disponibles ;
-- le reset restitue exactement le document d'avant simulation ;
-- la balle, le panier et les éléments annoncés comme verrouillés ne peuvent être
-  ni déplacés, ni tournés, ni supprimés ;
-- les zones de construction autorisées sont visibles avant la manipulation ;
-- la réussite correspond au fait que la balle cible entre dans le capteur du panier
-  et y reste pendant la durée définie par le jeu ;
-- une solution ne doit pas reposer sur un rebond de haute précision, un tunneling,
-  un empilement instable ou une tolérance au pixel près ;
-- le scénario de régression s'exécute avec un pas de temps fixe, dans une durée
-  simulée bornée, et vérifie aussi que le document de niveau n'a pas été modifié.
+1. l’état initial, sans action, **ne réussit pas** ;
+2. la solution de référence, appliquée par commandes **en contexte joueur**
+   (permissions et zones vérifiées), réussit ;
+3. toute la **fenêtre de robustesse** annoncée réussit ;
+4. les contre-exemples annoncés échouent ;
+5. deux exécutions de la référence donnent le même nombre de pas ;
+6. le document du niveau n’est pas modifié par la simulation ;
+7. si le niveau déclare `challenge.minimalObjectCount = n`, une recherche sur
+   grille ne trouve aucune solution à `n − 1` objets (voir L4, `searchSolutions`).
 
-## Niveau 1 — Laisser tomber
+Chaque niveau a aussi un parcours Playwright `mobile` qui le résout au tactile.
 
-### Apprentissage visé
+---
 
-Comprendre l'objectif, lancer la simulation et observer l'effet de la gravité. Le
-bouton de reset est montré après la réussite, mais sa maîtrise n'est pas requise
-pour terminer ce premier niveau.
+## Chapitre 1 — Poutres et bascule
 
-### Scène initiale et verrouillée
+### Niveau 1 — Prolonger la pente
 
-Une balle au repos est suspendue directement au-dessus d'un panier largement
-ouvert. Les deux objets sont verrouillés. Aucun obstacle ne se trouve entre eux.
+`id` : `level-1-prolonger-la-pente`
 
-### Inventaire
+**Apprentissage.** Lancer, voir échouer, réinitialiser, sortir une poutre du
+tiroir et la poser. Pas de rotation.
 
-Vide. Le tiroir reste fermé afin de ne pas suggérer qu'une construction est
-nécessaire.
-
-### Actions autorisées
-
-Lancer, mettre en pause, arrêter et réinitialiser. Aucune action d'édition.
-
-### Objectif
-
-Faire entrer la balle cible dans le panier.
-
-### Solution de référence
-
-Lancer la simulation sans modifier la scène. La balle tombe dans le panier.
-
-### Risque pédagogique
-
-Si une explication textuelle masque le plateau ou exige une validation avant le
-lancement, le niveau enseigne une boîte de dialogue plutôt que le jeu. L'aide doit
-donc être brève, non bloquante et pointer le bouton de lancement.
-
-### Scénario de régression
-
-Depuis l'état initial, lancer et avancer la simulation jusqu'à la limite bornée :
-le fait `ball-entered-target` est émis pour la balle cible. Après reset, la balle
-retrouve exactement sa transformation initiale et le capteur n'est plus actif.
-
-## Niveau 2 — Construire un pont
-
-### Apprentissage visé
-
-Ouvrir le tiroir, placer une poutre et la déplacer sans avoir encore à la tourner.
-
-### Scène initiale et verrouillée
-
-La balle repose au sommet d'une pente douce formée par une poutre verrouillée. La
-pente se termine devant un petit vide. De l'autre côté, une réception verrouillée
-conduit directement au panier. Une zone de construction horizontale, large et
-clairement marquée, couvre le vide.
-
-### Inventaire
-
-Une poutre courte, déjà présentée à l'orientation horizontale attendue.
-
-### Actions autorisées
-
-Sortir la poutre du tiroir, la placer, la déplacer dans la zone de construction,
-la retirer, puis utiliser undo et redo. La rotation de cette poutre est désactivée
-et aucune poignée de rotation n'est affichée.
-
-### Objectif
-
-Faire entrer la balle cible dans le panier.
-
-### Solution de référence
-
-Placer la poutre courte en travers du vide. Au lancement, la balle descend la
-pente par gravité, traverse la poutre et rejoint la réception puis le panier.
-
-### Risque pédagogique
-
-Une zone trop vaste transformerait l'exercice en recherche d'alignement. Une zone
-trop ajustée donnerait l'impression que le jeu place la poutre à la place du
-joueur. Elle doit permettre un déplacement manifeste tout en offrant une marge
-généreuse à la solution.
-
-### Scénario de régression
-
-Vérifier que la scène sans poutre ne réussit pas dans la durée bornée. Placer la
-poutre selon la fixture de référence, lancer et vérifier l'émission de
-`ball-entered-target`. Vérifier aussi qu'une commande de rotation est refusée sans
-changer le document.
-
-## Niveau 3 — Faire une pente
-
-### Apprentissage visé
-
-Tourner une poutre et comprendre qu'une inclinaison transforme une chute verticale
-en trajectoire latérale.
-
-### Scène initiale et verrouillée
-
-La balle est suspendue au-dessus d'une zone de construction. Le panier se trouve
-plus bas et décalé sur un côté, avec une ouverture généreuse. Sans construction,
-la balle tombe à côté du panier.
-
-### Inventaire
-
-Une poutre moyenne.
-
-### Actions autorisées
-
-Placer, déplacer et tourner la poutre avec sa poignée tactile ; retirer, annuler et
-rétablir. Le snapping propose quelques inclinaisons lisibles, sans exiger un angle
-exact.
-
-### Objectif
-
-Faire entrer la balle cible dans le panier.
-
-### Solution de référence
-
-Placer la poutre sous la trajectoire de chute et l'incliner vers le panier. La
-balle tombe sur la partie haute, roule vers la partie basse puis tombe dans le
+**Scène.** La balle est posée sur une poutre inclinée qui s’arrête dans le vide.
+Le panier est plus bas, loin à droite. Lancée telle quelle, la balle quitte la
+pente et heurte l’extérieur du panier. Une poutre courte posée à plat au bout de
+la pente prolonge le trajet : la balle roule dessus, ralentit, et tombe dans le
 panier.
 
-### Risque pédagogique
+| Objet    | Type   | Position      | Rotation | Propriétés       |
+| -------- | ------ | ------------- | -------- | ---------------- |
+| `ball`   | ball   | (2,3 ; 1,177) | 0        |                  |
+| `slope`  | beam   | (2,2 ; 1,6)   | 15°      | `size: "medium"` |
+| `basket` | basket | (6,9 ; 4,9)   | 0        |                  |
 
-Si seule une inclinaison très précise fonctionne, le joueur attribuera l'échec au
-contrôle tactile. La réception et le panier doivent accepter une plage d'angles et
-de positions suffisamment large.
+Inventaire : `beam`, `size: "short"`, quantité 1, permissions
+`{ move: true, rotate: false, remove: true }`.
+Zone de construction : `x 3,6 → 7,0`, `y 1,7 → 2,9`.
+Objectif : `ball` dans `basket`. Pas de `challenge`.
 
-### Scénario de régression
+**Référence.** Poutre courte en (5,0 ; 2,15), rotation 0.
 
-Vérifier qu'une poutre horizontale placée sous la balle ne permet pas la réussite.
-Appliquer ensuite une inclinaison de référence appartenant à la plage annoncée et
-vérifier `ball-entered-target`. Rejouer le scénario avec les deux valeurs extrêmes
-de cette plage pour prévenir une solution au pixel près.
+**Robustesse mesurée.** Toutes gagnantes : `x ∈ {4,9 ; 5,0 ; 5,1}` ×
+`y ∈ {2,05 ; 2,125 ; 2,2 ; 2,3}`, et `x ∈ {5,2 ; 5,3 ; 5,4}` ×
+`y ∈ {2,125 ; 2,2 ; 2,3}`.
 
-## Niveau 4 — Choisir la longueur
+**Contre-exemples.** Aucune poutre ; poutre en (5,6 ; 2,125) (trop loin, la balle
+tombe avant) ; poutre en (5,3 ; 2,05) (plus haute que la fin de pente, la balle
+bute dessus).
 
-### Apprentissage visé
+**Pourquoi ces choix.** La balle est posée à mi-pente et non en haut : partie du
+haut, elle arrive trop vite et saute par-dessus le panier. Sur le plat, la
+résistance au roulement freine la balle (≈ 0,7 m/s²) : c’est ce qui la fait
+tomber juste dans le panier.
 
-Identifier les tailles discrètes comme variantes d'une même poutre et choisir une
-longueur adaptée à une distance.
+### Niveau 2 — Au bon endroit
 
-### Scène initiale et verrouillée
+`id` : `level-2-au-bon-endroit`
 
-Une pente verrouillée conduit la balle vers un vide plus large que dans le niveau
-2. Une réception verrouillée mène au panier de l'autre côté. Une zone de
-construction étroite, centrée sur le vide, rend visible l'emplacement à couvrir
-sans autoriser la construction d'un pont en plusieurs tronçons.
+**Apprentissage.** Sélectionner un objet déjà posé et le déplacer par glisser.
+L’inventaire est vide : le tiroir ne s’affiche pas.
 
-### Inventaire
+**Scène.** La balle descend une courte pente qui s’arrête devant un trou. De
+l’autre côté, une seconde pente mène au panier. Une poutre courte déplaçable
+traîne en bas à gauche, inutile. Le joueur la glisse dans le trou pour faire un
+pont.
 
-Une poutre courte, une moyenne et une longue. Les trois entrées partagent le même
-nom de famille et montrent clairement leur longueur relative.
+| Objet    | Type   | Position      | Rotation | Propriétés      | Permissions                                    |
+| -------- | ------ | ------------- | -------- | --------------- | ---------------------------------------------- |
+| `ball`   | ball   | (0,9 ; 0,862) | 0        |                 | verrouillé                                     |
+| `slope`  | beam   | (1,6 ; 1,5)   | 15°      | `size: "short"` | verrouillé                                     |
+| `bridge` | beam   | (2,0 ; 4,9)   | 0        | `size: "short"` | `{ move: true, rotate: false, remove: false }` |
+| `ramp`   | beam   | (5,0 ; 2,3)   | 10°      | `size: "short"` | verrouillé                                     |
+| `basket` | basket | (7,1 ; 4,9)   | 0        |                 | verrouillé                                     |
 
-### Actions autorisées
+Inventaire : vide. Zone : `x 1,9 → 4,9`, `y 1,4 → 2,6` (la position de départ de
+`bridge` est hors zone, c’est voulu : la zone contraint la destination).
+Pas de `challenge`.
 
-Placer, déplacer et retirer les poutres dans la zone de construction ; undo et
-redo. Leur rotation est désactivée dans ce niveau afin que la longueur reste
-l'unique notion nouvelle.
+**Référence.** Déplacer `bridge` en (3,3 ; 1,95).
 
-### Objectif
+**Robustesse mesurée.** Les 20 positions `x ∈ {2,9 ; 3,1 ; 3,3 ; 3,5 ; 3,7}` ×
+`y ∈ {1,8 ; 1,9 ; 2,0 ; 2,1}` gagnent.
 
-Faire entrer la balle cible dans le panier.
+**Contre-exemples.** `bridge` laissé à sa place ; commande de rotation sur
+`bridge` refusée (`rotate-not-permitted`) sans modifier le document.
 
-### Solution de référence
+### Niveau 3 — Incliner
 
-Choisir la poutre longue et la placer horizontalement au centre du vide. Les
-poutres courte et moyenne ne rejoignent pas les deux appuis lorsqu'elles sont
-placées seules dans la zone autorisée.
+`id` : `level-3-incliner`
 
-### Risque pédagogique
+**Apprentissage.** Tourner une poutre avec sa poignée pour transformer une chute
+en trajectoire latérale.
 
-Permettre d'aligner les deux petites poutres introduirait une contrainte de budget
-ou une solution concurrente et brouillerait l'apprentissage. La géométrie de la
-zone doit empêcher cette combinaison de façon visible, sans règle cachée du type
-« une seule poutre autorisée ».
+**Scène.** La balle est suspendue en l’air à gauche. Le panier est en bas à
+droite, adossé à un mur vertical qui rattrape les balles trop rapides. Sans rien,
+la balle tombe dans le vide ; sur une poutre à plat, elle s’arrête.
 
-### Scénario de régression
+| Objet    | Type   | Position     | Rotation | Propriétés       |
+| -------- | ------ | ------------ | -------- | ---------------- |
+| `ball`   | ball   | (1,8 ; 0,6)  | 0        |                  |
+| `basket` | basket | (6,4 ; 4,9)  | 0        |                  |
+| `wall`   | beam   | (7,35 ; 3,4) | 90°      | `size: "medium"` |
 
-Exécuter trois variantes depuis un reset : une poutre courte seule et une poutre
-moyenne seule ne réussissent pas ; la poutre longue de référence émet
-`ball-entered-target`. Vérifier que les trois variantes sont décomptées comme des
-propriétés de la famille `beam`, pas comme trois familles d'objets.
+Inventaire : `beam` `medium`, quantité 1, `{ move: true, rotate: true, remove: true }`.
+Zone : `x 0,4 → 5,4`, `y 1,2 → 4,0`. Pas de `challenge`.
 
-## Niveau 5 — Deux passages
+**Référence.** Poutre moyenne en (3,2 ; 2,5), rotation 15°.
 
-### Apprentissage visé
+**Robustesse mesurée.** À 15° : `x ∈ {2,8 ; 3,2 ; 3,6}` × `y ∈ {2,0 ; 2,5 ; 3,0}`
+gagnent toutes. À 30°, (3,2 ; 2,5) et (3,2 ; 3,0) gagnent aussi : le test vérifie
+ces deux angles.
 
-Combiner deux placements déjà connus et raisonner sur une trajectoire en plusieurs
-étapes, sans introduire de nouvelle famille ni de nouvelle interaction.
+**Contre-exemples.** Aucune poutre (sortie de scène) ; poutre à plat en
+(2,8 ; 2,5) (temps écoulé) ; 45° en (3,2 ; 2,5) (la balle tombe sur l’extrémité
+haute et part à gauche) ; −15° (la pente mène à gauche).
 
-### Scène initiale et verrouillée
+### Niveau 4 — Moins, c’est mieux
 
-La balle commence sur une pente verrouillée. Son parcours vers le panier comporte
-deux interruptions bien séparées et visibles. Chaque interruption dispose de sa
-propre zone de construction. Des guides verrouillés larges canalisent la balle
-entre les deux passages.
+`id` : `level-4-moins-c-est-mieux`
 
-### Inventaire
+**Apprentissage.** Les longueurs de poutre, et le défi d’objets : plusieurs
+solutions existent, la plus économique vaut le trophée.
 
-Deux poutres moyennes identiques.
+**Scène.** Balle suspendue en haut à gauche, panier en bas à droite contre un
+petit mur. Deux poutres courtes enchaînées en escalier réussissent ; une poutre
+longue seule aussi.
 
-### Actions autorisées
+| Objet    | Type   | Position     | Rotation | Propriétés      |
+| -------- | ------ | ------------ | -------- | --------------- |
+| `ball`   | ball   | (0,9 ; 0,6)  | 0        |                 |
+| `basket` | basket | (6,8 ; 4,9)  | 0        |                 |
+| `back`   | beam   | (7,75 ; 4,4) | 90°      | `size: "short"` |
 
-Placer, déplacer et tourner légèrement les deux poutres ; retirer, annuler et
-rétablir. Chaque zone accepte une poutre avec une marge confortable.
+Inventaire :
+`beam short` quantité 2 et `beam long` quantité 1, toutes
+`{ move: true, rotate: true, remove: true }`.
+Zone : `x 0,2 → 6,4`, `y 1,0 → 4,0`.
+`challenge` : `{ elegantObjectCount: 2, minimalObjectCount: 1 }`.
 
-### Objectif
+**Références.**
 
-Faire entrer la balle cible dans le panier.
+- 1 objet : poutre longue en (3,2 ; 2,2) à 15°. Mesuré gagnant aussi à 10° et
+  20°, et pour `y ∈ {1,8 ; 2,2 ; 2,6}` à `x = 3,2`.
+- 2 objets : courte en (1,6 ; 1,6) à 15° puis courte en (3,8 ; 2,8) à 15°.
+  Mesuré gagnant pour la seconde en `x ∈ {3,6 ; 4,0}` × `y ∈ {2,4 ; 2,8 ; 3,2}`,
+  à 15° et 20°.
 
-### Solution de référence
+**Contre-exemples.** Aucune poutre ; une seule poutre courte (aucune réussite
+mesurée pour `x ∈ {1,2 ; 1,6 ; 2,0}`, `y ∈ {1,5 ; 2,0 ; 2,5}`, 15° à 30°). Le
+test de minimalité (règle 7) porte ici sur « aucune solution à 0 objet ».
 
-Utiliser une poutre pour prolonger le premier passage et l'autre pour prolonger le
-second, toutes deux orientées dans le sens général de la descente. La balle suit
-les guides jusqu'au panier sans saut ni rebond exigé.
+**Point d’attention.** La fenêtre de la poutre longue est étroite en `x` (3,2
+sûr, 3,5 partiel). Si elle ne tient pas en test, élargir en déplaçant le panier
+ou le mur, pas en retouchant la physique.
 
-### Risque pédagogique
+### Niveau 5 — Le détour
 
-Un rebond intentionnel ajouterait ici une propriété physique encore invisible et
-sensible aux constantes du moteur. Il est explicitement reporté. Les deux passages
-doivent être lisibles ensemble sur un petit écran ou accessibles par un
-panoramique évident, sans demander des allers-retours aveugles.
+`id` : `level-5-le-detour`
 
-### Scénario de régression
+**Apprentissage.** Deux objets, deux zones, et un chemin qui n’est pas le plus
+direct : le panier est sous un toit, il faut sortir par la droite puis revenir.
 
-Vérifier que chacune des deux solutions partielles, avec une seule poutre placée,
-échoue dans la durée bornée. Avec les deux poutres de référence, vérifier
-`ball-entered-target`. Exécuter le scénario plusieurs fois depuis un reset et
-vérifier le même résultat et le même nombre de pas simulés.
+**Scène.** La balle tombe sur un toit plat qui couvre le panier : elle s’y
+arrête. Une poutre au-dessus du toit l’envoie à droite, une seconde, plus bas, la
+ramène à gauche sous le toit, jusqu’au panier.
 
-## Niveau 6 — Regarder la bascule
+| Objet    | Type   | Position    | Rotation | Propriétés       |
+| -------- | ------ | ----------- | -------- | ---------------- |
+| `ball`   | ball   | (1,5 ; 0,6) | 0        |                  |
+| `roof`   | beam   | (1,6 ; 2,3) | 0        | `size: "medium"` |
+| `basket` | basket | (1,2 ; 4,9) | 0        |                  |
 
-### Apprentissage visé
+Inventaire : `beam short` ×1 et `beam medium` ×1, toutes rotation permise.
+Zones : A `x 0,6 → 4,0`, `y 0,9 → 2,05` ; B `x 1,6 → 6,2`, `y 2,7 → 4,3`.
+`challenge` : `{ elegantObjectCount: 2, minimalObjectCount: 2 }`.
 
-Observer qu'une bascule est un objet préassemblé dont la planche tourne sous le
-poids de la balle. Aucun réglage de joint n'est présenté.
+**Référence.** Courte en (2,3 ; 1,4) à 10° ; moyenne en (3,8 ; 3,5) à −15°.
 
-### Scène initiale et verrouillée
+**Robustesse mesurée.** Courte à 10° ou 15° en (2,3 ; 1,4) ; moyenne à −10°,
+−15° ou −20°, `x ∈ {3,8 ; 4,2}` × `y ∈ {3,2 ; 3,5 ; 3,8}` : toutes gagnent.
 
-Une balle est suspendue au-dessus d'un côté d'une bascule verrouillée. Le panier
-est placé sous la sortie de ce même côté, légèrement plus bas. Des poutres
-verrouillées forment une réception large afin que la balle reste visible pendant
-tout le mouvement.
+**Contre-exemples.** Aucune poutre (temps écoulé sur le toit) ; la courte seule
+(sortie de scène à droite) ; la courte décalée en (2,5 ; 1,5) (la balle la manque
+et tombe sur le toit). **Minimalité mesurée** : aucune des 1 512 poses d’une seule
+poutre (courte ou moyenne, 9 angles de −45° à 90°, `x` de 0,4 à 4,8, `y` de 1,0 à
+4,0) ne réussit.
 
-### Inventaire
+### Niveau 6 — La bascule
 
-Vide. Le tiroir reste fermé.
+`id` : `level-6-la-bascule`
 
-### Actions autorisées
+**Apprentissage.** Découvrir la bascule sans avoir à la manipuler. C’est le seul
+niveau d’observation : il introduit un objet nouveau.
 
-Lancer, mettre en pause, arrêter et réinitialiser. Aucune action d'édition.
+**Scène.** La balle tombe sur la moitié droite d’une bascule, qui penche et la
+dépose dans le panier.
 
-### Objectif
+| Objet    | Type   | Position    |
+| -------- | ------ | ----------- |
+| `ball`   | ball   | (4,2 ; 0,8) |
+| `seesaw` | seesaw | (3,2 ; 2,8) |
+| `basket` | basket | (5,6 ; 4,9) |
 
-Faire entrer la balle cible dans le panier.
+Inventaire vide, aucune zone, pas de `challenge`.
 
-### Solution de référence
+**Robustesse mesurée.** Balle en `x ∈ {3,9 ; 4,2 ; 4,5}` × panier en
+`x ∈ {5,2 ; 5,6 ; 6,0}` : les 9 combinaisons gagnent. Réussite en 120 pas ;
+angle final de la planche ≈ 0,56 rad (butée à π/6).
 
-Lancer sans modifier la scène. La balle tombe sur un côté de la planche, son poids
-fait tourner la bascule et elle roule vers la réception puis dans le panier.
+**Régression spécifique.** L’angle de la planche quitte 0 avant la réussite.
+Après reset, transformée de la balle, angle et vitesse angulaire de la planche
+exactement initiaux.
 
-### Risque pédagogique
+### Niveau 7 — Placer la bascule
 
-Le mouvement ne doit pas ressembler à un catapultage aléatoire. Il doit être lent,
-ample et reproductible, avec une caméra montrant simultanément la balle, le pivot
-et le panier. Si cette scène exige un rebond pour fonctionner, elle doit être
-redessinée plutôt que compensée par des constantes physiques extrêmes.
+`id` : `level-7-placer-la-bascule`
 
-### Scénario de régression
+**Apprentissage.** Poser une bascule comme un objet unique, et comprendre que le
+côté où tombe la balle décide du sens.
 
-Lancer depuis l'état initial et vérifier successivement que l'angle de la planche
-quitte son état de repos puis que `ball-entered-target` est émis. Après reset,
-vérifier la transformation initiale de la balle ainsi que l'angle et la vitesse
-angulaire initiaux de la partie mobile de la bascule.
+| Objet    | Type   | Position    |
+| -------- | ------ | ----------- |
+| `ball`   | ball   | (3,0 ; 0,6) |
+| `basket` | basket | (4,8 ; 4,9) |
 
-## Niveau 7 — Placer la bascule
+Inventaire : `seesaw` ×1, `{ move: true, rotate: false, remove: true }`.
+Zone : `x 0,2 → 6,0`, `y 2,0 → 4,4`. Pas de `challenge`.
 
-### Apprentissage visé
+**Référence.** Bascule en (2,5 ; 3,2).
 
-Déplacer une bascule comme un objet unique, sans modifier sa géométrie ni manipuler
-ses composants internes.
+**Robustesse mesurée.** Pivot `x ∈ {2,5 ; 2,8}` × `y ∈ {2,4 ; 2,8 ; 3,2 ; 3,6}`
+gagnent tous ; `x = 2,2` gagne pour `y ≤ 3,2`.
 
-### Scène initiale et verrouillée
+**Contre-exemples.** Aucune bascule ; pivot en `x ≥ 3,1` (la balle tombe sur la
+moitié gauche, la bascule l’envoie à gauche). Une bascule ne se tourne pas :
+commande de rotation refusée.
 
-La balle est suspendue au-dessus d'une aire de construction. Le panier se trouve
-plus bas, sur le côté vers lequel la balle doit sortir. Des guides verrouillés
-encadrent une large position de réception, mais un vide empêche la balle
-d'atteindre seule le panier.
+**Régression spécifique.** Un point de la planche et un point du pied renvoient
+le même identifiant de placement au hit-test (`board-hit-test.ts`).
 
-### Inventaire
+### Niveau 8 — Poutre et bascule
 
-Une bascule.
+`id` : `level-8-poutre-et-bascule`
 
-### Actions autorisées
+**Apprentissage.** Enchaîner les deux familles : la poutre amène la balle, un mur
+l’arrête, elle tombe sur la bascule qui la porte au panier.
 
-Placer et déplacer la bascule entière dans l'aire ; la retirer, annuler et rétablir.
-La rotation, le redimensionnement et la sélection de la planche ou du pivot
-internes sont interdits et aucune poignée correspondante n'est affichée.
+| Objet    | Type   | Position    | Rotation | Propriétés      |
+| -------- | ------ | ----------- | -------- | --------------- |
+| `ball`   | ball   | (1,0 ; 0,6) | 0        |                 |
+| `wall`   | beam   | (5,3 ; 1,9) | 90°      | `size: "short"` |
+| `basket` | basket | (6,2 ; 4,9) | 0        |                 |
 
-### Objectif
+Inventaire : `beam medium` ×1 (rotation permise) et `seesaw` ×1 (sans rotation).
+Zones : A `x 0,2 → 4,6`, `y 0,8 → 2,6` ; B `x 2,2 → 6,0`, `y 3,0 → 4,5`.
+`challenge` : `{ elegantObjectCount: 2, minimalObjectCount: 2 }`.
 
-Faire entrer la balle cible dans le panier.
+**Référence.** Poutre moyenne en (2,3 ; 1,5) à 15° ; bascule en (4,0 ; 3,4).
 
-### Solution de référence
+**Robustesse mesurée.** Poutre à 10°, 15° ou 20° ; pivot `x ∈ {4,0 ; 4,3}` ×
+`y ∈ {3,4 ; 3,8}` : gagnant dans les trois cas ; `x = 3,7` gagne à `y = 3,4`
+seulement. Fenêtre étroite (≈ 0,6 en `x`) : si elle ne tient pas en test,
+déplacer le mur ou le panier.
 
-Placer la bascule sous la chute, avec le côté destiné à recevoir la balle devant
-la réception menant au panier. Au lancement, la balle charge ce côté, la planche
-tourne et la balle rejoint la réception.
+**Contre-exemples.** Poutre seule (sortie de scène) ; bascule seule, pivot de 2,0
+à 5,2 et `y` de 2,6 à 4,2 (27 poses, aucune réussite) ; aucune action.
 
-### Risque pédagogique
+---
 
-La position ne doit pas demander d'anticiper une trajectoire balistique. Plusieurs
-placements proches doivent fonctionner. Toute tentative de saisir la planche
-mobile pendant l'édition doit sélectionner la bascule complète, faute de quoi le
-modèle préassemblé ne serait pas compréhensible.
+## Chapitre 2 — Mécanismes
 
-### Scénario de régression
+Introduit masse, convoyeur et levier. Rappels : le joueur ne change **aucune
+propriété** (sens d’un convoyeur, cran d’un levier) et ne relie **aucun fil** ;
+c’est le niveau qui les fixe (ADR 0009). Masse, levier et convoyeur ne tournent
+pas.
 
-Vérifier qu'une bascule laissée dans sa position de dépôt ne produit pas la
-réussite. La déplacer à la position de référence, lancer et vérifier
-`ball-entered-target`. Vérifier qu'une commande visant un composant interne ne peut
-ni le sélectionner indépendamment ni modifier le document, puis vérifier le retour
-complet à l'état initial après reset.
+### Niveau 9 — Le tapis
 
-## Niveau 8 — Guider puis basculer
+`id` : `level-9-le-tapis`
 
-### Apprentissage visé
+**Apprentissage.** Un convoyeur transporte ce qu’il porte.
 
-Combiner les deux familles manipulables déjà apprises : une poutre guide la balle
-vers une bascule, puis la bascule l'amène au panier.
+**Scène.** La balle tombe sur un sol plat et s’y arrête. Un convoyeur (sens
+imposé : droite) posé sous la chute l’emmène au bout du sol, d’où elle tombe dans
+le panier.
 
-### Scène initiale et verrouillée
+| Objet    | Type   | Position    | Rotation | Propriétés       |
+| -------- | ------ | ----------- | -------- | ---------------- |
+| `ball`   | ball   | (1,6 ; 0,6) | 0        |                  |
+| `floor`  | beam   | (2,2 ; 3,0) | 0        | `size: "medium"` |
+| `basket` | basket | (5,6 ; 4,9) | 0        |                  |
 
-La balle est suspendue en hauteur. Le panier est plus bas et décalé, hors de la
-chute directe. Deux aires de construction voisines sont visibles : la première
-sous la balle pour la poutre, la seconde entre cette aire et la réception du
-panier pour la bascule. La réception finale est large et formée de poutres
-verrouillées.
+Inventaire : `conveyor`, `direction: "right"`, ×1,
+`{ move: true, rotate: false, remove: true }`.
+Zone : `x 0,2 → 4,4`, `y 1,2 → 2,87`. Pas de `challenge`.
 
-### Inventaire
+**Référence.** Convoyeur en (2,2 ; 2,2). Réussite en 231 pas.
 
-Une poutre moyenne et une bascule.
+**Robustesse mesurée.** `x ∈ {1,8 ; 2,2 ; 2,6 ; 3,0}` × `y ∈ {1,6 ; 2,2 ; 2,6}`
+gagnent toutes ; `x = 1,4` ne gagne qu’à `y = 1,6`.
 
-### Actions autorisées
+**Contre-exemples.** Aucun convoyeur (temps écoulé).
 
-Placer, déplacer et tourner la poutre ; placer et déplacer la bascule sans la
-tourner ; retirer, annuler et rétablir les deux objets.
+### Niveau 10 — Le butoir
 
-### Objectif
+`id` : `level-10-le-butoir`
 
-Faire entrer la balle cible dans le panier.
+**Apprentissage.** La masse est lourde : posée sur un rebord, elle sert de mur.
 
-### Solution de référence
+**Scène.** La balle dévale une pente raide et passe au-dessus du panier. Une masse
+posée sur le rebord, juste après le panier, l’arrête et la fait tomber dedans.
 
-Incliner la poutre sous la chute pour guider la balle vers le côté utile de la
-bascule. Placer la bascule afin que son mouvement livre la balle à la réception
-du panier. Les zones et les réceptions doivent tolérer plusieurs placements
-proches, et non une configuration numérique unique.
+| Objet    | Type   | Position      | Rotation | Propriétés       |
+| -------- | ------ | ------------- | -------- | ---------------- |
+| `ball`   | ball   | (0,7 ; 0,584) | 0        |                  |
+| `slope`  | beam   | (2,2 ; 1,6)   | 20°      | `size: "medium"` |
+| `basket` | basket | (4,6 ; 4,9)   | 0        |                  |
+| `ledge`  | beam   | (6,5 ; 3,6)   | 0        | `size: "short"`  |
 
-### Risque pédagogique
+Inventaire : `mass`, `weight: "10kg"`, ×1, `{ move: true, rotate: false, remove: true }`.
+Zone : `x 5,4 → 7,6`, `y 2,0 → 3,5`. Pas de `challenge`.
 
-Ajouter deux poutres, un rebond ou une bascule à position et orientation libres
-chargerait excessivement ce premier niveau de synthèse sur téléphone. Ce niveau se
-limite donc à deux objets à placer. Une combinaison plus longue appartient au
-chapitre suivant, une fois ce geste validé par les tests utilisateurs.
+**Référence.** Masse en (6,0 ; 3,08) (posée sur le rebord).
 
-### Scénario de régression
+**Robustesse mesurée.** `x ∈ {5,8 ; 6,0 ; 6,2 ; 6,4}`, que la masse soit posée
+(`y = 3,08`) ou lâchée de plus haut (`y = 2,8` ou `2,4`) : toutes gagnent.
 
-Vérifier séparément que la poutre seule et la bascule seule ne peuvent atteindre
-l'objectif dans la durée bornée. Appliquer les deux placements de référence,
-lancer et vérifier `ball-entered-target`. Répéter depuis un reset pour vérifier la
-reproductibilité, puis enchaîner undo et redo sur chaque placement et confirmer
-que la solution reconstruite réussit encore.
+**Contre-exemples.** Aucune masse (sortie de scène à droite) ; masse en
+`x = 5,6` ou `6,6`.
 
-## Décisions repoussées volontairement
+### Niveau 11 — L’interrupteur
 
-Les huit niveaux ne valident pas encore :
+`id` : `level-11-l-interrupteur`
 
-- un rebond intentionnel, qui dépendra des coefficients physiques mesurés ;
-- plusieurs balles et la distinction entre balle motrice et balle cible ;
-- plusieurs poutres combinées avec une bascule dans un même puzzle ;
-- la rotation ou le paramétrage d'une bascule ;
-- une notation fondée sur le nombre d'objets, le temps ou l'optimalité.
+**Apprentissage.** Un levier commande un convoyeur par un fil ; un objet qui
+percute le levier le fait changer de cran.
 
-Ces mécanismes ne doivent pas être introduits pour densifier artificiellement la
-fin du premier chapitre. Ils pourront être proposés un par un dans la progression
-suivante lorsque les huit scénarios ci-dessus seront robustes sur les appareils
-cibles.
+**Scène.** La balle attend sur un convoyeur arrêté, relié à un levier au cran
+central. Le panier est en bas. Une masse lâchée **à gauche** du pommeau pousse le
+levier vers la droite : le convoyeur part vers la droite et la balle tombe dans le
+panier. Lâchée à droite du pommeau, la masse pousse le levier à gauche et la balle
+part du mauvais côté.
+
+| Objet    | Type     | Position    | Propriétés             |
+| -------- | -------- | ----------- | ---------------------- |
+| `ball`   | ball     | (1,9 ; 1,8) |                        |
+| `belt`   | conveyor | (2,2 ; 2,4) | `direction: "stopped"` |
+| `lever`  | lever    | (6,5 ; 3,2) | `position: "center"`   |
+| `basket` | basket   | (4,4 ; 4,9) |                        |
+
+Fil : `{ id: "wire-1", sourceId: "lever", targetId: "belt" }`.
+Inventaire : `mass` ×1, `{ move: true, rotate: false, remove: true }`.
+Zone : `x 5,2 → 7,8`, `y 0,4 → 1,9`. Pas de `challenge`.
+
+**Référence.** Masse en (6,2 ; 1,1).
+
+**Robustesse mesurée.** `x ∈ {6,0 ; 6,2 ; 6,4}` × `y ∈ {0,8 ; 1,4}` gagnent.
+`x ≤ 5,8` : le levier reste au centre. `x ≥ 6,6` : le levier passe à gauche.
+
+**Régression spécifique.** Lire `readState().devices` : le levier est `right` et
+le convoyeur `1` avant la réussite ; les contre-exemples laissent le levier
+`center` ou `left`.
+
+### Niveaux 12 à 14 — Synthèses (à concevoir)
+
+Non mesurés. À concevoir au banc d’essai (feuille de route, tâche dédiée), un
+niveau à la fois, avec les contraintes suivantes :
+
+- **12 — Le bon ordre.** Scène 8 × 5,5. Au moins une masse, un levier câblé par le
+  niveau et une poutre. Solution minimale de 2 objets ; inventaire en surplus
+  (au moins 4 objets) pour que le défi ait un sens : `elegantObjectCount =
+minimal + 1`.
+- **13 — Deux tapis.** Un levier commande deux convoyeurs (un circuit), dont un
+  en sens opposé à l’autre au départ. Solution minimale de 1 ou 2 objets,
+  inventaire en surplus.
+- **14 — Grand final.** Scène 16 × 9 (grande scène de référence de l’ADR 0007).
+  Au moins une bascule, un convoyeur et un levier. Solution minimale d’au moins
+  3 objets, inventaire en surplus.
+
+Pour chacun : régression complète (règles 1 à 7), minimalité établie par
+recherche sur grille, et deux captures pour l’auteur.
+
+---
+
+## Hors de cette campagne, volontairement
+
+- Rebond intentionnel, catapulte (masse lâchée sur une bascule chargée) : mesuré
+  trop sensible à la position le 26 septembre 2026 (3 réussites sur 15 poses).
+- Plusieurs balles, distinction balle motrice / balle cible.
+- Rotation d’une bascule, réglage d’un joint, câblage par le joueur.
+- Notation au temps.

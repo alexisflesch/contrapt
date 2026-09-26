@@ -12,9 +12,16 @@ En cas de contradiction entre deux sources, ne pas inventer de compromis
 silencieux : signaler le conflit et mettre à jour la décision concernée avant
 l'implémentation.
 
-Le découpage en tranches délégables est dans `docs/backlog.md`. Une tranche
-couvrant plusieurs couches se délègue avec le skill `orchestrate`
-(`.codex/skills/orchestrate/`).
+## Reprise en cours
+
+Le travail restant est ordonné, tâche par tâche, dans
+`docs/feuille-de-route-luna.md`. Un agent d'implémentation qui reprend le dépôt
+lit ce fichier juste après `docs/index.md`, suit ses tâches dans l'ordre et tient
+son journal. L'état réellement livré est dans `docs/etat.md`.
+
+Le découpage en tranches est dans `docs/backlog.md`. Le skill `orchestrate`
+(`.codex/skills/orchestrate/`) ne sert qu'à une session qui délègue à plusieurs
+agents ; un agent seul ne l'utilise pas.
 
 Le code, les schémas exécutables et les tests priment sur les exemples narratifs.
 Un exemple obsolète doit être corrigé ou supprimé.
@@ -34,9 +41,14 @@ implémentation. Une modification purement documentaire, un formatage ou un
 scaffolding sans comportement observable ne nécessite pas de test artificiel,
 mais doit passer les validateurs applicables.
 
-Avant de déclarer une tâche terminée, exécuter la commande de vérification globale
-du dépôt lorsqu'elle existe. Ne pas inventer le nom d'une commande absente : lire
-`package.json` et la documentation du dépôt.
+Avant de déclarer une tâche terminée, exécuter `pnpm check` (gate globale) ;
+`pnpm check:fast` suffit pendant le travail. Ne pas inventer le nom d'une commande
+absente : lire `package.json`. Playwright sert le build (`vite preview`) : lancer
+`pnpm build` avant tout `pnpm exec playwright test` isolé.
+
+Un changement visible à l'écran (mise en page, style, sprites, textes) n'est
+terminé qu'après validation à l'œil par l'auteur : fournir des captures aux
+formats concernés.
 
 ## Invariants d'architecture
 
@@ -88,4 +100,3 @@ de téléphone pris en charge.
   sauf pour les frontières explicitement imposées dans `docs/architecture.md`.
 - Une nouvelle famille d'objet doit fournir son schéma, sa définition, ses tests de
   comportement, ses outils d'édition et ses règles de sérialisation.
-

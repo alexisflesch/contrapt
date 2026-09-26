@@ -2,22 +2,31 @@
 
 ## Le roster
 
-Relevé du catalogue Codex local (`codex-cli 0.145.0`). Les trois modèles ont une
-fenêtre de contexte de 272 000 jetons : **le contexte n'est pas un critère de
-choix entre eux**. Seule la profondeur de raisonnement l'est.
+Relevé du catalogue Codex local le 26 septembre 2026 (`~/.codex/models_cache.json`).
+Les trois modèles ont une fenêtre de contexte de 272 000 jetons : **le contexte
+n'est pas un critère de choix entre eux**. Seule la profondeur de raisonnement
+l'est. Dans ce skill, `luna`, `sol` et `astra` désignent les modèles ci-dessous.
 
-| Modèle | Rôle annoncé | Effort par défaut | Efforts disponibles |
-| --- | --- | --- | --- |
-| `gpt-5.6-luna` | rapide et économique | `medium` | low, medium, high, xhigh, max |
-| `gpt-5.6-terra` | équilibré, travail quotidien | `medium` | low, medium, high, xhigh, max, ultra |
-| `gpt-5.6-sol` | frontière, agentique | `low` | low, medium, high, xhigh, max, ultra |
+| Nom court | Modèle        | Rôle annoncé                         | Effort par défaut | Efforts disponibles                  |
+| --------- | ------------- | ------------------------------------ | ----------------- | ------------------------------------ |
+| `luna`    | `gpt-6-luna`  | rapide et économique, tâches simples | `medium`          | low, medium, high, xhigh, max        |
+| `sol`     | `gpt-6-sol`   | cheval de trait, code quotidien      | `medium`          | low, medium, high, xhigh, max, ultra |
+| `astra`   | `gpt-6-astra` | frontière, travail le plus exigeant  | `low`             | low, medium, high, xhigh, max, ultra |
 
-Deux conséquences utiles :
+Ne pas confondre `sol` (GPT-6, milieu de gamme) avec l'ancien `gpt-5.6-sol`
+(frontière) cité par les documents antérieurs au 26 septembre 2026 : l'ancienne
+échelle `luna` / `terra` / `sol` correspond à la nouvelle `luna` / `sol` /
+`astra`.
 
-- `sol` a `low` comme défaut parce qu'il est déjà bon à effort réduit. `sol low`
+Conséquences utiles :
+
+- `astra` a `low` comme défaut parce qu'il est déjà bon à effort réduit. `astra low`
   est un point de fonctionnement légitime, pas un réglage dégradé.
 - `luna` n'a pas `ultra`, et c'est sans importance : `ultra` est interdit aux
   sous-agents (voir plus bas).
+- `luna` ne reçoit pas de travail d'interface visuelle (mise en page, style,
+  direction artistique) : ses résultats n'y ont pas été fiables. Il reste
+  pertinent pour la logique non visuelle derrière l'interface et pour les tests.
 
 ## Interdiction de `ultra`
 
@@ -31,23 +40,24 @@ choisit.
 
 ## Table de routage
 
-| Nature du travail | Modèle | Effort |
-| --- | --- | --- |
-| Extraire, résumer, inventorier, lister des fichiers | `luna` | `low` |
-| Renommage mécanique, formatage, mise à jour de doc | `luna` | `medium` |
-| Écrire un JSON de niveau depuis une spec écrite | `luna` | `high` |
-| Écrire un test rouge depuis un contrat déjà écrit | `luna` | `high` |
-| Composant React, câblage d'UI, style | `terra` | `medium` |
-| Faire passer au vert un test existant, dans une couche | `terra` | `medium` |
-| Parcours Playwright tactile | `terra` | `medium` |
-| Schéma Zod, validation sémantique, migration | `terra` | `high` |
-| Nouvelle commande, invariant d'historique, permissions | `terra` | `high` |
-| Revue croisée avant intégration | `terra` | `high` |
-| Adaptateur physique, boucle à pas fixe, déterminisme | `sol` | `high` |
-| Scène de conformité physique, tolérances numériques | `sol` | `high` |
-| Nouvelle famille d'objet composite de bout en bout | `sol` | `high` |
-| Arbitrage entre deux moteurs, mesures contradictoires | `sol` | `xhigh` |
-| Rédaction ou révision d'ADR, déplacement de frontière | `sol` | `max` |
+| Nature du travail                                          | Modèle  | Effort   |
+| ---------------------------------------------------------- | ------- | -------- |
+| Extraire, résumer, inventorier, lister des fichiers        | `luna`  | `low`    |
+| Renommage mécanique, formatage, mise à jour de doc         | `luna`  | `medium` |
+| Écrire un JSON de niveau depuis une géométrie déjà mesurée | `luna`  | `high`   |
+| Concevoir un niveau au banc d'essai physique               | `sol`   | `high`   |
+| Écrire un test rouge depuis un contrat déjà écrit          | `luna`  | `high`   |
+| Composant React, câblage d'UI, style                       | `sol`   | `medium` |
+| Faire passer au vert un test existant, dans une couche     | `sol`   | `medium` |
+| Parcours Playwright tactile                                | `sol`   | `medium` |
+| Schéma Zod, validation sémantique, migration               | `sol`   | `high`   |
+| Nouvelle commande, invariant d'historique, permissions     | `sol`   | `high`   |
+| Revue croisée avant intégration                            | `sol`   | `high`   |
+| Adaptateur physique, boucle à pas fixe, déterminisme       | `astra` | `high`   |
+| Scène de conformité physique, tolérances numériques        | `astra` | `high`   |
+| Nouvelle famille d'objet composite de bout en bout         | `astra` | `high`   |
+| Arbitrage entre deux moteurs, mesures contradictoires      | `astra` | `xhigh`  |
+| Rédaction ou révision d'ADR, déplacement de frontière      | `astra` | `max`    |
 
 ## Escalade
 
@@ -58,8 +68,8 @@ seulement sur échec, en joignant au nouveau brief :
 - ce que la tentative précédente a essayé ;
 - pourquoi c'était insuffisant.
 
-Escalade dans l'ordre : effort d'abord, modèle ensuite. `terra high` avant
-`sol medium`. Un problème mal posé ne se résout pas en montant de modèle ; deux
+Escalade dans l'ordre : effort d'abord, modèle ensuite. `sol high` avant
+`astra medium`. Un problème mal posé ne se résout pas en montant de modèle ; deux
 échecs au même endroit signifient que le découpage est mauvais, pas le modèle.
 
 Après deux escalades sur la même sous-tâche, arrêter et redécouper.

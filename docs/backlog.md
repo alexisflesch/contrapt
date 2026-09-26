@@ -7,6 +7,20 @@ charges décrit en intention et ce que `etat.md` constate.
 Chaque tranche est verticale, commence par ses tests observables et se termine par
 `pnpm check`. Une tranche n'est pas déclarée terminée par l'agent qui l'a écrite.
 
+## État au 26 septembre 2026
+
+| Tranche | État                                                                                                       |
+| ------- | ---------------------------------------------------------------------------------------------------------- |
+| T1      | ◐ protocole, scènes 6 et 7 mesurées ; validation sur téléphone réel et retrait de Rapier en attente        |
+| T2      | ✅                                                                                                         |
+| T3      | ✅ niveau 1 jouable ; fantôme (C1), ombre (C2) et fond suivant la caméra (D3) restent                      |
+| T4a     | ✅                                                                                                         |
+| T4b     | ✅ sélection, déplacement direct, poignée de rotation, propriétés ; parcours desktop à réparer (L1)        |
+| T5      | ⬜ campagne de 14 niveaux (`levels/initial-progression.md`) : feuille de route L6 à L18                    |
+| T6      | ⬜ progression (ADR 0010), stockage et partage (ADR 0011), PWA (ADR 0012) : L19 à L28 ; interface U1 à U12 |
+
+L'ordre d'exécution courant est dans `feuille-de-route-luna.md`.
+
 ## Convention
 
 - **Dépend de** : tranches qui doivent être intégrées avant de démarrer.
@@ -47,7 +61,7 @@ Dépend de : T1. Parallèle avec : T4a.
 Difficulté : haute, pièges de déterminisme.
 
 Port physique minimal dérivé des besoins des scènes de conformité, jamais de l'API
-d'un candidat. Dimensions, masses, frictions et rebonds des quatre familles
+d'un candidat. Dimensions, masses, frictions et rebonds des familles
 centralisés. Boucle à pas fixe sans horloge murale. Capteur de panier et évaluation
 réelle de `goal.type === 'basket'`.
 
@@ -119,7 +133,6 @@ protégeant les brouillons.
 Rattachables à la tranche qui les rencontre, jamais traitées en refactoring isolé.
 
 - Le test de zone utilise le centre du placement ; le confinement par forme
-  complète attend les dimensions de T2.
+  complète est désormais possible (`family-geometry.ts`) : tâche L3.
 - Aucune CI distante n'est configurée.
 - Aucune matrice de téléphones physiques n'est validée.
-- La coque affiche encore un atelier statique (résorbée par T3 et T4a).

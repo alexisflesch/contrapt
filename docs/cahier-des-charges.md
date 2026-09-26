@@ -197,20 +197,20 @@ quantité d’objets.
 
 ## Progression pédagogique et contenu
 
-La première progression introduit successivement :
+La campagne compte deux chapitres, spécifiés niveau par niveau et mesurés sur le
+moteur réel dans [la campagne](levels/initial-progression.md) :
 
-1. observer la gravité, lancer et réinitialiser ;
-2. placer une poutre sans la tourner ;
-3. incliner une poutre ;
-4. choisir entre les trois longueurs ;
-5. combiner deux passages sans rebond intentionnel ;
-6. observer une bascule préassemblée ;
-7. placer une bascule comme un objet unique ;
-8. guider une balle avec une poutre puis une bascule.
+1. **Poutres et bascule** (8 niveaux) : poser, déplacer, tourner, économiser des
+   objets, enchaîner deux poutres, découvrir puis placer la bascule, combiner
+   poutre et bascule ;
+2. **Mécanismes** (6 niveaux) : convoyeur, masse, levier câblé, puis trois
+   synthèses dont une grande scène finale.
 
-Les huit niveaux sont spécifiés dans
-[la progression initiale](levels/initial-progression.md). Les rebonds de précision
-sont volontairement exclus de ce premier chapitre. Chaque niveau livré devra être
+Chaque niveau demande une action du joueur, sauf celui qui présente la bascule.
+Les rebonds de précision et les catapultes sont exclus. Une métaprogression
+légère — paliers ✅ résolu, ⭐ élégant, 🏆 minimal selon le nombre d'objets
+utilisés, et ouverture des niveaux dans l'ordre — est fixée par
+[l'ADR 0010](decisions/0010-object-challenge-and-progression.md). Chaque niveau livré devra être
 valide, compréhensible, résoluble au tactile et accompagné d’un scénario de
 régression physique robuste.
 
@@ -220,11 +220,13 @@ rythme de production et des apprentissages.
 
 ## Format de niveau
 
-Le contrat persistant courant est `LevelDocument v1`, validé par un schéma Zod
+Le contrat persistant courant est `LevelDocument v2`, validé par un schéma Zod
 strict. Il contient seulement :
 
 - `schemaVersion`, un identifiant et des métadonnées ;
-- des placements discriminés parmi les quatre familles initiales ;
+- le rectangle de scène du niveau (ADR 0007) ;
+- des placements discriminés parmi les sept familles du catalogue ;
+- des fils de commande levier → convoyeur, facultatifs (ADR 0009) ;
 - un inventaire quantifié ;
 - exactement un objectif panier référençant une balle et un panier déjà placés ;
 - des zones de construction rectangulaires en unités du monde.
@@ -239,7 +241,8 @@ de victoire, ni connexion, ni handle de rendu, ni URL d’asset distante, ni cod
 exécutable. Toute évolution incompatible exige une version, une migration et des
 tests. Cela inclut le passage futur de l’objectif panier v1 aux conditions de
 victoire génériques. La définition complète et les limites sont dans
-[l’ADR 0004](decisions/0004-level-document-v1.md).
+[l’ADR 0004](decisions/0004-level-document-v1.md), complétée par les ADR 0007 et
+0009 ; le schéma exécutable `src/domain/level-document.ts` fait foi.
 
 ## Édition, tentative et historique
 
@@ -347,6 +350,16 @@ frontières dans [l’architecture](architecture.md).
   [l’ADR 0007](decisions/0007-world-scale-and-camera.md). Le rectangle de scène
   entre dans le format persistant : il impose `schemaVersion: 2` et une migration
   v1 → v2.
+- Le routage côté client et son schéma d’URL sont acceptés par
+  [l’ADR 0008](decisions/0008-client-side-routing.md).
+- Les fils de commande levier → convoyeur, persistés comme simple relation, sont
+  acceptés par [l’ADR 0009](decisions/0009-control-wires.md).
+- Le défi d’objets (✅ / ⭐ / 🏆) et l’ouverture progressive des niveaux sont
+  acceptés par [l’ADR 0010](decisions/0010-object-challenge-and-progression.md).
+- La persistance locale par `localStorage` et le format du partage par fragment
+  URL sont acceptés par [l’ADR 0011](decisions/0011-local-storage-and-url-sharing.md).
+- La PWA par `vite-plugin-pwa`, avec mise à jour proposée et jamais imposée, est
+  acceptée par [l’ADR 0012](decisions/0012-pwa-service-worker.md).
 
 ## Architecture et invariants à préserver
 
@@ -373,8 +386,9 @@ racine du dépôt.
 
 L’état réellement livré, la stack en place, les dettes et la dernière exécution
 de la gate sont décrits dans [`etat.md`](etat.md), réécrit à chaque fin de
-tranche. Le découpage exécutable des prochaines tranches est dans
-[`backlog.md`](backlog.md).
+tranche. Le découpage des tranches est dans [`backlog.md`](backlog.md) et
+l’ordre du travail restant dans
+[`feuille-de-route-luna.md`](feuille-de-route-luna.md).
 
 ## Décisions réellement encore ouvertes
 
@@ -385,15 +399,15 @@ tranche. Le découpage exécutable des prochaines tranches est dans
 - identité graphique finale, apparence de la balle et du panier, animations et
   direction audio ;
 - matrice de navigateurs et téléphones, budgets de bundle, mémoire et performance ;
-- stratégie de service worker, adaptateur IndexedDB et paramètres du codec URL ;
-- nombre final de chapitres et de niveaux de la version 1 ;
+- nombre final de chapitres et de niveaux de la version 1 au-delà des deux
+  chapitres spécifiés ;
 - objectifs composés et indices, uniquement lorsqu’un besoin de game design les
   rend nécessaires, avec les conditions génériques et migrations de format qui les
   accompagnent ;
 - première famille active ou réactive, son comportement déterministe et les faits
   de simulation qu’elle émet, lorsqu’un chapitre de campagne concret le justifie.
 
-React, Zod, `LevelDocument v1`, les permissions explicites, la provenance
+React, Zod, `LevelDocument` et ses versions, les permissions explicites, la provenance
 éphémère, le catalogue initial et le véritable tiroir mobile ne sont plus des
 questions ouvertes.
 
@@ -402,6 +416,7 @@ questions ouvertes.
 - [Carte de lecture du dépôt](index.md)
 - [État du dépôt](etat.md)
 - [Découpage des tranches](backlog.md)
+- [Feuille de route de la reprise](feuille-de-route-luna.md)
 - [Fondations produit](decisions/0001-product-foundations.md)
 - [Sélection du moteur physique](decisions/0002-physics-engine-selection.md)
 - [Bootstrap du projet](decisions/0003-project-bootstrap.md)
@@ -409,8 +424,13 @@ questions ouvertes.
 - [Provenance de `ConstructionAttempt`](decisions/0005-construction-attempt.md)
 - [Renderer du plateau](decisions/0006-board-renderer.md)
 - [Repère du monde, scène, caméra et sprites](decisions/0007-world-scale-and-camera.md)
+- [Routage côté client](decisions/0008-client-side-routing.md)
+- [Fils de commande](decisions/0009-control-wires.md)
+- [Défi d’objets et progression](decisions/0010-object-challenge-and-progression.md)
+- [Persistance locale et partage par URL](decisions/0011-local-storage-and-url-sharing.md)
+- [PWA](decisions/0012-pwa-service-worker.md)
 - [Architecture](architecture.md)
 - [Qualité et TDD](qualite.md)
 - [Catalogue initial](catalogue-initial.md)
 - [Interactions mobiles](mobile-editor-interactions.md)
-- [Progression des huit premiers niveaux](levels/initial-progression.md)
+- [Campagne, chapitres 1 et 2](levels/initial-progression.md)
