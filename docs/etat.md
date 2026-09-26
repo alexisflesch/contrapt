@@ -124,10 +124,9 @@ pendant le travail.
   `beam-short/medium/long@2x.png` existent dans `public/assets/sprites/` mais ne
   sont pas câblés, et `art/` ne contient pas de source dessinée de poutre.
   `art/build-sprites.py` dépend de Pillow, numpy et pngquant, hors gate.
-- **Parcours Playwright desktop en échec** hors gate :
-  `e2e/editor-interactions.spec.ts` « C3 — place, déplace, modifie et supprime
-  une poutre dans Chromium desktop » échoue sur la dernière comparaison de
-  canvas après l’annulation d’une suppression.
+- Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
+  restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
+  près. Les 30 tests desktop passent.
 - **Un seul niveau de campagne**, « Laisser tomber », qui sera remplacé. La
   campagne de 14 niveaux est spécifiée et mesurée dans
   `levels/initial-progression.md` ; aucun bouton « Niveau suivant ».
@@ -152,9 +151,9 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 (bouton, ventilateur,
-barrière, tremplin, nouvelle masse, `/demo`) : typecheck, lint, formatage, Knip,
-contenu, 393 tests Vitest (30 fichiers), build, 29 parcours Playwright `mobile`.
-Le parcours desktop n'a pas été relancé. Deux tests lourds (frontière de couches,
-qui dépassait déjà 5 s sur HEAD sous charge parallèle, et banc dense) ont reçu un
-délai explicite de 30 s, assertions inchangées.
+`pnpm check` exécutée avec succès le 26 septembre 2026 après L1 : typecheck,
+lint, formatage, Knip, contenu, 393 tests Vitest (30 fichiers), build et 30
+tests Playwright `mobile` (29 réussis, C3 ignoré car spécifique au projet desktop).
+`pnpm build && pnpm exec playwright test --project=desktop` passe également :
+30 tests réussis, dont C3. Les tests lourds de frontière de couches et de banc
+dense conservent leur délai explicite de 30 s, sans assertion affaiblie.

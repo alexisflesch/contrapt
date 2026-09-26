@@ -764,7 +764,10 @@ commencer de ta propre initiative.
   libellé « Réinitialiser » disparaît ; une seule commande « Recommencer » visible
   à la fois (aujourd’hui en double dans `SimulationControls.tsx` et
   `LevelResult.tsx`) ; dans l’éditeur, « Remettre l’atelier à zéro » derrière une
-  boîte de confirmation (`Dialog`) qui dit ce qui sera perdu.
+  boîte de confirmation (`Dialog`) qui dit ce qui sera perdu. Après une victoire
+  pendant « Tester » dans l’éditeur, ne pas afficher « Rejouer le niveau » si cette
+  action efface la construction, ni « Retour à la liste des niveaux » : la reprise
+  de l’édition doit conserver l’atelier et sa construction.
 - **U7 — Balle suivie** : signaler quelle balle est la cible de l’objectif.
 - **U8 — Aide du niveau 1** : indication brève et non bloquante vers « Tester »
   puis vers le tiroir.
@@ -802,3 +805,20 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 ```
 
 <!-- Les entrées commencent ici. -->
+
+### L1 — Réparer le parcours Playwright desktop C3 — fait — `test(e2e): resélectionne la poutre restaurée (L1)`
+
+- Tests ajoutés : aucun ; `e2e/editor-interactions.spec.ts` C3 vérifie maintenant
+  aussi que l’inspecteur réapparaît après sélection de la poutre restaurée.
+- Échec initial constaté : `waitForCanvasToMatch` ligne 143 — `Expected: true`,
+  `Received: false` après l’annulation de la suppression.
+- Tests existants réécrits : C3 — la sélection, effacée par la suppression, est
+  rétablie avant de comparer les captures pixel à pixel.
+- Fichiers touchés hors périmètre : `docs/etat.md` (état et gate),
+  `docs/feuille-de-route-luna.md` (intégration de la remarque mainteneur sur le
+  résultat d’un test dans l’éditeur).
+- Écarts avec la tâche : aucun.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Non vérifié : aucune zone liée à L1.
+- Pour l’auteur : aucune capture demandée pour cette correction de test.

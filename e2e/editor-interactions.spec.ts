@@ -138,10 +138,11 @@ const runConstructionInteractions = async (page: Page): Promise<void> => {
 
   await expect(undo).toBeEnabled();
   await undo.click();
-  // Removing clears the ephemeral selection; the restored object is therefore
-  // asserted through the canvas rather than assuming the inspector reopens.
+  // Removing clears the ephemeral selection. Select the restored beam again so
+  // the exact canvas comparison uses the same selected state as afterResize.
+  await page.mouse.click(target.x, target.y);
+  await expect(page.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
   await waitForCanvasToMatch(canvas, afterResize);
-  await expect(page.getByRole('region', { name: 'Propriétés de Poutre' })).toHaveCount(0);
 };
 
 test('C3 — place, déplace, modifie et supprime une poutre dans Chromium desktop', async ({
