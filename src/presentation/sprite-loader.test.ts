@@ -266,6 +266,46 @@ describe('sprite loader contract', () => {
     );
   });
 
+  it('retries a failed asset on the next request and becomes ready after success', async () => {
+    const failedPath = spriteAssetPath('beam', 2);
+    const sprite: DecodedSpriteFixture = { width: 128, height: 96 };
+    let attempts = 0;
+    const decoder = vi.fn((path: string): Promise<DecodedSpriteFixture> => {
+      expect(path).toBe(failedPath);
+      attempts += 1;
+      if (attempts === 1) return Promise.reject(new Error('Réseau indisponible'));
+      return Promise.resolve(sprite);
+    });
+    const loader = createSpriteLoader({ scale: 2, decode: decoder });
+
+    await expect(loader.loadForFamilies(['beam'])).rejects.toThrow('Réseau indisponible');
+    expect(loader.getState('beam')).toBe('failed');
+    expect(decoder).toHaveBeenCalledTimes(1);
+
+    await loader.loadForFamilies(['beam']);
+
+    expect(decoder).toHaveBeenCalledTimes(2);
+    expect(loader.getState('beam')).toBe('ready');
+    expect(loader.getSprite('beam')).toBe(sprite);
+  });
+
+  it('stops after three failed attempts without making a fourth request', async () => {
+    let attempts = 0;
+    const decoder = vi.fn((): Promise<DecodedSpriteFixture> => {
+      attempts += 1;
+      return Promise.reject(new Error(`Échec ${String(attempts)}`));
+    });
+    const loader = createSpriteLoader({ scale: 2, decode: decoder });
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      await expect(loader.loadForFamilies(['beam'])).rejects.toThrow(`Échec ${String(attempt)}`);
+    }
+
+    expect(loader.getState('beam')).toBe('failed');
+    await expect(loader.loadForFamilies(['beam'])).rejects.toThrow('Échec 3');
+    expect(decoder).toHaveBeenCalledTimes(3);
+  });
+
   it('exposes failed after a decoder rejection', async () => {
     const failedPath = spriteAssetPath('beam', 3);
     const decoder = vi.fn((path: string): Promise<DecodedSpriteFixture> => {

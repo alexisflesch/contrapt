@@ -27,6 +27,8 @@ export type SpriteAsset = (typeof spriteAssetsByFamily)[SpriteFamily][number];
 type SpriteScale = 2 | 3;
 type SpriteLoadState = 'idle' | 'loading' | 'ready' | 'failed';
 
+const MAX_SPRITE_LOAD_ATTEMPTS = 3;
+
 export const spriteAssetsForFamily = (family: SpriteFamily): readonly SpriteAsset[] =>
   spriteAssetsByFamily[family];
 
@@ -83,6 +85,7 @@ export type SpriteLoader = Readonly<{
 
 type SpriteRecord = {
   state: SpriteLoadState;
+  attempts: number;
   sprite: DecodedSprite | undefined;
   error: Error | undefined;
   promise: Promise<void> | undefined;
@@ -90,6 +93,7 @@ type SpriteRecord = {
 
 const createSpriteRecord = (): SpriteRecord => ({
   state: 'idle',
+  attempts: 0,
   sprite: undefined,
   error: undefined,
   promise: undefined,
@@ -145,7 +149,7 @@ export const createSpriteLoader = ({ scale, decode }: SpriteLoaderOptions): Spri
       return Promise.resolve();
     }
 
-    if (record.state === 'failed') {
+    if (record.state === 'failed' && record.attempts >= MAX_SPRITE_LOAD_ATTEMPTS) {
       return rejectedPromise(record.error ?? new Error('Le sprite est en échec de chargement.'));
     }
 
@@ -154,6 +158,9 @@ export const createSpriteLoader = ({ scale, decode }: SpriteLoaderOptions): Spri
     }
 
     record.state = 'loading';
+    record.attempts += 1;
+    record.error = undefined;
+    record.promise = undefined;
 
     let decoded: Promise<DecodedSprite>;
     try {
@@ -169,6 +176,7 @@ export const createSpriteLoader = ({ scale, decode }: SpriteLoaderOptions): Spri
     record.promise = decoded
       .then((sprite) => {
         record.sprite = sprite;
+        record.error = undefined;
         record.state = 'ready';
       })
       .catch((error: unknown) => {

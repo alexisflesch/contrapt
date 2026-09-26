@@ -865,3 +865,24 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   Playwright mobile réussis et un test desktop ignoré dans ce projet).
 - Non vérifié : aucune vérification demandée par L2b ne reste à faire.
 - Pour l’auteur : aucune question.
+
+### L2c — Réessayer un sprite dont le chargement a échoué — fait — `fix(presentation): retente le chargement des sprites en échec (L2c)`
+
+- Tests ajoutés : `sprite-loader.test.ts` — réussite après échec au second appel ;
+  trois échecs maximum sans quatrième requête. Le test existant de déduplication
+  concurrente reste en place.
+- Échec initial constaté : 9 tests passent, 2 échouent : deuxième appel encore
+  rejeté par « Réseau indisponible » ; attendu « Échec 2 », reçu « Échec 1 ».
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : `docs/etat.md` (état livré et gate) et
+  `docs/feuille-de-route-luna.md` (journal obligatoire).
+- Écarts avec la tâche : aucun ; `BoardView.tsx` n’a pas été modifié.
+- Mesures qui ne se reproduisent pas : aucune mesure physique répétée sur le vieux
+  Xiaomi ; le retest après correctif est consigné dans `etat.md`.
+- Contradictions rencontrées : aucune.
+- Vérification finale : `pnpm check:fast` et `pnpm check` passent ; 394 tests
+  Vitest, 29 tests Playwright mobiles réussis et un test desktop ignoré dans le
+  projet mobile.
+- Non vérifié : aucune vérification demandée par L2c ne reste à faire.
+- Pour l’auteur : retester `/bench/play` sur le vieux Xiaomi pour confirmer qu’un
+  rechargement manuel n’est plus nécessaire.

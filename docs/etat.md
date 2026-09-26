@@ -68,6 +68,9 @@ pendant le travail.
   tapis défilant, bouton à capuchon qui s’enfonce, ventilateur à pales tournantes
   écrasées en perspective et orientable, barrière dont seule la partie sortie du
   poteau est dessinée, tremplin à ressort tassé à l’impact), ordre de dessin déterministe (la balle après le panier).
+- Chargeur des sprites : une requête en cours est partagée, un sprite prêt est
+  conservé, et un échec est retenté au rendu suivant, jusqu’à trois tentatives par
+  asset.
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
   cadrage, recadrage sur vrai redimensionnement seulement.
@@ -140,8 +143,10 @@ pendant le travail.
 - **Deux boutons « Réinitialiser »** (libellé à remplacer par « Recommencer », voir
   `mobile-editor-interactions.md`) actifs simultanément après une simulation
   terminée (barre d’actions et bandeau de résultat).
-- **Premier affichage sur appareil lent** : sur un vieux Xiaomi, `/bench/play`
-  a dû être rechargée une fois avant de fonctionner. Cause non établie.
+- **Retest du Xiaomi après L2c** : le vieux téléphone avait exigé un rechargement
+  de `/bench/play`. Le chargeur retente maintenant un asset en échec lors des
+  rendus suivants, au plus trois fois ; le comportement doit encore être vérifié
+  sur cet appareil.
 - **Mode auteur incomplet** : l’atelier ne permet ni d’éditer scène, zones,
   inventaire ou objectif, ni d’enregistrer, exporter ou partager un niveau.
 - `format:check` ne couvre pas le Markdown.
@@ -149,8 +154,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après L2b : typecheck,
-lint, formatage, Knip, contenu, 392 tests Vitest (30 fichiers), build et 30
+`pnpm check` exécutée avec succès le 26 septembre 2026 après L2c : typecheck,
+lint, formatage, Knip, contenu, 394 tests Vitest (30 fichiers), build et 30
 tests Playwright `mobile` (29 réussis, C3 ignoré car spécifique au projet desktop).
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
