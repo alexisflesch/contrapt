@@ -56,8 +56,8 @@ describe('campagne embarquée', () => {
 });
 
 describe('niveaux embarqués', () => {
-  it('expose Prolonger la pente puis Le pont comme les deux premiers niveaux v2 valides', () => {
-    expect(embeddedLevels).toHaveLength(2);
+  it('expose les trois premiers niveaux v2 valides dans l’ordre de campagne', () => {
+    expect(embeddedLevels).toHaveLength(3);
     expect(embeddedLevels[0]).toMatchObject({
       schemaVersion: 2,
       id: 'level-1-prolonger-la-pente',
@@ -140,6 +140,45 @@ describe('niveaux embarqués', () => {
         id: 'basket-1',
         type: 'basket',
         transform: { position: { x: 7.1, y: 4.9 }, rotation: 0 },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+    ]);
+
+    expect(embeddedLevels[2]).toMatchObject({
+      schemaVersion: 2,
+      id: 'level-3-incliner',
+      metadata: { title: 'Incliner' },
+      inventory: [
+        {
+          id: 'inventory-beam',
+          type: 'beam',
+          props: { size: 'medium' },
+          quantity: 1,
+          permissions: { move: true, rotate: true, remove: true },
+        },
+      ],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [{ min: { x: 0.4, y: 1.2 }, max: { x: 5.4, y: 4 } }],
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+    });
+    expect(embeddedLevels[2]?.objects).toEqual([
+      expect.objectContaining({
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 1.8, y: 0.6 }, rotation: 0 },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 6.4, y: 4.9 }, rotation: 0 },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'wall',
+        type: 'beam',
+        transform: { position: { x: 7.35, y: 3.4 }, rotation: Math.PI / 2 },
+        props: { size: 'medium' },
         permissions: { move: false, rotate: false, remove: false },
       }),
     ]);

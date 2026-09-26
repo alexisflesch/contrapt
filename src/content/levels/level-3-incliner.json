@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "id": "level-3-incliner",
+  "metadata": {
+    "title": "Incliner",
+    "description": "Posez une poutre moyenne, puis inclinez-la de 15° avec sa poignée pour guider la balle vers le panier."
+  },
+  "objects": [
+    {
+      "id": "ball-1",
+      "type": "ball",
+      "transform": { "position": { "x": 1.8, "y": 0.6 }, "rotation": 0 },
+      "props": {},
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-1",
+      "type": "basket",
+      "transform": { "position": { "x": 6.4, "y": 4.9 }, "rotation": 0 },
+      "props": {},
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "wall",
+      "type": "beam",
+      "transform": { "position": { "x": 7.35, "y": 3.4 }, "rotation": 1.5707963267948966 },
+      "props": { "size": "medium" },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-beam",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-1", "basketId": "basket-1" },
+  "buildZones": [{ "min": { "x": 0.4, "y": 1.2 }, "max": { "x": 5.4, "y": 4.0 } }],
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 8, "y": 5.5 } }
+}

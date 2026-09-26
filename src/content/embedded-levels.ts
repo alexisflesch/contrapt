@@ -1,6 +1,7 @@
 import demo from './levels/demo.json';
 import levelOne from './levels/level-1-prolonger-la-pente.json';
 import levelTwo from './levels/level-2-le-pont.json';
+import levelThree from './levels/level-3-incliner.json';
 import workshop from './levels/workshop.json';
 
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
@@ -46,7 +47,11 @@ export const campaignChapters = createCampaign([
   {
     id: 'poutres-et-bascule',
     title: 'Poutres et bascule',
-    levels: [parseEmbeddedLevel(levelOne), parseEmbeddedLevel(levelTwo)],
+    levels: [
+      parseEmbeddedLevel(levelOne),
+      parseEmbeddedLevel(levelTwo),
+      parseEmbeddedLevel(levelThree),
+    ],
   },
   { id: 'mecanismes', title: 'Mécanismes', levels: [] },
 ]);

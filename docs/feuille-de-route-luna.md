@@ -1076,3 +1076,38 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/level-2-le-pont-390x844.png` et
   `test-results/levels/level-2-le-pont-844x390.png`. Les deux niveaux ont leurs
   deux formats de capture après la gate.
+
+### L9 — Niveau 3 « Incliner » — terminé
+
+- Régression rouge écrite avant le JSON : les 7 tests échouaient avec
+  `Le niveau « Incliner » est absent.`. Après intégration, les tests couvrent
+  l’échec initial hors scène, la référence jouée par une commande de pose puis
+  une commande de rotation à 15°, les contre-exemples, le déterminisme,
+  l’immuabilité et le reset exact.
+- `level-3-incliner.json` suit les positions de la source. Il est enregistré
+  comme troisième niveau de campagne ; la liste, son test de contenu, les
+  retours vers la liste et le titre de page sont couverts.
+- Écart mesuré avec la source : le contrôle exécutable vérifie toute l’empreinte
+  dans la zone. Les six positions à 15° pour `x ∈ {2,8 ; 3,2}` et
+  `y ∈ {2,0 ; 2,5 ; 3,0}` sont jouables ; parmi les deux candidats mesurés
+  à 30°, seule (3,2 ; 2,5) l’est.
+  La simulation confirme aussi les succès physiques à `x = 3,6` et à 30° en
+  `y = 3,0`, mais les commandes joueur les refusent pour débordement. À 45°,
+  l’issue physique est un échec mais la pose est refusée ; −15° est accessible
+  et échoue ; la poutre à plat à (2,8 ; 2,5) est accessible et expire. La carte
+  `docs/index.md` donne priorité au contrôle exécutable : la spec
+  `initial-progression.md` distingue désormais les mesures physiques des poses
+  jouables. Zone, positions d’objets et simulation sont conservées.
+- Le parcours Playwright mobile « niveau 3 : poser puis tourner la poutre de
+  référence avec la poignée au tactile » a été exécuté après `pnpm build` : pose
+  dans le tiroir, vrai toucher CDP sur la poignée pour atteindre 15°, caméra
+  stable, victoire. Le métrique de poignée est partagé avec le renderer via
+  `rotation-handle-metrics.ts`, sans importer le renderer dans `tsconfig.e2e`.
+- `pnpm check` passe : typecheck, lint, formatage, Knip, contenu (5 niveaux),
+  445 tests Vitest (35 fichiers), build et 31 tests Playwright mobiles réussis ;
+  C3 est ignoré dans ce projet car il est propre au projet desktop.
+- Captures au repos inspectées :
+  `test-results/levels/level-3-incliner-390x844.png` et
+  `test-results/levels/level-3-incliner-844x390.png`. Les captures des niveaux 1
+  et 2 ont aussi été conservées après la dernière gate.
+- Pour l’auteur : aucune question.

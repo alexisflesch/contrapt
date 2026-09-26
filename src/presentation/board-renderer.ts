@@ -19,6 +19,10 @@ import type { LevelDocument } from '../domain/level-document';
 import { projectWires, type ProjectedWire } from './control-wires';
 import { drawWireLabels, drawWires, type WireCanvas } from './wire-renderer';
 import {
+  ROTATION_HANDLE_DISTANCE_CSS_PIXELS,
+  ROTATION_HANDLE_SIZE_CSS_PIXELS,
+} from './rotation-handle-metrics';
+import {
   spriteAssetPath,
   spriteAssetsForFamily,
   type SpriteAsset,
@@ -589,9 +593,7 @@ const requiredFamilies = (projection: BoardProjection): readonly SpriteFamily[] 
   ...new Set(projection.objects.map((object) => object.family)),
 ];
 
-const ROTATION_HANDLE_SIZE_CSS_PIXELS = 44;
 const SELECTION_LINE_WIDTH_CSS_PIXELS = 2;
-export const ROTATION_HANDLE_DISTANCE_CSS_PIXELS = 32;
 
 export const rotationHandleBounds = (
   object: ProjectedBoardObject,

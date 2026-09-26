@@ -120,6 +120,12 @@ pendant le travail.
   mesurées, le refus de rotation, le déterminisme et le reset exact
   (`src/content/levels/level-2-le-pont.test.ts`). Le parcours mobile pose la poutre,
   la glisse avant de lancer, puis gagne sur `/levels/level-2-le-pont/play`.
+- Niveau 3 « Incliner » jouable de bout en bout. Sa régression vérifie l’échec
+  initial, la pose puis la rotation à 15°, les six poses robustes accessibles,
+  les mesures physiques hors zone, le refus des rotations/poses qui débordent,
+  le déterminisme et le reset exact (`src/content/levels/level-3-incliner.test.ts`).
+  Le parcours mobile tourne réellement la poignée et gagne sur
+  `/levels/level-3-incliner/play`.
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -136,8 +142,8 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Deux niveaux de campagne**, « Prolonger la pente » et « Le pont » ; les 12
-  autres niveaux de la campagne de 14 sont spécifiés dans
+- **Trois niveaux de campagne**, « Prolonger la pente », « Le pont » et
+  « Incliner » ; les 11 autres niveaux de la campagne de 14 sont spécifiés dans
   `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
 - **Défi d’objets, progression, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés.
@@ -159,11 +165,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après L8 : typecheck,
-lint, formatage, Knip, contenu (4 niveaux embarqués), 438 tests Vitest (34 fichiers),
-build et 31 tests Playwright `mobile` (30 réussis, C3 ignoré car spécifique au
-projet desktop). Les quatre captures au repos sont conservées sous
-`test-results/levels/` pour les niveaux 1 et 2, en portrait et paysage.
+`pnpm check` exécutée avec succès le 26 septembre 2026 après L9 : typecheck,
+lint, formatage, Knip, contenu (5 niveaux embarqués), 445 tests Vitest (35
+fichiers), build et 32 tests Playwright `mobile` (31 réussis, C3 ignoré car
+spécifique au projet desktop). Les six captures au repos sont conservées sous
+`test-results/levels/` pour les niveaux 1 à 3, en portrait et paysage.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

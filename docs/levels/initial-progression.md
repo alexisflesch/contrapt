@@ -154,13 +154,22 @@ Zone : `x 0,4 → 5,4`, `y 1,2 → 4,0`. Pas de `challenge`.
 
 **Référence.** Poutre moyenne en (3,2 ; 2,5), rotation 15°.
 
-**Robustesse mesurée.** À 15° : `x ∈ {2,8 ; 3,2 ; 3,6}` × `y ∈ {2,0 ; 2,5 ; 3,0}`
-gagnent toutes. À 30°, (3,2 ; 2,5) et (3,2 ; 3,0) gagnent aussi : le test vérifie
-ces deux angles.
+**Robustesse physique mesurée.** À 15° : `x ∈ {2,8 ; 3,2 ; 3,6}` ×
+`y ∈ {2,0 ; 2,5 ; 3,0}` gagnent toutes. À 30°, (3,2 ; 2,5) et (3,2 ; 3,0)
+gagnent aussi.
+
+**Poses accessibles au joueur.** Le contrôle exécutable exige que l’empreinte
+complète tienne dans la zone. À 15°, le joueur peut donc atteindre les six poses
+`x ∈ {2,8 ; 3,2}` × `y ∈ {2,0 ; 2,5 ; 3,0}` ; parmi les deux mesures à
+30°, seule (3,2 ; 2,5) est accessible. Les poses physiquement gagnantes à `x = 3,6` (la poutre à plat
+empiète déjà au-delà de `x = 5,4`) et à 30° en `y = 3,0` (la poutre dépasse
+`y = 4,0`) sont conservées comme mesures de simulation, pas comme solutions
+jouables.
 
 **Contre-exemples.** Aucune poutre (sortie de scène) ; poutre à plat en
 (2,8 ; 2,5) (temps écoulé) ; 45° en (3,2 ; 2,5) (la balle tombe sur l’extrémité
-haute et part à gauche) ; −15° (la pente mène à gauche).
+haute et part à gauche, mais l’empreinte déborde de la zone) ; −15° en
+(3,2 ; 2,5) (la pente mène à gauche, pose accessible au joueur).
 
 ### Niveau 4 — Moins, c’est mieux
 

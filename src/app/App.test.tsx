@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { embeddedLevels } from '../content/embedded-levels';
 import { fitCameraToScene } from '../presentation/board-camera';
-import { ROTATION_HANDLE_DISTANCE_CSS_PIXELS } from '../presentation/board-renderer';
+import { ROTATION_HANDLE_DISTANCE_CSS_PIXELS } from '../presentation/rotation-handle-metrics';
 import styles from '../ui/styles.css?raw';
 
 import { App } from './App';
@@ -583,6 +583,8 @@ describe('coque Contrapt!', () => {
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
     expect(within(levelList).getByText('Niveau 2 · Le pont')).toBeVisible();
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 2' })).toBeEnabled();
+    expect(within(levelList).getByText('Niveau 3 · Incliner')).toBeVisible();
+    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 3' })).toBeEnabled();
   });
 
   it('navigue vers une page de réglages dédiée depuis le menu (ADR 0008)', () => {
@@ -739,6 +741,7 @@ describe('coque Contrapt!', () => {
     expect(levelList).toBeVisible();
     expect(within(levelList).getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
     expect(within(levelList).getByText('Niveau 2 · Le pont')).toBeVisible();
+    expect(within(levelList).getByText('Niveau 3 · Incliner')).toBeVisible();
   });
 
   it('permet de rejouer ou de réinitialiser la simulation sans dialogue bloquant', () => {
