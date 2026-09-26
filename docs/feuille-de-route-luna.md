@@ -1444,7 +1444,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/lever-rotation-negative-90deg.png`.
 - Pour l’auteur : aucune question ouverte sur L17b. Le follow-up U13 reste différé.
 
-### L18a — Niveau 12 « Le bon ordre » — fait — commit dédié L18a
+### L18a — Niveau 12 « Le bon ordre » — fait — `db69dae feat(content): ajoute le niveau 12 « Le bon ordre » (L18a)`
 
 - Tests ajoutés : `level-12-le-bon-ordre.test.ts` — absence de succès sans
   action, référence appliquée par commandes joueur, 153 combinaisons des fenêtres,
@@ -1482,3 +1482,38 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/level-12-le-bon-ordre-844x390.png` (non versionnées).
 - Pour l’auteur : la poutre courte tourne de +30° par la poignée tactile ; la zone
   de pose n’est pas mise en évidence, conformément au follow-up U13 différé.
+
+### L18b — Niveau 13 « Deux tapis » — bloqué — commit de constat L18b
+
+- Régression L13 : aucun test de niveau 13 ; l’arrêt intervient pendant la
+  conception, avant JSON et régression.
+- Échec initial constaté : première esquisse sans masse : le levier se décale à
+  gauche et les convoyeurs partent à gauche. Dans la deuxième esquisse, la référence
+  fait sortir la balle en `(5,09 ; 7,60)` après 361 pas. Une première gate après
+  les mesures a expiré au niveau 7 en attendant `Fermer les propriétés` ; sa
+  capture montrait la bascule sélectionnée avec l’inspecteur compact replié. Lors
+  des gates suivantes, le même état a fait expirer le niveau 12 après la masse,
+  puis le niveau 8 après la poutre. Dans les trois cas, la capture montrait le
+  bouton `Ouvrir les propriétés`. Les parcours 8 et 12 passent isolément après
+  l’ouverture explicite ; la dernière gate globale passe.
+- Tests existants modifiés : les parcours des niveaux 7, 8 et 12 ouvrent le
+  panneau compact avant de le fermer ; les niveaux 7 et 8 vérifient aussi la
+  famille sélectionnée. Aucun test ni comportement antérieur n’a été supprimé.
+- Fichiers touchés hors périmètre : `docs/etat.md`, ce journal,
+  `docs/levels/initial-progression.md` pour les mesures L18b, et
+  `e2e/levels.spec.ts` pour rendre la gate mobile stable ; aucun JSON de campagne
+  ni logique de production n’a été ajouté pour le niveau 13.
+- Écarts avec la tâche : pas de niveau jouable, de régression L13, de parcours
+  mobile L13 ou de captures ; l’arrêt après trois esquisses est prescrit lorsque
+  la robustesse minimale manque.
+- Mesures qui ne se reproduisent pas : la troisième esquisse gagne en 313 pas à
+  `(6,6 ; 0,8)`, mais la grille de masse `x = 6,2..7,4`, `y = 0,6..1,8`, au pas
+  de 0,1, révèle un trou à toutes les poses `x = 6,8`. La plus grande bande
+  continue gagnante ne dépasse pas 0,2 en `x`, sous le seuil de 0,3.
+- Contradictions rencontrées : aucune ; la contrainte d’arrêt de L18 définit le
+  critère de conception et l’esquisse mesurée ne l’atteint pas.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 520
+  tests Vitest (44 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
+  1 ignoré car C3 est spécifique au projet desktop).
+- Pour l’auteur : une nouvelle idée de scène est nécessaire pour L13 ; les trois
+  géométries testées ne sont pas des références à reprendre.

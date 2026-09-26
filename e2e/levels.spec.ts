@@ -60,6 +60,13 @@ const tapWorldPoint = async (page: Page, point: WorldPoint): Promise<void> => {
   await page.touchscreen.tap(screenPoint.x, screenPoint.y);
 };
 
+const openPropertiesIfCompact = async (page: Page): Promise<void> => {
+  const open = page.getByRole('button', { name: 'Ouvrir les propriétés' });
+  if ((await open.count()) > 0 && (await open.first().isVisible())) {
+    await open.first().tap();
+  }
+};
+
 const dragScreenPoints = async (
   page: Page,
   start: ScreenPoint,
@@ -313,6 +320,8 @@ test('niveau 7 : poser la bascule au tactile et voir la balle gagner', async ({
   await expect(drawer.getByRole('button', { name: 'Balle' })).toHaveCount(0);
   await drawer.getByRole('button', { name: 'Bascule, quantité : 1' }).tap();
   await tapWorldPoint(page, { x: 2.5, y: 3.2 });
+  await openPropertiesIfCompact(page);
+  await expect(page.getByRole('region', { name: 'Propriétés de Bascule' })).toBeVisible();
   await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
   await page.getByRole('button', { name: 'Tester' }).tap();
 
@@ -335,6 +344,7 @@ test('niveau 8 : enchaîner poutre et bascule au tactile', async ({ page }, test
   await expect(drawer.locator('.object-card')).toHaveCount(2);
   await drawer.getByRole('button', { name: 'Poutre moyenne, quantité : 1' }).tap();
   await tapWorldPoint(page, { x: 2.3, y: 1.5 });
+  await openPropertiesIfCompact(page);
   await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
 
   const beamCenter = await screenPointForWorld(page, { x: 2.3, y: 1.5 });
@@ -358,6 +368,8 @@ test('niveau 8 : enchaîner poutre et bascule au tactile', async ({ page }, test
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
   await drawer.getByRole('button', { name: 'Bascule, quantité : 1' }).tap();
   await tapWorldPoint(page, { x: 4.0, y: 3.4 });
+  await openPropertiesIfCompact(page);
+  await expect(page.getByRole('region', { name: 'Propriétés de Bascule' })).toBeVisible();
   await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
   await page.getByRole('button', { name: 'Tester' }).tap();
 
@@ -476,11 +488,13 @@ test('niveau 12 : actionner le levier puis guider la balle au tactile', async ({
 
   await drawer.getByRole('button', { name: 'Masse, quantité : 2' }).tap();
   await tapWorldPoint(page, { x: 6.0, y: 0.8 });
+  await openPropertiesIfCompact(page);
   await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
 
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
   await page.getByRole('button', { name: 'Poutre courte, quantité : 2' }).tap();
   await tapWorldPoint(page, { x: 4.7, y: 2.7 });
+  await openPropertiesIfCompact(page);
   await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
 
   const center = await screenPointForWorld(page, { x: 4.7, y: 2.7 });

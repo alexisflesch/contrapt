@@ -542,6 +542,19 @@ la fois :
 - **13 — Deux tapis.** Un levier commande deux convoyeurs (un circuit), dont un
   en sens opposé à l’autre au départ. Solution minimale de 1 ou 2 objets,
   inventaire en surplus.
+
+**Mesures L18b — aucun plan retenu.** Trois esquisses au banc n’ont pas donné une
+fenêtre de pose d’au moins 0,3 unité en largeur : (1) des tapis en (2,2 ; 2,4) et
+(5,2 ; 2,4) se touchent au droit du levier en (6,5 ; 3,2), qui part à gauche sans
+action ; (2) les tapis en (1,7 ; 2,4) et (4,7 ; 2,4), avec levier en (7,1 ; 3,2),
+font sortir la balle de scène avant le panier en (7,2 ; 4,8) ; (3) rapprocher le
+second tapis en (4,1 ; 2,4) et le panier en (6,2 ; 4,8) permet à la référence de
+masse en (6,6 ; 0,8) de gagner en 313 pas. Toutefois, sur la grille de masses
+`x = 6,2..7,4`, `y = 0,6..1,8` au pas de 0,1, aucune bande continue gagnante ne
+couvre 0,3 en `x` : toutes les poses à `x = 6,8` échouent et la meilleure bande
+continue mesurée ne fait que 0,2. L18b s’arrête ici selon la limite de trois
+esquisses ; ne pas reprendre ces coordonnées comme une solution validée.
+
 - **14 — Grand final.** Scène 16 × 9 (grande scène de référence de l’ADR 0007).
   Au moins une bascule, un convoyeur et un levier. Solution minimale d’au moins
   3 objets, inventaire en surplus.

@@ -170,8 +170,8 @@ pendant le travail.
 - En atelier, un levier peut être orienté de −135° à +135° par boutons ou par
   poignée tactile. La simulation compense le couple gravitationnel dû à cette
   orientation : les trois crans tiennent dans toute la plage mesurée et restent
-  sensibles aux chocs. Le parcours E2E ouvre l’inspecteur compact s’il est replié
-  après la sélection du levier.
+  sensibles aux chocs. Les parcours E2E ouvrent l’inspecteur compact s’il est
+  replié avant d’interagir avec ses propriétés.
 - Niveau 11 « L’interrupteur » jouable au tactile dans le chapitre « Mécanismes ».
   La régression lit les états des dispositifs : les quatre poses gagnantes
   mesurées placent le levier à droite et le convoyeur à `1`; les contre-exemples
@@ -207,9 +207,9 @@ pendant le travail.
 - **Douze niveaux de campagne**, « Prolonger la pente », « Le pont »,
   « Incliner », « Moins, c’est mieux », « Le détour », « La bascule »,
   « Placer la bascule », « Poutre et bascule », « Le tapis », « Le butoir »,
-  « L’interrupteur » et « Le bon ordre » ; les deux autres niveaux de la campagne
-  de 14 sont spécifiés dans `levels/initial-progression.md`. Aucun bouton
-  « Niveau suivant ».
+  « L’interrupteur » et « Le bon ordre ». Le niveau 13 « Deux tapis » est bloqué
+  après trois esquisses sans fenêtre de robustesse de 0,3 unité ; le niveau 14
+  reste à concevoir. Aucun bouton « Niveau suivant ».
 - **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés. Les métadonnées de défi existent au
   format v2 et sont utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité
@@ -233,8 +233,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après L18a : typecheck, lint, formatage,
-Knip, contenu (14 niveaux embarqués), 520 tests Vitest (44 fichiers), build et
+`pnpm check` passe le 27 septembre 2026 après le constat L18b : typecheck, lint,
+formatage, Knip, contenu (14 niveaux embarqués), 520 tests Vitest (44 fichiers), build et
 42 tests Playwright `mobile` (41 réussis, 1 ignoré car C3 est spécifique au projet
 desktop). Le parcours mobile L17b ouvre maintenant l’inspecteur compact avant de
 vérifier les propriétés du levier sélectionné. Les captures au repos sont
