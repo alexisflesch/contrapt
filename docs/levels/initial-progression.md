@@ -398,6 +398,12 @@ gagnent toutes ; `x = 1,4` ne gagne qu’à `y = 1,6`.
 
 **Contre-exemples.** Aucun convoyeur (temps écoulé).
 
+**Poses accessibles au joueur.** Le convoyeur a une empreinte de 3 × 0,58 ;
+avec la zone donnée, seules les six poses de la fenêtre à
+`x ∈ {1,8 ; 2,2 ; 2,6}` et `y ∈ {1,6 ; 2,2}` sont entièrement contenues.
+Les candidats à `x = 3,0` ou `y = 2,6` débordent de la zone. La mesure physique
+à (1,4 ; 1,6) gagne aussi, mais la pose est hors zone.
+
 ### Niveau 10 — Le butoir
 
 `id` : `level-10-le-butoir`

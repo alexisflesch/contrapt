@@ -158,6 +158,10 @@ pendant le travail.
   zones pour la solution à deux objets (`src/content/levels/level-8-poutre-et-bascule.test.ts`).
   La preuve qu’une bascule seule ne gagne pas reste non vérifiée : la source ne
   donne pas les coordonnées des 27 poses annoncées.
+- Niveau 9 « Le tapis » jouable au tactile dans le chapitre « Mécanismes ».
+  Les 12 positions physiques gagnent ; six sont entièrement dans la zone de pose.
+  La régression vérifie les refus de confinement, la rotation interdite et le
+  déterminisme (`src/content/levels/level-9-le-tapis.test.ts`).
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -178,10 +182,10 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Huit niveaux de campagne**, « Prolonger la pente », « Le pont »,
+- **Neuf niveaux de campagne**, « Prolonger la pente », « Le pont »,
   « Incliner », « Moins, c’est mieux », « Le détour », « La bascule »,
-  « Placer la bascule » et « Poutre et bascule » ; les 6 autres niveaux de la
-  campagne de 14 sont spécifiés dans
+  « Placer la bascule », « Poutre et bascule » et « Le tapis » ; les 5 autres
+  niveaux de la campagne de 14 sont spécifiés dans
   `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
 - **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés. Les métadonnées de défi existent au
@@ -206,11 +210,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 8 :
-typecheck, lint, formatage, Knip, contenu (10 niveaux embarqués), 484 tests Vitest
-(40 fichiers), build et 37 tests Playwright `mobile` (36 réussis, 1 ignoré car C3
+`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 9 :
+typecheck, lint, formatage, Knip, contenu (11 niveaux embarqués), 491 tests Vitest
+(41 fichiers), build et 38 tests Playwright `mobile` (37 réussis, 1 ignoré car C3
 est spécifique au projet desktop). Les captures au repos sont conservées sous
-`test-results/levels/` pour les niveaux 1 à 8, en portrait et paysage.
+`test-results/levels/` pour les niveaux 1 à 9, en portrait et paysage.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

@@ -792,8 +792,8 @@ commencer de ta propre initiative.
 - **U13 — Zones de construction** : en mode joueur, mettre visuellement en
   évidence la ou les régions où l’empreinte complète de l’objet peut être posée,
   y compris lorsque plusieurs zones existent. Le besoin est apparu en jouant les
-  niveaux 1 à 3, puis a été confirmé sur les niveaux 5 et 7 : un objet de
-  l’inventaire peut être refusé selon son emplacement. Follow-up demandé par
+  niveaux 1 à 3, puis a été confirmé sur les niveaux 5, 7, 8 et 9 : un objet
+  de l’inventaire peut être refusé selon son emplacement. Follow-up demandé par
   l’auteur le 26 septembre 2026 ; différé à une session ultérieure. Captures pour
   validation dans les trois formats indiqués au début de cette section.
 
@@ -1317,3 +1317,33 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : si la preuve de minimalité est requise, fournir les coordonnées
   exactes de la grille des 27 poses « bascule seule ». U13 reste différé ; le
   niveau comporte deux zones.
+
+### L15 — Niveau 9 « Le tapis » — fait — `feat(content): ajoute le niveau 9 « Le tapis » (L15)`
+
+- Tests ajoutés : `level-9-le-tapis.test.ts` — timeout sans convoyeur, référence
+  joueur, 12 positions physiques, six poses autorisées, refus des empreintes hors
+  zone, rotation refusée et déterminisme. Le parcours mobile pose le convoyeur et
+  vérifie la victoire.
+- Échec initial constaté : les sept tests rouges échouaient avec
+  `Le niveau « Le tapis » est absent.`.
+- Tests existants réécrits : `embedded-levels.test.ts` place le niveau 9 en premier
+  dans le chapitre « Mécanismes » ; `App.test.tsx` liste le neuvième niveau. Aucun
+  comportement de niveau précédent n’a été retiré.
+- Fichiers touchés hors périmètre : `docs/etat.md` et ce journal (obligatoires),
+  `docs/levels/initial-progression.md` précise la différence entre les 12 mesures
+  physiques et les six poses contenues dans la zone.
+- Écarts avec la tâche : aucun.
+- Mesures qui ne se reproduisent pas : aucune. Les 12 positions annoncées gagnent.
+  La pose physique à (1,4 ; 1,6) gagne aussi, mais le confinement de l’empreinte
+  l’interdit ; x=3,0 et y=2,6 sortent également de la zone. Les six candidats
+  accessibles gagnent.
+- Contradictions rencontrées : aucune ; la spec énumérait des mesures physiques,
+  et la règle exécutable exige l’empreinte complète dans la zone.
+- Vérification finale : `pnpm check` passe — contenu (11 niveaux), 491 tests
+  Vitest (41 fichiers), build et 37 parcours Playwright mobiles réussis ; un test
+  desktop est ignoré dans ce projet.
+- Captures au repos inspectées :
+  `test-results/levels/level-9-le-tapis-390x844.png` et
+  `test-results/levels/level-9-le-tapis-844x390.png` (non versionnées).
+- Pour l’auteur : le follow-up U13 s’applique aussi aux niveaux où la zone exclut
+  une partie des mesures physiques.

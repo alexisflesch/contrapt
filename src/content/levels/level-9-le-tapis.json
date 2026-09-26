@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "id": "level-9-le-tapis",
+  "metadata": {
+    "title": "Le tapis",
+    "description": "Le convoyeur entraîne la balle jusqu’au bord du sol, vers le panier."
+  },
+  "objects": [
+    {
+      "id": "ball-1",
+      "type": "ball",
+      "transform": { "position": { "x": 1.6, "y": 0.6 }, "rotation": 0 },
+      "props": {},
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "floor",
+      "type": "beam",
+      "transform": { "position": { "x": 2.2, "y": 3.0 }, "rotation": 0 },
+      "props": { "size": "medium" },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-1",
+      "type": "basket",
+      "transform": { "position": { "x": 5.6, "y": 4.9 }, "rotation": 0 },
+      "props": {},
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-conveyor",
+      "type": "conveyor",
+      "props": { "direction": "right" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-1", "basketId": "basket-1" },
+  "buildZones": [{ "min": { "x": 0.2, "y": 1.2 }, "max": { "x": 4.4, "y": 2.87 } }],
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 8, "y": 5.5 } }
+}
