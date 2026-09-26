@@ -442,9 +442,10 @@ une copie locale au test, pas sur la campagne.
 
 #### L8 — Niveau 2 « Le pont » ●●
 
-Le parcours tactile suit la spec : poser trop à gauche, échouer, recommencer,
-glisser la poutre posée jusqu’à la référence, gagner. Vérifier qu’aucune poignée
-de rotation n’est proposée (`rotate: false`).
+Décision auteur C : ne pas provoquer de premier échec. Le parcours tactile pose
+la poutre à une position légale (`2,8 ; 1,95`), la glisse jusqu’à la référence
+(`3,3 ; 1,95`), puis lance la simulation et gagne. Vérifier qu’aucune poignée de
+rotation n’est proposée (`rotate: false`).
 
 #### L9 — Niveau 3 « Incliner » ●●
 
@@ -1039,3 +1040,39 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/level-1-prolonger-la-pente-390x844.png` et
   `test-results/levels/level-1-prolonger-la-pente-844x390.png` (non versionnées).
 - Pour l’auteur : aucune question.
+
+### L8 — Niveau 2 « Le pont » — terminé — parcours C sans premier essai perdant
+
+- Décision de l’auteur (26 septembre 2026) : ne pas provoquer de premier échec.
+  Le parcours pose la poutre en position légale (`2,8 ; 1,95`), la glisse jusqu’à
+  la référence (`3,3 ; 1,95`), puis lance la simulation et gagne. Le parcours
+  tactile ne lance pas la simulation avant ce déplacement. La régression commune
+  conserve l’assertion que la scène sans action ne gagne pas.
+- Fichiers : `src/content/levels/level-2-le-pont.json` et son test de régression,
+  enregistrement de campagne dans `embedded-levels.ts`, navigation et test de
+  liste dans `App.test.tsx`, parcours Playwright mobile dans `e2e/levels.spec.ts`.
+  `LevelsPage.tsx` ne décrit plus la campagne comme limitée au niveau 1.
+- Régression `level-2-le-pont.test.ts` : état initial, pose et déplacement par
+  commandes joueur, fenêtre de robustesse (39 positions), refus d’une empreinte
+  hors zone et de la rotation, résultat déterministe, document immuable et reset
+  exact.
+- Parcours tactile nommé `niveau 2 : poser puis glisser la poutre avant de gagner
+  au tactile` : ouvre `/levels/level-2-le-pont/play`, pose à `x = 2,8`, `y = 1,95`, glisse à
+  `x = 3,3`, vérifie le changement visuel et la victoire.
+- Contradiction constatée : à `x = 2,1`, la poutre dépasse de la zone et la
+  commande est refusée (`outside-build-zone`) par le confinement de son empreinte
+  entière. La zone (`x = 1,7 → 4,9`) et la géométrie sont conservées ; aucun
+  réglage physique ni ajustement de niveau n’a été fait. Le choix C enlève donc le
+  premier placement perdant du parcours.
+- Après autorisation explicite de l’auteur, le parcours tactile L2 de
+  `docs/levels/initial-progression.md` est aligné sur le choix C et sur le test
+  mobile : pose légale à `x = 2,8`, `y = 1,95`, déplacement à `x = 3,3`,
+  `y = 1,95`, puis lancement.
+- Gate : `pnpm check` passe — typecheck, lint, formatage, Knip, contenu (4 niveaux),
+  438 tests Vitest (34 fichiers), build et 30 tests Playwright mobiles réussis ;
+  C3 est ignoré dans ce projet mobile car il est propre au projet desktop.
+  Le test mobile L2 passe également isolément après `pnpm build`.
+- Captures au repos inspectées :
+  `test-results/levels/level-2-le-pont-390x844.png` et
+  `test-results/levels/level-2-le-pont-844x390.png`. Les deux niveaux ont leurs
+  deux formats de capture après la gate.

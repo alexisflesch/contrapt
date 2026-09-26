@@ -1,13 +1,19 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const levelOnePath = '/levels/level-1-prolonger-la-pente/play';
+const levelTwoPath = '/levels/level-2-le-pont/play';
 
 interface WorldPoint {
   readonly x: number;
   readonly y: number;
 }
 
-const tapWorldPoint = async (page: Page, point: WorldPoint): Promise<void> => {
+interface ScreenPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+const screenPointForWorld = async (page: Page, point: WorldPoint): Promise<ScreenPoint | null> => {
   const canvas = page.getByRole('img', { name: 'Rendu du plateau' });
   const bounds = await canvas.boundingBox();
   const rawOrigin = await canvas.getAttribute('data-camera-origin');
@@ -15,17 +21,124 @@ const tapWorldPoint = async (page: Page, point: WorldPoint): Promise<void> => {
   expect(bounds).not.toBeNull();
   expect(rawOrigin).not.toBeNull();
   expect(Number.isFinite(zoom) && zoom > 0).toBe(true);
-  if (bounds === null || rawOrigin === null || !Number.isFinite(zoom) || zoom <= 0) return;
+  if (bounds === null || rawOrigin === null || !Number.isFinite(zoom) || zoom <= 0) return null;
 
   const [originX, originY] = rawOrigin.split(',').map(Number);
   expect(Number.isFinite(originX) && Number.isFinite(originY)).toBe(true);
-  if (originX === undefined || originY === undefined) return;
+  if (
+    originX === undefined ||
+    originY === undefined ||
+    !Number.isFinite(originX) ||
+    !Number.isFinite(originY)
+  ) {
+    return null;
+  }
 
-  await page.touchscreen.tap(
-    bounds.x + (point.x - originX) * zoom,
-    bounds.y + (point.y - originY) * zoom,
-  );
+  return {
+    x: bounds.x + (point.x - originX) * zoom,
+    y: bounds.y + (point.y - originY) * zoom,
+  };
 };
+
+const tapWorldPoint = async (page: Page, point: WorldPoint): Promise<void> => {
+  const screenPoint = await screenPointForWorld(page, point);
+  expect(screenPoint).not.toBeNull();
+  if (screenPoint === null) return;
+  await page.touchscreen.tap(screenPoint.x, screenPoint.y);
+};
+
+const dragWorldPoints = async (
+  page: Page,
+  start: WorldPoint,
+  target: WorldPoint,
+): Promise<void> => {
+  const startOnScreen = await screenPointForWorld(page, start);
+  const targetOnScreen = await screenPointForWorld(page, target);
+  expect(startOnScreen).not.toBeNull();
+  expect(targetOnScreen).not.toBeNull();
+  if (startOnScreen === null || targetOnScreen === null) return;
+
+  // The mobile project uses Chromium: CDP dispatches touch input, so this
+  // exercises the same pointer type the player uses instead of a mouse drag.
+  const touchSession = await page.context().newCDPSession(page);
+  let touchStarted = false;
+  try {
+    await touchSession.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [
+        {
+          id: 1,
+          x: startOnScreen.x,
+          y: startOnScreen.y,
+          radiusX: 1,
+          radiusY: 1,
+          force: 1,
+        },
+      ],
+    });
+    touchStarted = true;
+
+    for (let step = 1; step <= 8; step += 1) {
+      const progress = step / 8;
+      await touchSession.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [
+          {
+            id: 1,
+            x: startOnScreen.x + (targetOnScreen.x - startOnScreen.x) * progress,
+            y: startOnScreen.y + (targetOnScreen.y - startOnScreen.y) * progress,
+            radiusX: 1,
+            radiusY: 1,
+            force: 1,
+          },
+        ],
+      });
+    }
+  } finally {
+    if (touchStarted) {
+      await touchSession.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      });
+    }
+    await touchSession.detach();
+  }
+};
+
+test('niveau 2 : poser puis glisser la poutre avant de gagner au tactile', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await page.goto(levelTwoPath);
+
+  await expect(page.getByText('Niveau 2 · Le pont')).toBeVisible();
+  await expect(page.getByText('Mode joueur')).toBeVisible();
+  const board = page.getByRole('region', { name: 'Plateau de jeu' });
+  const canvas = board.getByRole('img', { name: 'Rendu du plateau' });
+  await expect(board).toBeVisible();
+
+  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  await page.getByRole('button', { name: 'Poutre moyenne' }).tap();
+  await tapWorldPoint(page, { x: 2.8, y: 1.95 });
+  const closeProperties = page.getByRole('button', { name: 'Fermer les propriétés' });
+  await expect(closeProperties).toBeVisible();
+  await closeProperties.tap();
+
+  const beforeMove = await canvas.screenshot();
+  const cameraOriginBefore = await canvas.getAttribute('data-camera-origin');
+  expect(cameraOriginBefore).not.toBeNull();
+  await dragWorldPoints(page, { x: 2.8, y: 1.95 }, { x: 3.3, y: 1.95 });
+  await expect
+    .poll(async () => !(await canvas.screenshot()).equals(beforeMove), { timeout: 2_000 })
+    .toBe(true);
+  await expect(canvas).toHaveAttribute('data-camera-origin', cameraOriginBefore ?? '');
+
+  await page.getByRole('button', { name: 'Tester' }).tap();
+  const victoryResult = page.getByRole('region', { name: 'Résultat du niveau' });
+  await expect(victoryResult).toBeVisible({ timeout: 15_000 });
+  await expect(victoryResult.getByText('Victoire')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
 
 test('niveau 1 : échouer sans poutre puis résoudre par toucher', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');

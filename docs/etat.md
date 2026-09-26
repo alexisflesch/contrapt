@@ -115,6 +115,11 @@ pendant le travail.
   les contre-exemples, le déterminisme, l’immuabilité du document et le reset
   exact (`src/content/levels/level-1-prolonger-la-pente.test.ts`). Parcours tactile
   mobile sur `/levels/level-1-prolonger-la-pente/play`.
+- Niveau 2 « Le pont » jouable de bout en bout. Sa régression vérifie l’échec sans
+  action, la pose puis le déplacement jusqu’à la référence, les 39 positions
+  mesurées, le refus de rotation, le déterminisme et le reset exact
+  (`src/content/levels/level-2-le-pont.test.ts`). Le parcours mobile pose la poutre,
+  la glisse avant de lancer, puis gagne sur `/levels/level-2-le-pont/play`.
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -131,9 +136,9 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Un seul niveau de campagne**, « Prolonger la pente » ; les 13 autres niveaux
-  de la campagne de 14 sont spécifiés dans `levels/initial-progression.md`. Aucun
-  bouton « Niveau suivant ».
+- **Deux niveaux de campagne**, « Prolonger la pente » et « Le pont » ; les 12
+  autres niveaux de la campagne de 14 sont spécifiés dans
+  `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
 - **Défi d’objets, progression, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés.
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
@@ -154,9 +159,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après L7 : typecheck,
-lint, formatage, Knip, contenu, 432 tests Vitest (33 fichiers), build et 30
-tests Playwright `mobile` (29 réussis, C3 ignoré car spécifique au projet desktop).
+`pnpm check` exécutée avec succès le 26 septembre 2026 après L8 : typecheck,
+lint, formatage, Knip, contenu (4 niveaux embarqués), 438 tests Vitest (34 fichiers),
+build et 31 tests Playwright `mobile` (30 réussis, C3 ignoré car spécifique au
+projet desktop). Les quatre captures au repos sont conservées sous
+`test-results/levels/` pour les niveaux 1 et 2, en portrait et paysage.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

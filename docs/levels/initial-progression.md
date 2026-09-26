@@ -128,9 +128,9 @@ Zone : `x 1,7 → 4,9`, `y 1,4 → 2,6`. Pas de `challenge`.
 rotation sur la poutre posée refusée (`rotate-not-permitted`) sans modifier le
 document.
 
-**Parcours tactile.** Poser la poutre volontairement trop à gauche (dans la zone
-mais hors fenêtre, par exemple `x = 2,1`), constater l’échec, recommencer, la
-glisser à la référence, gagner.
+**Parcours tactile.** Poser la poutre à une position légale (`x = 2,8`,
+`y = 1,95`), la glisser jusqu’à la référence (`x = 3,3`, `y = 1,95`), puis
+lancer la simulation et gagner. Ne pas lancer la simulation avant ce déplacement.
 
 ### Niveau 3 — Incliner
 

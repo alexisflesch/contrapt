@@ -5,7 +5,7 @@ import { AppFrame } from '../ui/AppFrame';
 import { Button } from '../ui/Button';
 import { Panel } from '../ui/Panel';
 
-/** `/levels` (ADR 0008): the campaign level list. Only level 1 is embedded so far. */
+/** `/levels` (ADR 0008): the ordered campaign level list. */
 export function LevelsPage() {
   const navigate = useNavigate();
 

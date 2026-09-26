@@ -571,7 +571,7 @@ describe('coque Contrapt!', () => {
     expect(canvas).toHaveAttribute('data-simulation-step', '5');
   });
 
-  it('ouvre depuis le menu la liste contenant le seul niveau embarqué et son lancement', () => {
+  it('ouvre depuis le menu la liste des niveaux embarqués et leurs lancements', () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
@@ -581,7 +581,8 @@ describe('coque Contrapt!', () => {
     expect(levelList).toBeVisible();
     expect(within(levelList).getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
-    expect(within(levelList).queryByText(/Niveau 2/i)).not.toBeInTheDocument();
+    expect(within(levelList).getByText('Niveau 2 · Le pont')).toBeVisible();
+    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 2' })).toBeEnabled();
   });
 
   it('navigue vers une page de réglages dédiée depuis le menu (ADR 0008)', () => {
@@ -724,7 +725,7 @@ describe('coque Contrapt!', () => {
     expect(canvas.getAttribute('data-simulation-ball-position')).toBe(ballPositionAtLaunch);
   });
 
-  it('retourne à la liste depuis le résultat sans inventer de niveau suivant', () => {
+  it('retourne à la liste depuis un résultat de simulation', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
 
@@ -737,7 +738,7 @@ describe('coque Contrapt!', () => {
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
     expect(within(levelList).getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
-    expect(within(levelList).queryByText(/Niveau 2/i)).not.toBeInTheDocument();
+    expect(within(levelList).getByText('Niveau 2 · Le pont')).toBeVisible();
   });
 
   it('permet de rejouer ou de réinitialiser la simulation sans dialogue bloquant', () => {

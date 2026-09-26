@@ -56,8 +56,8 @@ describe('campagne embarquée', () => {
 });
 
 describe('niveaux embarqués', () => {
-  it('expose Prolonger la pente comme le seul niveau 1 de campagne v2 valide', () => {
-    expect(embeddedLevels).toHaveLength(1);
+  it('expose Prolonger la pente puis Le pont comme les deux premiers niveaux v2 valides', () => {
+    expect(embeddedLevels).toHaveLength(2);
     expect(embeddedLevels[0]).toMatchObject({
       schemaVersion: 2,
       id: 'level-1-prolonger-la-pente',
@@ -94,6 +94,52 @@ describe('niveaux embarqués', () => {
         id: 'basket-1',
         type: 'basket',
         transform: { position: { x: 6.9, y: 4.9 }, rotation: 0 },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+    ]);
+
+    expect(embeddedLevels[1]).toMatchObject({
+      schemaVersion: 2,
+      id: 'level-2-le-pont',
+      metadata: { title: 'Le pont' },
+      inventory: [
+        {
+          id: 'inventory-beam',
+          type: 'beam',
+          props: { size: 'short' },
+          quantity: 1,
+          permissions: { move: true, rotate: false, remove: true },
+        },
+      ],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [{ min: { x: 1.7, y: 1.4 }, max: { x: 4.9, y: 2.6 } }],
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+    });
+    expect(embeddedLevels[1]?.objects).toEqual([
+      expect.objectContaining({
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 0.9, y: 0.862 }, rotation: 0 },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'slope',
+        type: 'beam',
+        transform: { position: { x: 1.6, y: 1.5 }, rotation: Math.PI / 12 },
+        props: { size: 'short' },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'ramp',
+        type: 'beam',
+        transform: { position: { x: 5, y: 2.3 }, rotation: Math.PI / 18 },
+        props: { size: 'short' },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 7.1, y: 4.9 }, rotation: 0 },
         permissions: { move: false, rotate: false, remove: false },
       }),
     ]);
