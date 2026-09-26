@@ -57,7 +57,7 @@ En phase de construction, l'interface comporte au minimum :
 - un panneau contextuel compact lorsqu'un objet est sélectionné.
 
 En simulation, le tiroir et les contrôles d'édition disparaissent ou sont
-désactivés. Ils sont remplacés par pause ou reprendre et réinitialiser. Les
+désactivés. Ils sont remplacés par pause ou reprendre et recommencer. Les
 contrôles de caméra restent disponibles.
 
 En portrait sur téléphone, le catalogue est un tiroir bas avec au moins deux
@@ -271,11 +271,24 @@ par la couche application, pas seulement par l'UI.
 - Le lancement, la pause, le cadrage et le reset de simulation ne font pas partie
   de l'historique du document.
 
-Pendant une simulation, annuler et rétablir sont inaccessibles. Réinitialiser
+Pendant une simulation, annuler et rétablir sont inaccessibles. Recommencer
 revient en construction avec l'historique exactement tel qu'il était avant le
 test.
 
-## Tester, mettre en pause et réinitialiser
+## Tester, mettre en pause et recommencer
+
+Vocabulaire (décision de l'auteur, 26 septembre 2026) :
+
+- **Recommencer** : quitter la simulation et retrouver exactement la construction
+  d'avant le lancement. Rien n'est perdu, donc aucune confirmation. Une seule
+  commande « Recommencer » est visible à un instant donné, même quand le panneau
+  de résultat est affiché.
+- **Remettre à zéro** : effacer la construction pour revenir au document de départ
+  (niveau ou atelier vide). C'est destructif : l'action exige toujours une boîte
+  de dialogue de confirmation qui dit ce qui sera perdu, avec « Annuler » comme
+  action par défaut. Elle n'apparaît jamais à côté de « Recommencer » ni dans les
+  contrôles de simulation.
+- Le mot « Réinitialiser » n'est plus employé dans l'interface.
 
 Les phases forment l'automate suivant :
 
@@ -283,9 +296,9 @@ Les phases forment l'automate suivant :
 construction --tester--> simulation en cours
 simulation en cours --pause--> simulation en pause
 simulation en pause --reprendre--> simulation en cours
-simulation en cours ou en pause --reinitialiser--> construction
+simulation en cours ou en pause --recommencer--> construction
 simulation en cours --objectif atteint--> resultat
-resultat --reinitialiser ou retour edition--> construction
+resultat --recommencer--> construction
 ```
 
 Tester valide d'abord le document. Une erreur bloquante empêche le lancement,
@@ -295,7 +308,7 @@ avertissement non bloquant permet le test.
 Au lancement, la simulation est créée depuis un snapshot du document. Le tiroir
 se ferme, la sélection d'édition est conservée dans `EditorSession` mais ses
 poignées disparaissent. Pause fige seulement la simulation : elle ne permet pas de
-modifier un objet. Réinitialiser détruit l'état physique et restitue exactement la
+modifier un objet. Recommencer détruit l'état physique et restitue exactement la
 construction précédant le lancement, y compris transformées et inventaire.
 
 Quand l'objectif est atteint, la physique se fige et un panneau de résultat est

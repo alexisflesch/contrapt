@@ -50,7 +50,7 @@ Lire `references/routing.md`. Règles qui ne se négocient pas :
 - **Jamais `ultra` pour un sous-agent.** Cet effort délègue lui-même ; imbriquer
   une orchestration dans une orchestration rend le résultat non traçable.
 - **Descendre d'un cran par rapport à l'instinct**, puis escalader avec les preuves
-  de l'échec. Une escalade documentée coûte moins qu'un `astra max` systématique.
+  de l'échec. Une escalade documentée coûte moins qu'un `sol max` systématique.
 - **Le modèle suit la difficulté du raisonnement, pas la taille du diff.** Un
   adaptateur physique de 40 lignes est plus dur qu'un composant React de 300.
 
@@ -69,8 +69,10 @@ codex exec \
   "$(cat /tmp/<tache>.brief.md)"
 ```
 
-`<modèle>` est l'identifiant complet (`gpt-6-luna`, `gpt-6-sol`, `gpt-6-astra`),
-pas le nom court de la table de routage.
+`<modèle>` est l'identifiant complet (`gpt-6-luna`, `gpt-5.6-terra`,
+`gpt-6-sol`), pas le nom court de la table de routage. `gpt-6-astra` est exclu.
+Si tu es toi-même `gpt-6-luna` et suis la feuille de route, `-m gpt-6-luna` est
+la seule valeur permise.
 
 Le brief est un fichier, jamais une chaîne inline : il doit être relisible quand le
 rapport surprend. Sa forme est imposée par `references/protocol.md`.

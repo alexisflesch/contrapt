@@ -20,8 +20,9 @@ lit ce fichier juste après `docs/index.md`, suit ses tâches dans l'ordre et ti
 son journal. L'état réellement livré est dans `docs/etat.md`.
 
 Le découpage en tranches est dans `docs/backlog.md`. Le skill `orchestrate`
-(`.codex/skills/orchestrate/`) ne sert qu'à une session qui délègue à plusieurs
-agents ; un agent seul ne l'utilise pas.
+(`.codex/skills/orchestrate/`) sert à déléguer à d'autres agents. Pendant la
+reprise pilotée par la feuille de route, seuls des sous-agents `gpt-6-luna` sont
+permis ; `gpt-6-astra` n'est jamais utilisé.
 
 Le code, les schémas exécutables et les tests priment sur les exemples narratifs.
 Un exemple obsolète doit être corrigé ou supprimé.

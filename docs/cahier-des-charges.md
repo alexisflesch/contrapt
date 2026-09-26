@@ -65,7 +65,7 @@ vrais téléphones.
 2. Ouvrir le tiroir des objets disponibles si le niveau fournit un inventaire.
 3. Placer, déplacer, pivoter ou retirer les objets autorisés.
 4. Lancer la simulation.
-5. Observer, mettre en pause ou réinitialiser.
+5. Observer, mettre en pause ou recommencer.
 6. Ajuster la construction jusqu’à la réussite.
 7. Passer au niveau suivant ou continuer à expérimenter.
 

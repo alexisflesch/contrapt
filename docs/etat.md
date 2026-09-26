@@ -114,7 +114,8 @@ pendant le travail.
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
 - **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
   plusieurs balles sont sur le plateau.
-- **Deux boutons « Réinitialiser »** actifs simultanément après une simulation
+- **Deux boutons « Réinitialiser »** (libellé à remplacer par « Recommencer », voir
+  `mobile-editor-interactions.md`) actifs simultanément après une simulation
   terminée (barre d’actions et bandeau de résultat).
 - **Conformité physique** : la porte de validation sur téléphone réel (scènes 6
   et 7) n’est pas franchie ; la dépendance de développement Rapier reste donc

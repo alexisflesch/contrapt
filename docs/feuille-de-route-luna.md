@@ -35,6 +35,13 @@ journal (§ 8).
 
 Elles complètent `AGENTS.md` sans le remplacer.
 
+**Sous-agents : `gpt-6-luna` uniquement.** Tu peux déléguer une sous-tâche à un
+autre agent (skill `orchestrate`, `codex exec -m gpt-6-luna`), jamais à un autre
+modèle (`gpt-5.6-terra`, `gpt-6-sol`, `gpt-6-astra` ou autre), même si la table de
+routage du skill l’indique. Une tâche trop difficile se déclare bloquée, elle ne
+s’escalade pas. Tu restes responsable du résultat : relire le diff, lancer la
+gate, tenir le journal.
+
 **Une tâche à la fois, dans l’ordre du § 5.** Ne pas commencer une tâche tant
 que la précédente n’est pas commitée ou déclarée bloquée dans le journal. Une
 tâche bloquée n’empêche pas la suivante, sauf dépendance déclarée.
@@ -71,6 +78,7 @@ build. `pnpm check` le fait déjà dans le bon ordre.
 - modifier le schéma `LevelDocument` au-delà de ce qu’une tâche demande
   explicitement (seule L5 le fait) ;
 - ajouter une dépendance npm, sauf `vite-plugin-pwa` et ses pairs dans L28 ;
+- modifier `src/simulation/`, sauf dans L17b qui le demande explicitement ;
 - toucher à l’apparence : `src/ui/styles.css`, mise en page, couleurs, sprites,
   composants visuels nouveaux. Les exceptions sont nommées dans la tâche et se
   limitent à réutiliser des composants existants (`Panel`, `Button`, `Dialog`)
@@ -144,8 +152,9 @@ Pour situer chaque tâche. Le jeu est fini quand :
    l’exporter en fichier, de l’importer et de le partager par lien (ADR 0011) ;
 4. l’application s’installe et se joue hors ligne (ADR 0012) ;
 5. la gate tourne en CI ;
-6. l’auteur a validé l’interface et la direction artistique, et Planck a été
-   validé sur un vrai téléphone.
+6. l’auteur a validé l’interface et la direction artistique, et a mesuré sur un
+   vrai téléphone d’entrée de gamme que la physique tient 60 images par seconde
+   dans une scène chargée (page de mesure L29, porte de l’ADR 0002).
 
 Tu portes la logique de 1 à 5. L’interface visible (§ 6) et le point 6
 reviennent à l’auteur ou à un autre agent.
@@ -319,6 +328,10 @@ Tests : ordre à plat, niveau suivant, dernier niveau sans suivant, identifiants
 uniques sur toute la campagne. `pnpm content:check` doit vérifier la même
 unicité.
 
+Ajouter à `pnpm content:check` (et à ses tests) la règle de
+`initial-progression.md` § Principes communs : **dans un niveau de campagne, tout
+objet placé a ses trois permissions à `false`**. L’atelier n’y est pas soumis.
+
 Pas d’interface : la liste des niveaux continue d’afficher la liste à plat.
 
 ### Phase B — Chapitre 1
@@ -376,12 +389,11 @@ niveau lui-même mais pour les tests qui supposent l’ancien :
 Le harnais L4 et ses tests utilisaient l’ancien niveau 1 : les faire pointer sur
 une copie locale au test, pas sur la campagne.
 
-#### L8 — Niveau 2 « Au bon endroit » ●●
+#### L8 — Niveau 2 « Le pont » ●●
 
-Inventaire vide : le tiroir ne doit pas s’afficher (comportement existant, le
-vérifier dans le parcours tactile). Le joueur sélectionne `bridge` sur le plateau
-et le glisse ; vérifier qu’aucune poignée de rotation n’est proposée
-(`rotate: false`).
+Le parcours tactile suit la spec : poser trop à gauche, échouer, recommencer,
+glisser la poutre posée jusqu’à la référence, gagner. Vérifier qu’aucune poignée
+de rotation n’est proposée (`rotate: false`).
 
 #### L9 — Niveau 3 « Incliner » ●●
 
@@ -425,6 +437,60 @@ Même méthode que la phase B.
 
 Premier niveau avec un fil : `wires` dans le JSON ; régression sur
 `readState().devices`.
+
+#### L17b — Levier orientable ●●●
+
+**Demande de l’auteur :** pouvoir tourner un levier (par exemple à 90°, poignée à
+l’horizontale, pour qu’un objet tombe dessus). Aujourd’hui seules les poutres
+tournent.
+
+**Constat mesuré le 26 septembre 2026.** La simulation calcule déjà le cran
+relativement au socle, mais un levier tourné **ne tient pas ses crans** : le
+couple de cran (0,35) ne compense la gravité que poignée en haut. À 90°, les trois
+crans de départ finissent tous à « droite » ; à −90°, à « gauche » ; à 180°, au
+centre. Augmenter le couple (0,8 à 3) fait tenir les crans mais casse le test
+« bascule le levier sous l’impact d’une balle » : la balle devient trop légère.
+
+**Solution prototypée et validée au banc** (puis retirée) : compenser, à chaque
+pas, la **différence** entre le couple de gravité réel de la poignée et celui
+qu’elle aurait si le levier était droit. Dans `#pullLeversToNotches`, après
+`setMotorSpeed` :
+
+```ts
+const pivot = lever.base.getPosition();
+const centre = lever.handle.getWorldCenter();
+const rx = centre.x - pivot.x;
+const ry = centre.y - pivot.y;
+const b = lever.base.getAngle();
+const uprightX = rx * Math.cos(-b) - ry * Math.sin(-b);
+lever.handle.applyTorque(-(rx - uprightX) * lever.handle.getMass() * GRAVITY, true);
+```
+
+Avec ce seul ajout : les trois crans tiennent à 0°, 45°, 90° et −90° ; une masse
+lâchée sur la poignée d’un levier à 90° le fait changer de cran ; tous les tests
+existants de `src/simulation/` passent, dont celui de la balle. **Défaut restant**
+: à 180°, le cran « droite » ne tient pas (il part à gauche). À comprendre et
+corriger, ou, à défaut, consigner et proposer à l’auteur de limiter la rotation
+du levier à ±135°.
+
+**Découpage.**
+
+1. Simulation (`src/simulation/`, exception explicite à la règle du § 2) : tests
+   rouges d’abord dans `physics-port.test.ts` — pour chaque rotation multiple de
+   15° et chaque cran de départ, le cran lu après 3 s est le cran de départ ; à
+   90°, une balle lâchée sur le pommeau fait changer le cran. Puis la
+   compensation. `LEVER_NOTCH_TORQUE` et `LEVER_NOTCH_STIFFNESS` ne changent pas ;
+   le test existant de la balle ne change pas.
+2. Domaine : `level-document.ts` refuse aujourd’hui `permissions.rotate` hors des
+   poutres ; l’autoriser aussi pour `lever`. Tests.
+3. Application et interaction : `rotatePlacement` accepte un levier ; la poignée
+   de rotation du plateau, réservée aux poutres dans `use-board-pointers.ts`
+   (`object.family === 'beam'`), vaut aussi pour les leviers. Test App : tourner
+   un levier à la poignée en une seule entrée d’historique. Captures pour
+   l’auteur (levier à 0°, 90°, −90°) : le dessin tourné est une vérification
+   visuelle.
+4. Documentation : `catalogue-initial.md` § Levier et § Inventaire (« la rotation
+   est disponible pour les poutres et les leviers »).
 
 #### L18 — Niveaux 12 à 14, conçus au banc d’essai ●●●
 
@@ -597,6 +663,33 @@ Test E2E : premier chargement, `context.setOffline(true)`, rechargement, le
 niveau 1 s’affiche. Mettre à jour ADR 0003 si la politique de dépendances
 l’exige.
 
+#### L29 — Page de mesure de performance pour téléphone ●●
+
+**Pourquoi.** L’ADR 0002 a choisi Planck avant mesure. Sa « porte de validation »
+dit : si un téléphone d’entrée de gamme ne tient pas 60 images par seconde dans
+la scène la plus chargée qu’un niveau puisse contenir, le choix du moteur est à
+revoir. L’auteur doit donc ouvrir une page sur son téléphone et lire un verdict.
+
+Route `/bench`, absente des menus. Elle :
+
+1. construit en mémoire un document dense (grande scène 16 × 9, environ 30 corps
+   dynamiques et 6 articulations : balles, masses, bascules, leviers, sur un décor
+   de poutres), valide par le schéma ;
+2. mesure la physique seule : 1 200 pas fixes de `SimulationSession`, durée de
+   chaque pas par `performance.now()` (autorisé dans `src/app/`, jamais dans
+   `src/simulation/`), médiane, 95e centile, pire cas ;
+3. joue ensuite la même scène sur le plateau normal pendant 20 s et compte les
+   images réellement affichées ;
+4. affiche un verdict en texte simple : images par seconde, temps physique par
+   image au 95e centile, et « OK » si ≥ 55 images/s et physique au 95e centile
+   < 8 ms, sinon « À revoir ». Réutiliser `Panel`, sans nouveau style.
+
+Tests : le document dense est valide ; la fonction de statistiques (médiane,
+centile) est pure et testée ; un test App vérifie que `/bench` affiche un
+verdict avec une horloge injectée. Documenter dans le journal comment l’auteur
+ouvre la page sur son téléphone (build servi sur le réseau local, ou déploiement
+si l’auteur en a mis un en place).
+
 ### Fin de liste
 
 Quand tout est fait ou bloqué : mettre à jour `etat.md`, écrire un bilan dans le
@@ -617,7 +710,12 @@ commencer de ta propre initiative.
 - **U4 — Bandeau de résultat** : palier, nombre d’objets, révélation progressive
   (ADR 0010), bouton « Niveau suivant ».
 - **U5 — Liste des niveaux** : chapitres, niveaux verrouillés, palier obtenu.
-- **U6 — Un seul « Réinitialiser »** quand le bandeau d’échec est affiché.
+- **U6 — « Recommencer » et « Remettre à zéro »** : appliquer le vocabulaire de
+  `mobile-editor-interactions.md` § Tester, mettre en pause et recommencer. Le
+  libellé « Réinitialiser » disparaît ; une seule commande « Recommencer » visible
+  à la fois (aujourd’hui en double dans `SimulationControls.tsx` et
+  `LevelResult.tsx`) ; dans l’éditeur, « Remettre l’atelier à zéro » derrière une
+  boîte de confirmation (`Dialog`) qui dit ce qui sera perdu.
 - **U7 — Balle suivie** : signaler quelle balle est la cible de l’objectif.
 - **U8 — Aide du niveau 1** : indication brève et non bloquante vers « Tester »
   puis vers le tiroir.
@@ -632,8 +730,10 @@ commencer de ta propre initiative.
 
 ## 7. En attente de l’auteur — ne pas commencer
 
-- Validation de Planck sur téléphone réel (scènes 6 et 7) et retrait de Rapier.
-- Icônes définitives de la PWA et dessin des poutres.
+- Mesure sur téléphone réel avec la page L29 ; retrait de Rapier une fois la
+  porte franchie.
+- Icônes de la PWA : l’auteur les dépose dans `art/` (L28 les exporte alors vers
+  `public/`) ; validation du dessin des poutres.
 - Tout ce que les tâches ci-dessus marquent « bloqué ».
 
 ## 8. Journal

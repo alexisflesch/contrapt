@@ -26,7 +26,7 @@ message d'échec dans son rapport. N'écrit aucune ligne de production. Interdic
 explicite de créer un stub pour rendre le test compilable autrement qu'en déclarant
 la signature manquante.
 
-## `domain-dev` — `sol high`
+## `domain-dev` — `terra high`
 
 Écrit : `src/domain/`.
 Lit : ADR 0004, `architecture.md` § Enveloppe de niveau et § Modèle d'objet.
@@ -35,7 +35,7 @@ Schémas Zod stricts, validation sémantique, registre de familles, migrations. 
 peut importer ni React, ni un moteur, ni IndexedDB. Types inférés du schéma,
 jamais redéclarés.
 
-## `app-dev` — `sol medium`
+## `app-dev` — `terra medium`
 
 Écrit : `src/application/`.
 Lit : ADR 0005, `architecture.md` § Commandes et historique.
@@ -43,7 +43,7 @@ Lit : ADR 0005, `architecture.md` § Commandes et historique.
 Commandes atomiques, historique, tentative de construction, ports abstraits. Une
 commande refusée ne mute rien et retourne un code d'erreur stable.
 
-## `sim-dev` — `astra high`
+## `sim-dev` — `sol high`
 
 Écrit : `src/simulation/`, `test/conformance/`.
 Lit : ADR 0002, `architecture.md` § Simulation, `qualite.md` § Déterminisme,
@@ -54,7 +54,7 @@ Port physique, boucle à pas fixe, capteurs, instances éphémères. Aucun type 
 `performance.now()` ou `Math.random()` : horloge et aléatoire sont injectés.
 Détruire une instance détruit tous ses composants internes.
 
-## `render-dev` — `sol high`
+## `render-dev` — `terra high`
 
 Écrit : `src/presentation/`.
 Lit : `architecture.md` § Rendu et interface.
@@ -62,7 +62,7 @@ Lit : `architecture.md` § Rendu et interface.
 Projection du domaine vers la scène, interpolation. Ne porte ni règle de victoire,
 ni sérialisation. Unités du monde en entrée, pixels seulement en sortie.
 
-## `ui-dev` — `sol medium`
+## `ui-dev` — `terra medium`
 
 Écrit : `src/ui/`, `src/app/`.
 Lit : `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile.
@@ -82,7 +82,7 @@ de référence exécutable. Ne modifie jamais un schéma pour faire passer son n
 un niveau que le schéma refuse est un niveau à corriger, ou une contradiction à
 remonter.
 
-## `e2e-dev` — `sol medium`
+## `e2e-dev` — `terra medium`
 
 Écrit : `e2e/`.
 Lit : `mobile-editor-interactions.md` § Scénarios d'acceptation, `qualite.md`
@@ -92,7 +92,7 @@ Parcours sur le build de production. Au moins un viewport téléphone. Un test
 instable est corrigé ou le changement reste bloqué ; il n'est jamais retenté en
 boucle ni marqué à ignorer.
 
-## `infra-dev` — `sol high`
+## `infra-dev` — `terra high`
 
 Écrit : `src/infrastructure/`.
 Lit : `architecture.md` § Stockage et partage, `cahier-des-charges.md`
@@ -101,7 +101,7 @@ Lit : `architecture.md` § Stockage et partage, `cahier-des-charges.md`
 IndexedDB, fichiers, codec URL. Toute entrée commence en `unknown`, passe une
 limite de taille, puis Zod. Une importation invalide n'écrase jamais un brouillon.
 
-## `reviewer` — `sol high`
+## `reviewer` — `terra high`
 
 Écrit : rien.
 Lit : le diff, `AGENTS.md`, la liste de lecture de l'agent revu.
@@ -112,7 +112,7 @@ couche franchie, comportement non déterministe, exemple de doc devenu faux. Ne
 signale pas de préférence de style. `$review-agent` couvre le même besoin si la
 tranche est ordinaire.
 
-## `arbiter` — `astra xhigh` ou `astra max`
+## `arbiter` — `sol xhigh` ou `sol max`
 
 Écrit : `docs/decisions/`.
 Lit : l'ADR concernée, les mesures produites, les documents en conflit.

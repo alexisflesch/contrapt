@@ -18,10 +18,15 @@ constantes physiques.
   à l’écran (une poutre de rotation positive a son extrémité droite plus basse).
 - Toutes les balles commencent au repos. La gravité est la seule source
   d’énergie, en dehors des convoyeurs.
-- Les objets fixes du décor ont leurs trois permissions à `false`.
+- **Tout objet présent au démarrage d’un niveau de campagne est verrouillé** :
+  ses trois permissions sont à `false`. Seuls les objets que le joueur sort du
+  tiroir se manipulent. Sinon le joueur pourrait, par exemple, déplacer la balle
+  directement dans le panier (décision de l’auteur, 26 septembre 2026). Le
+  validateur de contenu l’impose aux niveaux de campagne ; l’atelier et les
+  niveaux créés par un auteur n’y sont pas soumis.
 - **Chaque niveau demande au moins une action du joueur**, sauf le niveau 6 qui
   présente la bascule. Lancer la simulation sans rien faire doit échouer : le
-  joueur apprend dès le niveau 1 que l’échec est normal et que « Réinitialiser »
+  joueur apprend dès le niveau 1 que l’échec est normal et que « Recommencer »
   existe.
 - Une solution ne repose jamais sur un rebond de précision, un tunneling ou un
   réglage au pixel près : chaque solution de référence est accompagnée d’une
@@ -57,7 +62,7 @@ Chaque niveau a aussi un parcours Playwright `mobile` qui le résout au tactile.
 
 `id` : `level-1-prolonger-la-pente`
 
-**Apprentissage.** Lancer, voir échouer, réinitialiser, sortir une poutre du
+**Apprentissage.** Lancer, voir échouer, recommencer, sortir une poutre du
 tiroir et la poser. Pas de rotation.
 
 **Scène.** La balle est posée sur une poutre inclinée qui s’arrête dans le vide.
@@ -92,37 +97,40 @@ haut, elle arrive trop vite et saute par-dessus le panier. Sur le plat, la
 résistance au roulement freine la balle (≈ 0,7 m/s²) : c’est ce qui la fait
 tomber juste dans le panier.
 
-### Niveau 2 — Au bon endroit
+### Niveau 2 — Le pont
 
-`id` : `level-2-au-bon-endroit`
+`id` : `level-2-le-pont`
 
-**Apprentissage.** Sélectionner un objet déjà posé et le déplacer par glisser.
-L’inventaire est vide : le tiroir ne s’affiche pas.
+**Apprentissage.** Poser une poutre à un endroit précis, puis l’ajuster en la
+**glissant** après l’avoir posée (sélection et déplacement de son propre objet).
+Toujours sans rotation.
 
 **Scène.** La balle descend une courte pente qui s’arrête devant un trou. De
-l’autre côté, une seconde pente mène au panier. Une poutre courte déplaçable
-traîne en bas à gauche, inutile. Le joueur la glisse dans le trou pour faire un
-pont.
+l’autre côté, une seconde pente mène au panier. Une poutre courte posée en
+travers du trou fait un pont.
 
-| Objet    | Type   | Position      | Rotation | Propriétés      | Permissions                                    |
-| -------- | ------ | ------------- | -------- | --------------- | ---------------------------------------------- |
-| `ball`   | ball   | (0,9 ; 0,862) | 0        |                 | verrouillé                                     |
-| `slope`  | beam   | (1,6 ; 1,5)   | 15°      | `size: "short"` | verrouillé                                     |
-| `bridge` | beam   | (2,0 ; 4,9)   | 0        | `size: "short"` | `{ move: true, rotate: false, remove: false }` |
-| `ramp`   | beam   | (5,0 ; 2,3)   | 10°      | `size: "short"` | verrouillé                                     |
-| `basket` | basket | (7,1 ; 4,9)   | 0        |                 | verrouillé                                     |
+| Objet    | Type   | Position      | Rotation | Propriétés      |
+| -------- | ------ | ------------- | -------- | --------------- |
+| `ball`   | ball   | (0,9 ; 0,862) | 0        |                 |
+| `slope`  | beam   | (1,6 ; 1,5)   | 15°      | `size: "short"` |
+| `ramp`   | beam   | (5,0 ; 2,3)   | 10°      | `size: "short"` |
+| `basket` | basket | (7,1 ; 4,9)   | 0        |                 |
 
-Inventaire : vide. Zone : `x 1,9 → 4,9`, `y 1,4 → 2,6` (la position de départ de
-`bridge` est hors zone, c’est voulu : la zone contraint la destination).
-Pas de `challenge`.
+Inventaire : `beam short` ×1, `{ move: true, rotate: false, remove: true }`.
+Zone : `x 1,7 → 4,9`, `y 1,4 → 2,6`. Pas de `challenge`.
 
-**Référence.** Déplacer `bridge` en (3,3 ; 1,95).
+**Référence.** Poutre courte en (3,3 ; 1,95).
 
-**Robustesse mesurée.** Les 20 positions `x ∈ {2,9 ; 3,1 ; 3,3 ; 3,5 ; 3,7}` ×
-`y ∈ {1,8 ; 1,9 ; 2,0 ; 2,1}` gagnent.
+**Robustesse mesurée.** `x ∈ {2,8 ; 2,9 ; 3,1 ; 3,3}` × `y` de 1,7 à 2,2 par
+0,1 : toutes gagnent ; pour `x ∈ {3,5 ; 3,7 ; 3,8}`, toutes sauf `y = 1,7`.
 
-**Contre-exemples.** `bridge` laissé à sa place ; commande de rotation sur
-`bridge` refusée (`rotate-not-permitted`) sans modifier le document.
+**Contre-exemples.** Aucune poutre (la balle tombe dans le trou) ; commande de
+rotation sur la poutre posée refusée (`rotate-not-permitted`) sans modifier le
+document.
+
+**Parcours tactile.** Poser la poutre volontairement trop à gauche (dans la zone
+mais hors fenêtre, par exemple `x = 2,1`), constater l’échec, recommencer, la
+glisser à la référence, gagner.
 
 ### Niveau 3 — Incliner
 

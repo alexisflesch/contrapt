@@ -19,18 +19,18 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 
 | Document                                                  | ~lignes | Fait autorité sur                                                |
 | --------------------------------------------------------- | ------- | ---------------------------------------------------------------- |
-| `AGENTS.md`                                               | 102     | règles applicables à tout changement, invariants non négociables |
+| `AGENTS.md`                                               | 103     | règles applicables à tout changement, invariants non négociables |
 | `docs/backlog.md`                                         | 138     | découpage des tranches, dépendances, tranche courante            |
 | `docs/cahier-des-charges.md`                              | 436     | vision produit, périmètre, hors-périmètre                        |
-| `docs/etat.md`                                            | 131     | ce qui est livré, les dettes, la dernière gate                   |
-| `docs/feuille-de-route-luna.md`                           | 652     | tâches restantes, leur ordre, règles de reprise, journal         |
+| `docs/etat.md`                                            | 133     | ce qui est livré, les dettes, la dernière gate                   |
+| `docs/feuille-de-route-luna.md`                           | 757     | tâches restantes, leur ordre, règles de reprise, journal         |
 | `docs/plan-remise-en-jeu.md`                              | 1208    | historique A–F ; spécifications détaillées de C1, C2, D3         |
 | `docs/architecture.md`                                    | 223     | couches, dépendances, états distincts, modèle d'objet            |
 | `docs/qualite.md`                                         | 149     | stratégie de test, niveaux de test, gates                        |
 | `docs/catalogue-initial.md`                               | 239     | contrats des sept familles d'objets                              |
 | `docs/contrapt_control_wires_v1.md`                       | 125     | spécification fonctionnelle des fils levier → convoyeur          |
-| `docs/mobile-editor-interactions.md`                      | 491     | gestes, états d'interface, scénarios d'acceptation tactiles      |
-| `docs/levels/initial-progression.md`                      | 431     | campagne : 14 niveaux, géométries mesurées                       |
+| `docs/mobile-editor-interactions.md`                      | 504     | gestes, états d'interface, scénarios d'acceptation tactiles      |
+| `docs/levels/initial-progression.md`                      | 439     | campagne : 14 niveaux, géométries mesurées                       |
 | `docs/decisions/0001-product-foundations.md`              | 33      | fondations produit (accepté)                                     |
 | `docs/decisions/0002-physics-engine-selection.md`         | 126     | choix du moteur physique, Planck.js (accepté)                    |
 | `docs/decisions/0003-project-bootstrap.md`                | 309     | outillage, scripts, gates, politique de dépendances (accepté)    |
