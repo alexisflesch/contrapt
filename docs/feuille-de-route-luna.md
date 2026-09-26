@@ -625,8 +625,10 @@ commencer de ta propre initiative.
   brouillons, import/export, partage (s’appuie sur L22 à L26).
 - **U10 — Invitation de mise à jour et installation** de la PWA (L28).
 - **U11 — Réglages** : réinitialiser la progression, préférences.
-- **U12 — Poutres en trois tailles** : câbler `beam-short/medium/long@2x.png`
-  une fois le dessin validé par l’auteur.
+- **U12 — Poutres en trois tailles** : sources dessinées dans `art/assets/beam/`
+  (26 septembre 2026) ; les exporter par `art/build-sprites.py` et câbler les
+  trois sprites, une fois le dessin validé par l’auteur. La mascotte de
+  `art/assets/bolt/` n’a pas encore d’usage décidé.
 
 ## 7. En attente de l’auteur — ne pas commencer
 
