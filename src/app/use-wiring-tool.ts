@@ -6,7 +6,7 @@ import {
   type EditorSession,
   type executeEditorCommand,
 } from '../application/editor-session/editor-session';
-import type { LevelDocument } from '../domain/level-document';
+import { canCommand, type LevelDocument } from '../domain/level-document';
 
 interface UseWiringToolOptions {
   readonly sessionRef: RefObject<EditorSession>;
@@ -15,7 +15,7 @@ interface UseWiringToolOptions {
 }
 
 interface WiringTool {
-  /** The lever waiting for its conveyor, or `null` when no link is being made. */
+  /** The controller waiting for its device, or `null` when no link is being made. */
   readonly wiringSourceId: string | null;
   /** Same value, readable synchronously by the board's pointer handlers. */
   readonly wiringSourceRef: RefObject<string | null>;
@@ -34,8 +34,9 @@ const nextWireId = (document: LevelDocument): string => {
 
 /**
  * ADR 0009: a link is made in two taps, with no drag and no hover — pick
- * "Relier à un convoyeur" on a selected lever, then touch the conveyor.
- * Touching empty board cancels; touching anything else asks again.
+ * "Relier à un appareil" on a selected lever or button, then touch the
+ * device. Touching empty board cancels; touching anything it cannot
+ * command asks again.
  */
 export function useWiringTool({
   sessionRef,
@@ -73,9 +74,18 @@ export function useWiringTool({
 
       const session = sessionRef.current;
       const document = currentEditorAttempt(session).document;
+      const source = document.objects.find(({ id }) => id === sourceId);
       const target = document.objects.find(({ id }) => id === placementId);
-      if (target?.type !== 'conveyor') {
-        setFeedback('Touchez un convoyeur pour le relier au levier.');
+      if (source === undefined) {
+        updateSource(null);
+        return;
+      }
+      if (target === undefined || !canCommand(source.type, target.type)) {
+        setFeedback(
+          source.type === 'button'
+            ? 'Touchez un ventilateur ou une barrière pour le relier au bouton.'
+            : 'Touchez un convoyeur, un ventilateur ou une barrière pour le relier au levier.',
+        );
         return;
       }
 

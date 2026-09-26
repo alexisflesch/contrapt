@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  barrierFootprint,
+  barrierGeometry,
+  buttonGeometry,
+  fanGeometry,
   leverFootprint,
   leverGeometry,
   massGeometry,
+  quarterTurnPose,
   seesawGeometry,
+  springboardGeometry,
   type WorldPolygon,
   type WorldRect,
 } from './family-geometry';
@@ -60,9 +66,21 @@ describe('géométrie des familles', () => {
     expectPolygonToFillFootprint(fulcrum.polygon, fulcrum.footprint);
   });
 
-  it('donne à la masse un collider qui remplit son empreinte', () => {
-    expect(massGeometry.footprint.width).toBe(0.8);
-    expectPolygonToFillFootprint(massGeometry.polygon, massGeometry.footprint);
+  it('donne à la masse un collider, corps et anneau, qui remplit son empreinte', () => {
+    const { footprint, polygon, ring } = massGeometry;
+    const body = bounds(polygon);
+
+    expect(footprint.width).toBe(0.8);
+    expect(polygon.length).toBeLessThanOrEqual(MAX_POLYGON_VERTICES);
+    expect(isConvex(polygon)).toBe(true);
+    const near = (actual: number, expected: number): void => {
+      expect(Math.abs(actual - expected)).toBeLessThanOrEqual(MEASUREMENT_TOLERANCE);
+    };
+    near(body.x, footprint.x);
+    near(body.width, footprint.width);
+    near(body.y + body.height, footprint.y + footprint.height);
+    near(ring.center.y - ring.radius, footprint.y);
+    expect(ring.center.y + ring.radius).toBeGreaterThan(body.y);
   });
 
   it('donne au socle du levier un collider qui remplit son empreinte', () => {
@@ -83,5 +101,40 @@ describe('géométrie des familles', () => {
 
   it('garde l’empreinte d’ensemble de la bascule figée par A4', () => {
     expect(seesawGeometry.footprint).toEqual({ x: -1.5, y: -0.12, width: 3, height: 0.82 });
+  });
+
+  it('donne aux pièces fixes des nouvelles familles des colliders qui remplissent leur empreinte', () => {
+    expectPolygonToFillFootprint(buttonGeometry.base.polygon, buttonGeometry.base.footprint);
+    expectPolygonToFillFootprint(
+      springboardGeometry.base.polygon,
+      springboardGeometry.base.footprint,
+    );
+    expectPolygonToFillFootprint(barrierGeometry.pillar.polygon, barrierGeometry.pillar.footprint);
+    expectPolygonToFillFootprint(fanGeometry.body.polygon, fanGeometry.body.footprint);
+  });
+
+  it('pose le capuchon du bouton et le plateau du tremplin au sommet de leur empreinte', () => {
+    expect(buttonGeometry.cap.footprint.y).toBeCloseTo(buttonGeometry.footprint.y);
+    expect(buttonGeometry.cap.footprint.y + buttonGeometry.cap.footprint.height).toBeGreaterThan(
+      buttonGeometry.base.footprint.y,
+    );
+    expect(springboardGeometry.platform.footprint.y).toBeCloseTo(springboardGeometry.footprint.y);
+  });
+
+  it('dessine le demi-tour en miroir, pour ne jamais mettre un ventilateur la tête en bas', () => {
+    expect(quarterTurnPose(0)).toEqual({ angle: 0, mirrored: false });
+    expect(quarterTurnPose(-Math.PI / 2)).toEqual({ angle: -Math.PI / 2, mirrored: false });
+    expect(quarterTurnPose(Math.PI)).toEqual({ angle: 0, mirrored: true });
+    expect(quarterTurnPose(3 * Math.PI).mirrored).toBe(true);
+    expect(quarterTurnPose(-Math.PI).angle).toBeCloseTo(-2 * Math.PI);
+  });
+
+  it('étend l’empreinte de la barrière fermée jusqu’au bout de sa barre, et la réduit au poteau ouverte', () => {
+    const pillar = barrierGeometry.pillar.footprint;
+    const closed = barrierFootprint('closed');
+
+    expect(barrierFootprint('open')).toEqual(pillar);
+    expect(closed.x).toBeCloseTo(pillar.x);
+    expect(closed.x + closed.width).toBeCloseTo(barrierGeometry.bar.length);
   });
 });

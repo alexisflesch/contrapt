@@ -16,8 +16,14 @@ describe('registre des familles d’objet', () => {
       'mass',
       'lever',
       'conveyor',
+      'button',
+      'fan',
+      'barrier',
+      'springboard',
     ]);
     expect(initialObjectFamilyRegistry.get('mass')?.catalogue.label).toBe('Masse');
+    expect(initialObjectFamilyRegistry.get('fan')?.catalogue.label).toBe('Ventilateur');
+    expect(initialObjectFamilyRegistry.get('springboard')?.catalogue.label).toBe('Tremplin');
 
     expect(initialObjectFamilyRegistry.get('ball')?.catalogue.label).toBe('Balle');
     expect(initialObjectFamilyRegistry.get('basket')?.catalogue.label).toBe('Panier');
@@ -36,6 +42,7 @@ describe('registre des familles d’objet', () => {
     ]);
     expect(initialObjectFamilyRegistry.get('seesaw')?.capabilities).toEqual(['movable']);
     expect(initialObjectFamilyRegistry.get('mass')?.capabilities).toEqual(['movable']);
+    expect(initialObjectFamilyRegistry.get('button')?.capabilities).toEqual(['movable', 'sensor']);
   });
 
   it('valide les propriétés sérialisables propres à chaque famille', () => {

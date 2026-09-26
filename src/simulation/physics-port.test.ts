@@ -26,8 +26,14 @@ const BASKET_INTERIOR_FLOOR_OFFSET_Y = 0.39;
 const BALL_RADIUS = 0.3;
 const BEAM_HALF_THICKNESS = 0.125;
 const SEESAW_BOARD_HALF_THICKNESS = 0.12;
-/** ADR 0007 : empreinte de la masse, 0,8 × 0,772, centrée sur son origine. */
-const MASS_HALF_FOOTPRINT_HEIGHT = 0.386;
+/** ADR 0007 : empreinte de la masse, 0,8 × 0,505, centrée sur son origine. */
+const MASS_HALF_FOOTPRINT_HEIGHT = 0.2526;
+/** Dessus du capuchon du bouton relâché, au-dessus de son origine, et sa course. */
+const BUTTON_CAP_TOP = -0.2402;
+const BUTTON_CAP_TRAVEL = 0.06;
+/** La barre fermée : de l'axe du poteau à 1,25 de son côté, centrée 0,037 au-dessus de l'origine. */
+const BARRIER_BAR_CENTER_Y = -0.0368;
+const BARRIER_BAR_HALF_THICKNESS = 0.14;
 /** Vitesse du tapis d'un convoyeur en marche, en unités monde par seconde. */
 const CONVEYOR_SPEED = 1.5;
 /** Hauteur totale du socle de la bascule, posé sous le pivot. */
@@ -749,6 +755,62 @@ const withSession = (
     session.destroy();
   }
 };
+
+/** Any mix of objects, with a goal ball and basket parked far away unless given. */
+const createDeviceLevelDocument = (
+  objects: readonly unknown[],
+  wires: readonly unknown[] = [],
+): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'physics-port-devices',
+    metadata: { title: 'Contrat des dispositifs' },
+    objects: [
+      ...(objects.some((object) => (object as { id?: unknown }).id === 'ball-1')
+        ? []
+        : [
+            {
+              id: 'ball-1',
+              type: 'ball',
+              transform: { position: { x: -20, y: 20 }, rotation: 0 },
+              props: {},
+              permissions,
+            },
+          ]),
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: -20, y: 22 }, rotation: 0 },
+        props: {},
+        permissions,
+      },
+      ...objects,
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: -30, y: -30 }, max: { x: 30, y: 30 } },
+    wires,
+  });
+
+const placed = (
+  id: string,
+  type: string,
+  position: { readonly x: number; readonly y: number },
+  props: Readonly<Record<string, string>> = {},
+  rotation = 0,
+) => ({ id, type, transform: { position, rotation }, props, permissions });
+
+const ball = (position: { readonly x: number; readonly y: number }) =>
+  placed('ball-1', 'ball', position);
+
+/** Drawn blowing right; a quarter turn back blows up, a half turn blows left. */
+const fan = (rotation: number, state: string, position = { x: 0, y: 0 }) =>
+  placed('fan-1', 'fan', position, { state }, rotation);
+
+/** Bar to the right when not turned, to the left after a half turn. */
+const barrier = (state: string, rotation = 0) =>
+  placed('barrier-1', 'barrier', { x: 0, y: 0 }, { state }, rotation);
 
 describe('port physique candidat-neutre', () => {
   it('construit une projection éphémère avec les corps et le pivot attendus', () => {
@@ -1500,5 +1562,237 @@ describe('port physique candidat-neutre', () => {
       const resetBoard = body(session.readState(), 'seesaw-1', 'board');
       expect(resetBoard.rotation).toBeCloseTo(initialBoard.rotation, 5);
     });
+  });
+
+  it('enfonce le bouton tant qu’un objet pèse dessus, et seulement alors', () => {
+    const level = createDeviceLevelDocument([
+      ball({ x: 0, y: -1.5 }),
+      placed('button-1', 'button', { x: 0, y: 0 }),
+      placed('button-2', 'button', { x: 3, y: 0 }),
+    ]);
+
+    withSession(level, (session) => {
+      expect(device(session.readState(), 'button-1')).toEqual({
+        placementId: 'button-1',
+        kind: 'button',
+        pressed: false,
+      });
+
+      session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+      const state = session.readState();
+
+      expect(device(state, 'button-1')).toMatchObject({ pressed: true });
+      expect(device(state, 'button-2')).toMatchObject({ pressed: false });
+      // Le capuchon enfoncé descend vraiment : la balle repose dessus, sans jour.
+      expectCloseTo(
+        body(state, 'ball-1', 'primary').position.y,
+        BUTTON_CAP_TOP + BUTTON_CAP_TRAVEL - BALL_RADIUS,
+      );
+    });
+  });
+
+  it('souffle la balle vers le haut quand le ventilateur tourne, et la laisse tomber sinon', () => {
+    const ballYAfter = (state: string): number => {
+      let y = 0;
+      withSession(
+        createDeviceLevelDocument([ball({ x: 0, y: -1.2 }), fan(-Math.PI / 2, state)]),
+        (session) => {
+          session.advanceFixedSteps(90);
+          y = body(session.readState(), 'ball-1', 'primary').position.y;
+        },
+      );
+      return y;
+    };
+
+    // Le souffle décroît avec la distance : la balle flotte au-dessus de la bouche.
+    expect(ballYAfter('on')).toBeLessThan(-1.2);
+    expect(ballYAfter('off')).toBeGreaterThan(-0.7);
+  });
+
+  it('pousse une balle posée devant lui, beaucoup plus qu’une masse de dix kilos', () => {
+    const floor = placed('floor', 'beam', { x: 1.5, y: 0 }, { size: 'long' });
+    // Ventilateur posé sur la poutre, bouche à hauteur de ce qui roule dessus.
+    const blower = fan(0, 'on', { x: -1.2, y: -0.593 });
+    const xAfter = (objects: readonly unknown[], id: string): number => {
+      let x = 0;
+      withSession(createDeviceLevelDocument([floor, blower, ...objects]), (session) => {
+        session.advanceFixedSteps(60);
+        x = body(session.readState(), id, 'primary').position.x;
+      });
+      return x;
+    };
+
+    expect(xAfter([ball({ x: 0.2, y: -0.43 })], 'ball-1')).toBeGreaterThan(1);
+    expectCloseTo(xAfter([mass('mass-1', { x: 0.2, y: -0.39 })], 'mass-1'), 0.2, 0.05);
+  });
+
+  it('met en marche un ventilateur relié à un levier de côté ou à un bouton enfoncé', () => {
+    const running = (objects: readonly unknown[], sourceId: string): boolean => {
+      let result = false;
+      withSession(
+        createDeviceLevelDocument(
+          [fan(0, 'off', { x: 6, y: 0 }), ...objects],
+          [{ id: 'wire-1', sourceId, targetId: 'fan-1' }],
+        ),
+        (session) => {
+          session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+          const fanState = device(session.readState(), 'fan-1');
+          result = fanState.kind === 'fan' && fanState.running;
+        },
+      );
+      return result;
+    };
+    const lever = (position: string) => placed('lever-1', 'lever', { x: 0, y: 0 }, { position });
+    const button = placed('button-1', 'button', { x: 0, y: 0 });
+
+    expect(running([lever('center')], 'lever-1')).toBe(false);
+    expect(running([lever('left')], 'lever-1')).toBe(true);
+    expect(running([lever('right')], 'lever-1')).toBe(true);
+    expect(running([button], 'button-1')).toBe(false);
+    expect(running([button, mass('mass-1', { x: 0, y: -1 })], 'button-1')).toBe(true);
+  });
+
+  it('fait tourner les pales d’un ventilateur en marche, et d’un angle remis à zéro au reset', () => {
+    withSession(createDeviceLevelDocument([fan(Math.PI, 'on')]), (session) => {
+      session.advanceFixedSteps(60);
+      const spinning = device(session.readState(), 'fan-1');
+
+      expect(spinning).toMatchObject({ kind: 'fan', running: true });
+      expect(spinning.kind === 'fan' && Math.abs(spinning.bladeAngle)).toBeGreaterThan(Math.PI);
+
+      session.reset();
+      expect(device(session.readState(), 'fan-1')).toMatchObject({ bladeAngle: 0 });
+    });
+  });
+
+  it('retient la balle sur la barre fermée, et la laisse tomber quand elle est ouverte', () => {
+    const ballAfter = (state: string): SimulationBodyState => {
+      let result: SimulationBodyState | undefined;
+      withSession(
+        createDeviceLevelDocument([ball({ x: 0.8, y: -1 }), barrier(state)]),
+        (session) => {
+          session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+          result = body(session.readState(), 'ball-1', 'primary');
+          expect(device(session.readState(), 'barrier-1')).toMatchObject({
+            kind: 'barrier',
+            retraction: state === 'open' ? 1 : 0,
+          });
+        },
+      );
+      if (result === undefined) throw new Error('Simulation non exécutée');
+      return result;
+    };
+
+    expectCloseTo(
+      ballAfter('closed').position.y,
+      BARRIER_BAR_CENTER_Y - BARRIER_BAR_HALF_THICKNESS - BALL_RADIUS,
+    );
+    expect(ballAfter('open').position.y).toBeGreaterThan(5);
+  });
+
+  it('sort la barre de l’autre côté après un demi-tour', () => {
+    withSession(
+      createDeviceLevelDocument([ball({ x: -0.8, y: -1 }), barrier('closed', Math.PI)]),
+      (session) => {
+        session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+        const resting = body(session.readState(), 'ball-1', 'primary');
+
+        expectCloseTo(resting.position.x, -0.8, 0.05);
+        expectCloseTo(
+          resting.position.y,
+          BARRIER_BAR_CENTER_Y - BARRIER_BAR_HALF_THICKNESS - BALL_RADIUS,
+        );
+      },
+    );
+  });
+
+  it('renvoie de côté ce qui arrive sur un tremplin tourné d’un quart de tour', () => {
+    // Plateau tourné vers la droite : une balle qui dévale une rampe vers la
+    // gauche le percute de face et repart vers la droite.
+    withSession(
+      createDeviceLevelDocument([
+        ball({ x: 2.5, y: -0.7 }),
+        placed('ramp', 'beam', { x: 1.7, y: 0.1 }, { size: 'short' }, -0.4),
+        placed('springboard-1', 'springboard', { x: 0, y: 0 }, {}, Math.PI / 2),
+      ]),
+      (session) => {
+        let bounced = false;
+        for (let step = 0; step < 180; step += 1) {
+          session.advanceFixedSteps(1);
+          if (body(session.readState(), 'ball-1', 'primary').linearVelocity.x > 2) bounced = true;
+        }
+        expect(bounced).toBe(true);
+      },
+    );
+  });
+
+  it('fait rentrer la barre quand une masse enfonce le bouton relié, et la balle tombe', () => {
+    const level = createDeviceLevelDocument(
+      [
+        ball({ x: 0.8, y: -1 }),
+        barrier('closed'),
+        placed('button-1', 'button', { x: 6, y: 0 }),
+        mass('mass-1', { x: 6, y: -2 }),
+      ],
+      [{ id: 'wire-1', sourceId: 'button-1', targetId: 'barrier-1' }],
+    );
+
+    withSession(level, (session) => {
+      session.advanceFixedSteps(20);
+      expect(device(session.readState(), 'barrier-1')).toMatchObject({ retraction: 0 });
+
+      session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+      const state = session.readState();
+
+      expect(device(state, 'barrier-1')).toMatchObject({ retraction: 1 });
+      expect(body(state, 'ball-1', 'primary').position.y).toBeGreaterThan(5);
+    });
+  });
+
+  it('renvoie une balle tombée sur le tremplin presque à sa hauteur de chute', () => {
+    const apexAfterBounce = (surface: unknown): number => {
+      let apex = Number.POSITIVE_INFINITY;
+      withSession(createDeviceLevelDocument([ball({ x: 0, y: -3 }), surface]), (session) => {
+        let falling = true;
+        for (let step = 0; step < 150; step += 1) {
+          session.advanceFixedSteps(1);
+          const current = body(session.readState(), 'ball-1', 'primary');
+          if (falling && current.linearVelocity.y < 0) falling = false;
+          if (!falling) apex = Math.min(apex, current.position.y);
+        }
+      });
+      return apex;
+    };
+
+    // Le plateau affleure à 0,47 au-dessus de l'origine : chute d'environ 2,2.
+    const springboardApex = apexAfterBounce(placed('springboard-1', 'springboard', { x: 0, y: 0 }));
+    const beamApex = apexAfterBounce(
+      placed('beam-1', 'beam', { x: 0, y: -0.34 }, { size: 'short' }),
+    );
+
+    expect(springboardApex).toBeLessThan(-2.4);
+    expect(beamApex).toBeGreaterThan(-1.2);
+  });
+
+  it('tasse le ressort du tremplin à l’impact, puis le détend', () => {
+    withSession(
+      createDeviceLevelDocument([
+        ball({ x: 0, y: -3 }),
+        placed('springboard-1', 'springboard', { x: 0, y: 0 }),
+      ]),
+      (session) => {
+        let strongest = 0;
+        for (let step = 0; step < 60; step += 1) {
+          session.advanceFixedSteps(1);
+          const spring = device(session.readState(), 'springboard-1');
+          if (spring.kind === 'springboard') strongest = Math.max(strongest, spring.compression);
+        }
+
+        expect(strongest).toBeGreaterThan(0.3);
+        expect(strongest).toBeLessThanOrEqual(1);
+        session.reset();
+        expect(device(session.readState(), 'springboard-1')).toMatchObject({ compression: 0 });
+      },
+    );
   });
 });

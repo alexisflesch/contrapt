@@ -95,21 +95,26 @@ export const seesawGeometry = {
 } as const;
 
 const MASS_WIDTH = 0.8;
-const MASS_HEIGHT = 0.772;
+const MASS_HEIGHT = 0.5052;
 
-/** A free weight; its origin is the centre of its footprint. */
+/**
+ * A free weight; its origin is the centre of its footprint. Its collider is
+ * the trapezoid body plus the lifting ring, a circle: a single convex hull
+ * would turn the ring into a spike.
+ */
 export const massGeometry = {
   footprint: centeredRect(MASS_WIDTH, MASS_HEIGHT),
   polygon: polygon([
-    [-0.3963, 0.0092],
-    [-0.3381, -0.2356],
-    [0.0218, -0.3823],
-    [0.3373, -0.2334],
-    [0.3948, 0.1781],
-    [0.1405, 0.3757],
-    [-0.1242, 0.3853],
-    [-0.3889, 0.1921],
+    [-0.3931, 0.2035],
+    [-0.2505, -0.0519],
+    [-0.2152, -0.0768],
+    [0.2235, -0.0768],
+    [0.245, -0.0623],
+    [0.3979, 0.2145],
+    [0.3246, 0.2519],
+    [-0.3785, 0.2512],
   ]),
+  ring: { center: { x: 0.0014, y: -0.1439 }, radius: 0.1087 },
 } as const;
 
 export type LeverPosition = 'left' | 'center' | 'right';
@@ -188,3 +193,143 @@ export const leverFootprint = (position: LeverPosition): WorldRect =>
 export const conveyorGeometry = {
   footprint: centeredRect(3, 0.5799),
 } as const;
+
+/**
+ * A pressure button; its origin is the centre of its footprint, cap up. The
+ * base never moves; the cap sinks by `travel` while something weighs on it.
+ */
+export const buttonGeometry = {
+  footprint: { x: -0.4, y: -0.2402, width: 0.8, height: 0.4804 },
+  base: {
+    footprint: { x: -0.4, y: -0.1063, width: 0.8, height: 0.3464 },
+    polygon: polygon([
+      [-0.3929, 0.1384],
+      [-0.1116, -0.0884],
+      [-0.0071, -0.1063],
+      [0.1116, -0.0893],
+      [0.3179, 0.0634],
+      [0.3991, 0.1563],
+      [0.3688, 0.2393],
+      [-0.367, 0.2393],
+    ]),
+  },
+  cap: {
+    footprint: { x: -0.1875, y: -0.2402, width: 0.375, height: 0.2672 },
+    /** The red dome without the stem that sinks into the base. */
+    body: { x: -0.1875, y: -0.2402, width: 0.375, height: 0.2171 },
+    travel: 0.06,
+  },
+} as const;
+
+/**
+ * A trampoline; its origin is the centre of its footprint. The platform
+ * sits on the spring, which sits in the base; only the drawing compresses.
+ */
+export const springboardGeometry = {
+  footprint: { x: -0.5, y: -0.4654, width: 1, height: 0.9308 },
+  base: {
+    footprint: { x: -0.5, y: 0.0624, width: 1, height: 0.403 },
+    polygon: polygon([
+      [-0.4913, 0.3186],
+      [-0.2214, 0.0637],
+      [0.2139, 0.0624],
+      [0.4888, 0.3174],
+      [0.4988, 0.4443],
+      [0.4789, 0.4642],
+      [-0.4789, 0.4642],
+      [-0.5, 0.443],
+    ]),
+  },
+  spring: { footprint: { x: -0.1803, y: -0.2162, width: 0.3607, height: 0.3035 } },
+  platform: {
+    footprint: { x: -0.5, y: -0.4654, width: 1, height: 0.2617 },
+    /** How far the platform may sink, drawn only, when something lands on it. */
+    maxCompression: 0.12,
+  },
+} as const;
+
+type BarrierState = 'closed' | 'open';
+
+const BARRIER_PILLAR_FOOTPRINT: WorldRect = { x: -0.4, y: -0.4248, width: 0.8, height: 0.8496 };
+const BARRIER_BAR_LENGTH = 1.2536;
+const BARRIER_BAR_THICKNESS = 0.28;
+const BARRIER_BAR_CENTER_Y = -0.0368;
+
+/**
+ * A sliding barrier; its origin is the centre of its pillar. Closed, the bar
+ * runs from the pillar's axis to `length` on its right, as drawn; opening, it slides
+ * into the pillar until its tip is flush with the barrel.
+ */
+export const barrierGeometry = {
+  pillar: {
+    footprint: BARRIER_PILLAR_FOOTPRINT,
+    polygon: polygon([
+      [-0.4, 0.2988],
+      [-0.3009, -0.3427],
+      [-0.2697, -0.388],
+      [0.0333, -0.4248],
+      [0.2782, -0.3455],
+      [0.3972, 0.2336],
+      [0.3604, 0.4234],
+      [-0.3561, 0.4234],
+    ]),
+    barrelHalfWidth: 0.2867,
+  },
+  bar: {
+    length: BARRIER_BAR_LENGTH,
+    thickness: BARRIER_BAR_THICKNESS,
+    centerY: BARRIER_BAR_CENTER_Y,
+  },
+} as const;
+
+/** Pillar and bar together, as the editor shows them (bar to the right): what it selects. */
+export const barrierFootprint = (state: BarrierState): WorldRect =>
+  state === 'open'
+    ? BARRIER_PILLAR_FOOTPRINT
+    : { ...BARRIER_PILLAR_FOOTPRINT, width: BARRIER_BAR_LENGTH - BARRIER_PILLAR_FOOTPRINT.x };
+
+const FAN_FOOTPRINT: WorldRect = { x: -0.6, y: -0.4683, width: 1.2, height: 0.9367 };
+
+/**
+ * A fan, drawn blowing right; its origin is the centre of its footprint. Its
+ * rotation, by quarter turns, says where it blows (see `quarterTurnPose`).
+ * The blades turn behind the body, seen through the ring's opening and
+ * squashed horizontally because the ring is seen at an angle.
+ */
+export const fanGeometry = {
+  body: {
+    footprint: FAN_FOOTPRINT,
+    polygon: polygon([
+      [-0.6, -0.0905],
+      [-0.5732, -0.175],
+      [-0.2574, -0.464],
+      [0.2874, -0.4426],
+      [0.5154, -0.2628],
+      [0.5989, 0.3292],
+      [0.5764, 0.4673],
+      [-0.5775, 0.4662],
+    ]),
+  },
+  blades: {
+    center: { x: 0.1986, y: -0.0765 },
+    footprint: centeredRect(0.5938, 0.5547),
+    squash: 0.53,
+  },
+  /** Where the air leaves the ring: the blow zone starts there. */
+  mouth: { x: 0.55, y: -0.0765, halfWidth: 0.27 },
+} as const;
+
+/**
+ * How a quarter-turn family (fan, barrier) is laid out for a rotation that is
+ * a multiple of a quarter turn. The half turn is drawn mirrored rather than
+ * turned: a fan blowing left keeps its feet down, a barrier its plinth.
+ */
+export const quarterTurnPose = (
+  rotation: number,
+): Readonly<{ readonly angle: number; readonly mirrored: boolean }> => {
+  const quarter = Math.PI / 2;
+  const turns = ((Math.round(rotation / quarter) % 4) + 4) % 4;
+  return turns === 2
+    ? { angle: rotation - Math.PI, mirrored: true }
+    : { angle: rotation, mirrored: false };
+};

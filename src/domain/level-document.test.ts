@@ -180,6 +180,124 @@ describe('LevelDocument v2', () => {
     ).toEqual(['wires.1.targetId', 'wires.2.id']);
   });
 
+  it('accepte bouton, ventilateur, barrière et tremplin, posés ou en inventaire', () => {
+    const placed = [
+      { id: 'button-1', type: 'button', props: {} },
+      { id: 'fan-1', type: 'fan', props: { state: 'off' } },
+      { id: 'barrier-1', type: 'barrier', props: { state: 'closed' } },
+      { id: 'springboard-1', type: 'springboard', props: {} },
+    ].map((object) => ({
+      ...object,
+      transform: { position: { x: 1, y: 1 }, rotation: 0 },
+      permissions: lockedPermissions,
+    }));
+    const inventory = placed.map(({ type, props }) => ({
+      id: `inventory-${type}`,
+      type,
+      props,
+      quantity: 1,
+      permissions: { move: true, rotate: false, remove: true },
+    }));
+
+    expect(
+      levelDocumentSchema.safeParse({
+        ...validLevel,
+        objects: [...validLevel.objects, ...placed],
+        inventory,
+      }).success,
+    ).toBe(true);
+    expect(
+      issuePaths({
+        ...validLevel,
+        objects: [
+          ...validLevel.objects,
+          { ...placed[1], props: { state: 'fast' } },
+          { ...placed[2], props: { state: 'ajar' } },
+        ],
+      }),
+    ).toEqual(['objects.4.props.state', 'objects.5.props.state']);
+  });
+
+  it('oriente ventilateur, barrière et tremplin par quarts de tour, jamais entre deux', () => {
+    const oriented = (type: string, rotation: number, rotate = true) => ({
+      id: `${type}-1`,
+      type,
+      transform: { position: { x: 1, y: 1 }, rotation },
+      props: type === 'fan' ? { state: 'on' } : type === 'barrier' ? { state: 'open' } : {},
+      permissions: { move: true, rotate, remove: true },
+    });
+
+    expect(
+      issuePaths({
+        ...validLevel,
+        objects: [
+          ...validLevel.objects,
+          oriented('fan', -Math.PI / 2),
+          oriented('barrier', Math.PI),
+          oriented('springboard', (5 * Math.PI) / 2),
+        ],
+      }),
+    ).toEqual([]);
+    expect(
+      issuePaths({
+        ...validLevel,
+        objects: [...validLevel.objects, oriented('fan', 0.3), oriented('springboard', 1)],
+      }),
+    ).toEqual(['objects.4.transform.rotation', 'objects.5.transform.rotation']);
+    expect(
+      issuePaths({
+        ...validLevel,
+        objects: [...validLevel.objects, { ...oriented('mass', 0), props: { weight: '10kg' } }],
+      }),
+    ).toEqual(['objects.4.permissions.rotate']);
+  });
+
+  it('relie un levier ou un bouton à un ventilateur ou une barrière, un bouton jamais à un convoyeur', () => {
+    const button = {
+      id: 'button-1',
+      type: 'button',
+      transform: { position: { x: 0, y: 8 }, rotation: 0 },
+      props: {},
+      permissions: lockedPermissions,
+    };
+    const fan = {
+      id: 'fan-1',
+      type: 'fan',
+      transform: { position: { x: 2, y: 8 }, rotation: 0 },
+      props: { state: 'off' },
+      permissions: lockedPermissions,
+    };
+    const barrier = {
+      id: 'barrier-1',
+      type: 'barrier',
+      transform: { position: { x: 4, y: 8 }, rotation: 0 },
+      props: { state: 'closed' },
+      permissions: lockedPermissions,
+    };
+    const objects = [lever('lever-1'), conveyor('conveyor-1'), button, fan, barrier];
+
+    expect(
+      issuePaths(
+        withWires(objects, [
+          { id: 'wire-1', sourceId: 'button-1', targetId: 'fan-1' },
+          { id: 'wire-2', sourceId: 'lever-1', targetId: 'barrier-1' },
+          { id: 'wire-3', sourceId: 'lever-1', targetId: 'conveyor-1' },
+        ]),
+      ),
+    ).toEqual([]);
+    expect(
+      issuePaths(
+        withWires(objects, [
+          { id: 'wire-1', sourceId: 'button-1', targetId: 'conveyor-1' },
+          { id: 'wire-2', sourceId: 'fan-1', targetId: 'barrier-1' },
+          { id: 'wire-3', sourceId: 'button-1', targetId: 'lever-1' },
+          { id: 'wire-4', sourceId: 'lever-1', targetId: 'fan-1' },
+          { id: 'wire-5', sourceId: 'button-1', targetId: 'fan-1' },
+        ]),
+      ),
+    ).toEqual(['wires.0.targetId', 'wires.1.sourceId', 'wires.2.targetId', 'wires.4.targetId']);
+  });
+
   it('refuse les champs inconnus et les propriétés qui ne correspondent pas à la famille', () => {
     const candidate: unknown = {
       ...validLevel,

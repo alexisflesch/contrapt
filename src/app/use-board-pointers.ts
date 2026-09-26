@@ -14,7 +14,7 @@ import {
   selectEditorPlacement,
   type EditorSession,
 } from '../application/editor-session/editor-session';
-import type { LevelDocument } from '../domain/level-document';
+import { rotationMode, type LevelDocument } from '../domain/level-document';
 import { hitTestBoard, hitTestRotationHandle } from '../presentation/board-hit-test';
 import { projectLevel, worldToPixels, type BoardViewport } from '../presentation/board-renderer';
 import { inventoryByObjectKind, type ObjectKind } from './object-catalog';
@@ -42,7 +42,12 @@ const unavailableViewportMessage = 'Placement refusé : le cadrage du plateau es
 /** Guards pinch-zoom against a division by (near) zero when two fingers nearly touch. */
 const MIN_PINCH_DISTANCE_IN_CSS_PIXELS = 1;
 const DIRECT_DRAG_THRESHOLD_CSS_PIXELS = 8;
-const ROTATION_SNAP_RADIANS = Math.PI / 12;
+/** The handle snaps a beam to fifteen degrees, a fan, barrier or springboard to quarter turns. */
+const rotationSnap = (type: LevelDocument['objects'][number]['type']): number =>
+  rotationMode(type) === 'quarter-turn' ? Math.PI / 2 : Math.PI / 12;
+
+const isRotatableFamily = (type: LevelDocument['objects'][number]['type']): boolean =>
+  rotationMode(type) !== 'fixed';
 
 const hasFiniteCoordinates = (point: ScreenPoint): boolean =>
   Number.isFinite(point.x) && Number.isFinite(point.y);
@@ -155,6 +160,8 @@ export function useBoardPointers({
     readonly startPoint: ScreenPoint;
     readonly kind: 'move' | 'rotation';
     readonly startRotation: number;
+    /** Rotation step the handle snaps to, in radians. */
+    readonly snap: number;
     readonly center: ScreenPoint;
     hasDragged: boolean;
     isValid: boolean;
@@ -538,9 +545,9 @@ export function useBoardPointers({
                       activeMove.startPoint.y - activeMove.center.y,
                       activeMove.startPoint.x - activeMove.center.x,
                     )) /
-                    ROTATION_SNAP_RADIANS,
+                    activeMove.snap,
                 ) *
-                  ROTATION_SNAP_RADIANS,
+                  activeMove.snap,
             }),
           );
     updateSession(result.session);
@@ -686,7 +693,7 @@ export function useBoardPointers({
         const objects =
           sessionRef.current.mode === 'creation'
             ? projection.objects.map((object) =>
-                object.family === 'beam' ? { ...object, rotatable: true } : object,
+                isRotatableFamily(object.family) ? { ...object, rotatable: true } : object,
               )
             : projection.objects;
         const localPoint = { x: point.x - boardRect.left, y: point.y - boardRect.top };
@@ -696,7 +703,9 @@ export function useBoardPointers({
         }
         const rotationTarget = objects.find(
           (object) =>
-            object.family === 'beam' && hitTestRotationHandle(localPoint, object, viewport),
+            isRotatableFamily(object.family) &&
+            object.rotatable &&
+            hitTestRotationHandle(localPoint, object, viewport),
         );
         if (rotationTarget !== undefined) {
           const selected = selectEditorPlacement(sessionRef.current, rotationTarget.id);
@@ -712,6 +721,7 @@ export function useBoardPointers({
               startPoint: point,
               kind: 'rotation',
               startRotation: placement.transform.rotation,
+              snap: rotationSnap(placement.type),
               center: { x: boardRect.left + centerInBoard.x, y: boardRect.top + centerInBoard.y },
               hasDragged: false,
               isValid: true,
@@ -748,6 +758,7 @@ export function useBoardPointers({
               startPoint: point,
               kind: 'move',
               startRotation: placement.transform.rotation,
+              snap: rotationSnap(placement.type),
               center: { x: boardRect.left + centerInBoard.x, y: boardRect.top + centerInBoard.y },
               hasDragged: false,
               isValid: true,

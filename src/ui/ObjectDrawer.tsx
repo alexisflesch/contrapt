@@ -11,6 +11,10 @@ const spriteFamilyByKind: Readonly<Record<ObjectKind, SpriteFamily>> = {
   Masse: 'mass',
   Levier: 'lever',
   Convoyeur: 'conveyor',
+  Bouton: 'button',
+  Ventilateur: 'fan',
+  Barrière: 'barrier',
+  Tremplin: 'springboard',
 };
 
 interface ObjectDrawerProps {

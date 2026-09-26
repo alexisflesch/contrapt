@@ -1,0 +1,352 @@
+{
+  "schemaVersion": 2,
+  "id": "demo",
+  "metadata": {
+    "title": "Démonstration",
+    "description": "Une machine en chaîne qui montre toutes les familles d’objets : appuyez sur Tester et regardez."
+  },
+  "scene": {
+    "min": {
+      "x": 0,
+      "y": 0
+    },
+    "max": {
+      "x": 16,
+      "y": 9
+    }
+  },
+  "objects": [
+    {
+      "id": "shelf",
+      "type": "beam",
+      "props": {
+        "size": "short"
+      },
+      "transform": {
+        "position": {
+          "x": 2,
+          "y": 1.2
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "fan",
+      "type": "fan",
+      "props": {
+        "state": "on"
+      },
+      "transform": {
+        "position": {
+          "x": 0.7,
+          "y": 0.6067
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "pusher-ball",
+      "type": "ball",
+      "props": {},
+      "transform": {
+        "position": {
+          "x": 1.6,
+          "y": 0.775
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "lever",
+      "type": "lever",
+      "props": {
+        "position": "center"
+      },
+      "transform": {
+        "position": {
+          "x": 6.7,
+          "y": 3.65
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "lever-floor",
+      "type": "beam",
+      "props": {
+        "size": "short"
+      },
+      "transform": {
+        "position": {
+          "x": 6.7,
+          "y": 3.9065
+        },
+        "rotation": 0.08
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "stop",
+      "type": "beam",
+      "props": {
+        "size": "short"
+      },
+      "transform": {
+        "position": {
+          "x": 7.65,
+          "y": 3.0
+        },
+        "rotation": 1.5708
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "curb",
+      "type": "beam",
+      "props": {
+        "size": "short"
+      },
+      "transform": {
+        "position": {
+          "x": 5.55,
+          "y": 3.3
+        },
+        "rotation": 1.5708
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "conveyor",
+      "type": "conveyor",
+      "props": {
+        "direction": "stopped"
+      },
+      "transform": {
+        "position": {
+          "x": 10.5,
+          "y": 4.2
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "mass",
+      "type": "mass",
+      "props": {
+        "weight": "10kg"
+      },
+      "transform": {
+        "position": {
+          "x": 9.6,
+          "y": 3.6574
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "button",
+      "type": "button",
+      "props": {},
+      "transform": {
+        "position": {
+          "x": 12.5,
+          "y": 4.3
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "button-floor",
+      "type": "beam",
+      "props": {
+        "size": "short"
+      },
+      "transform": {
+        "position": {
+          "x": 12.5,
+          "y": 4.6652
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "button-stop",
+      "type": "beam",
+      "props": {
+        "size": "short"
+      },
+      "transform": {
+        "position": {
+          "x": 13.1,
+          "y": 3.4
+        },
+        "rotation": 1.5708
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "barrier",
+      "type": "barrier",
+      "props": {
+        "state": "closed"
+      },
+      "transform": {
+        "position": {
+          "x": 4.0,
+          "y": 5.0
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "goal-ball",
+      "type": "ball",
+      "props": {},
+      "transform": {
+        "position": {
+          "x": 4.75,
+          "y": 4.5232
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "ramp",
+      "type": "beam",
+      "props": {
+        "size": "medium"
+      },
+      "transform": {
+        "position": {
+          "x": 6.3,
+          "y": 6.3
+        },
+        "rotation": 0.2
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "springboard",
+      "type": "springboard",
+      "props": {},
+      "transform": {
+        "position": {
+          "x": 9.4,
+          "y": 8.4
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    },
+    {
+      "id": "basket",
+      "type": "basket",
+      "props": {},
+      "transform": {
+        "position": {
+          "x": 11.8,
+          "y": 8.3
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
+    }
+  ],
+  "inventory": [],
+  "goal": {
+    "type": "basket",
+    "ballId": "goal-ball",
+    "basketId": "basket"
+  },
+  "buildZones": [],
+  "wires": [
+    {
+      "id": "wire-1",
+      "sourceId": "lever",
+      "targetId": "conveyor"
+    },
+    {
+      "id": "wire-2",
+      "sourceId": "button",
+      "targetId": "barrier"
+    }
+  ]
+}

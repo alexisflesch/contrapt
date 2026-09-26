@@ -15,6 +15,7 @@ import {
   worldToPixels,
   type BoardCanvasContext,
   type BoardConveyorBelt,
+  type BoardDeviceView,
   type BoardPose,
   type BoardSimulationView,
   type BoardViewport,
@@ -26,6 +27,7 @@ type Operation =
   | { readonly kind: 'restore' }
   | { readonly kind: 'translate'; readonly values: readonly number[] }
   | { readonly kind: 'rotate'; readonly values: readonly number[] }
+  | { readonly kind: 'scale'; readonly values: readonly number[] }
   | { readonly kind: 'lineWidth'; readonly values: readonly number[] }
   | { readonly kind: 'strokeRect'; readonly values: readonly number[] }
   | { readonly kind: 'fillRect'; readonly values: readonly number[] }
@@ -235,6 +237,9 @@ const createContext = (): {
     rotate: (...values: [number]): void => {
       operations.push({ kind: 'rotate', values });
     },
+    scale: (...values: [number, number]): void => {
+      operations.push({ kind: 'scale', values });
+    },
     get lineWidth(): number {
       return lineWidth;
     },
@@ -310,6 +315,15 @@ const createPendingSpriteLoader = (): {
     'conveyor-belt': { width: 64, height: 32 },
     'conveyor-belt-left': { width: 64, height: 32 },
     'conveyor-frame': { width: 64, height: 32 },
+    'button-base': { width: 64, height: 32 },
+    'button-cap': { width: 64, height: 32 },
+    'fan-blades': { width: 64, height: 32 },
+    'fan-body': { width: 64, height: 32 },
+    'barrier-bar': { width: 64, height: 32 },
+    'barrier-pillar': { width: 64, height: 32 },
+    'springboard-spring': { width: 64, height: 32 },
+    'springboard-base': { width: 64, height: 32 },
+    'springboard-platform': { width: 64, height: 32 },
   };
   let ready = false;
   let releasePending: () => void = () => {
@@ -351,7 +365,51 @@ const createPendingSpriteLoader = (): {
 const simulationView = (
   poses: readonly (readonly [string, BoardPose])[],
   belts: readonly (readonly [string, BoardConveyorBelt])[] = [],
-): BoardSimulationView => ({ bodyPoses: new Map(poses), conveyorBelts: new Map(belts) });
+  devices: readonly (readonly [string, BoardDeviceView])[] = [],
+): BoardSimulationView => ({
+  bodyPoses: new Map(poses),
+  conveyorBelts: new Map(belts),
+  devices: new Map(devices),
+});
+
+/** One object of the given family at (3, 3), next to the goal pair. */
+const createDeviceDocument = (
+  type: string,
+  props: Readonly<Record<string, string>> = {},
+  rotation = 0,
+) =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'device-presentation',
+    metadata: { title: 'Dispositif' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 1, y: 1 }, rotation: 0 },
+        props: {},
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 1, y: 7 }, rotation: 0 },
+        props: {},
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'device-1',
+        type,
+        transform: { position: { x: 3, y: 3 }, rotation },
+        props,
+        permissions: lockedPermissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: 0, y: 0 }, max: { x: 10, y: 8 } },
+  });
 
 const lockedPermissions = { move: false, rotate: false, remove: false } as const;
 
@@ -445,6 +503,112 @@ describe('projection du plateau', () => {
     // A belt moving right shifts its pattern right: the source window moves left.
     expect(belt.source?.width).toBe(247);
     expect(belt.source?.x).toBeCloseTo(77 * (1 - 0.15 / 0.6006));
+  });
+
+  it('enfonce le capuchon du bouton pressé, sans bouger son socle', () => {
+    const document = createDeviceDocument('button');
+    const resting = projectLevel(document);
+    const pressed = projectLevel(
+      document,
+      simulationView([], [], [['device-1', { kind: 'button', pressed: true }]]),
+    );
+
+    expect(
+      resting.objects.map((object) => object.assetKey).filter((key) => key.startsWith('button')),
+    ).toEqual(['button-base', 'button-cap']);
+    expect(layerOf(pressed, 'button-cap').destination.y).toBeCloseTo(
+      layerOf(resting, 'button-cap').destination.y + 0.06,
+    );
+    expect(layerOf(pressed, 'button-base')).toEqual(layerOf(resting, 'button-base'));
+  });
+
+  it('fait tourner les pales du ventilateur, écrasées en largeur, derrière son corps', () => {
+    const document = createDeviceDocument('fan', { state: 'on' });
+    const resting = projectLevel(document);
+    const spinning = projectLevel(
+      document,
+      simulationView([], [], [['device-1', { kind: 'fan', bladeAngle: 1.2 }]]),
+    );
+    const blades = layerOf(spinning, 'fan-blades');
+
+    expect(
+      resting.objects.map((object) => object.assetKey).filter((key) => key.startsWith('fan')),
+    ).toEqual(['fan-blades', 'fan-body']);
+    expect(layerOf(resting, 'fan-blades').spin).toEqual({ angle: 0, squash: 0.53 });
+    expect(blades.spin).toEqual({ angle: 1.2, squash: 0.53 });
+    expect(blades.position.x).toBeCloseTo(3 + 0.1986);
+    expect(blades.destination.x).toBeCloseTo(-blades.destination.width / 2);
+  });
+
+  it('retourne en miroir le ventilateur tourné d’un demi-tour, et tourne celui qui souffle en hauteur', () => {
+    const left = projectLevel(createDeviceDocument('fan', { state: 'off' }, Math.PI));
+    const up = projectLevel(createDeviceDocument('fan', { state: 'off' }, -Math.PI / 2));
+    const device = (projection: ReturnType<typeof projectLevel>) => {
+      const found = projection.objects.find((object) => object.id === 'device-1');
+      if (found === undefined) throw new Error('Ventilateur absent.');
+      return found;
+    };
+
+    expect(layerOf(left, 'fan-body').mirrored).toBe(true);
+    expect(layerOf(left, 'fan-body').rotation).toBeCloseTo(0);
+    expect(layerOf(left, 'fan-blades').position.x).toBeCloseTo(3 - 0.1986);
+    expect(layerOf(up, 'fan-body').rotation).toBeCloseTo(-Math.PI / 2);
+    expect(layerOf(up, 'fan-body').mirrored).toBe(false);
+    expect(layerOf(up, 'fan-blades').position.y).toBeCloseTo(3 - 0.1986);
+    // Selection follows the placement's own rotation around the unturned footprint.
+    expect(device(up).destination.width).toBeCloseTo(1.2);
+    expect(device(up).rotation).toBeCloseTo(-Math.PI / 2);
+  });
+
+  it('ne dessine de la barre que ce qui sort du poteau, de son côté', () => {
+    const right = projectLevel(createDeviceDocument('barrier', { state: 'closed' }));
+    const left = projectLevel(createDeviceDocument('barrier', { state: 'closed' }, Math.PI));
+    const down = projectLevel(createDeviceDocument('barrier', { state: 'closed' }, Math.PI / 2));
+    const open = projectLevel(
+      createDeviceDocument('barrier', { state: 'closed' }),
+      simulationView([], [], [['device-1', { kind: 'barrier', retraction: 1 }]]),
+    );
+
+    expect(
+      right.objects.map((object) => object.assetKey).filter((key) => key.startsWith('barrier')),
+    ).toEqual(['barrier-bar', 'barrier-pillar']);
+    expect(layerOf(right, 'barrier-bar').destination).toMatchObject({ x: 0, width: 1.2536 });
+    expect(layerOf(right, 'barrier-bar').source).toBeUndefined();
+    expect(layerOf(left, 'barrier-bar').mirrored).toBe(true);
+    expect(layerOf(left, 'barrier-pillar').mirrored).toBe(true);
+    expect(layerOf(left, 'barrier-bar').destination).toMatchObject({ x: 0, width: 1.2536 });
+    expect(layerOf(down, 'barrier-bar').rotation).toBeCloseTo(Math.PI / 2);
+    expect(layerOf(down, 'barrier-bar').mirrored).toBe(false);
+
+    const retracted = layerOf(open, 'barrier-bar');
+    expect(retracted.destination.x).toBe(0);
+    expect(retracted.destination.width).toBeCloseTo(0.2867);
+    // The tip of the bar stays visible: the source keeps its right end, 160 px wide.
+    expect(retracted.source?.x).toBeGreaterThan(0);
+    expect((retracted.source?.x ?? 0) + (retracted.source?.width ?? 0)).toBeCloseTo(160);
+  });
+
+  it('tasse le ressort du tremplin et descend son plateau d’autant', () => {
+    const document = createDeviceDocument('springboard');
+    const resting = projectLevel(document);
+    const squashed = projectLevel(
+      document,
+      simulationView([], [], [['device-1', { kind: 'springboard', compression: 0.5 }]]),
+    );
+    const sink = 0.5 * 0.12;
+
+    expect(
+      resting.objects
+        .map((object) => object.assetKey)
+        .filter((key) => key.startsWith('springboard')),
+    ).toEqual(['springboard-spring', 'springboard-base', 'springboard-platform']);
+    expect(layerOf(squashed, 'springboard-platform').destination.y).toBeCloseTo(
+      layerOf(resting, 'springboard-platform').destination.y + sink,
+    );
+    const spring = layerOf(squashed, 'springboard-spring').destination;
+    const restingSpring = layerOf(resting, 'springboard-spring').destination;
+    expect(spring.height).toBeCloseTo(restingSpring.height - sink);
+    expect(spring.y + spring.height).toBeCloseTo(restingSpring.y + restingSpring.height);
   });
 
   it('route les fils avec leur lettre de circuit, hors du document', () => {

@@ -56,6 +56,10 @@ test('ouvre l’atelier depuis le menu et expose les familles du catalogue', asy
     'Masse',
     'Levier',
     'Convoyeur',
+    'Bouton',
+    'Ventilateur',
+    'Barrière',
+    'Tremplin',
   ]) {
     await expect(page.getByRole('button', { name: new RegExp(objectName) })).toBeVisible();
   }

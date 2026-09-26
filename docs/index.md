@@ -27,8 +27,8 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/plan-remise-en-jeu.md`                              | 1208    | historique A–F ; spécifications détaillées de C1, C2, D3         |
 | `docs/architecture.md`                                    | 223     | couches, dépendances, états distincts, modèle d'objet            |
 | `docs/qualite.md`                                         | 149     | stratégie de test, niveaux de test, gates                        |
-| `docs/catalogue-initial.md`                               | 239     | contrats des sept familles d'objets                              |
-| `docs/contrapt_control_wires_v1.md`                       | 125     | spécification fonctionnelle des fils levier → convoyeur          |
+| `docs/catalogue-initial.md`                               | 239     | contrats des onze familles d'objets                              |
+| `docs/contrapt_control_wires_v1.md`                       | 125     | spécification fonctionnelle des fils de commande                 |
 | `docs/mobile-editor-interactions.md`                      | 504     | gestes, états d'interface, scénarios d'acceptation tactiles      |
 | `docs/levels/initial-progression.md`                      | 439     | campagne : 14 niveaux, géométries mesurées                       |
 | `docs/decisions/0001-product-foundations.md`              | 33      | fondations produit (accepté)                                     |
@@ -39,7 +39,7 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/decisions/0006-board-renderer.md`                   | 101     | renderer du plateau et pipeline de sprites (accepté)             |
 | `docs/decisions/0007-world-scale-and-camera.md`           | 269     | repère du monde, scène, caméra, échelle des sprites (accepté)    |
 | `docs/decisions/0008-client-side-routing.md`              | 99      | routage côté client, schéma d'URL (accepté)                      |
-| `docs/decisions/0009-control-wires.md`                    | 90      | fils de commande : modèle, rendu, câblage (accepté)              |
+| `docs/decisions/0009-control-wires.md`                    | 90      | fils de commande : modèle, rendu, câblage (accepté, amendé)      |
 | `docs/decisions/0010-object-challenge-and-progression.md` | 92      | défi d'objets ✅/⭐/🏆, ouverture des niveaux (accepté)          |
 | `docs/decisions/0011-local-storage-and-url-sharing.md`    | 98      | `localStorage`, codec de fichier, partage par URL (accepté)      |
 | `docs/decisions/0012-pwa-service-worker.md`               | 47      | PWA, service worker, mises à jour (accepté)                      |

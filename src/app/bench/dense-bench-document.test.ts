@@ -22,5 +22,6 @@ describe('scène dense du banc de performance', () => {
     expect(session.readGoalEvaluation().status).toBe('pending');
     expect(session.readFailureEvaluation().status).toBe('pending');
     session.destroy();
-  });
+    // 1 190 dense steps take over a second alone, several under a full parallel run.
+  }, 30_000);
 });

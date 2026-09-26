@@ -272,6 +272,10 @@ describe('coque Contrapt!', () => {
     expect(screen.getByRole('button', { name: /Masse/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Levier/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Convoyeur/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Bouton/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Ventilateur/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Barrière/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Tremplin/ })).toBeVisible();
   });
 
   it('rend un canvas accessible superposé au plateau et conserve son aide tactile', () => {
@@ -572,6 +576,21 @@ describe('coque Contrapt!', () => {
 
     expect(screen.getByText('Éditeur de niveaux')).toBeVisible();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
+  });
+
+  it('ouvre la démonstration sur /demo, en mode joueur sans rien à construire', () => {
+    window.history.replaceState(null, '', '/demo');
+    render(<App />);
+
+    expect(screen.getByText('Démonstration')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Tester' })).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Objets disponibles' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Démonstration' }));
+    expect(window.location.pathname).toBe('/demo');
   });
 
   it('redirige une route inconnue vers la liste des niveaux (ADR 0008)', () => {
@@ -1461,9 +1480,11 @@ describe('coque Contrapt!', () => {
     placeFromCatalogue('Levier', 200, 225);
 
     const leverPanel = screen.getByRole('region', { name: 'Propriétés de Levier' });
-    fireEvent.click(within(leverPanel).getByRole('button', { name: 'Relier à un convoyeur' }));
+    fireEvent.click(within(leverPanel).getByRole('button', { name: 'Relier à un appareil' }));
     expect(within(leverPanel).getByRole('button', { name: 'Supprimer le levier' })).toBeVisible();
-    expect(within(leverPanel).getByText(/Touchez le convoyeur/)).toBeVisible();
+    expect(
+      within(leverPanel).getByText(/Touchez le convoyeur, le ventilateur ou la barrière/),
+    ).toBeVisible();
 
     tapBoard(board, 600, 225);
 
@@ -1471,6 +1492,61 @@ describe('coque Contrapt!', () => {
     expect(within(wiredPanel).getByText('Circuit A')).toBeVisible();
     fireEvent.click(within(wiredPanel).getByRole('button', { name: 'Délier le circuit A' }));
     expect(within(wiredPanel).queryByText('Circuit A')).not.toBeInTheDocument();
+  });
+
+  it('relie un bouton à un ventilateur, jamais à un convoyeur', () => {
+    render(<App />);
+    openEmbeddedWorkshop();
+    const board = placeFromCatalogue('Ventilateur', 600, 225);
+    placeFromCatalogue('Convoyeur', 400, 100);
+    placeFromCatalogue('Bouton', 200, 225);
+
+    const buttonPanel = screen.getByRole('region', { name: 'Propriétés de Bouton' });
+    fireEvent.click(within(buttonPanel).getByRole('button', { name: 'Relier à un appareil' }));
+    expect(within(buttonPanel).getByText(/Touchez le ventilateur ou la barrière/)).toBeVisible();
+
+    tapBoard(board, 400, 100);
+    expect(
+      screen.getByText('Touchez un ventilateur ou une barrière pour le relier au bouton.'),
+    ).toBeVisible();
+
+    tapBoard(board, 600, 225);
+    expect(
+      within(screen.getByRole('region', { name: 'Propriétés de Bouton' })).getByText('Circuit A'),
+    ).toBeVisible();
+  });
+
+  it('oriente ventilateur, barrière et tremplin par quarts de tour, et règle leur état de départ', () => {
+    render(<App />);
+    placeWorkshopObject('Ventilateur');
+    const fanPanel = screen.getByRole('region', { name: 'Propriétés de Ventilateur' });
+    expect(within(fanPanel).queryByRole('combobox', { name: 'Sens du souffle' })).toBeNull();
+    expect(within(fanPanel).getByRole('button', { name: 'Rotation positive' })).toHaveTextContent(
+      '90°',
+    );
+    fireEvent.click(within(fanPanel).getByRole('button', { name: 'Rotation positive' }));
+    expect(screen.getByRole('button', { name: 'Annuler' })).toBeEnabled();
+    fireEvent.change(screen.getByRole('combobox', { name: 'État de départ' }), {
+      target: { value: 'off' },
+    });
+    expect(screen.getByRole('combobox', { name: 'État de départ' })).toHaveValue('off');
+
+    placeFromCatalogue('Barrière', 200, 225);
+    const barrierPanel = screen.getByRole('region', { name: 'Propriétés de Barrière' });
+    expect(within(barrierPanel).queryByRole('combobox', { name: 'Côté de la barre' })).toBeNull();
+    expect(
+      within(barrierPanel).getByRole('button', { name: 'Rotation négative' }),
+    ).toHaveTextContent('90°');
+    fireEvent.change(screen.getByRole('combobox', { name: 'État de départ' }), {
+      target: { value: 'open' },
+    });
+    expect(screen.getByRole('combobox', { name: 'État de départ' })).toHaveValue('open');
+
+    placeFromCatalogue('Tremplin', 600, 100);
+    const springboardPanel = screen.getByRole('region', { name: 'Propriétés de Tremplin' });
+    expect(
+      within(springboardPanel).getByRole('button', { name: 'Rotation positive' }),
+    ).toHaveTextContent('90°');
   });
 
   it('règle la position de départ d’un levier et le sens d’un convoyeur', () => {

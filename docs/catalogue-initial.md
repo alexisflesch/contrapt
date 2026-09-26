@@ -9,7 +9,9 @@ Le premier vocabulaire du jeu contenait exactement quatre familles visibles :
 balle, panier, poutre et bascule. Le 25 septembre 2026, trois familles s'y
 ajoutent avec leurs assets : la **masse**, le **levier** et le **convoyeur**,
 reliés par des fils de commande ([ADR 0009](decisions/0009-control-wires.md)).
-Le catalogue compte donc sept familles :
+Le 26 septembre 2026, quatre autres arrivent avec leurs assets : le **bouton**,
+le **ventilateur**, la **barrière** et le **tremplin**. Le catalogue compte donc
+onze familles :
 
 - balle ;
 - panier ;
@@ -17,7 +19,11 @@ Le catalogue compte donc sept familles :
 - bascule ;
 - masse ;
 - levier ;
-- convoyeur.
+- convoyeur ;
+- bouton ;
+- ventilateur ;
+- barrière ;
+- tremplin.
 
 La simplicité du catalogue est une contrainte de game design. Une variante visuelle
 ou une taille ne devient pas automatiquement une nouvelle famille. Les propriétés
@@ -132,7 +138,9 @@ l'autre bout, ou se laisse emporter par un convoyeur.
 
 ### Modèle
 
-- corps dynamique polygonal (silhouette hexagonale du sprite, 0,8 × 0,772) ;
+- corps dynamique de 0,8 × 0,505 : un trapèze polygonal et un cercle pour
+  l'anneau de levage, mesurés sur le sprite (une seule enveloppe convexe ferait
+  de l'anneau une pointe) ;
 - propriété `weight` énumérée, seule valeur `10kg` en v1 : la masse physique est
   réellement de 10 kg, contre environ 0,28 kg pour la balle ;
 - une autre masse (autre sprite, autre poids) ajoute une valeur à l'énumération,
@@ -174,6 +182,85 @@ tout.
   changement de cran — gauche, arrêt, droite — et sa propriété est ignorée ;
 - un seul levier par convoyeur ; un levier peut commander plusieurs convoyeurs.
 
+## Bouton
+
+### Rôle
+
+Un contrôleur momentané : il commande un ventilateur ou une barrière tant
+qu'un objet appuie dessus.
+
+### Modèle
+
+- socle et capuchon statiques (0,8 × 0,48 au total), aucune propriété ;
+- capteur juste au-dessus du capuchon : enfoncé tant qu'un corps dynamique le
+  touche, relâché sinon, sans mémoire ;
+- le capuchon dessiné descend de 0,06 quand il est enfoncé, son collider ne
+  bouge pas ;
+- ne commande jamais un convoyeur (ADR 0009, amendement du 26 septembre).
+
+## Ventilateur
+
+### Rôle
+
+Souffle sur ce qui passe devant lui : pousse une balle, la soulève, dévie une
+chute.
+
+### Modèle
+
+- corps statique de 1,2 × 0,94, dessiné soufflant à droite ;
+- orienté par sa rotation, par quarts de tour : à droite tel que dessiné, vers
+  le bas ou le haut tourné d'un quart ; le demi-tour (vers la gauche) est
+  dessiné et simulé en miroir, pour ne jamais le mettre la tête en bas ;
+- propriété `state` (`on`, `off`) : son état quand aucun contrôleur ne le
+  commande ; relié, il tourne quand le levier est d'un côté ou le bouton
+  enfoncé ;
+- souffle : cône de 3 unités depuis la bouche, évasé de 15°, force décroissant
+  linéairement avec la distance et proportionnelle à la largeur que le corps
+  présente au souffle (9 N par unité à la bouche) — une balle flotte à environ
+  1,4 unité d'un ventilateur tourné vers le haut, une masse de 10 kg bouge à
+  peine ;
+- les pales tournent derrière le corps, vues par l'ouverture de la virole et
+  écrasées horizontalement ; leur angle vient de la simulation, dessin
+  seulement.
+
+## Barrière
+
+### Rôle
+
+Une barre qui coulisse dans son poteau : une trappe qui lâche ce qu'elle porte,
+ou un passage qui s'ouvre.
+
+### Modèle
+
+- poteau statique de 0,8 × 0,85, barre de 1,25 × 0,28 ;
+- orientée par sa rotation, par quarts de tour : barre à droite telle que
+  dessinée, vers le bas ou le haut tournée d'un quart, à gauche en miroir ;
+- propriété `state` (`closed`, `open`) : son état quand aucun contrôleur ne la
+  commande ; reliée, elle s'ouvre quand le levier est d'un côté ou le bouton
+  enfoncé ;
+- la barre coulisse à 2,5 unités/s ; son collider est la seule partie sortie du
+  fût, reconstruite à chaque pas de coulissement, et ce qu'elle portait est
+  réveillé pour tomber ;
+- le renderer ne dessine que cette partie : la barre passe derrière le poteau,
+  jamais de l'autre côté.
+
+## Tremplin
+
+### Rôle
+
+Renvoie vers le haut ce qui tombe dessus.
+
+### Modèle
+
+- socle, ressort et plateau statiques (1 × 0,93 au total), aucune propriété ;
+- orienté par sa rotation, par quarts de tour : plateau vers le haut, sur un
+  côté ou vers le bas ;
+- le plateau a une restitution de 1 : une balle repart presque à sa hauteur de
+  chute ; sous 1 m/s, Box2D n'applique pas de rebond, si bien qu'un objet posé
+  reste posé ;
+- à l'impact, le ressort dessiné se tasse (jusqu'à 0,12) proportionnellement à
+  la vitesse, puis se détend ; le collider ne bouge pas.
+
 ## Inventaire
 
 Une entrée d'inventaire a son propre identifiant, référence une famille et les
@@ -183,13 +270,26 @@ le placement créé :
 ```ts
 interface InventoryEntry {
   id: string;
-  type: 'ball' | 'basket' | 'beam' | 'seesaw' | 'mass' | 'lever' | 'conveyor';
+  type:
+    | 'ball'
+    | 'basket'
+    | 'beam'
+    | 'seesaw'
+    | 'mass'
+    | 'lever'
+    | 'conveyor'
+    | 'button'
+    | 'fan'
+    | 'barrier'
+    | 'springboard';
   props:
     | {}
     | { size: 'short' | 'medium' | 'long' }
     | { weight: '10kg' }
     | { position: 'left' | 'center' | 'right' }
-    | { direction: 'left' | 'stopped' | 'right' };
+    | { direction: 'left' | 'stopped' | 'right' }
+    | { state: 'on' | 'off' }
+    | { state: 'closed' | 'open' };
   quantity: number;
   permissions: { move: boolean; rotate: boolean; remove: boolean };
 }
@@ -197,9 +297,11 @@ interface InventoryEntry {
 
 Le schéma concret est une union Zod stricte discriminée afin que les propriétés
 soient typées selon `type` ; il fait autorité (`src/domain/level-document.ts`).
-Balle, panier et bascule n'acceptent aucune propriété. La rotation est disponible pour
-les poutres uniquement : `permissions.rotate` doit donc être `false` pour les
-autres familles.
+Balle, panier et bascule n'acceptent aucune propriété. La rotation est libre
+pour les poutres et par quarts de tour pour le ventilateur, la barrière et le
+tremplin (`rotationMode`, `src/domain/level-document.ts`) : une autre rotation
+de ces trois familles est refusée, et `permissions.rotate` doit être `false`
+pour toutes les autres familles.
 
 Les premiers niveaux peuvent n'offrir qu'une ou deux poutres. La balle, le panier
 et la bascule peuvent être placés par l'auteur avec leurs trois permissions à
@@ -226,7 +328,13 @@ La progression de la campagne et la géométrie mesurée de chaque niveau sont d
 - un levier tient chacun de ses trois crans, sans dépasser ses butées ;
 - une balle qui percute le pommeau fait changer le levier de cran, et le
   convoyeur relié change de sens dans la même simulation ;
-- un convoyeur entraîne ce qu'il porte dans son sens, et rien à l'arrêt.
+- un convoyeur entraîne ce qu'il porte dans son sens, et rien à l'arrêt ;
+- un bouton est enfoncé tant qu'un objet pèse dessus, et seulement alors ;
+- un ventilateur en marche soulève une balle, pousse une balle bien plus qu'une
+  masse, et tourne quand son levier est d'un côté ou son bouton enfoncé ;
+- une barrière fermée porte une balle, ouverte la laisse tomber, et s'ouvre
+  quand une masse enfonce le bouton relié ;
+- un tremplin renvoie une balle presque à sa hauteur de chute.
 
 ## Décisions à prendre par expérimentation
 

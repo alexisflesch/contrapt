@@ -6,6 +6,7 @@ import {
   updatePlacementProperties,
 } from '../application/construction/construction-attempt';
 import { controlCircuits } from '../domain/control-circuits';
+import { rotationMode } from '../domain/level-document';
 import {
   currentEditorAttempt,
   type EditorSession,
@@ -19,16 +20,18 @@ interface ContextPanelProps {
   readonly session: EditorSession;
   readonly onExecuteCommand: (command: Parameters<typeof executeEditorCommand>[1]) => void;
   readonly onClose?: () => void;
-  /** The lever waiting for a conveyor tap, if a link is being made (ADR 0009). */
+  /** The controller waiting for a device tap, if a link is being made (ADR 0009). */
   readonly wiringSourceId?: string | null;
   readonly onStartWiring?: (sourceId: string) => void;
   readonly onCancelWiring?: () => void;
 }
 
 const POSITION_STEP_IN_WORLD_UNITS = 0.25;
-const ROTATION_STEP_IN_RADIANS = Math.PI / 12;
-/** Display-only twin of `ROTATION_STEP_IN_RADIANS` (π/12), shown on the rotation buttons. */
-const ROTATION_STEP_IN_DEGREES = 15;
+/** A beam turns by fifteen degrees; a fan, barrier or springboard by quarter turns. */
+const rotationSteps = {
+  free: { radians: Math.PI / 12, degrees: 15 },
+  'quarter-turn': { radians: Math.PI / 2, degrees: 90 },
+} as const;
 type BeamSize = 'short' | 'medium' | 'long';
 
 const beamSizeFromValue = (value: string): BeamSize | null => {
@@ -42,8 +45,21 @@ const leverPositionFromValue = (value: string): 'left' | 'center' | 'right' | nu
 const conveyorDirectionFromValue = (value: string): 'left' | 'stopped' | 'right' | null =>
   value === 'left' || value === 'stopped' || value === 'right' ? value : null;
 
+const fanStateFromValue = (value: string): 'on' | 'off' | null =>
+  value === 'on' || value === 'off' ? value : null;
+
+const barrierStateFromValue = (value: string): 'closed' | 'open' | null =>
+  value === 'closed' || value === 'open' ? value : null;
+
+/** What each controller may be wired to, as the tap prompt names it. */
+const wiringPrompts = {
+  lever: 'Touchez le convoyeur, le ventilateur ou la barrière à relier à ce levier.',
+  button: 'Touchez le ventilateur ou la barrière à relier à ce bouton.',
+} as const;
+
 /**
- * The panel for the currently selected placement: move, rotate (beams only)
+ * The panel for the currently selected placement: move, rotate (beams freely,
+ * fans, barriers and springboards by quarter turns)
  * and remove. Renders `null` when nothing is selected or outside
  * `'construction'` — `BoardShell` hands it to `InspectorDrawer`, which shows it
  * in the right rail (wide) or as a compact sheet, next to `LevelResult`. The two are mutually exclusive by
@@ -70,6 +86,8 @@ export function ContextPanel({
   const canEdit = session.mode === 'creation';
   const canMove = canEdit || selectedPlacement.permissions.move;
   const canRotate = canEdit || selectedPlacement.permissions.rotate;
+  const mode = rotationMode(selectedPlacement.type);
+  const rotationStep = mode === 'fixed' ? null : rotationSteps[mode];
   const canRemove = canEdit || selectedPlacement.permissions.remove;
   const { wires } = displayedAttempt.document;
   const circuits = controlCircuits(wires);
@@ -138,7 +156,7 @@ export function ContextPanel({
           ))}
         </div>
       )}
-      {selectedPlacement.type === 'beam' && canRotate && (
+      {rotationStep !== null && canRotate && (
         <div className="context-rotation-controls">
           {(['négative', 'positive'] as const).map((direction) => (
             <Button
@@ -151,15 +169,13 @@ export function ContextPanel({
                     placementId: selectedPlacement.id,
                     rotation:
                       selectedPlacement.transform.rotation +
-                      (direction === 'positive'
-                        ? ROTATION_STEP_IN_RADIANS
-                        : -ROTATION_STEP_IN_RADIANS),
+                      (direction === 'positive' ? rotationStep.radians : -rotationStep.radians),
                   }),
                 );
               }}
             >
               <span aria-hidden="true">{direction === 'positive' ? '↻' : '↺'}</span>
-              {ROTATION_STEP_IN_DEGREES}°
+              {rotationStep.degrees}°
             </Button>
           ))}
         </div>
@@ -236,6 +252,52 @@ export function ContextPanel({
           </select>
         </label>
       )}
+      {selectedPlacement.type === 'fan' && canEdit && connectedWires.length === 0 && (
+        <label className="context-size-control">
+          État de départ
+          <select
+            aria-label="État de départ"
+            value={selectedPlacement.props.state}
+            onChange={(event) => {
+              const state = fanStateFromValue(event.target.value);
+              if (state === null) return;
+              onExecuteCommand(
+                updatePlacementProperties({
+                  context: 'author',
+                  placementId: selectedPlacement.id,
+                  props: { state },
+                }),
+              );
+            }}
+          >
+            <option value="on">En marche</option>
+            <option value="off">Arrêté</option>
+          </select>
+        </label>
+      )}
+      {selectedPlacement.type === 'barrier' && canEdit && connectedWires.length === 0 && (
+        <label className="context-size-control">
+          État de départ
+          <select
+            aria-label="État de départ"
+            value={selectedPlacement.props.state}
+            onChange={(event) => {
+              const state = barrierStateFromValue(event.target.value);
+              if (state === null) return;
+              onExecuteCommand(
+                updatePlacementProperties({
+                  context: 'author',
+                  placementId: selectedPlacement.id,
+                  props: { state },
+                }),
+              );
+            }}
+          >
+            <option value="closed">Fermée</option>
+            <option value="open">Ouverte</option>
+          </select>
+        </label>
+      )}
       {connectedWires.length > 0 && (
         <ul className="context-circuits" aria-label="Circuits">
           {connectedWires.map((wire, index) => {
@@ -247,7 +309,7 @@ export function ContextPanel({
             return (
               <li key={wire.id}>
                 <span>Circuit {label}</span>
-                {selectedPlacement.type === 'conveyor' && <span> : commandé par un levier</span>}
+                {wire.targetId === selectedPlacement.id && <span> : commandé</span>}
                 {canEdit && (
                   <Button
                     aria-label={name}
@@ -263,12 +325,12 @@ export function ContextPanel({
           })}
         </ul>
       )}
-      {selectedPlacement.type === 'lever' &&
+      {(selectedPlacement.type === 'lever' || selectedPlacement.type === 'button') &&
         canEdit &&
         onStartWiring !== undefined &&
         (wiringSourceId === selectedPlacement.id ? (
           <div className="context-wiring" role="status">
-            <p>Touchez le convoyeur à relier à ce levier.</p>
+            <p>{wiringPrompts[selectedPlacement.type]}</p>
             <Button onClick={onCancelWiring}>Annuler la liaison</Button>
           </div>
         ) : (
@@ -277,7 +339,7 @@ export function ContextPanel({
               onStartWiring(selectedPlacement.id);
             }}
           >
-            Relier à un convoyeur
+            Relier à un appareil
           </Button>
         ))}
       {canRemove && (

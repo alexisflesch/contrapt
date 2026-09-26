@@ -79,6 +79,36 @@ droite, lu à chaque pas fixe. Le convoyeur non relié suit sa propre propriét�
 `direction`. Le bouton momentané, le ventilateur et la porte de la note n'ont pas
 d'assets et ne sont pas implémentés.
 
+## Amendement du 26 septembre 2026 — bouton, ventilateur, barrière
+
+De nouveaux assets ajoutent un contrôleur, le **bouton**, et deux dispositifs, le
+**ventilateur** et la **barrière** (plus le tremplin, passif et jamais câblé).
+
+- Sources : levier et bouton. Cibles : convoyeur, ventilateur, barrière.
+  `canCommand` (`src/domain/level-document.ts`) fait autorité ; la validation
+  et l'outil de câblage l'utilisent tous deux.
+- Un dispositif obéit toujours à **un seul** contrôleur.
+- Un **bouton ne commande jamais un convoyeur** : il a deux états, le convoyeur
+  trois (gauche, arrêt, droite) ; aucun sens ne se déduirait d'un appui.
+- Ventilateur et barrière sont à deux états. Relié à un **levier**, le centre
+  vaut « arrêt / fermé » et chaque côté « marche / ouvert » : c'est la règle du
+  convoyeur, où le centre est toujours l'arrêt, sans donner de sens à un
+  dispositif qui n'en a pas. Relié à un **bouton**, l'appui vaut « marche /
+  ouvert ». Non relié, chacun suit sa propriété `state` ; relié, elle est
+  ignorée, comme `direction` pour le convoyeur.
+- Le bouton est momentané : actif tant qu'un corps dynamique pèse sur son
+  capuchon, sans mémoire.
+- Le document gagne quatre familles à l'union discriminée, sans nouvelle
+  version ni migration, pour la même raison que la masse et le levier.
+- Le sens du ventilateur, le côté de la barre et l'orientation du tremplin sont
+  la rotation du placement, limitée aux quarts de tour, et non une propriété :
+  l'auteur les tourne avec les mêmes gestes qu'une poutre. Le demi-tour d'un
+  ventilateur ou d'une barrière est dessiné en miroir.
+
+La phrase « Le bouton momentané, le ventilateur et la porte de la note n'ont pas
+d'assets et ne sont pas implémentés » ci-dessus est caduque pour le bouton et le
+ventilateur ; la porte est la barrière.
+
 ## Conséquences
 
 - Aucune dépendance ajoutée ; le port physique gagne des « dispositifs » dans

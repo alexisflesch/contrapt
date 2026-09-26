@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { embeddedLevels } from '../content/embedded-levels';
 import { BenchPage } from './BenchPage';
 import { BenchPlayPage } from './BenchPlayPage';
+import { DemoPage } from './DemoPage';
 import { EditorPage } from './EditorPage';
 import { LevelsPage } from './LevelsPage';
 import { PlayLevelPage } from './PlayLevelPage';
@@ -34,6 +35,7 @@ export function App() {
         <Route path="/levels" element={<LevelsPage />} />
         <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
         <Route path="/editor" element={<EditorPage />} />
+        <Route path="/demo" element={<DemoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/bench" element={<BenchPage />} />
         <Route path="/bench/play" element={<BenchPlayPage />} />

@@ -24,7 +24,9 @@ lint, formatage et tests automatisés.
 - le premier catalogue contient uniquement balle, panier, bascule et poutre ;
 - les poutres ont des tailles discrètes et la bascule est un objet préassemblé ;
 - la gravité est la seule source d'énergie des premiers niveaux ;
-- interrupteurs, ventilateurs, moteurs et autres actionneurs sont reportés ;
+- interrupteurs, ventilateurs, moteurs et autres actionneurs sont reportés
+  (levé en partie : levier et convoyeur le 25 septembre 2026, bouton, ventilateur
+  et barrière le 26, voir [ADR 0009](0009-control-wires.md)) ;
 - l'UX tactile ne peut pas être ajoutée après une interface desktop ;
 - le format et les repositories ne dépendent pas d'un backend ;
 - une future communauté est un adaptateur et un ensemble d'écrans supplémentaires,

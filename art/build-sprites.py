@@ -96,6 +96,13 @@ def outline(image: Image.Image) -> list[tuple[int, int]]:
     return points
 
 
+def opaque_box(image: Image.Image) -> tuple[int, int, int, int]:
+    """Cadre des pixels franchement opaques : `getbbox` retient des pixels isolés presque transparents."""
+    alpha = np.array(image)[:, :, 3] > 64
+    ys, xs = np.nonzero(alpha)
+    return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+
+
 def to_world(points, origin, scale) -> list[list[float]]:
     return [[round((x - origin[0]) * scale, 4), round((y - origin[1]) * scale, 4)] for x, y in points]
 
@@ -160,14 +167,25 @@ save(
 
 # Masse : un calque, polygone de collision mesuré sur la silhouette.
 mass = load("mass/mass-10kgs.png")
-mass_box = mass.getbbox()
+mass_box = opaque_box(mass)
 mass_scale = 0.8 / (mass_box[2] - mass_box[0])
 mass_h = (mass_box[3] - mass_box[1]) * mass_scale
 mass_sprite = export(mass, mass_box, 0.8, mass_h, "mass-10kg")
 save(mass_sprite, THUMBS / "mass.png")
+# Le collider sépare le corps trapézoïdal de l'anneau de levage, un cercle :
+# une seule enveloppe convexe en ferait une pointe.
+mass_origin = ((mass_box[0] + mass_box[2]) / 2, (mass_box[1] + mass_box[3]) / 2)
+mass_alpha = np.array(mass)[:, :, 3] > 64
+mass_widths = mass_alpha.sum(axis=1)
+mass_shoulder = int(np.nonzero(mass_widths > 0.4 * (mass_box[2] - mass_box[0]))[0][0])
+mass_body = Image.fromarray(np.where(np.arange(mass.height)[:, None, None] >= mass_shoulder, np.array(mass), 0).astype(np.uint8))
+ring_ys, ring_xs = np.nonzero(mass_alpha[:mass_shoulder])
+ring_radius = (ring_xs.max() + 1 - ring_xs.min()) / 2
+ring_center = ((ring_xs.min() + ring_xs.max() + 1) / 2, ring_ys.min() + ring_radius)
 geometry["mass"] = {
     "height": round(mass_h, 4),
-    "polygon": to_world(hull(outline(mass)), ((mass_box[0] + mass_box[2]) / 2, (mass_box[1] + mass_box[3]) / 2), mass_scale),
+    "polygon": to_world(hull(outline(mass_body)), mass_origin, mass_scale),
+    "ring": {"center": to_world([ring_center], mass_origin, mass_scale)[0], "radius": round(ring_radius * mass_scale, 4)},
 }
 
 # Levier : origine au pivot. Le socle est symétrique autour du dôme ; la
@@ -239,5 +257,200 @@ geometry["conveyor"] = {
 }
 window_offset = (round((window[0] - frame_box[0]) * conveyor_scale * PX_PER_UNIT), round((window[1] - frame_box[1]) * conveyor_scale * PX_PER_UNIT))
 save(composite([(strip.crop((0, 0, window_px, strip.height)), window_offset), (conveyor_frame, (0, 0))], conveyor_frame.size), THUMBS / "conveyor.png")
+
+# Les familles suivantes sont composées dans le repère en pixels d'une pièce
+# de référence ; `rect` convertit un cadre de ce repère en rectangle monde
+# relatif à l'origine de la famille.
+
+
+def rect(box, origin, scale) -> dict[str, float]:
+    return {
+        "x": round((box[0] - origin[0]) * scale, 4),
+        "y": round((box[1] - origin[1]) * scale, 4),
+        "width": round((box[2] - box[0]) * scale, 4),
+        "height": round((box[3] - box[1]) * scale, 4),
+    }
+
+
+def world_px(value: float) -> int:
+    return round(value * PX_PER_UNIT)
+
+
+# Bouton : socle fixe, capuchon rouge qui s'enfonce quand un objet pèse
+# dessus. Repère : pixels du socle ; le capuchon est posé sur la douille grise.
+button_base = load("button/button-base.png")
+button_base_box = opaque_box(button_base)
+button_scale = 0.8 / (button_base_box[2] - button_base_box[0])
+button_cap = load("button/button-push-button.png")
+button_cap_box = opaque_box(button_cap)
+BUTTON_CAP_WIDTH = 420
+BUTTON_CAP_TOP = 357
+BUTTON_CAP_BODY_BOTTOM = 800  # sous cette ligne de la source, la tige s'enfonce dans la douille
+button_cap_k = BUTTON_CAP_WIDTH / (button_cap_box[2] - button_cap_box[0])
+button_cx = (button_base_box[0] + button_base_box[2]) / 2
+button_cap_frame = (
+    button_cx - BUTTON_CAP_WIDTH / 2,
+    BUTTON_CAP_TOP,
+    button_cx + BUTTON_CAP_WIDTH / 2,
+    BUTTON_CAP_TOP + (button_cap_box[3] - button_cap_box[1]) * button_cap_k,
+)
+button_frame = (button_base_box[0], min(BUTTON_CAP_TOP, button_base_box[1]), button_base_box[2], button_base_box[3])
+button_origin = ((button_frame[0] + button_frame[2]) / 2, (button_frame[1] + button_frame[3]) / 2)
+button_base_sprite = export(
+    button_base, button_base_box, 0.8, (button_base_box[3] - button_base_box[1]) * button_scale, "button-base"
+)
+button_cap_sprite = export(
+    button_cap,
+    button_cap_box,
+    (button_cap_frame[2] - button_cap_frame[0]) * button_scale,
+    (button_cap_frame[3] - button_cap_frame[1]) * button_scale,
+    "button-cap",
+)
+geometry["button"] = {
+    "footprint": rect(button_frame, button_origin, button_scale),
+    "base": rect(button_base_box, button_origin, button_scale),
+    "basePolygon": to_world(hull(outline(button_base)), button_origin, button_scale),
+    "cap": rect(button_cap_frame, button_origin, button_scale),
+    "capBody": rect(
+        (
+            button_cap_frame[0],
+            button_cap_frame[1],
+            button_cap_frame[2],
+            BUTTON_CAP_TOP + (BUTTON_CAP_BODY_BOTTOM - button_cap_box[1]) * button_cap_k,
+        ),
+        button_origin,
+        button_scale,
+    ),
+}
+button_px = lambda v: round(v * button_scale * PX_PER_UNIT)  # noqa: E731
+save(
+    composite(
+        [
+            (button_base_sprite, (0, button_px(button_base_box[1] - button_frame[1]))),
+            (button_cap_sprite, (button_px(button_cap_frame[0] - button_frame[0]), button_px(button_cap_frame[1] - button_frame[1]))),
+        ],
+        (button_base_sprite.width, button_px(button_frame[3] - button_frame[1])),
+    ),
+    THUMBS / "button.png",
+)
+
+# Tremplin : socle, ressort et plateau. Repère : pixels du socle. Le ressort
+# est exporté tassé à sa hauteur de repos ; le renderer le tasse davantage
+# pendant un rebond, le plateau descendant d'autant.
+springboard_base = load("springboard/springboard_base.png")
+springboard_base_box = opaque_box(springboard_base)
+springboard_scale = 1.0 / (springboard_base_box[2] - springboard_base_box[0])
+springboard_cx = (springboard_base_box[0] + springboard_base_box[2]) / 2
+spring = load("springboard/springboard_spring.png")
+spring_box = opaque_box(spring)
+SPRING_WIDTH = 290
+SPRING_BOTTOM = 200  # dans la douille du socle
+SPRING_REST_HEIGHT = 244
+spring_frame = (springboard_cx - SPRING_WIDTH / 2, SPRING_BOTTOM - SPRING_REST_HEIGHT, springboard_cx + SPRING_WIDTH / 2, SPRING_BOTTOM)
+platform = load("springboard/springboard_platform.png")
+platform_box = opaque_box(platform)
+platform_height = (platform_box[3] - platform_box[1]) * (springboard_base_box[2] - springboard_base_box[0]) / (platform_box[2] - platform_box[0])
+platform_bottom = spring_frame[1] + 10
+platform_frame = (springboard_base_box[0], platform_bottom - platform_height, springboard_base_box[2], platform_bottom)
+springboard_frame = (springboard_base_box[0], platform_frame[1], springboard_base_box[2], springboard_base_box[3])
+springboard_origin = ((springboard_frame[0] + springboard_frame[2]) / 2, (springboard_frame[1] + springboard_frame[3]) / 2)
+sb = lambda box: [round((box[i] - box[i - 2]) * springboard_scale, 4) for i in (2, 3)]  # noqa: E731
+springboard_base_sprite = export(springboard_base, springboard_base_box, *sb(springboard_base_box), "springboard-base")
+spring_sprite = export(spring, spring_box, *sb(spring_frame), "springboard-spring")
+platform_sprite = export(platform, platform_box, *sb(platform_frame), "springboard-platform")
+geometry["springboard"] = {
+    "footprint": rect(springboard_frame, springboard_origin, springboard_scale),
+    "base": rect(springboard_base_box, springboard_origin, springboard_scale),
+    "basePolygon": to_world(hull(outline(springboard_base)), springboard_origin, springboard_scale),
+    "spring": rect(spring_frame, springboard_origin, springboard_scale),
+    "platform": rect(platform_frame, springboard_origin, springboard_scale),
+}
+sb_px = lambda v: round(v * springboard_scale * PX_PER_UNIT)  # noqa: E731
+save(
+    composite(
+        [
+            (spring_sprite, (sb_px(spring_frame[0] - springboard_frame[0]), sb_px(spring_frame[1] - springboard_frame[1]))),
+            (springboard_base_sprite, (0, sb_px(springboard_base_box[1] - springboard_frame[1]))),
+            (platform_sprite, (0, 0)),
+        ],
+        (springboard_base_sprite.width, sb_px(springboard_frame[3] - springboard_frame[1])),
+    ),
+    THUMBS / "springboard.png",
+)
+
+# Barrière : poteau fixe et barre qui coulisse dans le poteau. Repère :
+# pixels du poteau, origine au centre du poteau. La barre est exportée
+# entière ; le renderer n'en dessine que la partie sortie du poteau.
+pillar = load("barrier/contrapt_barrier_fixed.png")
+pillar_box = opaque_box(pillar)
+barrier_scale = 0.8 / (pillar_box[2] - pillar_box[0])
+barrier_origin = ((pillar_box[0] + pillar_box[2]) / 2, (pillar_box[1] + pillar_box[3]) / 2)
+BARREL = (90, 495)  # fût du poteau, où la barre rentre
+BAR_CENTER_Y = 300
+BAR_THICKNESS = 0.28
+bar = load("barrier/contrapt_barrier_mobile.png")
+bar_box = opaque_box(bar)
+bar_length = BAR_THICKNESS * (bar_box[2] - bar_box[0]) / (bar_box[3] - bar_box[1])
+pillar_sprite = export(pillar, pillar_box, 0.8, (pillar_box[3] - pillar_box[1]) * barrier_scale, "barrier-pillar")
+bar_sprite = export(bar, bar_box, bar_length, BAR_THICKNESS, "barrier-bar")
+geometry["barrier"] = {
+    "pillar": rect(pillar_box, barrier_origin, barrier_scale),
+    "pillarPolygon": to_world(hull(outline(pillar)), barrier_origin, barrier_scale),
+    "barLength": round(bar_length, 4),
+    "barThickness": BAR_THICKNESS,
+    "barCenterY": round((BAR_CENTER_Y - barrier_origin[1]) * barrier_scale, 4),
+    "barrelHalfWidth": round((BARREL[1] - BARREL[0]) / 2 * barrier_scale, 4),
+}
+bar_top = world_px((BAR_CENTER_Y - pillar_box[1]) * barrier_scale - BAR_THICKNESS / 2)
+save(
+    composite(
+        [(bar_sprite, (pillar_sprite.width // 2, bar_top)), (pillar_sprite, (0, 0))],
+        (pillar_sprite.width // 2 + bar_sprite.width, pillar_sprite.height),
+    ),
+    THUMBS / "barrier.png",
+)
+
+# Ventilateur : corps fixe et pales qui tournent derrière lui, vues à
+# travers l'ouverture de la virole. Repère : pixels du corps, origine au
+# centre de l'empreinte ; il souffle vers la droite tel que dessiné.
+fan = load("fan/fan-fixed-part.png")
+fan_box = opaque_box(fan)
+fan_scale = 1.2 / (fan_box[2] - fan_box[0])
+fan_origin = ((fan_box[0] + fan_box[2]) / 2, (fan_box[1] + fan_box[3]) / 2)
+FAN_OPENING = (802, 232, 1074, 738)  # trou transparent de la virole
+FAN_BLADES_HEIGHT = 520
+FAN_BLADES_SQUASH = 0.53  # compression horizontale : les pales sont vues de biais
+blades = load("fan/fan-blades.png")
+blades_box = opaque_box(blades)
+blades_k = FAN_BLADES_HEIGHT / (blades_box[3] - blades_box[1])
+fan_sprite = export(fan, fan_box, 1.2, (fan_box[3] - fan_box[1]) * fan_scale, "fan-body")
+blades_sprite = export(
+    blades,
+    blades_box,
+    (blades_box[2] - blades_box[0]) * blades_k * fan_scale,
+    FAN_BLADES_HEIGHT * fan_scale,
+    "fan-blades",
+)
+opening_center = ((FAN_OPENING[0] + FAN_OPENING[2]) / 2, (FAN_OPENING[1] + FAN_OPENING[3]) / 2)
+geometry["fan"] = {
+    "footprint": rect(fan_box, fan_origin, fan_scale),
+    "polygon": to_world(hull(outline(fan)), fan_origin, fan_scale),
+    "opening": rect(FAN_OPENING, fan_origin, fan_scale),
+    "bladesCenter": to_world([opening_center], fan_origin, fan_scale)[0],
+    "blades": {"width": round(blades_sprite.width / PX_PER_UNIT, 4), "height": round(blades_sprite.height / PX_PER_UNIT, 4)},
+    "bladesSquash": FAN_BLADES_SQUASH,
+}
+squashed = blades_sprite.resize((max(1, round(blades_sprite.width * FAN_BLADES_SQUASH)), blades_sprite.height), Image.LANCZOS)
+fan_px = lambda v: round(v * fan_scale * PX_PER_UNIT)  # noqa: E731
+save(
+    composite(
+        [
+            (squashed, (fan_px(opening_center[0] - fan_box[0]) - squashed.width // 2, fan_px(opening_center[1] - fan_box[1]) - squashed.height // 2)),
+            (fan_sprite, (0, 0)),
+        ],
+        fan_sprite.size,
+    ),
+    THUMBS / "fan.png",
+)
 
 print(json.dumps(geometry, indent=2))

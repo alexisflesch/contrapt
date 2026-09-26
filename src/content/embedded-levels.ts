@@ -1,3 +1,4 @@
+import demo from './levels/demo.json';
 import levelOne from './levels/level-1-laisser-tomber.json';
 import workshop from './levels/workshop.json';
 
@@ -22,3 +23,9 @@ export const embeddedLevels: readonly LevelDocument[] = [parseEmbeddedLevel(leve
  * workshop" from `id` string matching elsewhere.
  */
 export const embeddedWorkshopDocument: LevelDocument = parseEmbeddedLevel(workshop);
+
+/**
+ * `/demo`: a chain-reaction machine that solves itself, to show the concept
+ * at a glance. Like the workshop, it is not campaign content.
+ */
+export const embeddedDemoDocument: LevelDocument = parseEmbeddedLevel(demo);

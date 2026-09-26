@@ -64,6 +64,13 @@ export function AppHeader({ title, subtitle, action }: AppHeaderProps) {
           </Button>
           <Button
             onClick={() => {
+              void navigate('/demo');
+            }}
+          >
+            Démonstration
+          </Button>
+          <Button
+            onClick={() => {
               void navigate('/settings');
             }}
           >

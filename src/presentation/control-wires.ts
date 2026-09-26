@@ -21,7 +21,7 @@ export interface ProjectedWire {
   readonly label: string;
   /** Index of the circuit, mapped to a colour by the renderer. */
   readonly circuitIndex: number;
-  /** Orthogonal polyline in world units, from the lever to the conveyor. */
+  /** Orthogonal polyline in world units, from the controller to the device. */
   readonly points: WorldPolygon;
   /** Where this wire hops over an older one. */
   readonly bridges: WorldPolygon;
@@ -37,12 +37,32 @@ const BEND_COST = 0.5;
 
 type Placement = LevelDocument['objects'][number];
 
-/** Port offsets per wired family, relative to the placement's origin, on its right side. */
-const portOffsets: Partial<Record<Placement['type'], WorldPoint>> = {
-  // Middle of the base's bar, level with the pivot's bolt.
-  lever: { x: 0.4, y: 0.05 },
-  // End of the frame, on the belt's axis.
-  conveyor: { x: 1.5, y: 0 },
+/** Port offset of a wired family, relative to the placement's origin, on its right side. */
+const portOffset = (placement: Placement): WorldPoint | undefined => {
+  switch (placement.type) {
+    case 'lever':
+      // Middle of the base's bar, level with the pivot's bolt.
+      return { x: 0.4, y: 0.05 };
+    case 'conveyor':
+      // End of the frame, on the belt's axis.
+      return { x: 1.5, y: 0 };
+    case 'button':
+      // Edge of the base plate.
+      return { x: 0.4, y: 0.17 };
+    case 'fan':
+      // Foot of the frame; it turns with the fan.
+      return { x: 0.6, y: 0.4 };
+    case 'barrier':
+      // End of the pillar's plinth.
+      return { x: 0.4, y: 0.35 };
+    case 'ball':
+    case 'basket':
+    case 'beam':
+    case 'seesaw':
+    case 'mass':
+    case 'springboard':
+      return undefined;
+  }
 };
 
 const rotate = ({ x, y }: WorldPoint, angle: number): WorldPoint => ({
@@ -52,7 +72,7 @@ const rotate = ({ x, y }: WorldPoint, angle: number): WorldPoint => ({
 
 /** The object's port on the side facing `towardsX`. */
 const portFacing = (placement: Placement, towardsX: number): WirePort | undefined => {
-  const offset = portOffsets[placement.type];
+  const offset = portOffset(placement);
   if (offset === undefined) return undefined;
 
   const { position, rotation } = placement.transform;

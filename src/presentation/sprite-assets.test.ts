@@ -85,6 +85,35 @@ const everyFamily = levelDocumentSchema.parse({
       props: { direction: 'left' },
       permissions,
     },
+    {
+      id: 'button-1',
+      type: 'button',
+      transform: { position: { x: 8, y: 2 }, rotation: 0 },
+      props: {},
+      permissions,
+    },
+    {
+      id: 'fan-1',
+      type: 'fan',
+      transform: { position: { x: 8, y: 4 }, rotation: 0 },
+      props: { state: 'off' },
+      permissions,
+    },
+    {
+      id: 'barrier-1',
+      type: 'barrier',
+      transform: { position: { x: 2, y: 5 }, rotation: 0 },
+      // Closed, the whole bar is drawn: its sprite is the full bar.
+      props: { state: 'closed' },
+      permissions,
+    },
+    {
+      id: 'springboard-1',
+      type: 'springboard',
+      transform: { position: { x: 8, y: 6 }, rotation: 0 },
+      props: {},
+      permissions,
+    },
   ],
   inventory: [],
   goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
@@ -119,15 +148,24 @@ describe('sprites du plateau', () => {
     },
   );
 
-  it.each(['ball', 'basket', 'beam', 'seesaw', 'mass', 'lever', 'conveyor'] as const)(
-    'fournit une vignette et tous les calques de la famille %s',
-    (family) => {
-      expect(publicFile(spriteThumbnailPath(family)).byteLength).toBeLessThanOrEqual(
-        SPRITE_BUDGET_BYTES,
-      );
-      for (const asset of spriteAssetsForFamily(family)) {
-        expect(publicFile(spriteAssetPath(asset, 2)).byteLength).toBeGreaterThan(0);
-      }
-    },
-  );
+  it.each([
+    'ball',
+    'basket',
+    'beam',
+    'seesaw',
+    'mass',
+    'lever',
+    'conveyor',
+    'button',
+    'fan',
+    'barrier',
+    'springboard',
+  ] as const)('fournit une vignette et tous les calques de la famille %s', (family) => {
+    expect(publicFile(spriteThumbnailPath(family)).byteLength).toBeLessThanOrEqual(
+      SPRITE_BUDGET_BYTES,
+    );
+    for (const asset of spriteAssetsForFamily(family)) {
+      expect(publicFile(spriteAssetPath(asset, 2)).byteLength).toBeGreaterThan(0);
+    }
+  });
 });

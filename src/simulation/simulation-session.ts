@@ -14,15 +14,21 @@ import {
 
 import {
   ballGeometry,
+  barrierGeometry,
   basketGeometry,
   beamGeometry,
+  buttonGeometry,
   conveyorGeometry,
+  fanGeometry,
   leverAngle,
   leverGeometry,
   massGeometry,
+  quarterTurnPose,
   seesawGeometry,
+  springboardGeometry,
   type LeverPosition,
   type WorldPolygon,
+  type WorldRect,
 } from '../domain/family-geometry';
 import type { LevelDocument } from '../domain/level-document';
 import {
@@ -90,6 +96,30 @@ type SimulationDeviceState =
       readonly facing: -1 | 1;
       /** Signed distance travelled by the belt since the start, in world units. */
       readonly beltOffset: number;
+    }
+  | {
+      readonly placementId: string;
+      readonly kind: 'button';
+      readonly pressed: boolean;
+    }
+  | {
+      readonly placementId: string;
+      readonly kind: 'fan';
+      readonly running: boolean;
+      /** Angle the blades have turned since the start, in radians; drawn only. */
+      readonly bladeAngle: number;
+    }
+  | {
+      readonly placementId: string;
+      readonly kind: 'barrier';
+      /** 0 with the bar fully out, 1 with it fully slid into the pillar. */
+      readonly retraction: number;
+    }
+  | {
+      readonly placementId: string;
+      readonly kind: 'springboard';
+      /** 0 at rest, 1 fully squashed by a landing; drawn only. */
+      readonly compression: number;
     };
 
 interface SimulationSensorEventFields {
@@ -176,6 +206,46 @@ interface ConveyorRecord {
   beltOffset: number;
 }
 
+interface ButtonRecord {
+  readonly placementId: string;
+  readonly body: Body;
+  /** Dynamic fixtures overlapping the sensor above the cap. */
+  contacts: number;
+  /** Whether the cap's collider currently stands sunk. */
+  sunk: boolean;
+  cap: Fixture;
+}
+
+interface FanRecord {
+  readonly placementId: string;
+  /** Centre of the ring's mouth, in world units. */
+  readonly mouth: SimulationVector;
+  /** Unit vector the air flows along. */
+  readonly axis: SimulationVector;
+  readonly ownRunning: boolean;
+  readonly sourceId: string | undefined;
+  running: boolean;
+  spin: number;
+  bladeAngle: number;
+}
+
+interface BarrierRecord {
+  readonly placementId: string;
+  readonly body: Body;
+  /** +1 when the bar closes to the right of the pillar, -1 when mirrored to the left. */
+  readonly side: -1 | 1;
+  readonly ownOpen: boolean;
+  readonly sourceId: string | undefined;
+  open: boolean;
+  retraction: number;
+  bar: Fixture | null;
+}
+
+interface SpringboardRecord {
+  readonly placementId: string;
+  compression: number;
+}
+
 interface SensorRecord {
   readonly targetId: string;
 }
@@ -242,6 +312,64 @@ const LEVER_NOTCH_STIFFNESS = 12;
 const LEVER_SWITCH_ANGLE = leverGeometry.tilt / 2;
 const CONVEYOR_SPEED = 1.5;
 const conveyorDirections = { left: -1, stopped: 0, right: 1 } as const;
+
+const MASS_RING = new Circle(
+  new Vec2(massGeometry.ring.center.x, massGeometry.ring.center.y),
+  massGeometry.ring.radius,
+);
+const MASS_RING_AREA = Math.PI * massGeometry.ring.radius ** 2;
+
+const BUTTON_BASE_VERTICES = buttonGeometry.base.polygon.map(({ x, y }) => new Vec2(x, y));
+/** How far above the cap an object still counts as pressing it. */
+const BUTTON_SENSOR_REACH = 0.05;
+
+/**
+ * Air blows along the fan's axis from its mouth, in a cone that widens by
+ * `FAN_SPREAD` per unit and fades linearly to nothing at `FAN_RANGE`. The
+ * push is proportional to the width a body shows the air, not to its mass:
+ * at the mouth it holds a ball well above its weight, and barely nudges ten
+ * kilograms. Game values, tuned for readability.
+ */
+const FAN_RANGE = 3;
+const FAN_SPREAD = Math.tan(Math.PI / 12);
+const FAN_PRESSURE = 9;
+/** Blade speed at full run, a turn every quarter second, and how fast it is reached. */
+const FAN_BLADE_SPEED = 8 * Math.PI;
+const FAN_BLADE_ACCELERATION = 20 * Math.PI;
+
+/** The bar slides at this speed, in world units per second. */
+const BARRIER_SPEED = 2.5;
+const BARRIER_TRAVEL = barrierGeometry.bar.length - barrierGeometry.pillar.barrelHalfWidth;
+/** Under this length out of the barrel, the bar has no collider any more. */
+const BARRIER_MIN_BAR = 0.02;
+
+const SPRINGBOARD_BASE_VERTICES = springboardGeometry.base.polygon.map(
+  ({ x, y }) => new Vec2(x, y),
+);
+/**
+ * The platform gives back all the speed an object lands with. Box2D keeps
+ * the larger restitution of a pair, and ignores it under 1 m/s, so whatever
+ * rests on the platform stays at rest.
+ */
+const SPRINGBOARD_RESTITUTION = 1;
+/** Landing speed that squashes the spring fully, and how fast it relaxes, per second. */
+const SPRINGBOARD_FULL_SQUASH_SPEED = 8;
+const SPRINGBOARD_RELAX_RATE = 5;
+
+/** A box fixture covering a footprint given relative to the body's origin. */
+const rectBox = ({ x, y, width, height }: WorldRect) =>
+  new Box(width / 2, height / 2, new Vec2(x + width / 2, y + height / 2), 0);
+
+/** The cap's collider, raised or sunk by the cap's travel. */
+const buttonCapShape = (sunk: boolean) =>
+  rectBox({
+    ...buttonGeometry.cap.body,
+    y: buttonGeometry.cap.body.y + (sunk ? buttonGeometry.cap.travel : 0),
+  });
+
+/** A polygon mirrored across the local vertical axis; Box2D rebuilds its hull, winding aside. */
+const mirroredVertices = (polygon: WorldPolygon, mirrored: boolean) =>
+  polygon.map(({ x, y }) => new Vec2(mirrored ? -x : x, y));
 
 const leverPositionFromAngle = (angle: number): LeverPosition =>
   angle <= -LEVER_SWITCH_ANGLE ? 'left' : angle >= LEVER_SWITCH_ANGLE ? 'right' : 'center';
@@ -314,6 +442,12 @@ class PlanckSimulationSession implements SimulationSession {
   #levers: LeverRecord[] = [];
   #conveyors: ConveyorRecord[] = [];
   #conveyorFixtures = new Map<Fixture, ConveyorRecord>();
+  #buttons: ButtonRecord[] = [];
+  #buttonSensors = new Map<Fixture, ButtonRecord>();
+  #fans: FanRecord[] = [];
+  #barriers: BarrierRecord[] = [];
+  #springboards: SpringboardRecord[] = [];
+  #springboardPlatforms = new Map<Fixture, SpringboardRecord>();
   #sensors = new Map<Fixture, SensorRecord>();
   #activeSensorContacts = new Map<string, number>();
   #events: SimulationSensorEvent[] = [];
@@ -325,10 +459,13 @@ class PlanckSimulationSession implements SimulationSession {
 
   readonly #onBeginContact = (contact: Contact): void => {
     this.#updateSensorContact(contact, 1);
+    this.#updateButtonContact(contact, 1);
+    this.#squashSpringboard(contact);
   };
 
   readonly #onEndContact = (contact: Contact): void => {
     this.#updateSensorContact(contact, -1);
+    this.#updateButtonContact(contact, -1);
   };
 
   /**
@@ -412,6 +549,35 @@ class PlanckSimulationSession implements SimulationSession {
             direction,
             facing,
             beltOffset,
+          }),
+        ),
+        ...this.#buttons.map(
+          ({ placementId, contacts }): SimulationDeviceState => ({
+            placementId,
+            kind: 'button',
+            pressed: contacts > 0,
+          }),
+        ),
+        ...this.#fans.map(
+          ({ placementId, running, bladeAngle }): SimulationDeviceState => ({
+            placementId,
+            kind: 'fan',
+            running,
+            bladeAngle,
+          }),
+        ),
+        ...this.#barriers.map(
+          ({ placementId, retraction }): SimulationDeviceState => ({
+            placementId,
+            kind: 'barrier',
+            retraction,
+          }),
+        ),
+        ...this.#springboards.map(
+          ({ placementId, compression }): SimulationDeviceState => ({
+            placementId,
+            kind: 'springboard',
+            compression,
           }),
         ),
       ],
@@ -561,9 +727,44 @@ class PlanckSimulationSession implements SimulationSession {
             conveyorDirections[placement.props.direction],
           );
           break;
+        case 'button':
+          this.#createButton(
+            placement.id,
+            placement.transform.position,
+            placement.transform.rotation,
+          );
+          break;
+        case 'fan':
+          this.#createFan(
+            placement.id,
+            placement.transform.position,
+            placement.transform.rotation,
+            placement.props.state === 'on',
+          );
+          break;
+        case 'barrier':
+          this.#createBarrier(
+            placement.id,
+            placement.transform.position,
+            placement.transform.rotation,
+            placement.props.state === 'open',
+          );
+          break;
+        case 'springboard':
+          this.#createSpringboard(
+            placement.id,
+            placement.transform.position,
+            placement.transform.rotation,
+          );
+          break;
       }
     }
-    this.#commandConveyors();
+    this.#commandDevices();
+    // A barrier starts where the level puts it, without sliding there.
+    for (const barrier of this.#barriers) {
+      barrier.retraction = barrier.open ? 1 : 0;
+      this.#shapeBarrierBar(barrier);
+    }
   }
 
   /** Brakes each ball's spin while it rests on a surface, never past a standstill. */
@@ -686,12 +887,16 @@ class PlanckSimulationSession implements SimulationSession {
       allowSleep: true,
     });
     this.#bodies.push({ placementId, role: 'primary', handle: body });
+    // Box2D sums each fixture's area: the overlap of ring and body is counted
+    // twice, which is what makes the total exactly the printed weight.
+    const density = kilograms / (MASS_AREA + MASS_RING_AREA);
     this.#createFixture(body, {
       shape: new Polygon(MASS_VERTICES),
-      density: kilograms / MASS_AREA,
+      density,
       friction: 0.6,
       restitution: 0.05,
     });
+    this.#createFixture(body, { shape: MASS_RING, density, friction: 0.6, restitution: 0.05 });
   }
 
   #createLever(
@@ -797,6 +1002,31 @@ class PlanckSimulationSession implements SimulationSession {
     }
   }
 
+  /**
+   * ADR 0009: a two-state device (fan, barrier) is active while its lever
+   * stands to either side — centre means stop, as for a conveyor — or while
+   * its button is pressed.
+   */
+  #controllerActive(sourceId: string): boolean {
+    const lever = this.#levers.find(({ placementId }) => placementId === sourceId);
+    if (lever !== undefined) return this.#leverPosition(lever) !== 'center';
+    const button = this.#buttons.find(({ placementId }) => placementId === sourceId);
+    return button !== undefined && button.contacts > 0;
+  }
+
+  /** Reads every controller and sets the state of the devices it commands. */
+  #commandDevices(): void {
+    this.#commandConveyors();
+    for (const fan of this.#fans) {
+      fan.running =
+        fan.sourceId === undefined ? fan.ownRunning : this.#controllerActive(fan.sourceId);
+    }
+    for (const barrier of this.#barriers) {
+      barrier.open =
+        barrier.sourceId === undefined ? barrier.ownOpen : this.#controllerActive(barrier.sourceId);
+    }
+  }
+
   /** Reads every lever and sets the direction of the conveyors it commands. */
   #commandConveyors(): void {
     for (const conveyor of this.#conveyors) {
@@ -824,6 +1054,259 @@ class PlanckSimulationSession implements SimulationSession {
   #wakeBodiesOn(body: Body): void {
     for (let edge = body.getContactList(); edge !== null; edge = edge.next ?? null) {
       edge.other?.setAwake(true);
+    }
+  }
+
+  #createButton(placementId: string, position: SimulationVector, rotation: number): void {
+    const body = this.#requireWorld().createBody({
+      type: 'static',
+      position: new Vec2(position.x, position.y),
+      angle: rotation,
+    });
+    this.#bodies.push({ placementId, role: 'primary', handle: body });
+    this.#createFixture(body, { shape: new Polygon(BUTTON_BASE_VERTICES), friction: 0.5 });
+    const { body: cap, travel } = buttonGeometry.cap;
+    const capFixture = this.#createFixture(body, { shape: buttonCapShape(false), friction: 0.5 });
+    // The sensor spans the whole travel: what sinks with the cap keeps it pressed.
+    const sensor = this.#createFixture(body, {
+      shape: rectBox({
+        ...cap,
+        y: cap.y - BUTTON_SENSOR_REACH,
+        height: travel + 2 * BUTTON_SENSOR_REACH,
+      }),
+      isSensor: true,
+    });
+    const record: ButtonRecord = { placementId, body, contacts: 0, sunk: false, cap: capFixture };
+    this.#buttons.push(record);
+    this.#buttonSensors.set(sensor, record);
+  }
+
+  /**
+   * A pressed cap really sinks: its collider is rebuilt lower, so what
+   * weighs on it rests on the drawn cap, and rises again once released.
+   */
+  #sinkButtons(): void {
+    for (const button of this.#buttons) {
+      const pressed = button.contacts > 0;
+      if (pressed === button.sunk) continue;
+      button.sunk = pressed;
+      this.#wakeBodiesOn(button.body);
+      button.body.destroyFixture(button.cap);
+      this.#colliders.delete(button.cap);
+      button.cap = this.#createFixture(button.body, {
+        shape: buttonCapShape(pressed),
+        friction: 0.5,
+      });
+    }
+  }
+
+  #createFan(
+    placementId: string,
+    position: SimulationVector,
+    rotation: number,
+    ownRunning: boolean,
+  ): void {
+    const { angle, mirrored } = quarterTurnPose(rotation);
+    const body = this.#requireWorld().createBody({
+      type: 'static',
+      position: new Vec2(position.x, position.y),
+      angle,
+    });
+    this.#bodies.push({ placementId, role: 'primary', handle: body });
+    const flip = mirrored ? -1 : 1;
+    this.#createFixture(body, {
+      shape: new Polygon(mirroredVertices(fanGeometry.body.polygon, mirrored)),
+      friction: 0.5,
+    });
+    const mouth = body.getWorldPoint(new Vec2(flip * fanGeometry.mouth.x, fanGeometry.mouth.y));
+    const axis = body.getWorldVector(new Vec2(flip, 0));
+    this.#fans.push({
+      placementId,
+      mouth: { x: mouth.x, y: mouth.y },
+      // Quarter turns only: rounding drops the 1e-17 residues of cos(π/2).
+      axis: { x: Math.round(axis.x), y: Math.round(axis.y) },
+      ownRunning,
+      sourceId: this.#level.wires.find(({ targetId }) => targetId === placementId)?.sourceId,
+      running: ownRunning,
+      spin: 0,
+      bladeAngle: 0,
+    });
+  }
+
+  #createBarrier(
+    placementId: string,
+    position: SimulationVector,
+    rotation: number,
+    ownOpen: boolean,
+  ): void {
+    const { angle, mirrored } = quarterTurnPose(rotation);
+    const body = this.#requireWorld().createBody({
+      type: 'static',
+      position: new Vec2(position.x, position.y),
+      angle,
+    });
+    this.#bodies.push({ placementId, role: 'primary', handle: body });
+    this.#createFixture(body, {
+      shape: new Polygon(mirroredVertices(barrierGeometry.pillar.polygon, mirrored)),
+      friction: 0.5,
+    });
+    this.#barriers.push({
+      placementId,
+      body,
+      side: mirrored ? -1 : 1,
+      ownOpen,
+      sourceId: this.#level.wires.find(({ targetId }) => targetId === placementId)?.sourceId,
+      open: ownOpen,
+      retraction: ownOpen ? 1 : 0,
+      bar: null,
+    });
+  }
+
+  /**
+   * The bar's collider is only the part out of the barrel: a sliding body
+   * would poke out of the pillar's other side. It is rebuilt whenever the
+   * bar moves, and whatever rests on it is woken to fall or be pushed.
+   */
+  #shapeBarrierBar(barrier: BarrierRecord): void {
+    if (barrier.bar !== null) {
+      this.#wakeBodiesOn(barrier.body);
+      barrier.body.destroyFixture(barrier.bar);
+      this.#colliders.delete(barrier.bar);
+      barrier.bar = null;
+    }
+    const out = (1 - barrier.retraction) * BARRIER_TRAVEL;
+    if (out < BARRIER_MIN_BAR) return;
+
+    const { barrelHalfWidth } = barrierGeometry.pillar;
+    const { thickness, centerY } = barrierGeometry.bar;
+    barrier.bar = this.#createFixture(barrier.body, {
+      shape: new Box(
+        out / 2,
+        thickness / 2,
+        new Vec2(barrier.side * (barrelHalfWidth + out / 2), centerY),
+        0,
+      ),
+      friction: 0.45,
+    });
+  }
+
+  /** Slides each barrier's bar toward the state it is commanded to. */
+  #moveBarriers(): void {
+    const stepRetraction = (BARRIER_SPEED * this.#fixedStepSeconds) / BARRIER_TRAVEL;
+    for (const barrier of this.#barriers) {
+      const target = barrier.open ? 1 : 0;
+      if (barrier.retraction === target) continue;
+      barrier.retraction =
+        target > barrier.retraction
+          ? Math.min(target, barrier.retraction + stepRetraction)
+          : Math.max(target, barrier.retraction - stepRetraction);
+      this.#shapeBarrierBar(barrier);
+    }
+  }
+
+  #createSpringboard(placementId: string, position: SimulationVector, rotation: number): void {
+    const body = this.#requireWorld().createBody({
+      type: 'static',
+      position: new Vec2(position.x, position.y),
+      angle: rotation,
+    });
+    this.#bodies.push({ placementId, role: 'primary', handle: body });
+    this.#createFixture(body, { shape: new Polygon(SPRINGBOARD_BASE_VERTICES), friction: 0.5 });
+    this.#createFixture(body, {
+      shape: rectBox(springboardGeometry.spring.footprint),
+      friction: 0.3,
+    });
+    const platform = this.#createFixture(body, {
+      shape: rectBox(springboardGeometry.platform.footprint),
+      friction: 0.5,
+      restitution: SPRINGBOARD_RESTITUTION,
+    });
+    const record: SpringboardRecord = { placementId, compression: 0 };
+    this.#springboards.push(record);
+    this.#springboardPlatforms.set(platform, record);
+  }
+
+  /** A landing squashes the spring in proportion to its speed; drawn only. */
+  #squashSpringboard(contact: Contact): void {
+    const onA = this.#springboardPlatforms.get(contact.getFixtureA());
+    const springboard = onA ?? this.#springboardPlatforms.get(contact.getFixtureB());
+    if (springboard === undefined) return;
+
+    const other = (onA === undefined ? contact.getFixtureA() : contact.getFixtureB()).getBody();
+    const speed = other.getLinearVelocity().length();
+    springboard.compression = Math.max(
+      springboard.compression,
+      Math.min(1, speed / SPRINGBOARD_FULL_SQUASH_SPEED),
+    );
+  }
+
+  #relaxSpringboards(): void {
+    for (const springboard of this.#springboards) {
+      springboard.compression = Math.max(
+        0,
+        springboard.compression - SPRINGBOARD_RELAX_RATE * this.#fixedStepSeconds,
+      );
+    }
+  }
+
+  /** Pushes every dynamic body inside a running fan's cone of air. */
+  #blowFans(): void {
+    const world = this.#requireWorld();
+    for (const fan of this.#fans) {
+      if (!fan.running) continue;
+      for (let body = world.getBodyList(); body !== null; body = body.getNext()) {
+        if (body.getType() !== 'dynamic') continue;
+
+        const center = body.getWorldCenter();
+        const offset = { x: center.x - fan.mouth.x, y: center.y - fan.mouth.y };
+        const distance = offset.x * fan.axis.x + offset.y * fan.axis.y;
+        if (distance < 0 || distance > FAN_RANGE) continue;
+        const across = Math.abs(offset.x * fan.axis.y - offset.y * fan.axis.x);
+        if (across > fanGeometry.mouth.halfWidth + distance * FAN_SPREAD) continue;
+
+        const push = FAN_PRESSURE * this.#exposedWidth(body, fan.axis) * (1 - distance / FAN_RANGE);
+        body.applyForceToCenter(new Vec2(fan.axis.x * push, fan.axis.y * push), true);
+      }
+    }
+  }
+
+  /** Width of a body seen along `axis`, from its bounding box (fans blow along x or y). */
+  #exposedWidth(body: Body, axis: SimulationVector): number {
+    let min = Number.POSITIVE_INFINITY;
+    let max = Number.NEGATIVE_INFINITY;
+    for (let fixture = body.getFixtureList(); fixture !== null; fixture = fixture.getNext()) {
+      if (fixture.isSensor()) continue;
+      const box = fixture.getAABB(0);
+      const [low, high] =
+        axis.x === 0 ? [box.lowerBound.x, box.upperBound.x] : [box.lowerBound.y, box.upperBound.y];
+      min = Math.min(min, low);
+      max = Math.max(max, high);
+    }
+    return max > min ? max - min : 0;
+  }
+
+  #spinFans(): void {
+    const change = FAN_BLADE_ACCELERATION * this.#fixedStepSeconds;
+    for (const fan of this.#fans) {
+      const target = fan.running ? FAN_BLADE_SPEED : 0;
+      fan.spin =
+        target > fan.spin
+          ? Math.min(target, fan.spin + change)
+          : Math.max(target, fan.spin - change);
+      fan.bladeAngle += fan.spin * this.#fixedStepSeconds;
+    }
+  }
+
+  #updateButtonContact(contact: Contact, delta: 1 | -1): void {
+    for (const [sensor, other] of [
+      [contact.getFixtureA(), contact.getFixtureB()],
+      [contact.getFixtureB(), contact.getFixtureA()],
+    ] as const) {
+      const button = this.#buttonSensors.get(sensor);
+      if (button === undefined || other.isSensor() || other.getBody().getType() !== 'dynamic') {
+        continue;
+      }
+      button.contacts = Math.max(0, button.contacts + delta);
     }
   }
 
@@ -885,11 +1368,16 @@ class PlanckSimulationSession implements SimulationSession {
     this.#events = [];
     this.#pullLeversToNotches();
     this.#applyRollingResistance();
+    this.#blowFans();
     world.step(this.#fixedStepSeconds);
     for (const conveyor of this.#conveyors) {
       conveyor.beltOffset += conveyor.direction * CONVEYOR_SPEED * this.#fixedStepSeconds;
     }
-    this.#commandConveyors();
+    this.#relaxSpringboards();
+    this.#sinkButtons();
+    this.#commandDevices();
+    this.#moveBarriers();
+    this.#spinFans();
     this.#goalEvaluation = applyBasketGoalFacts(this.#goalEvaluation, this.#goalRule, this.#events);
     this.#goalEvaluation = advanceBasketGoalEvaluation(
       this.#goalEvaluation,
@@ -999,6 +1487,12 @@ class PlanckSimulationSession implements SimulationSession {
     this.#levers = [];
     this.#conveyors = [];
     this.#conveyorFixtures.clear();
+    this.#buttons = [];
+    this.#buttonSensors.clear();
+    this.#fans = [];
+    this.#barriers = [];
+    this.#springboards = [];
+    this.#springboardPlatforms.clear();
     this.#sensors.clear();
     this.#activeSensorContacts.clear();
   }

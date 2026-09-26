@@ -25,6 +25,7 @@ const restrictedImportMessages = async (
 };
 
 describe('layer import boundaries', () => {
+  // Lints four fixtures with the type-aware ESLint config: several seconds, more under a loaded run.
   it('allows dependencies within a layer, approved lower layers, and npm packages', async () => {
     const [domain, application, simulation, infrastructure] = await Promise.all([
       restrictedImportMessages(
@@ -49,7 +50,7 @@ describe('layer import boundaries', () => {
     expect(application).toEqual([]);
     expect(simulation).toEqual([]);
     expect(infrastructure).toEqual([]);
-  });
+  }, 30_000);
 
   it('rejects forbidden relative imports from every guarded layer', async () => {
     const cases = [

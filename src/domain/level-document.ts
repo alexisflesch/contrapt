@@ -2,12 +2,16 @@ import { z } from 'zod';
 
 import {
   ballPropertiesSchema,
+  barrierPropertiesSchema,
   basketPropertiesSchema,
   beamPropertiesSchema,
+  buttonPropertiesSchema,
   conveyorPropertiesSchema,
+  fanPropertiesSchema,
   leverPropertiesSchema,
   massPropertiesSchema,
   seesawPropertiesSchema,
+  springboardPropertiesSchema,
 } from './object-family-registry';
 
 /**
@@ -109,6 +113,26 @@ const objectPlacementSchema = z.discriminatedUnion('type', [
     type: z.literal('conveyor'),
     props: conveyorPropertiesSchema,
   }),
+  z.strictObject({
+    ...placementFields,
+    type: z.literal('button'),
+    props: buttonPropertiesSchema,
+  }),
+  z.strictObject({
+    ...placementFields,
+    type: z.literal('fan'),
+    props: fanPropertiesSchema,
+  }),
+  z.strictObject({
+    ...placementFields,
+    type: z.literal('barrier'),
+    props: barrierPropertiesSchema,
+  }),
+  z.strictObject({
+    ...placementFields,
+    type: z.literal('springboard'),
+    props: springboardPropertiesSchema,
+  }),
 ]);
 
 const inventoryFields = {
@@ -152,6 +176,26 @@ const inventoryEntrySchema = z.discriminatedUnion('type', [
     ...inventoryFields,
     type: z.literal('conveyor'),
     props: conveyorPropertiesSchema,
+  }),
+  z.strictObject({
+    ...inventoryFields,
+    type: z.literal('button'),
+    props: buttonPropertiesSchema,
+  }),
+  z.strictObject({
+    ...inventoryFields,
+    type: z.literal('fan'),
+    props: fanPropertiesSchema,
+  }),
+  z.strictObject({
+    ...inventoryFields,
+    type: z.literal('barrier'),
+    props: barrierPropertiesSchema,
+  }),
+  z.strictObject({
+    ...inventoryFields,
+    type: z.literal('springboard'),
+    props: springboardPropertiesSchema,
   }),
 ]);
 
@@ -304,13 +348,47 @@ const addUniqueIdentifierIssues = (
   });
 };
 
+/**
+ * How a family turns: a beam at any angle, a fan, barrier or springboard by
+ * quarter turns (the four directions it can face), anything else never.
+ */
+export const rotationMode = (type: ObjectPlacement['type']): 'free' | 'quarter-turn' | 'fixed' => {
+  if (type === 'beam') return 'free';
+  if (type === 'fan' || type === 'barrier' || type === 'springboard') return 'quarter-turn';
+  return 'fixed';
+};
+
+const QUARTER_TURN = Math.PI / 2;
+/** Radians: well under any visible angle, well over the rounding of repeated quarter turns. */
+const QUARTER_TURN_TOLERANCE = 1e-6;
+
+const isQuarterTurn = (rotation: number): boolean =>
+  Math.abs(rotation / QUARTER_TURN - Math.round(rotation / QUARTER_TURN)) < QUARTER_TURN_TOLERANCE;
+
+const addQuarterTurnIssues = (
+  objects: readonly ObjectPlacement[],
+  issues: LevelDocumentValidationIssue[],
+): void => {
+  objects.forEach((placement, index) => {
+    if (
+      rotationMode(placement.type) === 'quarter-turn' &&
+      !isQuarterTurn(placement.transform.rotation)
+    ) {
+      issues.push({
+        path: ['objects', index, 'transform', 'rotation'],
+        message: `La famille « ${placement.type} » ne tourne que par quarts de tour.`,
+      });
+    }
+  });
+};
+
 const addRotationPermissionIssues = (
   entries: readonly (ObjectPlacement | InventoryEntry)[],
   property: 'objects' | 'inventory',
   issues: LevelDocumentValidationIssue[],
 ): void => {
   entries.forEach((entry, index) => {
-    if (entry.type !== 'beam' && entry.permissions.rotate) {
+    if (rotationMode(entry.type) === 'fixed' && entry.permissions.rotate) {
       issues.push({
         path: [property, index, 'permissions', 'rotate'],
         message: `La rotation n’est pas disponible pour la famille « ${entry.type} ».`,
@@ -321,9 +399,26 @@ const addRotationPermissionIssues = (
 
 type ControlWire = z.infer<typeof controlWireSchema>;
 
+type PlacementType = ObjectPlacement['type'];
+
 /**
- * ADR 0009: a wire goes from a placed lever to a placed conveyor, and a
- * conveyor obeys at most one lever, so that its direction is never ambiguous.
+ * ADR 0009: whether a `source` may command a `target`. Levers and buttons
+ * command; conveyors, fans and barriers obey. A button has two states and a
+ * conveyor three: a button never commands a conveyor.
+ */
+export const canCommand = (source: PlacementType, target: PlacementType): boolean => {
+  if (source === 'lever') return target === 'conveyor' || target === 'fan' || target === 'barrier';
+  if (source === 'button') return target === 'fan' || target === 'barrier';
+  return false;
+};
+
+const controlSources: ReadonlySet<PlacementType> = new Set(['lever', 'button']);
+const controlTargets: ReadonlySet<PlacementType> = new Set(['conveyor', 'fan', 'barrier']);
+
+/**
+ * ADR 0009: a wire goes from a placed controller (lever, button) to a placed
+ * device (conveyor, fan, barrier) it can command, and a device obeys at
+ * most one controller, so that its state is never ambiguous.
  */
 const addControlWireIssues = (
   objects: readonly ObjectPlacement[],
@@ -343,21 +438,32 @@ const addControlWireIssues = (
     }
     wireIds.add(wire.id);
 
-    if (placementsById.get(wire.sourceId)?.type !== 'lever') {
+    const source = placementsById.get(wire.sourceId);
+    const target = placementsById.get(wire.targetId);
+    if (source === undefined || !controlSources.has(source.type)) {
       issues.push({
         path: ['wires', index, 'sourceId'],
-        message: 'Un fil doit partir d’un levier placé.',
+        message: 'Un fil doit partir d’un levier ou d’un bouton placé.',
       });
     }
-    if (placementsById.get(wire.targetId)?.type !== 'conveyor') {
+    if (target === undefined || !controlTargets.has(target.type)) {
       issues.push({
         path: ['wires', index, 'targetId'],
-        message: 'Un fil doit arriver sur un convoyeur placé.',
+        message: 'Un fil doit arriver sur un convoyeur, un ventilateur ou une barrière placés.',
+      });
+    } else if (
+      source !== undefined &&
+      controlSources.has(source.type) &&
+      !canCommand(source.type, target.type)
+    ) {
+      issues.push({
+        path: ['wires', index, 'targetId'],
+        message: 'Un bouton ne commande pas de convoyeur : seul un levier en donne le sens.',
       });
     } else if (commandedTargets.has(wire.targetId)) {
       issues.push({
         path: ['wires', index, 'targetId'],
-        message: `Le convoyeur « ${wire.targetId} » est déjà commandé par un levier.`,
+        message: `L’appareil « ${wire.targetId} » est déjà commandé.`,
       });
     }
     commandedTargets.add(wire.targetId);
@@ -479,6 +585,7 @@ export const levelDocumentSchema = levelDocumentV2StructureSchema.superRefine(
     const issues: LevelDocumentValidationIssue[] = [];
     addLevelDocumentRelationIssues(document, issues);
     addSceneContainmentIssues(document, issues);
+    addQuarterTurnIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);
     for (const issue of issues) {
       context.addIssue({ code: 'custom', path: [...issue.path], message: issue.message });

@@ -8,12 +8,19 @@ const placementNames: Readonly<Record<LevelDocument['objects'][number]['type'], 
   mass: 'Masse',
   lever: 'Levier',
   conveyor: 'Convoyeur',
+  button: 'Bouton',
+  fan: 'Ventilateur',
+  barrier: 'Barrière',
+  springboard: 'Tremplin',
 };
 
 const masculineTypes: ReadonlySet<LevelDocument['objects'][number]['type']> = new Set([
   'basket',
   'lever',
   'conveyor',
+  'button',
+  'fan',
+  'springboard',
 ]);
 
 /** The French display name for a placed object, shared by `BoardView` and `ContextPanel`. */

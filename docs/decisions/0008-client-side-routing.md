@@ -45,6 +45,9 @@ bibliothèque.
   - `/levels/:levelId/play` — un niveau joué ; `levelId` est l'`id` du
     `LevelDocument`, jamais un identifiant inventé séparément ;
   - `/editor` — l'atelier de création libre (`embeddedWorkshopDocument`) ;
+  - `/demo` — une machine en chaîne qui se résout seule
+    (`embeddedDemoDocument`, ajoutée le 26 septembre 2026), en mode joueur
+    sans inventaire : elle montre le concept en une pression sur « Tester » ;
   - `/settings` — réglages ; page provisoire tant qu'aucun réglage réel
     n'existe ;
   - toute autre route redirige vers `/levels`.

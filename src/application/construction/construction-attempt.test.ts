@@ -272,6 +272,28 @@ describe('ConstructionAttempt', () => {
     ).toBe(1.5);
   });
 
+  it('turns a fan by quarter turns only', () => {
+    const level = createLevel();
+    const attempt = createConstructionAttempt({
+      ...level,
+      objects: [
+        ...level.objects,
+        {
+          id: 'fan-1',
+          type: 'fan',
+          transform: { position: { x: 3, y: 3 }, rotation: 0 },
+          props: { state: 'on' },
+          permissions: { move: true, rotate: true, remove: true },
+        },
+      ],
+    });
+    const turn = (rotation: number) =>
+      rotatePlacement({ context: 'author', placementId: 'fan-1', rotation }).execute(attempt);
+
+    expect(turn(Math.PI / 2).status).toBe('accepted');
+    expect(turn(Math.PI / 12)).toEqual({ status: 'rejected', reason: 'invalid-level-document' });
+  });
+
   it('restores the exact source entry and removes provenance atomically for the player', () => {
     const attempt = createConstructionAttempt(createLevel());
     const placed = placeBeam().execute(attempt);

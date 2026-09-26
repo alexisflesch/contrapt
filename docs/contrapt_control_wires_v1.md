@@ -1,7 +1,7 @@
-# Contrapt! — Fils de commande entre levier et convoyeur
+# Contrapt! — Fils de commande
 
 Statut : spécification fonctionnelle de la v1, conforme à l'implémentation du
-25 septembre 2026. Les décisions et leurs raisons sont dans
+26 septembre 2026 (bouton, ventilateur, barrière ajoutés). Les décisions et leurs raisons sont dans
 [l'ADR 0009](decisions/0009-control-wires.md) ; le code et les tests priment sur
 ce texte.
 
@@ -10,15 +10,18 @@ pourquoi, est résumé à la fin.
 
 ## Principe
 
-Un fil est une **liaison directe** d'un contrôleur vers un dispositif. En v1, le
-seul contrôleur est le **levier** et le seul dispositif est le **convoyeur**.
+Un fil est une **liaison directe** d'un contrôleur vers un dispositif. Les
+contrôleurs sont le **levier** et le **bouton** ; les dispositifs sont le
+**convoyeur**, le **ventilateur** et la **barrière**. Un bouton ne commande
+jamais un convoyeur (deux états contre trois).
 
 Le joueur ne construit pas de réseau électrique et ne dessine pas le trajet : le
 tracé, les virages et les ponts sont calculés. Il n'existe ni jonction, ni
 dérivation, ni nœud, ni branchement fil-vers-fil, ni outil « pont ».
 
-- Un levier peut commander plusieurs convoyeurs : autant de fils indépendants.
-- Un convoyeur obéit à **un seul** levier.
+- Un contrôleur peut commander plusieurs dispositifs : autant de fils
+  indépendants.
+- Un dispositif obéit à **un seul** contrôleur.
 - Deux fils peuvent se croiser ; un croisement n'a aucune signification.
 
 ## Levier
@@ -55,19 +58,48 @@ Exemple : une masse sur un convoyeur relié à un levier au centre ne bouge pas 
 une balle tombe sur le pommeau et le couche vers la droite ; le convoyeur part
 vers la droite et emporte la masse.
 
+## Bouton
+
+Un bouton-poussoir posé au sol. Il est **enfoncé tant qu'un objet** — balle,
+masse, planche — **pèse sur son capuchon**, et se relâche dès qu'il n'y a plus
+rien : il n'a pas de mémoire et rien à régler.
+
+## Ventilateur et barrière
+
+Deux dispositifs à deux états.
+
+| Contrôleur relié | Ventilateur | Barrière |
+| ---------------- | ----------- | -------- |
+| levier au centre | arrêté      | fermée   |
+| levier à gauche  | en marche   | ouverte  |
+| levier à droite  | en marche   | ouverte  |
+| bouton relâché   | arrêté      | fermée   |
+| bouton enfoncé   | en marche   | ouverte  |
+
+- Non relié, chacun suit sa propriété `state` (`on`/`off`, `closed`/`open`),
+  que le panneau ne propose plus une fois relié.
+- Le **ventilateur** souffle dans le sens que donne sa rotation, par quarts de
+  tour (droite, bas, gauche, haut), réglable même relié. Le souffle occupe un cône de 3 unités
+  devant la bouche ; il pousse proportionnellement à la largeur exposée, si bien
+  qu'il soulève une balle et bouge à peine une masse.
+- La **barrière** est une barre qui coulisse dans son poteau, du côté que donne
+  sa rotation, par quarts de tour. Fermée, elle arrête ou porte ce qui la touche ; en s'ouvrant, elle
+  rentre en moins d'une demi-seconde et laisse tomber ce qu'elle portait.
+
 ## Créer et défaire une liaison
 
 En mode éditeur uniquement, sans survol ni clic droit :
 
-1. toucher un levier pour le sélectionner ;
-2. dans « Propriétés », toucher **Relier à un convoyeur** ;
-3. toucher le convoyeur.
+1. toucher un levier ou un bouton pour le sélectionner ;
+2. dans « Propriétés », toucher **Relier à un appareil** ;
+3. toucher le dispositif.
 
-Toucher le plateau vide annule ; toucher un autre objet redemande un convoyeur.
-Un convoyeur déjà commandé est refusé avec un message. La liaison entre dans
+Toucher le plateau vide annule ; toucher un objet que ce contrôleur ne peut pas
+commander redemande un dispositif. Un dispositif déjà commandé est refusé avec
+un message. La liaison entre dans
 l'historique : annuler et rétablir la défont et la refont.
 
-Le panneau d'un levier ou d'un convoyeur relié affiche son circuit (« Circuit A »)
+Le panneau d'un contrôleur ou d'un dispositif relié affiche son circuit (« Circuit A »)
 et un bouton **Délier**. Supprimer l'un des deux objets supprime ses fils.
 
 ## Modèle de données
@@ -83,16 +115,16 @@ points d'ancrage et le tracé sont recalculés à chaque dessin.
 
 ### Circuits, lettres, couleurs
 
-Un **circuit** regroupe les fils d'un même levier. Les lettres suivent l'ordre
-dans lequel les leviers ont été reliés : A, B, … Z, puis A2, B2… Couleurs, dans
+Un **circuit** regroupe les fils d'un même contrôleur. Les lettres suivent
+l'ordre dans lequel les contrôleurs ont été reliés : A, B, … Z, puis A2, B2… Couleurs, dans
 l'ordre : rouge, bleu, vert, orange, violet, sarcelle, puis de nouveau rouge.
 La couleur n'est jamais la seule information : la lettre est dessinée aux deux
 bouts de chaque fil.
 
 ## Tracé
 
-- Ancrages : aux deux extrémités du socle du levier et aux deux bouts du
-  convoyeur. Chaque fil part du côté qui regarde l'autre objet.
+- Ancrages : aux deux extrémités du socle du levier et du bouton, aux deux
+  bouts du convoyeur, au pied du ventilateur et du poteau de la barrière. Chaque fil part du côté qui regarde l'autre objet.
 - Segments horizontaux et verticaux uniquement, coins arrondis.
 - Préférences, dans l'ordre : ne traverser aucun objet, être court, tourner peu.
   Si aucun tracé direct n'évite les objets, le fil les contourne par-dessus ou
@@ -112,14 +144,14 @@ bouts de chaque fil.
 
 ## Écarts avec la première version de cette note
 
-| Proposé                                              | Retenu                                                    | Raison                                                                               |
-| ---------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Rendu SVG                                            | Canvas 2D, même renderer que le plateau                   | ADR 0006 ; un calque SVG devrait suivre caméra, zoom et DPR séparément               |
-| `label` et `color` stockés sur chaque fil            | Dérivés, un circuit par levier                            | Rien à valider ni à désynchroniser ; la note montrait déjà un bouton A → 3 appareils |
-| `sourceAnchor` / `targetAnchor` dans le niveau       | Ancrages définis par la famille                           | Donnée visuelle, pas donnée de niveau                                                |
-| Routage tenant compte des autres fils                | Routage indépendant, ponts ensuite                        | Ajouter un fil ne doit pas redessiner les autres                                     |
-| « Éviter les zones de gameplay importantes »         | Abandonné                                                 | Non défini                                                                           |
-| Plusieurs contrôleurs possibles sur un dispositif    | Un seul levier par convoyeur                              | Deux leviers opposés rendraient le sens ambigu                                       |
-| Le joueur peut actionner le levier en simulation     | Jamais ; seuls les objets le font changer de cran         | Principe « construire, puis regarder »                                               |
-| Bouton, ventilateur, porte, moteur, électroaimant    | Non implémentés                                           | Pas d'assets ; on ajoutera une famille quand un puzzle en aura besoin                |
-| Outil « Wire » dans la boîte à outils, deux clics    | Bouton « Relier » dans le panneau du levier, puis un tap  | Réutilise la sélection existante, adapté au tactile                                  |
+| Proposé                                           | Retenu                                                       | Raison                                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Rendu SVG                                         | Canvas 2D, même renderer que le plateau                      | ADR 0006 ; un calque SVG devrait suivre caméra, zoom et DPR séparément               |
+| `label` et `color` stockés sur chaque fil         | Dérivés, un circuit par levier                               | Rien à valider ni à désynchroniser ; la note montrait déjà un bouton A → 3 appareils |
+| `sourceAnchor` / `targetAnchor` dans le niveau    | Ancrages définis par la famille                              | Donnée visuelle, pas donnée de niveau                                                |
+| Routage tenant compte des autres fils             | Routage indépendant, ponts ensuite                           | Ajouter un fil ne doit pas redessiner les autres                                     |
+| « Éviter les zones de gameplay importantes »      | Abandonné                                                    | Non défini                                                                           |
+| Plusieurs contrôleurs possibles sur un dispositif | Un seul contrôleur par dispositif                            | Deux contrôleurs opposés rendraient l'état ambigu                                    |
+| Le joueur peut actionner le levier en simulation  | Jamais ; seuls les objets le font changer de cran            | Principe « construire, puis regarder »                                               |
+| Bouton, ventilateur, porte, moteur, électroaimant | Bouton, ventilateur, barrière le 26 septembre ; le reste non | Ajoutés avec leurs assets ; moteur et électroaimant n'en ont pas                     |
+| Outil « Wire » dans la boîte à outils, deux clics | « Relier à un appareil » dans le panneau, puis un tap        | Réutilise la sélection existante, adapté au tactile                                  |

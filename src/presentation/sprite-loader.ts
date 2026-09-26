@@ -13,6 +13,13 @@ const spriteAssetsByFamily = {
   lever: ['lever-base', 'lever-handle'],
   // Both belts are loaded: which one is drawn depends on the belt's direction.
   conveyor: ['conveyor-belt', 'conveyor-belt-left', 'conveyor-frame'],
+  button: ['button-base', 'button-cap'],
+  // The blades turn behind the body and show through the ring's opening.
+  fan: ['fan-blades', 'fan-body'],
+  // The bar slides behind the pillar, into it.
+  barrier: ['barrier-bar', 'barrier-pillar'],
+  // The spring's foot hides in the base; the platform sits on its top.
+  springboard: ['springboard-spring', 'springboard-base', 'springboard-platform'],
 } as const;
 
 export type SpriteFamily = keyof typeof spriteAssetsByFamily;

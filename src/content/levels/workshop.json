@@ -5,28 +5,69 @@
     "title": "Atelier de niveau",
     "description": "Le point de départ de la création libre : une scène 16 × 9 avec un sol, une balle et un panier de démonstration, et un inventaire abondant de toutes les familles."
   },
-  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 16, "y": 9 } },
+  "scene": {
+    "min": {
+      "x": 0,
+      "y": 0
+    },
+    "max": {
+      "x": 16,
+      "y": 9
+    }
+  },
   "objects": [
     {
       "id": "workshop-floor",
       "type": "beam",
-      "props": { "size": "long" },
-      "transform": { "position": { "x": 8, "y": 8 }, "rotation": 0 },
-      "permissions": { "move": false, "rotate": false, "remove": false }
+      "props": {
+        "size": "long"
+      },
+      "transform": {
+        "position": {
+          "x": 8,
+          "y": 8
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
     },
     {
       "id": "goal-ball",
       "type": "ball",
       "props": {},
-      "transform": { "position": { "x": 8, "y": 1 }, "rotation": 0 },
-      "permissions": { "move": false, "rotate": false, "remove": false }
+      "transform": {
+        "position": {
+          "x": 8,
+          "y": 1
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
     },
     {
       "id": "goal-basket",
       "type": "basket",
       "props": {},
-      "transform": { "position": { "x": 12, "y": 7 }, "rotation": 0 },
-      "permissions": { "move": false, "rotate": false, "remove": false }
+      "transform": {
+        "position": {
+          "x": 12,
+          "y": 7
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      }
     }
   ],
   "inventory": [
@@ -35,51 +76,150 @@
       "type": "ball",
       "props": {},
       "quantity": 99,
-      "permissions": { "move": true, "rotate": false, "remove": true }
+      "permissions": {
+        "move": true,
+        "rotate": false,
+        "remove": true
+      }
     },
     {
       "id": "inventory-basket",
       "type": "basket",
       "props": {},
       "quantity": 99,
-      "permissions": { "move": true, "rotate": false, "remove": true }
+      "permissions": {
+        "move": true,
+        "rotate": false,
+        "remove": true
+      }
     },
     {
       "id": "inventory-beam",
       "type": "beam",
-      "props": { "size": "medium" },
+      "props": {
+        "size": "medium"
+      },
       "quantity": 99,
-      "permissions": { "move": true, "rotate": true, "remove": true }
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      }
     },
     {
       "id": "inventory-seesaw",
       "type": "seesaw",
       "props": {},
       "quantity": 99,
-      "permissions": { "move": true, "rotate": false, "remove": true }
+      "permissions": {
+        "move": true,
+        "rotate": false,
+        "remove": true
+      }
     },
     {
       "id": "inventory-mass",
       "type": "mass",
-      "props": { "weight": "10kg" },
+      "props": {
+        "weight": "10kg"
+      },
       "quantity": 99,
-      "permissions": { "move": true, "rotate": false, "remove": true }
+      "permissions": {
+        "move": true,
+        "rotate": false,
+        "remove": true
+      }
     },
     {
       "id": "inventory-lever",
       "type": "lever",
-      "props": { "position": "center" },
+      "props": {
+        "position": "center"
+      },
       "quantity": 99,
-      "permissions": { "move": true, "rotate": false, "remove": true }
+      "permissions": {
+        "move": true,
+        "rotate": false,
+        "remove": true
+      }
     },
     {
       "id": "inventory-conveyor",
       "type": "conveyor",
-      "props": { "direction": "stopped" },
+      "props": {
+        "direction": "stopped"
+      },
       "quantity": 99,
-      "permissions": { "move": true, "rotate": false, "remove": true }
+      "permissions": {
+        "move": true,
+        "rotate": false,
+        "remove": true
+      }
+    },
+    {
+      "id": "inventory-button",
+      "type": "button",
+      "props": {},
+      "quantity": 99,
+      "permissions": {
+        "move": true,
+        "rotate": false,
+        "remove": true
+      }
+    },
+    {
+      "id": "inventory-fan",
+      "type": "fan",
+      "props": {
+        "state": "on"
+      },
+      "quantity": 99,
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      }
+    },
+    {
+      "id": "inventory-barrier",
+      "type": "barrier",
+      "props": {
+        "state": "closed"
+      },
+      "quantity": 99,
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      }
+    },
+    {
+      "id": "inventory-springboard",
+      "type": "springboard",
+      "props": {},
+      "quantity": 99,
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      }
     }
   ],
-  "goal": { "type": "basket", "ballId": "goal-ball", "basketId": "goal-basket" },
-  "buildZones": [{ "min": { "x": 0, "y": 0 }, "max": { "x": 16, "y": 9 } }]
+  "goal": {
+    "type": "basket",
+    "ballId": "goal-ball",
+    "basketId": "goal-basket"
+  },
+  "buildZones": [
+    {
+      "min": {
+        "x": 0,
+        "y": 0
+      },
+      "max": {
+        "x": 16,
+        "y": 9
+      }
+    }
+  ]
 }

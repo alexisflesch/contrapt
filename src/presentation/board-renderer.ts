@@ -1,13 +1,19 @@
 import {
   ballGeometry,
+  barrierFootprint,
+  barrierGeometry,
   basketGeometry,
   beamGeometry,
+  buttonGeometry,
   conveyorGeometry,
+  fanGeometry,
   leverAngle,
   leverFootprint,
   leverGeometry,
   massGeometry,
+  quarterTurnPose,
   seesawGeometry,
+  springboardGeometry,
 } from '../domain/family-geometry';
 import type { LevelDocument } from '../domain/level-document';
 import { projectWires, type ProjectedWire } from './control-wires';
@@ -54,6 +60,7 @@ export type BoardCanvasContext = {
   ) => void;
   readonly translate: (x: number, y: number) => void;
   readonly rotate: (radians: number) => void;
+  readonly scale: (x: number, y: number) => void;
   lineWidth?: number;
   readonly strokeRect?: (
     destinationX: number,
@@ -121,10 +128,18 @@ export type BoardConveyorBelt = Readonly<{
   readonly facing: -1 | 1;
 }>;
 
+/** The drawn-only state of a device with no moving body of its own. */
+export type BoardDeviceView =
+  | Readonly<{ readonly kind: 'button'; readonly pressed: boolean }>
+  | Readonly<{ readonly kind: 'fan'; readonly bladeAngle: number }>
+  | Readonly<{ readonly kind: 'barrier'; readonly retraction: number }>
+  | Readonly<{ readonly kind: 'springboard'; readonly compression: number }>;
+
 /** What a running simulation adds to the document when it is drawn. */
 export type BoardSimulationView = Readonly<{
   readonly bodyPoses: BoardBodyPoses;
   readonly conveyorBelts: ReadonlyMap<string, BoardConveyorBelt>;
+  readonly devices: ReadonlyMap<string, BoardDeviceView>;
 }>;
 
 /** One sprite layer of a placement, as it is drawn. */
@@ -135,6 +150,10 @@ type ProjectedLayer = Readonly<{
   readonly destination: BoardDestination;
   /** Part of the sprite to draw, in sprite pixels; the whole sprite when absent. */
   readonly source?: BoardDestination;
+  /** Mirrored across the layer's vertical axis, after `rotation`: a fan blowing left. */
+  readonly mirrored?: boolean;
+  /** Squashed horizontally, then turned by `angle` within that squash: a fan's blades. */
+  readonly spin?: Readonly<{ readonly angle: number; readonly squash: number }>;
 }>;
 
 export type ProjectedBoardObject = Readonly<{
@@ -189,6 +208,15 @@ const layerPoseSources: Record<SpriteAsset, LayerPoseSource> = {
   'conveyor-belt': 'placement',
   'conveyor-belt-left': 'placement',
   'conveyor-frame': 'placement',
+  'button-base': 'placement',
+  'button-cap': 'placement',
+  'fan-blades': 'placement',
+  'fan-body': 'placement',
+  'barrier-bar': 'placement',
+  'barrier-pillar': 'placement',
+  'springboard-spring': 'placement',
+  'springboard-base': 'placement',
+  'springboard-platform': 'placement',
 };
 
 /**
@@ -252,6 +280,14 @@ const footprintForObject = (object: Placement): BoardDestination => {
       return leverFootprint(object.props.position);
     case 'conveyor':
       return conveyorGeometry.footprint;
+    case 'button':
+      return buttonGeometry.footprint;
+    case 'fan':
+      return fanGeometry.body.footprint;
+    case 'barrier':
+      return barrierFootprint(object.props.state);
+    case 'springboard':
+      return springboardGeometry.footprint;
   }
 };
 
@@ -263,6 +299,110 @@ const partialLayerDestinations: Partial<Record<SpriteAsset, BoardDestination>> =
   'lever-handle': leverGeometry.handle.footprint,
   'conveyor-belt': CONVEYOR_BELT_WINDOW,
   'conveyor-belt-left': CONVEYOR_BELT_WINDOW,
+  'button-base': buttonGeometry.base.footprint,
+  'button-cap': buttonGeometry.cap.footprint,
+  'fan-blades': fanGeometry.blades.footprint,
+  'fan-body': fanGeometry.body.footprint,
+  'barrier-pillar': barrierGeometry.pillar.footprint,
+  'springboard-spring': springboardGeometry.spring.footprint,
+  'springboard-base': springboardGeometry.base.footprint,
+  'springboard-platform': springboardGeometry.platform.footprint,
+};
+
+/** The bar's sprite, in pixels: the renderer shows only the part out of the pillar. */
+const BARRIER_BAR_SPRITE = { width: 160, height: 36 } as const;
+const BARRIER_BAR_TRAVEL = barrierGeometry.bar.length - barrierGeometry.pillar.barrelHalfWidth;
+
+const deviceAt = (object: Placement, view: BoardSimulationView | undefined) =>
+  view?.devices.get(object.id);
+
+/**
+ * The bar runs from the pillar's axis to its tip on its side. Sliding in,
+ * it passes behind the pillar: only its tip end is drawn, never a stub out
+ * of the pillar's other side.
+ */
+const barrierBarLayer = (
+  object: Placement & { readonly type: 'barrier' },
+  view: BoardSimulationView | undefined,
+): Pick<ProjectedLayer, 'destination' | 'source'> => {
+  const device = deviceAt(object, view);
+  const retraction =
+    device?.kind === 'barrier' ? device.retraction : object.props.state === 'open' ? 1 : 0;
+  const { length, thickness, centerY } = barrierGeometry.bar;
+  const tip = length - retraction * BARRIER_BAR_TRAVEL;
+  // Drawn to the right; a half-turned barrier is mirrored as a whole.
+  const destination = {
+    x: 0,
+    y: centerY - thickness / 2,
+    width: tip,
+    height: thickness,
+  };
+  if (tip >= length) return { destination };
+
+  const shown = (tip / length) * BARRIER_BAR_SPRITE.width;
+  return {
+    destination,
+    source: {
+      x: BARRIER_BAR_SPRITE.width - shown,
+      y: 0,
+      width: shown,
+      height: BARRIER_BAR_SPRITE.height,
+    },
+  };
+};
+
+/** A fan's layers: turned a quarter to blow up or down, mirrored to blow left, blades spinning. */
+const fanLayer = (
+  object: Placement & { readonly type: 'fan' },
+  asset: SpriteAsset,
+  view: BoardSimulationView | undefined,
+  destination: BoardDestination,
+): ProjectedLayer => {
+  const { angle: rotation, mirrored } = quarterTurnPose(object.transform.rotation);
+  const { position } = object.transform;
+  if (asset !== 'fan-blades') {
+    return { position: { x: position.x, y: position.y }, rotation, destination, mirrored };
+  }
+
+  const { center, squash } = fanGeometry.blades;
+  const local = { x: mirrored ? -center.x : center.x, y: center.y };
+  const device = deviceAt(object, view);
+  return {
+    position: {
+      x: position.x + local.x * Math.cos(rotation) - local.y * Math.sin(rotation),
+      y: position.y + local.x * Math.sin(rotation) + local.y * Math.cos(rotation),
+    },
+    rotation,
+    destination,
+    mirrored,
+    spin: { angle: device?.kind === 'fan' ? device.bladeAngle : 0, squash },
+  };
+};
+
+/** How far a pressed cap or a landing platform sinks, in world units. */
+const sinkOf = (object: Placement, view: BoardSimulationView | undefined): number => {
+  const device = deviceAt(object, view);
+  if (device?.kind === 'button') return device.pressed ? buttonGeometry.cap.travel : 0;
+  if (device?.kind === 'springboard') {
+    return device.compression * springboardGeometry.platform.maxCompression;
+  }
+  return 0;
+};
+
+/** Sinks the cap and the platform, and squashes the spring under the platform. */
+const sunkDestination = (
+  asset: SpriteAsset,
+  destination: BoardDestination,
+  sink: number,
+): BoardDestination => {
+  if (sink === 0) return destination;
+  if (asset === 'button-cap' || asset === 'springboard-platform') {
+    return { ...destination, y: destination.y + sink };
+  }
+  if (asset === 'springboard-spring') {
+    return { ...destination, y: destination.y + sink, height: destination.height - sink };
+  }
+  return destination;
 };
 
 const layerDestination = (object: Placement, asset: SpriteAsset): BoardDestination =>
@@ -296,8 +436,14 @@ const projectLayer = (
   const projected = {
     position: { x: pose.position.x, y: pose.position.y },
     rotation: pose.rotation,
-    destination: layerDestination(object, asset),
+    destination: sunkDestination(asset, layerDestination(object, asset), sinkOf(object, view)),
   };
+  if (object.type === 'fan') return fanLayer(object, asset, view, projected.destination);
+  if (object.type === 'barrier') {
+    const { angle, mirrored } = quarterTurnPose(object.transform.rotation);
+    const turned = { ...projected, rotation: angle, mirrored };
+    return asset === 'barrier-bar' ? { ...turned, ...barrierBarLayer(object, view) } : turned;
+  }
   return asset === 'conveyor-belt' || asset === 'conveyor-belt-left'
     ? { ...projected, source: conveyorBeltSource(conveyorBeltAt(object, view).offset) }
     : projected;
@@ -322,6 +468,15 @@ const drawOrderByAsset: Record<SpriteAsset, number> = {
   'conveyor-belt': 0,
   'conveyor-belt-left': 0,
   'conveyor-frame': 0,
+  'button-base': 0,
+  'button-cap': 0,
+  'fan-blades': 0,
+  'fan-body': 0,
+  'barrier-bar': 0,
+  'barrier-pillar': 0,
+  'springboard-spring': 0,
+  'springboard-base': 0,
+  'springboard-platform': 0,
   'ball-base': 1,
   'ball-spin': 1,
   'ball-highlight': 1,
@@ -520,6 +675,12 @@ export const createBoardRenderer = ({
       context.save();
       context.translate(position.x, position.y);
       context.rotate(object.layer.rotation);
+      if (object.layer.mirrored === true) context.scale(-1, 1);
+      const { spin } = object.layer;
+      if (spin !== undefined) {
+        context.scale(spin.squash, 1);
+        context.rotate(spin.angle);
+      }
       const image = sprite.source !== undefined ? sprite.source : sprite;
       const region = object.layer.source;
       if (region === undefined) {

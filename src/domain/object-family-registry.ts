@@ -18,6 +18,17 @@ export const leverPropertiesSchema = z.strictObject({
 export const conveyorPropertiesSchema = z.strictObject({
   direction: z.enum(['left', 'stopped', 'right']),
 });
+/** A pressure button: pressed while an object weighs on it, nothing to configure. */
+export const buttonPropertiesSchema = z.strictObject({});
+/** Whether the fan runs when no controller commands it; where it blows is its rotation. */
+export const fanPropertiesSchema = z.strictObject({
+  state: z.enum(['on', 'off']),
+});
+/** The barrier's state when no controller commands it; where its bar goes is its rotation. */
+export const barrierPropertiesSchema = z.strictObject({
+  state: z.enum(['closed', 'open']),
+});
+export const springboardPropertiesSchema = z.strictObject({});
 
 type ObjectFamilyCapability = 'movable' | 'rotatable' | 'sensor' | 'sized';
 
@@ -146,7 +157,7 @@ export const initialObjectFamilyRegistry = createObjectFamilyRegistry([
     dataVersion: 1,
     catalogue: {
       label: 'Levier',
-      description: 'Commande un convoyeur : gauche, arrêt, droite',
+      description: 'Commande un appareil : gauche, arrêt, droite',
     },
     capabilities: ['movable'],
     propertiesSchema: leverPropertiesSchema,
@@ -160,5 +171,45 @@ export const initialObjectFamilyRegistry = createObjectFamilyRegistry([
     },
     capabilities: ['movable'],
     propertiesSchema: conveyorPropertiesSchema,
+  },
+  {
+    id: 'button',
+    dataVersion: 1,
+    catalogue: {
+      label: 'Bouton',
+      description: 'Actif tant qu’un objet appuie dessus',
+    },
+    capabilities: ['movable', 'sensor'],
+    propertiesSchema: buttonPropertiesSchema,
+  },
+  {
+    id: 'fan',
+    dataVersion: 1,
+    catalogue: {
+      label: 'Ventilateur',
+      description: 'Souffle sur ce qui passe devant lui',
+    },
+    capabilities: ['movable', 'rotatable'],
+    propertiesSchema: fanPropertiesSchema,
+  },
+  {
+    id: 'barrier',
+    dataVersion: 1,
+    catalogue: {
+      label: 'Barrière',
+      description: 'Une barre qui rentre dans son poteau',
+    },
+    capabilities: ['movable', 'rotatable'],
+    propertiesSchema: barrierPropertiesSchema,
+  },
+  {
+    id: 'springboard',
+    dataVersion: 1,
+    catalogue: {
+      label: 'Tremplin',
+      description: 'Renvoie vers le haut ce qui tombe dessus',
+    },
+    capabilities: ['movable', 'rotatable'],
+    propertiesSchema: springboardPropertiesSchema,
   },
 ]);

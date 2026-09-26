@@ -1,5 +1,5 @@
 import { initialObjectFamilyRegistry } from '../../domain/object-family-registry';
-import { levelDocumentSchema, type LevelDocument } from '../../domain/level-document';
+import { levelDocumentSchema, rotationMode, type LevelDocument } from '../../domain/level-document';
 import type { Command, CommandState } from '../history';
 
 export type ConstructionContext = 'player' | 'author';
@@ -239,7 +239,7 @@ export const rotatePlacement = (input: RotatePlacementInput): ConstructionComman
   execute: (state) => {
     const placement = state.document.objects.find(({ id }) => id === input.placementId);
     if (placement === undefined) return reject('placement-not-found');
-    if (placement.type !== 'beam') return reject('placement-not-rotatable');
+    if (rotationMode(placement.type) === 'fixed') return reject('placement-not-rotatable');
     if (input.context === 'player' && !placement.permissions.rotate) {
       return reject('rotate-not-permitted');
     }

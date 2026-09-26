@@ -27,8 +27,8 @@ pendant le travail.
 ### Domaine et application
 
 - `LevelDocument v2` (schéma Zod strict dans `src/domain/level-document.ts`) :
-  rectangle de scène obligatoire, sept familles (balle, panier, poutre, bascule,
-  masse, levier, convoyeur), inventaire, zones de construction, objectif panier
+  rectangle de scène obligatoire, onze familles (balle, panier, poutre, bascule,
+  masse, levier, convoyeur, bouton, ventilateur, barrière, tremplin), inventaire, zones de construction, objectif panier
   unique, fils de commande `wires` facultatifs (ADR 0009). Migration v1 → v2
   (`migrateLevelDocumentV1ToV2`) testée.
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
@@ -49,8 +49,12 @@ pendant le travail.
 - `SimulationSession` Planck à pas fixe, accumulateur à durée injectée, rattrapage
   plafonné à 5 pas par frame, y vers le bas, capteur de panier, sortie de scène,
   temps écoulé, reset exact, snapshot défensif, destruction idempotente.
-- Sept familles simulées ; levier à trois crans, convoyeur à vitesse de surface
-  commandé par levier ou par sa propriété `direction`.
+- Onze familles simulées ; levier à trois crans, convoyeur à vitesse de surface
+  commandé par levier ou par sa propriété `direction` ; bouton-capteur enfoncé
+  tant qu’un corps dynamique pèse dessus ; ventilateur (cône de souffle, poussée
+  proportionnelle à la largeur exposée) et barrière coulissante commandés par un
+  levier de côté ou un bouton enfoncé ; tremplin à restitution 1. Masse redessinée
+  (0,8 × 0,505, collider trapèze + anneau).
 - Résistance au roulement de la balle (absente de Planck) : elle s’arrête sur une
   poutre plate.
 - Suite de conformité (`test/conformance/`) : protocole commun, scènes 6 et 7,
@@ -60,7 +64,9 @@ pendant le travail.
 
 - Renderer Canvas 2D (ADR 0006) avec DPR, sprites en calques (balle à motif
   tournant, panier avant/arrière, bascule pied + planche, levier, convoyeur à
-  tapis défilant), ordre de dessin déterministe (la balle après le panier).
+  tapis défilant, bouton à capuchon qui s’enfonce, ventilateur à pales tournantes
+  écrasées en perspective et orientable, barrière dont seule la partie sortie du
+  poteau est dessinée, tremplin à ressort tassé à l’impact), ordre de dessin déterministe (la balle après le panier).
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
   cadrage, recadrage sur vrai redimensionnement seulement.
@@ -70,11 +76,15 @@ pendant le travail.
   atomique sur `pointercancel` ou second doigt.
 - Panneau « Propriétés » (rail droit en grand format, tiroir compact sur petit
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
-  câblage levier → convoyeur au toucher, suppression.
+  rotation libre des poutres et par quarts de tour du ventilateur, de la
+  barrière et du tremplin (boutons et poignée), état de départ du ventilateur
+  et de la barrière,
+  câblage levier/bouton → appareil au toucher, suppression.
 - Fils de commande routés orthogonalement, ponts aux croisements, lettres de
   circuit (`src/presentation/control-wires.ts`, `wire-renderer.ts`).
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
-  `/editor`, `/settings` (vide). `/` ouvre le niveau 1 en mode joueur.
+  `/editor`, `/demo` (machine en chaîne qui se résout seule, testée),
+  `/settings` (vide). `/` ouvre le niveau 1 en mode joueur.
 - Mise en page validée aux six formats du plan (D4) ; objectif dans une boîte de
   dialogue à la demande ; bandeau de résultat dans un emplacement réservé.
 - Atelier libre `src/content/levels/workshop.json` (scène 16 × 9, inventaire de
@@ -142,7 +152,9 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 (page de mesure et déploiement) :
-typecheck, lint, formatage, Knip, contenu, 343 tests Vitest (29 fichiers),
-build, 29 parcours Playwright `mobile` (1 ignoré, réservé au desktop).
-`playwright test --project=desktop` : 29 réussis, 1 échec (voir dettes).
+`pnpm check` exécutée avec succès le 26 septembre 2026 (bouton, ventilateur,
+barrière, tremplin, nouvelle masse, `/demo`) : typecheck, lint, formatage, Knip,
+contenu, 393 tests Vitest (30 fichiers), build, 29 parcours Playwright `mobile`.
+Le parcours desktop n'a pas été relancé. Deux tests lourds (frontière de couches,
+qui dépassait déjà 5 s sur HEAD sous charge parallèle, et banc dense) ont reçu un
+délai explicite de 30 s, assertions inchangées.
