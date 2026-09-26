@@ -1,3 +1,10 @@
+# Remarque mainteneur
+A intégrer quelque part dans la feuille de route :
+
+- quand on est sur l'éditeur de niveau, que la balle atteint le panier (après avoir cliqué sur "Tester"), un bouton "Rejouer le niveau" apparaît : il supprime tout ce qu'on a fait. C'est une UX horrible. Et le bouton "retour à la liste des niveaux" n'a aucun sens. Je pense que c'est un artéfact de factorisation entre "jouer un niveau" et "construire un niveau" : il faudra le réparer
+
+- Le levier doit pouvoir être tourné de 90° dans tous les sens (on peut le mettre à la verticale, sur un plafond, etc). Pour l'instant il ne peut pas tourner, c'est à corriger. Ca doit être comme pour le ventilateur ou la barrière ou encore le ressort.
+
 # Feuille de route — reprise de l’implémentation
 
 Destinataire : l’agent d’implémentation qui reprend le dépôt seul, tâche après
