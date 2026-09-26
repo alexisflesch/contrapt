@@ -786,10 +786,13 @@ commencer de ta propre initiative.
   (26 septembre 2026) ; les exporter par `art/build-sprites.py` et câbler les
   trois sprites, une fois le dessin validé par l’auteur. La mascotte de
   `art/assets/bolt/` n’a pas encore d’usage décidé.
-- **U13 — Zones de construction** : mettre en évidence en mode joueur la ou
-  les zones où une pose est autorisée. Follow-up demandé après les niveaux 1 à
-  3 ; différé à une session ultérieure. Captures pour validation dans les trois
-  formats indiqués au début de cette section.
+- **U13 — Zones de construction** : en mode joueur, mettre visuellement en
+  évidence la ou les régions où l’empreinte complète de l’objet peut être posée,
+  y compris lorsque plusieurs zones existent. Le besoin est apparu en jouant les
+  niveaux 1 à 3, puis a été confirmé sur les niveaux 5 et 7 : un objet de
+  l’inventaire peut être refusé selon son emplacement. Follow-up demandé par
+  l’auteur le 26 septembre 2026 ; différé à une session ultérieure. Captures pour
+  validation dans les trois formats indiqués au début de cette section.
 
 ## 7. En attente de l’auteur — ne pas commencer
 
@@ -1245,3 +1248,36 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Captures au repos à inspecter : `test-results/levels/level-6-la-bascule-390x844.png`
   et `test-results/levels/level-6-la-bascule-844x390.png` (non versionnées).
 - Pour l’auteur : aucune question ; le niveau se lance sans action de pose.
+
+### L13 — Niveau 7 « Placer la bascule » — fait — `feat(content): ajoute le niveau 7 « Placer la bascule » (L13)`
+
+- Tests ajoutés : `level-7-placer-la-bascule.test.ts` — échec sans bascule,
+  référence joueur, 11 poses robustes, contre-exemple à droite, rotation refusée,
+  hit-test planche/pied avec le même identifiant et déterminisme. Le parcours
+  mobile vérifie le seul objet disponible et la victoire après sa pose tactile.
+- Échec initial constaté : les huit tests rouges échouaient avec
+  `Le niveau « Placer la bascule » est absent.`. La première gate a ensuite
+  signalé le formatage de `e2e/levels.spec.ts`, corrigé avant la gate finale. Une
+  gate de contrôle a expiré une fois sur L5 en attendant « Fermer les propriétés » ;
+  sa relance complète a passé sans changement de L5.
+- Tests existants réécrits : `App.test.tsx` et `embedded-levels.test.ts` incluent
+  maintenant le septième niveau dans la campagne ; aucun comportement existant
+  n’a été retiré.
+- Fichiers touchés hors périmètre : `docs/etat.md` et ce journal (obligatoires),
+  et le libellé U13 ci-dessus, précisé après le retour de l’auteur sur les
+  emplacements autorisés.
+- Écarts avec la tâche : aucun.
+- Mesures qui ne se reproduisent pas : aucune. Les 11 positions annoncées gagnent
+  et sont acceptées par la zone. À `y = 3,6`, l’empreinte verticale va de `3,48`
+  à `4,3`, sous la borne `4,4` ; la pose est donc légale.
+- Contradictions rencontrées : aucune. Le premier test local supposait à tort que
+  `y = 3,6` débordait ; la géométrie exécutée et la zone de la spec montrent le
+  contraire, et son attente a été corrigée.
+- Vérification finale : `pnpm check` passe — typecheck, lint, formatage, Knip,
+  contenu (9 niveaux), 477 tests Vitest (39 fichiers), build et 35 parcours
+  Playwright mobiles réussis ; un test desktop est ignoré dans ce projet.
+- Captures au repos inspectées :
+  `test-results/levels/level-7-placer-la-bascule-390x844.png` et
+  `test-results/levels/level-7-placer-la-bascule-844x390.png` (non versionnées).
+- Pour l’auteur : U13 reste différé ; il précisera la zone de pose autorisée,
+  notamment pour les niveaux à plusieurs zones.

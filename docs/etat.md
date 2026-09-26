@@ -148,13 +148,19 @@ pendant le travail.
   le mouvement de la planche avant la victoire, son angle final et le reset exact
   (`src/content/levels/level-6-la-bascule.test.ts`). Le parcours mobile lance
   l’observation sans poser d’objet sur `/levels/level-6-la-bascule/play`.
+- Niveau 7 « Placer la bascule » jouable au tactile. Sa régression vérifie
+  l’échec sans bascule, les 11 poses robustes, le refus de rotation, le hit-test
+  commun à la planche et au pied, le déterminisme et la position refusée à droite
+  (`src/content/levels/level-7-placer-la-bascule.test.ts`). Le tiroir ne montre
+  que la bascule disponible.
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
 
 - **Zones de pose peu visibles** : le joueur ne voit pas clairement où
-  l’empreinte d’un objet peut tenir. Mise en évidence des zones demandée pour
-  un suivi UI ultérieur (U13), différé à une session ultérieure.
+  l’empreinte complète d’un objet peut être posée, surtout quand plusieurs zones
+  existent. Leur mise en évidence en mode joueur est différée (U13) à une session
+  ultérieure.
 - **Aperçu de placement en CSS.** L’overlay DOM `.placement-preview`
   (`src/ui/BoardView.tsx`) n’a ni la forme, ni la taille, ni la rotation de
   l’objet ; le fantôme dessiné par le renderer (C1) reste à faire.
@@ -167,10 +173,10 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Six niveaux de campagne**, « Prolonger la pente », « Le pont »,
-  « Incliner », « Moins, c’est mieux », « Le détour » et « La bascule » ; les 8
-  autres niveaux de la campagne
-  de 14 sont spécifiés dans
+- **Sept niveaux de campagne**, « Prolonger la pente », « Le pont »,
+  « Incliner », « Moins, c’est mieux », « Le détour », « La bascule » et
+  « Placer la bascule » ; les 7 autres niveaux de la campagne de 14 sont
+  spécifiés dans
   `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
 - **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés. Les métadonnées de défi existent au
@@ -193,11 +199,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 6 :
-typecheck, lint, formatage, Knip, contenu (8 niveaux embarqués), 469 tests Vitest
-(38 fichiers), build et 35 tests Playwright `mobile` (34 réussis, 1 ignoré car C3
+`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 7 :
+typecheck, lint, formatage, Knip, contenu (9 niveaux embarqués), 477 tests Vitest
+(39 fichiers), build et 36 tests Playwright `mobile` (35 réussis, 1 ignoré car C3
 est spécifique au projet desktop). Les captures au repos sont conservées sous
-`test-results/levels/` pour les niveaux 1 à 6, en portrait et paysage.
+`test-results/levels/` pour les niveaux 1 à 7, en portrait et paysage.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

@@ -56,8 +56,8 @@ describe('campagne embarquée', () => {
 });
 
 describe('niveaux embarqués', () => {
-  it('expose les six premiers niveaux v2 valides dans l’ordre de campagne', () => {
-    expect(embeddedLevels).toHaveLength(6);
+  it('expose les sept premiers niveaux v2 valides dans l’ordre de campagne', () => {
+    expect(embeddedLevels).toHaveLength(7);
     expect(embeddedLevels[0]).toMatchObject({
       schemaVersion: 2,
       id: 'level-1-prolonger-la-pente',
@@ -279,6 +279,38 @@ describe('niveaux embarqués', () => {
         id: 'basket-1',
         type: 'basket',
         transform: { position: { x: 5.6, y: 4.9 }, rotation: 0 },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+    ]);
+
+    expect(embeddedLevels[6]).toMatchObject({
+      schemaVersion: 2,
+      id: 'level-7-placer-la-bascule',
+      metadata: { title: 'Placer la bascule' },
+      inventory: [
+        {
+          id: 'inventory-seesaw',
+          type: 'seesaw',
+          props: {},
+          quantity: 1,
+          permissions: { move: true, rotate: false, remove: true },
+        },
+      ],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [{ min: { x: 0.2, y: 2 }, max: { x: 6, y: 4.4 } }],
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+    });
+    expect(embeddedLevels[6]?.objects).toEqual([
+      expect.objectContaining({
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 3, y: 0.6 }, rotation: 0 },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 4.8, y: 4.9 }, rotation: 0 },
         permissions: { move: false, rotate: false, remove: false },
       }),
     ]);
