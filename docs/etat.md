@@ -1,6 +1,6 @@
 # État du dépôt — Contrapt!
 
-Dernière mise à jour : 26 septembre 2026.
+Dernière mise à jour : 27 septembre 2026.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -170,7 +170,8 @@ pendant le travail.
 - En atelier, un levier peut être orienté de −135° à +135° par boutons ou par
   poignée tactile. La simulation compense le couple gravitationnel dû à cette
   orientation : les trois crans tiennent dans toute la plage mesurée et restent
-  sensibles aux chocs.
+  sensibles aux chocs. Le parcours E2E ouvre l’inspecteur compact s’il est replié
+  après la sélection du levier.
 - Niveau 11 « L’interrupteur » jouable au tactile dans le chapitre « Mécanismes ».
   La régression lit les états des dispositifs : les quatre poses gagnantes
   mesurées placent le levier à droite et le convoyeur à `1`; les contre-exemples
@@ -178,6 +179,11 @@ pendant le travail.
   (6,2 ; 1,1) expire et deux poses de la fenêtre annoncée n’activent pas le levier ;
   l’écart est documenté sans changer la géométrie
   (`src/content/levels/level-11-l-interrupteur.test.ts`).
+- Niveau 12 « Le bon ordre » jouable au tactile dans « Mécanismes » : une masse
+  déclenche un levier câblé au convoyeur, puis une poutre tournée guide la balle.
+  Les 153 combinaisons des fenêtres mesurées gagnent ; une recherche sur 936
+  poses légales ne trouve aucune solution à un objet
+  (`src/content/levels/level-12-le-bon-ordre.test.ts`).
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -198,11 +204,12 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Onze niveaux de campagne**, « Prolonger la pente », « Le pont »,
+- **Douze niveaux de campagne**, « Prolonger la pente », « Le pont »,
   « Incliner », « Moins, c’est mieux », « Le détour », « La bascule »,
-  « Placer la bascule », « Poutre et bascule », « Le tapis », « Le butoir » et
-  « L’interrupteur » ; les 3 autres niveaux de la campagne de 14 sont spécifiés dans
-  `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
+  « Placer la bascule », « Poutre et bascule », « Le tapis », « Le butoir »,
+  « L’interrupteur » et « Le bon ordre » ; les deux autres niveaux de la campagne
+  de 14 sont spécifiés dans `levels/initial-progression.md`. Aucun bouton
+  « Niveau suivant ».
 - **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés. Les métadonnées de défi existent au
   format v2 et sont utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité
@@ -226,14 +233,15 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après L17b : typecheck,
-lint, formatage, Knip, contenu (13 documents embarqués), 513 tests Vitest (43
-fichiers), build et 41 tests Playwright `mobile` (40 réussis, 1 ignoré car C3 est
-spécifique au projet desktop). Les captures au repos sont conservées sous
-`test-results/levels/` pour les niveaux 1 à 11, en portrait et paysage ; les trois
-orientations du levier y sont aussi capturées. La première gate L16 avait expiré
-sur le parcours tactile préexistant du niveau 5 ; ce parcours passe isolément et
-dans la gate complète relancée sans modification.
+`pnpm check` passe le 27 septembre 2026 après L18a : typecheck, lint, formatage,
+Knip, contenu (14 niveaux embarqués), 520 tests Vitest (44 fichiers), build et
+42 tests Playwright `mobile` (41 réussis, 1 ignoré car C3 est spécifique au projet
+desktop). Le parcours mobile L17b ouvre maintenant l’inspecteur compact avant de
+vérifier les propriétés du levier sélectionné. Les captures au repos sont
+conservées sous `test-results/levels/` pour les niveaux 1 à 12, en portrait et
+paysage ; les trois orientations du levier y sont aussi capturées. La première
+gate L16 avait expiré sur le parcours tactile préexistant du niveau 5 ; ce parcours
+passe isolément et dans la gate complète relancée sans modification.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

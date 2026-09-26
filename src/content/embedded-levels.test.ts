@@ -20,6 +20,7 @@ describe('campagne embarquée', () => {
       embeddedLevels[8],
       embeddedLevels[9],
       embeddedLevels[10],
+      embeddedLevels[11],
     ]);
     expect(flattenCampaignLevels(campaignChapters)).toEqual(embeddedLevels);
   });
@@ -60,8 +61,8 @@ describe('campagne embarquée', () => {
 });
 
 describe('niveaux embarqués', () => {
-  it('expose les onze premiers niveaux v2 valides dans l’ordre de campagne', () => {
-    expect(embeddedLevels).toHaveLength(11);
+  it('expose les douze premiers niveaux v2 valides dans l’ordre de campagne', () => {
+    expect(embeddedLevels).toHaveLength(12);
     expect(embeddedLevels[0]).toMatchObject({
       schemaVersion: 2,
       id: 'level-1-prolonger-la-pente',
@@ -472,6 +473,34 @@ describe('niveaux embarqués', () => {
       scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
       wires: [{ id: 'wire-1', sourceId: 'lever', targetId: 'belt' }],
     });
+
+    expect(embeddedLevels[11]).toMatchObject({
+      schemaVersion: 2,
+      id: 'level-12-le-bon-ordre',
+      metadata: { title: 'Le bon ordre' },
+      inventory: [
+        {
+          id: 'inventory-mass',
+          type: 'mass',
+          props: { weight: '10kg' },
+          quantity: 2,
+          permissions: { move: true, rotate: false, remove: true },
+        },
+        {
+          id: 'inventory-beam',
+          type: 'beam',
+          props: { size: 'short' },
+          quantity: 2,
+          permissions: { move: true, rotate: true, remove: true },
+        },
+      ],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [{ min: { x: 0, y: 0.4 }, max: { x: 7.6, y: 4 } }],
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+      challenge: { elegantObjectCount: 3, minimalObjectCount: 2 },
+      wires: [{ id: 'wire-1', sourceId: 'lever', targetId: 'belt' }],
+    });
+
     expect(embeddedLevels[10]?.objects).toEqual([
       expect.objectContaining({
         id: 'ball-1',

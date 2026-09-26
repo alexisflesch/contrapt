@@ -10,6 +10,7 @@ import levelEight from './levels/level-8-poutre-et-bascule.json';
 import levelNine from './levels/level-9-le-tapis.json';
 import levelTen from './levels/level-10-le-butoir.json';
 import levelEleven from './levels/level-11-l-interrupteur.json';
+import levelTwelve from './levels/level-12-le-bon-ordre.json';
 import workshop from './levels/workshop.json';
 
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
@@ -73,6 +74,7 @@ export const campaignChapters = createCampaign([
       parseEmbeddedLevel(levelNine),
       parseEmbeddedLevel(levelTen),
       parseEmbeddedLevel(levelEleven),
+      parseEmbeddedLevel(levelTwelve),
     ],
   },
 ]);

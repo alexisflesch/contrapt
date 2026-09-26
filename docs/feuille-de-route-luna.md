@@ -1443,3 +1443,42 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/lever-rotation-positive-90deg.png` et
   `test-results/levels/lever-rotation-negative-90deg.png`.
 - Pour l’auteur : aucune question ouverte sur L17b. Le follow-up U13 reste différé.
+
+### L18a — Niveau 12 « Le bon ordre » — fait — commit dédié L18a
+
+- Tests ajoutés : `level-12-le-bon-ordre.test.ts` — absence de succès sans
+  action, référence appliquée par commandes joueur, 153 combinaisons des fenêtres,
+  contre-exemples masse seule et poutre seule, déterminisme, immuabilité et grille
+  de minimalité à un objet ; `e2e/levels.spec.ts` — résolution tactile et contrôle
+  des deux entrées d’inventaire disponibles.
+- Échec initial constaté : les sept tests de niveau rouge échouaient avec
+  `Le niveau « Le bon ordre » est absent.`. La grille de 936 poses a dépassé le
+  délai Vitest par défaut de 5 s ; le même test complet passe avec un délai explicite
+  de 20 s, sans réduire les assertions.
+- Tests existants modifiés : `embedded-levels.test.ts` et `App.test.tsx` incluent
+  le niveau 12 ; aucun comportement antérieur n’a été retiré. Le test
+  `L17b — tourne le levier de 90° dans chaque sens au tactile` ouvre l’inspecteur
+  compact avant de vérifier les propriétés : la capture d’échec montrait le levier
+  sélectionné alors que l’inspecteur restait replié.
+- Fichiers touchés hors périmètre : `docs/etat.md`, ce journal,
+  `docs/levels/initial-progression.md` (géométrie mesurée à consigner avant JSON),
+  `e2e/levels.spec.ts` (parcours tactile et captures exigés par la phase B) et
+  `e2e/editor-interactions.spec.ts` (correction de l’assertion tactile L17b pour
+  stabiliser la gate globale).
+- Écarts avec la tâche : aucun. L’inventaire propose les deux familles prévues.
+- Mesures qui ne se reproduisent pas : aucune. La référence gagne en 204 pas ;
+  les 153 combinaisons gagnent et les 936 poses légales à un objet échouent.
+- Contradictions rencontrées : aucune. Les fenêtres de robustesse mesurées et la
+  recherche de minimalité ont été transcrites avant le document JSON.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués),
+  520 tests Vitest (44 fichiers), build et 42 parcours Playwright mobiles (41
+  réussis, 1 ignoré car C3 est spécifique au projet desktop). Avant la correction
+  du test L17b, quatre gates locales avaient échoué sur des parcours tactiles
+  préexistants ; les niveaux 7 et 8 passaient isolément, et le défaut reproductible
+  de L17b était un inspecteur compact replié. Après sa correction, la gate complète
+  est verte.
+- Captures au repos inspectées :
+  `test-results/levels/level-12-le-bon-ordre-390x844.png` et
+  `test-results/levels/level-12-le-bon-ordre-844x390.png` (non versionnées).
+- Pour l’auteur : la poutre courte tourne de +30° par la poignée tactile ; la zone
+  de pose n’est pas mise en évidence, conformément au follow-up U13 différé.

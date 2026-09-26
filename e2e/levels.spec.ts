@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
 
 import { ROTATION_HANDLE_DISTANCE_CSS_PIXELS } from '../src/presentation/rotation-handle-metrics';
 
@@ -13,6 +14,7 @@ const levelEightPath = '/levels/level-8-poutre-et-bascule/play';
 const levelNinePath = '/levels/level-9-le-tapis/play';
 const levelTenPath = '/levels/level-10-le-butoir/play';
 const levelElevenPath = '/levels/level-11-l-interrupteur/play';
+const levelTwelvePath = '/levels/level-12-le-bon-ordre/play';
 
 interface WorldPoint {
   readonly x: number;
@@ -432,6 +434,74 @@ test('niveau 11 : poser la masse à gauche du levier pour gagner au tactile', as
   await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
   await page.getByRole('button', { name: 'Tester' }).tap();
 
+  const result = page.getByRole('region', { name: 'Résultat du niveau' });
+  await expect(result).toBeVisible({ timeout: 15_000 });
+  await expect(result.getByText('Victoire')).toBeVisible();
+});
+
+test('niveau 12 : actionner le levier puis guider la balle au tactile', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(levelTwelvePath);
+  await expect(page.getByText('Niveau 12 · Le bon ordre')).toBeVisible();
+  await expect(page.getByText('Mode joueur')).toBeVisible();
+  const board = page.getByRole('region', { name: 'Plateau de jeu' });
+  const canvas = board.getByRole('img', { name: 'Rendu du plateau' });
+  await expect(board).toBeVisible();
+
+  await mkdir('test-results/levels', { recursive: true });
+  await page.screenshot({
+    path: 'test-results/levels/level-12-le-bon-ordre-390x844.png',
+    fullPage: true,
+    scale: 'css',
+  });
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.screenshot({
+    path: 'test-results/levels/level-12-le-bon-ordre-844x390.png',
+    fullPage: true,
+    scale: 'css',
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(levelTwelvePath);
+  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  const drawer = page.getByRole('region', { name: 'Objets disponibles' });
+  await expect(drawer.locator('.object-card')).toHaveCount(2);
+  await expect(drawer.getByRole('button', { name: 'Masse, quantité : 2' })).toBeEnabled();
+  await expect(drawer.getByRole('button', { name: 'Poutre courte, quantité : 2' })).toBeEnabled();
+  await expect(drawer.getByRole('button', { name: 'Balle' })).toHaveCount(0);
+
+  await drawer.getByRole('button', { name: 'Masse, quantité : 2' }).tap();
+  await tapWorldPoint(page, { x: 6.0, y: 0.8 });
+  await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
+
+  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  await page.getByRole('button', { name: 'Poutre courte, quantité : 2' }).tap();
+  await tapWorldPoint(page, { x: 4.7, y: 2.7 });
+  await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
+
+  const center = await screenPointForWorld(page, { x: 4.7, y: 2.7 });
+  expect(center).not.toBeNull();
+  if (center === null) return;
+  const beforeRotation = await canvas.screenshot();
+  const handleRadius = ROTATION_HANDLE_DISTANCE_CSS_PIXELS;
+  const targetAngle = Math.PI / 6;
+  await dragScreenPoints(
+    page,
+    { x: center.x, y: center.y - handleRadius },
+    {
+      x: center.x + handleRadius * Math.sin(targetAngle),
+      y: center.y - handleRadius * Math.cos(targetAngle),
+    },
+  );
+  await expect
+    .poll(async () => !(await canvas.screenshot()).equals(beforeRotation), { timeout: 2_000 })
+    .toBe(true);
+
+  await page.getByRole('button', { name: 'Tester' }).tap();
   const result = page.getByRole('region', { name: 'Résultat du niveau' });
   await expect(result).toBeVisible({ timeout: 15_000 });
   await expect(result.getByText('Victoire')).toBeVisible();

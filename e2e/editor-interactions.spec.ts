@@ -230,6 +230,7 @@ test('L17b — tourne le levier de 90° dans chaque sens au tactile', async ({ p
   if (bounds === null) throw new Error('Le canvas du plateau doit être visible.');
   const centre = await screenPointForWorld(canvas, { x: 8, y: 4.5 });
   await page.touchscreen.tap(centre.x, centre.y);
+  await openPropertiesIfCompact(page);
   await expect(page.getByRole('region', { name: 'Propriétés de Levier' })).toBeVisible();
   await closeCompactProperties(page);
   const initial = await canvas.screenshot();

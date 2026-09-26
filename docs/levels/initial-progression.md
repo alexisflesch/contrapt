@@ -1,6 +1,6 @@
 # Campagne — chapitres 1 et 2
 
-Statut : spécification de contenu, révisée le 26 septembre 2026. Elle remplace la
+Statut : spécification de contenu, révisée le 27 septembre 2026. Elle remplace la
 progression initiale (niveaux « Laisser tomber », « Construire un pont »,
 « Choisir la longueur »…), écrite avant que la physique existe.
 
@@ -475,15 +475,70 @@ seules celles à `x = 6,0` ou `6,4` gagnent. Aucune coordonnée de la scène n�
 ajustée. La régression note cet écart et conserve une pose gagnante mesurée pour
 que le niveau reste jouable.
 
-### Niveaux 12 à 14 — Synthèses (à concevoir)
+### Niveau 12 — Le bon ordre
 
-Non mesurés. À concevoir au banc d’essai (feuille de route, tâche dédiée), un
-niveau à la fois, avec les contraintes suivantes :
+`id` : `level-12-le-bon-ordre`
 
-- **12 — Le bon ordre.** Scène 8 × 5,5. Au moins une masse, un levier câblé par le
-  niveau et une poutre. Solution minimale de 2 objets ; inventaire en surplus
-  (au moins 4 objets) pour que le défi ait un sens : `elegantObjectCount =
-minimal + 1`.
+**Apprentissage.** Le joueur met d’abord le levier en marche en faisant tomber
+une masse dessus ; le convoyeur entraîne alors la balle vers une poutre qui la
+guide dans le panier. La chaîne physique exige les deux objets.
+
+**Scène.** Scène 8 × 5,5. Le levier est relié au convoyeur et démarre au centre ;
+le convoyeur est arrêté. La balle attend dessus, à gauche d’une courte poutre à
+poser. Le panier est sous l’extrémité de la poutre. La masse tombe sur le côté
+gauche du levier : il passe à droite et met le convoyeur en marche.
+
+| Objet    | Type     | Position    | Propriétés             |
+| -------- | -------- | ----------- | ---------------------- |
+| `ball`   | ball     | (1,9 ; 1,6) |                        |
+| `belt`   | conveyor | (2,2 ; 2,2) | `direction: "stopped"` |
+| `lever`  | lever    | (6,5 ; 3,2) | `position: "center"`   |
+| `basket` | basket   | (5,0 ; 2,8) |                        |
+
+Fil : `{ id: "wire-1", sourceId: "lever", targetId: "belt" }`.
+Inventaire : `mass` ×2 (`weight: "10kg"`) et `beam short` ×2 ; permissions
+`{ move: true, rotate: false, remove: true }` pour les masses et
+`{ move: true, rotate: true, remove: true }` pour les poutres. Zone unique :
+`x 0 → 7,6`, `y 0,4 → 4,0`. `challenge` :
+`{ elegantObjectCount: 3, minimalObjectCount: 2 }`.
+
+**Référence.** Poser une masse en (6,0 ; 0,8), puis une poutre courte à plat en
+(4,7 ; 2,7) et la tourner à +30° avec la poignée.
+
+**Fenêtre de robustesse mesurée.** Avec la poutre de référence fixée, les neuf
+poses gagnantes de masse sont
+`x ∈ {5,9 ; 6,1 ; 6,4}` × `y ∈ {0,8 ; 1,2 ; 1,6}`. Avec la masse de référence
+fixée, les 17 poses gagnantes de la poutre à +30° sont :
+
+- `y = 2,5` : `x ∈ {4,2 ; 4,3 ; 4,4 ; 4,5 ; 4,6 ; 4,7}` ;
+- `y = 2,6` : `x ∈ {4,4 ; 4,5 ; 4,6 ; 4,7 ; 4,8}` ;
+- `y = 2,7` : `x ∈ {4,6 ; 4,7 ; 4,8 ; 4,9}` ;
+- `y = 2,8` : `x ∈ {4,8 ; 4,9}`.
+
+Les 153 combinaisons du produit croisé des deux fenêtres gagnent ; le centre de
+la balle entre dans le capteur du panier. La référence gagne en 204 pas fixes.
+
+**Contre-exemples.** Aucune action : le levier reste au centre, le convoyeur est
+arrêté et la balle attend. Masse seule à (6,0 ; 0,8) : le levier passe à droite
+et le convoyeur démarre, mais la balle manque le panier. Poutre seule à
+(4,7 ; 2,7), +30° : le levier et le convoyeur restent à l’arrêt.
+
+**Minimalité.** Aucun succès à un objet parmi 936 poses légales : 144 poses de
+masse sur `x = 0,4..7,2` et `y = 0,7..3,5`, au pas de 0,4 ; 792 poses de poutre
+courte sur `x = 1,4..6,4` au pas de 0,5, `y ∈ {1,5 ; 2,0 ; 2,5}` et toutes les
+rotations de 0° à 345° par pas de 15°. Les empreintes de ces poses tiennent dans
+la zone de construction. Le minimum reste donc deux objets.
+
+**Régression spécifique.** Lire `readState().devices` à la réussite : levier
+`right`, convoyeur `1`. Sans masse, le levier reste `center` et le convoyeur à
+`0`; avec une masse seule, le levier et le convoyeur changent bien d’état mais
+la balle n’atteint pas le panier.
+
+### Niveaux 13 et 14 — Synthèses restantes
+
+À concevoir au banc d’essai (feuille de route, tâche L18b puis L18c), un niveau à
+la fois :
+
 - **13 — Deux tapis.** Un levier commande deux convoyeurs (un circuit), dont un
   en sens opposé à l’autre au départ. Solution minimale de 1 ou 2 objets,
   inventaire en surplus.
@@ -493,8 +548,6 @@ minimal + 1`.
 
 Pour chacun : régression complète (règles 1 à 7), minimalité établie par
 recherche sur grille, et deux captures pour l’auteur.
-
----
 
 ## Hors de cette campagne, volontairement
 
