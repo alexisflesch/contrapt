@@ -1347,3 +1347,36 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/level-9-le-tapis-844x390.png` (non versionnées).
 - Pour l’auteur : le follow-up U13 s’applique aussi aux niveaux où la zone exclut
   une partie des mesures physiques.
+
+### L16 — Niveau 10 « Le butoir » — partiel — non commité
+
+- Tests ajoutés : `level-10-le-butoir.test.ts` — sortie de scène sans masse,
+  référence joueur et document immuable, 12 poses robustes, reproduction des
+  contre-exemples latéraux aux trois hauteurs mesurées, rotation refusée et
+  déterminisme. Le parcours mobile ne montre que la masse disponible et gagne.
+- Échec initial constaté : les nouveaux tests rouges signalaient d’abord
+  `Le niveau « Le butoir » est absent.` ; une attente de contre-exemple à `x = 5,6`
+  a ensuite échoué car la balle gagnait.
+- Tests existants réécrits : `App.test.tsx` et `embedded-levels.test.ts` incluent
+  maintenant le dixième niveau ; aucun comportement existant n’a été retiré.
+- Fichiers touchés hors périmètre : `docs/etat.md`, ce journal et
+  `docs/levels/initial-progression.md` pour consigner la mesure latérale et garder
+  l’écart visible.
+- Écarts avec la tâche : le scénario complet est livré, mais le contre-exemple
+  annoncé à `x = 5,6` ou `6,6` n’est pas reproduit. Les six mesures à
+  `y ∈ {2,4 ; 2,8 ; 3,08}` gagnent ; aucune géométrie n’a été modifiée par
+  déduction.
+- Mesures qui ne se reproduisent pas : niveau 10, les deux abscisses latérales
+  annoncées échouent selon la fiche, mais gagnent aux trois hauteurs testées.
+- Contradictions rencontrées : aucune source ne donne la hauteur des contre-
+  exemples ; la fiche et la simulation divergent pour les hauteurs mesurées.
+- Vérification finale : `pnpm check` passe — contenu (12 documents embarqués),
+  498 tests Vitest (42 fichiers), build et 38 parcours Playwright mobiles réussis ;
+  un test est ignoré car propre au projet desktop. Une première exécution a expiré
+  sur le parcours tactile existant du niveau 5 ; il passe isolément et dans la
+  gate complète relancée.
+- Captures au repos inspectées :
+  `test-results/levels/level-10-le-butoir-390x844.png` et
+  `test-results/levels/level-10-le-butoir-844x390.png` (non versionnées).
+- Pour l’auteur : la hauteur voulue pour les contre-exemples latéraux reste à
+  préciser ; le niveau est jouable en attendant cette précision.

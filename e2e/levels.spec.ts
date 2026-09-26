@@ -11,6 +11,7 @@ const levelSixPath = '/levels/level-6-la-bascule/play';
 const levelSevenPath = '/levels/level-7-placer-la-bascule/play';
 const levelEightPath = '/levels/level-8-poutre-et-bascule/play';
 const levelNinePath = '/levels/level-9-le-tapis/play';
+const levelTenPath = '/levels/level-10-le-butoir/play';
 
 interface WorldPoint {
   readonly x: number;
@@ -379,6 +380,29 @@ test('niveau 9 : poser le convoyeur et entraîner la balle au tactile', async ({
   await expect(drawer.getByRole('button', { name: 'Balle' })).toHaveCount(0);
   await drawer.getByRole('button', { name: 'Convoyeur, quantité : 1' }).tap();
   await tapWorldPoint(page, { x: 2.2, y: 2.2 });
+  await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
+  await page.getByRole('button', { name: 'Tester' }).tap();
+
+  const result = page.getByRole('region', { name: 'Résultat du niveau' });
+  await expect(result).toBeVisible({ timeout: 15_000 });
+  await expect(result.getByText('Victoire')).toBeVisible();
+});
+
+test('niveau 10 : poser la masse pour arrêter la balle au tactile', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await page.goto(levelTenPath);
+
+  await expect(page.getByText('Niveau 10 · Le butoir')).toBeVisible();
+  const board = page.getByRole('region', { name: 'Plateau de jeu' });
+  await expect(board).toBeVisible();
+  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+
+  const drawer = page.getByRole('region', { name: 'Objets disponibles' });
+  await expect(drawer.locator('.object-card')).toHaveCount(1);
+  await expect(drawer.getByRole('button', { name: 'Masse, quantité : 1' })).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Balle' })).toHaveCount(0);
+  await drawer.getByRole('button', { name: 'Masse, quantité : 1' }).tap();
+  await tapWorldPoint(page, { x: 6.0, y: 3.08 });
   await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
   await page.getByRole('button', { name: 'Tester' }).tap();
 

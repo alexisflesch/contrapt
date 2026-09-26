@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 2,
+  "id": "level-10-le-butoir",
+  "metadata": {
+    "title": "Le butoir",
+    "description": "La masse arrête la balle après le panier et la fait tomber dedans."
+  },
+  "objects": [
+    {
+      "id": "ball-1",
+      "type": "ball",
+      "transform": { "position": { "x": 0.7, "y": 0.584 }, "rotation": 0 },
+      "props": {},
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "slope",
+      "type": "beam",
+      "transform": { "position": { "x": 2.2, "y": 1.6 }, "rotation": 0.3490658503988659 },
+      "props": { "size": "medium" },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-1",
+      "type": "basket",
+      "transform": { "position": { "x": 4.6, "y": 4.9 }, "rotation": 0 },
+      "props": {},
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ledge",
+      "type": "beam",
+      "transform": { "position": { "x": 6.5, "y": 3.6 }, "rotation": 0 },
+      "props": { "size": "short" },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-mass",
+      "type": "mass",
+      "props": { "weight": "10kg" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-1", "basketId": "basket-1" },
+  "buildZones": [{ "min": { "x": 5.4, "y": 2.0 }, "max": { "x": 7.6, "y": 3.5 } }],
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 8, "y": 5.5 } }
+}

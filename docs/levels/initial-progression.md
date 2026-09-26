@@ -431,6 +431,11 @@ Zone : `x 5,4 → 7,6`, `y 2,0 → 3,5`. Pas de `challenge`.
 **Contre-exemples.** Aucune masse (sortie de scène à droite) ; masse en
 `x = 5,6` ou `6,6`.
 
+**Écart à mesurer.** Les contre-exemples latéraux ne précisent pas de hauteur.
+Avec la géométrie ci-dessus, les deux positions gagnent aux trois hauteurs de la
+fenêtre robuste (`y = 2,4`, `2,8` et `3,08`). Ne pas ajuster la scène sans
+consigne ; les mesures sont couvertes par `level-10-le-butoir.test.ts`.
+
 ### Niveau 11 — L’interrupteur
 
 `id` : `level-11-l-interrupteur`
