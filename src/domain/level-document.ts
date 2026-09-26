@@ -32,6 +32,7 @@ const MAX_INVENTORY_ENTRIES = 128;
 const MAX_BUILD_ZONES = 64;
 const MAX_WIRES = 128;
 const MAX_INVENTORY_QUANTITY = 999;
+const MAX_CHALLENGE_OBJECT_COUNT = 999;
 const MAX_WORLD_COORDINATE = 1_000_000;
 const MAX_ROTATION_RADIANS = 100_000;
 
@@ -215,6 +216,13 @@ const basketGoalSchema = z.strictObject({
   basketId: identifierSchema,
 });
 
+const challengeObjectCountSchema = z.int().min(1).max(MAX_CHALLENGE_OBJECT_COUNT);
+
+const challengeSchema = z.strictObject({
+  elegantObjectCount: challengeObjectCountSchema,
+  minimalObjectCount: challengeObjectCountSchema,
+});
+
 const buildZoneSchema = z
   .strictObject({
     min: worldPositionSchema,
@@ -309,17 +317,20 @@ const levelDocumentV2StructureSchema = z.strictObject({
   scene: sceneSchema,
   /** Optional on input so that documents written before ADR 0009 stay valid v2. */
   wires: z.array(controlWireSchema).max(MAX_WIRES).default([]),
+  /** Optional without a default: absent means that the level has no challenge (ADR 0010). */
+  challenge: challengeSchema.optional(),
 });
 
 type ObjectPlacement = z.infer<typeof objectPlacementSchema>;
 type InventoryEntry = z.infer<typeof inventoryEntrySchema>;
 type WorldPosition = z.infer<typeof worldPositionSchema>;
 type BuildZone = z.infer<typeof buildZoneSchema>;
+type Challenge = z.infer<typeof challengeSchema>;
 
 /** The legacy v1 contract (ADR 0004). Accepted only as migration input. */
 export type LevelDocumentV1 = z.infer<typeof levelDocumentV1StructureSchema>;
 
-/** The current v2 contract (ADR 0004 + ADR 0007). */
+/** The current v2 contract (ADR 0004, ADR 0007, ADR 0009 and ADR 0010). */
 export type LevelDocument = z.infer<typeof levelDocumentV2StructureSchema>;
 
 interface LevelDocumentValidationIssue {
@@ -474,6 +485,7 @@ interface DocumentRelationsInput {
   readonly objects: readonly ObjectPlacement[];
   readonly inventory: readonly InventoryEntry[];
   readonly goal: { readonly ballId: string; readonly basketId: string };
+  readonly challenge?: Challenge | undefined;
 }
 
 /**
@@ -505,6 +517,27 @@ const addLevelDocumentRelationIssues = (
       path: ['goal', 'basketId'],
       message: 'L’objectif doit référencer un panier déjà placé.',
     });
+  }
+
+  if (document.challenge !== undefined) {
+    const { elegantObjectCount, minimalObjectCount } = document.challenge;
+    if (minimalObjectCount > elegantObjectCount) {
+      issues.push({
+        path: ['challenge', 'minimalObjectCount'],
+        message: 'Le nombre minimal connu ne peut pas dépasser le seuil élégant.',
+      });
+    }
+
+    const inventoryObjectCount = document.inventory.reduce(
+      (total, entry) => total + entry.quantity,
+      0,
+    );
+    if (minimalObjectCount > inventoryObjectCount) {
+      issues.push({
+        path: ['challenge', 'minimalObjectCount'],
+        message: 'Le nombre minimal connu ne peut pas dépasser la quantité totale de l’inventaire.',
+      });
+    }
   }
 };
 
@@ -579,7 +612,7 @@ export const levelDocumentV1Schema = levelDocumentV1StructureSchema.superRefine(
   },
 );
 
-/** The current v2 contract (ADR 0004 + ADR 0007). */
+/** The current v2 contract (ADR 0004, ADR 0007, ADR 0009 and ADR 0010). */
 export const levelDocumentSchema = levelDocumentV2StructureSchema.superRefine(
   (document, context) => {
     const issues: LevelDocumentValidationIssue[] = [];

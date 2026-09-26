@@ -90,6 +90,88 @@ const issuePaths = (candidate: unknown): readonly string[] => {
 };
 
 describe('LevelDocument v2', () => {
+  it('accepte un document sans challenge et le relit sans injecter de valeur par défaut', () => {
+    const parsed = levelDocumentSchema.safeParse(validLevel);
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data).toEqual(validLevel);
+    expect(parsed.data).not.toHaveProperty('challenge');
+  });
+
+  it('accepte un challenge valide dans les limites de l’inventaire', () => {
+    const candidate = {
+      ...validLevel,
+      challenge: { elegantObjectCount: 2, minimalObjectCount: 1 },
+    };
+
+    expect(levelDocumentSchema.safeParse(candidate).data).toEqual(candidate);
+  });
+
+  it('refuse un minimum supérieur au seuil élégant avec un chemin d’erreur exploitable', () => {
+    expect(
+      issuePaths({
+        ...validLevel,
+        inventory: validLevel.inventory.map((entry) => ({ ...entry, quantity: 2 })),
+        challenge: { elegantObjectCount: 1, minimalObjectCount: 2 },
+      }),
+    ).toEqual(['challenge.minimalObjectCount']);
+  });
+
+  it('compte les quantités de plusieurs entrées pour le minimum connu', () => {
+    const candidate = {
+      ...validLevel,
+      inventory: [
+        ...validLevel.inventory,
+        {
+          ...validLevel.inventory[0],
+          id: 'inventory-beam-short',
+          props: { size: 'short' },
+          quantity: 1,
+        },
+      ],
+      challenge: { elegantObjectCount: 2, minimalObjectCount: 2 },
+    };
+
+    expect(levelDocumentSchema.safeParse(candidate).success).toBe(true);
+  });
+
+  it('refuse un minimum supérieur au total des quantités de l’inventaire', () => {
+    expect(
+      issuePaths({
+        ...validLevel,
+        challenge: { elegantObjectCount: 2, minimalObjectCount: 2 },
+      }),
+    ).toEqual(['challenge.minimalObjectCount']);
+  });
+
+  it('refuse les valeurs non entières et les seuils hors de 1 à 999', () => {
+    expect(
+      issuePaths({
+        ...validLevel,
+        challenge: { elegantObjectCount: 1.5, minimalObjectCount: 1 },
+      }),
+    ).toEqual(['challenge.elegantObjectCount']);
+    expect(
+      issuePaths({
+        ...validLevel,
+        challenge: { elegantObjectCount: 2, minimalObjectCount: 1.5 },
+      }),
+    ).toEqual(['challenge.minimalObjectCount']);
+    expect(
+      issuePaths({
+        ...validLevel,
+        challenge: { elegantObjectCount: 1_000, minimalObjectCount: 1 },
+      }),
+    ).toEqual(['challenge.elegantObjectCount']);
+    expect(
+      issuePaths({
+        ...validLevel,
+        challenge: { elegantObjectCount: 1, minimalObjectCount: 0 },
+      }),
+    ).toEqual(['challenge.minimalObjectCount']);
+  });
+
   it('accepte les quatre familles et les propriétés discriminées du contrat v2', () => {
     const parsed = levelDocumentSchema.safeParse(validLevel);
 

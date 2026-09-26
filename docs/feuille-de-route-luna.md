@@ -945,3 +945,24 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   réussis ; C3 est ignoré dans le projet mobile car réservé au projet desktop.
 - Non vérifié : aucune vérification demandée par L4 ne reste à faire.
 - Pour l’auteur : aucune question.
+
+### L5 — Champ `challenge` du document de niveau — fait — `feat(domain): ajoute les seuils challenge au niveau (L5)`
+
+- Tests ajoutés : `level-document.test.ts` — absence relue sans valeur par défaut,
+  défi valide, ordre minimal/élégant, somme des quantités de plusieurs entrées,
+  inventaire insuffisant, entiers et bornes 1–999 avec chemins d’erreur précis.
+- Échec initial constaté : quatre nouveaux cas échouaient car `challenge` était
+  encore un champ inconnu du schéma strict ; le cas sans champ passait déjà.
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : `docs/feuille-de-route-luna.md` (journal
+  obligatoire) et `docs/etat.md` (état livré et résultat de la gate).
+- Écarts avec la tâche : aucun. Le validateur de catalogue appelle déjà le schéma
+  v2 et récupère ainsi les mêmes erreurs détaillées ; il n’a pas nécessité de
+  modification séparée. Aucune version ni migration ajoutée.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Vérification finale : `pnpm check` passe — typecheck, lint, formatage, Knip,
+  validation du contenu, 420 tests Vitest, build et 29 tests Playwright mobiles
+  réussis ; C3 est ignoré dans le projet mobile car réservé au projet desktop.
+- Non vérifié : aucune vérification demandée par L5 ne reste à faire.
+- Pour l’auteur : aucune question.
