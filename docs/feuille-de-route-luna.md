@@ -992,3 +992,50 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   projet mobile car réservé au projet desktop.
 - Non vérifié : aucune vérification demandée par L6 ne reste à faire.
 - Pour l’auteur : aucune question.
+
+### L7 — Niveau 1 « Prolonger la pente » — fait — `feat(content): ajoute le niveau 1 « Prolonger la pente » (L7)`
+
+- Tests ajoutés : `level-1-prolonger-la-pente.test.ts` — échec sans action,
+  victoire par la commande joueur de référence, les 21 positions de robustesse,
+  deux contre-exemples, refus d’une empreinte qui déborde de la zone et de la
+  rotation interdite, nombre de pas déterministe, document inchangé par la
+  simulation et reset exact du snapshot. `embedded-levels.test.ts` valide les
+  objets, l’inventaire, les permissions, la scène et la zone du nouveau niveau.
+- Échec initial constaté : la régression rouge échouait avec
+  `Le niveau « Prolonger la pente » est absent.` avant son intégration à la
+  campagne. Après transcription du JSON, la référence réussit en 256 pas et les
+  21 candidats mesurés réussissent ; les deux contre-exemples échouent.
+- Tests existants réécrits : le test de chute verticale de
+  `embedded-levels.test.ts` a été remplacé par la régression dédiée. Dans
+  `App.test.tsx`, le test de lancement vérifie désormais l’échec sans action puis
+  la victoire avec la poutre de référence ; retour à la liste, reset, replay,
+  stabilité de caméra et bandeau gardent leurs garanties. Les assertions de
+  présentation générique utilisent `/demo`. Le parcours Playwright déplacé vers
+  `e2e/levels.spec.ts` conserve la mesure de mouvement visible et vérifie l’échec,
+  la pose tactile puis la victoire. Le test du harnais L4 utilise désormais sa
+  propre copie de fixture, indépendante de la campagne.
+- Fichiers touchés hors périmètre : `docs/etat.md` et ce journal, obligatoires.
+  `src/ui/BoardView.tsx` expose `data-camera-origin`, attribut sans effet visuel
+  explicitement permis par la feuille pour convertir les coordonnées monde du
+  test tactile. Aucune constante physique ni apparence n’a changé.
+- Écarts avec la tâche : aucun. Les anciennes références de titre et de chemin
+  dans les tests de catalogue et de sprites ont été rendues génériques. Le
+  Markdown `docs/levels/initial-progression.md` a été consulté en lecture seule
+  et n’a pas été modifié.
+- Mesures qui ne se reproduisent pas : sans poutre, l’échec hors scène survient
+  en 181 pas ; un événement transitoire `ballEnteredTarget` précède l’échec, mais
+  l’objectif n’est pas confirmé. La vérification d’issue (et l’interface) annonce
+  donc bien un échec. La référence gagne en 256 pas. Le parcours E2E mobile a
+  d’abord mesuré 7,1 px après 400 ms ; l’échantillon à 800 ms dépasse le seuil
+  conservé de 10 px. Aucune géométrie n’a été ajustée.
+- Contradictions rencontrées : aucune entre mesures et résultat demandé. Le
+  harnais définit `ballEnteredTarget` comme une entrée dans le capteur, pas comme
+  une victoire ; le test ne confond plus ces événements.
+- Vérification finale : `pnpm check` passe — typecheck, lint, formatage, Knip,
+  contenu, 432 tests Vitest (33 fichiers), build et 29 tests Playwright mobiles
+  réussis ; C3 reste ignoré dans le projet mobile car spécifique au projet
+  desktop. `pnpm content:check` valide les trois JSON.
+- Captures au repos inspectées :
+  `test-results/levels/level-1-prolonger-la-pente-390x844.png` et
+  `test-results/levels/level-1-prolonger-la-pente-844x390.png` (non versionnées).
+- Pour l’auteur : aucune question.

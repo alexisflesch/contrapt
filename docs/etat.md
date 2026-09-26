@@ -110,9 +110,11 @@ pendant le travail.
 
 ### Contenu
 
-- Niveau 1 « Laisser tomber » jouable de bout en bout, avec test de régression
-  headless dans `src/content/embedded-levels.test.ts` et parcours Playwright
-  mobile.
+- Niveau 1 « Prolonger la pente » jouable de bout en bout. Sa régression
+  headless vérifie l’échec sans action, la référence et sa fenêtre de robustesse,
+  les contre-exemples, le déterminisme, l’immuabilité du document et le reset
+  exact (`src/content/levels/level-1-prolonger-la-pente.test.ts`). Parcours tactile
+  mobile sur `/levels/level-1-prolonger-la-pente/play`.
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -129,9 +131,9 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Un seul niveau de campagne**, « Laisser tomber », qui sera remplacé. La
-  campagne de 14 niveaux est spécifiée et mesurée dans
-  `levels/initial-progression.md` ; aucun bouton « Niveau suivant ».
+- **Un seul niveau de campagne**, « Prolonger la pente » ; les 13 autres niveaux
+  de la campagne de 14 sont spécifiés dans `levels/initial-progression.md`. Aucun
+  bouton « Niveau suivant ».
 - **Défi d’objets, progression, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés.
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
@@ -152,8 +154,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après L6 : typecheck,
-lint, formatage, Knip, contenu, 425 tests Vitest (32 fichiers), build et 30
+`pnpm check` exécutée avec succès le 26 septembre 2026 après L7 : typecheck,
+lint, formatage, Knip, contenu, 432 tests Vitest (33 fichiers), build et 30
 tests Playwright `mobile` (29 réussis, C3 ignoré car spécifique au projet desktop).
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de

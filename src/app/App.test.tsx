@@ -70,6 +70,31 @@ const openEmbeddedLevelOne = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
 };
 
+const tapWorldPoint = (x: number, y: number): void => {
+  const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+  const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+  const rawOrigin = canvas.getAttribute('data-camera-origin');
+  if (rawOrigin === null) throw new Error('Origine caméra absente du canvas.');
+  const [originX, originY] = rawOrigin.split(',').map(Number);
+  const zoom = Number(canvas.getAttribute('data-camera-zoom'));
+  if (originX === undefined || originY === undefined || !Number.isFinite(zoom) || zoom <= 0) {
+    throw new Error('Cadrage caméra invalide dans le test.');
+  }
+
+  const canvasBounds = canvas.getBoundingClientRect();
+  tapBoard(
+    board,
+    canvasBounds.left + (x - originX) * zoom,
+    canvasBounds.top + (y - originY) * zoom,
+  );
+};
+
+const placeCampaignBeam = (x: number, y: number): void => {
+  fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Poutre moyenne' }));
+  tapWorldPoint(x, y);
+};
+
 /** B5: the declared scene of the level the app boots into, for cross-checking `fitCameraToScene`. */
 const levelOneScene = (() => {
   const levelOne = embeddedLevels[0];
@@ -113,12 +138,13 @@ const placeWorkshopBeam = (): HTMLElement => placeWorkshopObject('Poutre moyenne
 
 const advanceSimulationToResult = (
   animationFrames: ReturnType<typeof createAnimationFrameHarness>,
+  frameCount = 180,
 ): void => {
   const fixedStepMilliseconds = 1000 / 60;
 
   act(() => {
     animationFrames.flush(0);
-    for (let frame = 1; frame <= 180; frame += 1) {
+    for (let frame = 1; frame <= frameCount; frame += 1) {
       animationFrames.flush(frame * fixedStepMilliseconds);
     }
   });
@@ -222,16 +248,15 @@ describe('coque Contrapt!', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('démarre en mode résolution sur le niveau 1, sans tiroir ni actions d’édition', () => {
+  it('démarre en mode résolution sur le niveau 1, avec sa poutre et sans édition libre', () => {
     // B1 (plan-remise-en-jeu.md § 4) : l'application n'ouvre plus l'atelier
     // par défaut ; elle charge directement le niveau 1 embarqué en session
-    // de résolution. `initial-progression.md` § Niveau 1 : l'inventaire est
-    // vide, donc le tiroir catalogue n'apparaît pas du tout, et aucune
-    // action d'édition (Annuler/Rétablir, catalogue) n'est disponible.
+    // de résolution. L’inventaire fournit sa poutre, sans ouvrir les
+    // commandes d’édition libre.
     render(<App />);
 
     expect(screen.getByRole('heading', { name: 'Contrapt!' })).toBeVisible();
-    expect(screen.getByText('Niveau 1 · Laisser tomber')).toBeVisible();
+    expect(screen.getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
     // L'objectif n'occupe plus d'espace permanent : il est accessible par un
@@ -240,10 +265,10 @@ describe('coque Contrapt!', () => {
     expect(screen.queryByText('Faire entrer la balle dans le panier')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Voir l’objectif' })).toBeVisible();
 
-    expect(screen.queryByRole('region', { name: 'Objets disponibles' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ouvrir le catalogue' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Annuler' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Rétablir' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Ouvrir le catalogue' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Annuler' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Rétablir' })).toBeDisabled();
 
     for (const actionName of ['Tester', 'Zoom arrière', 'Ajuster à la scène', 'Zoom avant']) {
       expect(screen.getByRole('button', { name: actionName })).toBeVisible();
@@ -554,7 +579,7 @@ describe('coque Contrapt!', () => {
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
-    expect(within(levelList).getByText('Niveau 1 · Laisser tomber')).toBeVisible();
+    expect(within(levelList).getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
     expect(within(levelList).queryByText(/Niveau 2/i)).not.toBeInTheDocument();
   });
@@ -601,12 +626,11 @@ describe('coque Contrapt!', () => {
     expect(screen.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
   });
 
-  it('lance la fixture embarquée en mode joueur et annonce la victoire après des RAF contrôlés', () => {
+  it('annonce l’échec sans action puis la victoire après la poutre de référence', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
 
     openEmbeddedLevelOne();
-
     expect(screen.getByText('Mode joueur')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Voir l’objectif' }));
     expect(screen.getByRole('dialog', { name: 'Objectif du niveau' })).toHaveTextContent(
@@ -615,16 +639,25 @@ describe('coque Contrapt!', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fermer l’objectif' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames);
+    advanceSimulationToResult(animationFrames, 360);
+
+    const failedResult = screen.getByRole('region', { name: 'Résultat du niveau' });
+    expect(within(failedResult).getByText('Échec')).toBeVisible();
+    expect(within(failedResult).queryByText('Victoire')).not.toBeInTheDocument();
+    fireEvent.click(within(failedResult).getByRole('button', { name: 'Réinitialiser' }));
+
+    placeCampaignBeam(5.0, 2.15);
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 360);
 
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
-    expect(result).toBeVisible();
     expect(within(result).getByText('Victoire')).toBeVisible();
     expect(within(result).getByRole('button', { name: 'Rejouer le niveau' })).toBeVisible();
     expect(within(result).getByRole('button', { name: 'Retour aux niveaux' })).toBeVisible();
   });
 
   it('affiche le bandeau de victoire après le plateau dans le flux normal, jamais en overlay', () => {
+    window.history.replaceState(null, '', '/demo');
     // B1 (plan-remise-en-jeu.md § 4) : le bandeau de victoire recouvrait le
     // bas du plateau (position absolue par-dessus le canvas), ce qui pouvait
     // cacher la balle et le panier. Il s'affiche désormais après le plateau
@@ -633,7 +666,7 @@ describe('coque Contrapt!', () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames);
+    advanceSimulationToResult(animationFrames, 600);
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
@@ -697,13 +730,13 @@ describe('coque Contrapt!', () => {
 
     openEmbeddedLevelOne();
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames);
+    advanceSimulationToTimeout(animationFrames);
 
     fireEvent.click(screen.getByRole('button', { name: 'Retour aux niveaux' }));
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
-    expect(within(levelList).getByText('Niveau 1 · Laisser tomber')).toBeVisible();
+    expect(within(levelList).getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
     expect(within(levelList).queryByText(/Niveau 2/i)).not.toBeInTheDocument();
   });
 
@@ -711,7 +744,7 @@ describe('coque Contrapt!', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
 
-    openEmbeddedLevelOne();
+    placeCampaignBeam(5.0, 2.15);
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
     expect(screen.getByText('Simulation en cours')).toBeVisible();
 
@@ -730,7 +763,7 @@ describe('coque Contrapt!', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
     expect(screen.getByText('Simulation en cours')).toBeVisible();
 
-    advanceSimulationToResult(animationFrames);
+    advanceSimulationToResult(animationFrames, 320);
     fireEvent.click(screen.getByRole('button', { name: 'Rejouer le niveau' }));
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
@@ -1181,6 +1214,7 @@ describe('coque Contrapt!', () => {
   });
 
   it('réserve en permanence un unique emplacement partagé pour le résultat, dès le tout premier rendu, pour qu’aucune phase ne redimensionne le plateau', () => {
+    window.history.replaceState(null, '', '/demo');
     // B5 (plan-remise-en-jeu.md § 4 bis): the ResizeObserver B1 added (see
     // the test above) refits the camera on *any* CSS size change of the
     // canvas — including the reflow the victory/failure banner used to cause
@@ -1225,7 +1259,7 @@ describe('coque Contrapt!', () => {
     expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
     expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
 
-    advanceSimulationToResult(animationFrames);
+    advanceSimulationToResult(animationFrames, 600);
 
     // The banner appears — the reflow-sensitive moment the original bug
     // report described — but the reserved slot is still the very same DOM
@@ -1423,20 +1457,9 @@ describe('coque Contrapt!', () => {
     render(<App />);
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
-    // Level 1 is fitted into the stubbed 800 × 450 canvas: ball-1 at (4, 1)
-    // is therefore near (400, 88) CSS px.
-    firePointerEvent(board, 'pointerdown', {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 400,
-      clientY: 88,
-    });
-    firePointerEvent(board, 'pointerup', {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 400,
-      clientY: 88,
-    });
+    // Use the canvas camera so this follows the embedded placement if the
+    // scene geometry changes again.
+    tapWorldPoint(2.3, 1.177);
 
     const lockedPanel = screen.getByRole('region', { name: 'Propriétés de Balle' });
     expect(lockedPanel).toBeVisible();

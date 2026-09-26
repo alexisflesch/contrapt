@@ -370,6 +370,7 @@ export function BoardView({
                 : `${String(simulationBall.position.x)},${String(simulationBall.position.y)}`
             }
             data-camera-zoom={String(camera.pixelsPerWorldUnit)}
+            data-camera-origin={`${String(camera.origin.x)},${String(camera.origin.y)}`}
           />
           {placementPreview !== null && session.phase === 'construction' && (
             <div

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
-import { embeddedLevels } from './embedded-levels';
 import {
   applyPlayerSteps,
   runLevel,
@@ -11,11 +10,35 @@ import {
   type PlayerStep,
 } from './level-regression';
 
-const levelOne = (): LevelDocument => {
-  const level = embeddedLevels[0];
-  if (level === undefined) throw new Error('Le niveau 1 embarqué est absent.');
-  return level;
-};
+const levelOne = (): LevelDocument =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'regression-first-drop',
+    metadata: {
+      title: 'Laisser tomber — fixture de régression',
+      description: 'La balle tombe directement dans le panier.',
+    },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 4, y: 1 }, rotation: 0 },
+        props: {},
+        permissions: { move: false, rotate: false, remove: false },
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 4, y: 4.2 }, rotation: 0 },
+        props: {},
+        permissions: { move: false, rotate: false, remove: false },
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+  });
 
 const levelWithInventory = (buildZones: LevelDocument['buildZones']): LevelDocument =>
   levelDocumentSchema.parse({

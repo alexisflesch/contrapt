@@ -5,7 +5,7 @@ import { validateContentCatalog, type ContentLevelFile } from './catalogue-valid
 const validLevel = {
   schemaVersion: 2,
   id: 'first-drop',
-  metadata: { title: 'Laisser tomber' },
+  metadata: { title: 'Fixture de validation' },
   objects: [
     {
       id: 'ball-1',

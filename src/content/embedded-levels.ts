@@ -1,5 +1,5 @@
 import demo from './levels/demo.json';
-import levelOne from './levels/level-1-laisser-tomber.json';
+import levelOne from './levels/level-1-prolonger-la-pente.json';
 import workshop from './levels/workshop.json';
 
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
