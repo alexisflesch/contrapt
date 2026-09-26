@@ -129,8 +129,10 @@ créés par la tâche) avant de passer à la suivante.
 - Objectif : le centre de la balle cible entre dans le capteur du panier et y
   reste 30 pas fixes. Échec : centre de la balle hors de la scène élargie de
   2 unités, ou 20 s simulées écoulées. Pas fixe 1/60 s ; 20 s = 1 200 pas.
-- Seules les poutres tournent. Le joueur ne change **aucune propriété** (taille,
-  sens d’un convoyeur, cran d’un levier : `updatePlacementProperties` refuse le
+- En résolution, la rotation suit `permissions.rotate` : poutres et leviers à
+  angle libre (levier borné à ±135°), ventilateur, barrière et tremplin par quarts
+  de tour. Le joueur ne modifie pas les propriétés de famille (taille, sens du
+  convoyeur, cran initial du levier : `updatePlacementProperties` refuse le
   contexte `player`) et ne relie aucun fil (ADR 0009).
 - Rotation en résolution : pas de 15° (`π/12`, `src/app/use-board-pointers.ts`).
 - Commandes : `src/application/construction/construction-attempt.ts`. Pour les
@@ -1415,8 +1417,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : préciser si la référence et les deux poses centrales de la
   fenêtre doivent être déplacées pour correspondre à la simulation.
 
-
-### L17b — Levier orientable — fait — commit à enregistrer
+### L17b — Levier orientable — fait — `71b7d16 feat(editor): rend les leviers orientables`
 
 - Tests ajoutés ou modifiés : tenue de chacun des trois crans toutes les 15° de
   −135° à +135° pendant trois secondes, impact d’une balle sur le levier tourné,
