@@ -469,6 +469,12 @@ Zone : `x 5,2 → 7,8`, `y 0,4 → 1,9`. Pas de `challenge`.
 le convoyeur `1` avant la réussite ; les contre-exemples laissent le levier
 `center` ou `left`.
 
+**Écart mesuré à examiner.** La référence (6,2 ; 1,1) expire sans action du
+levier. Dans la grille robuste annoncée, les poses à `x = 6,2` expirent également ;
+seules celles à `x = 6,0` ou `6,4` gagnent. Aucune coordonnée de la scène n’a été
+ajustée. La régression note cet écart et conserve une pose gagnante mesurée pour
+que le niveau reste jouable.
+
 ### Niveaux 12 à 14 — Synthèses (à concevoir)
 
 Non mesurés. À concevoir au banc d’essai (feuille de route, tâche dédiée), un

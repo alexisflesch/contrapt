@@ -1348,7 +1348,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : le follow-up U13 s’applique aussi aux niveaux où la zone exclut
   une partie des mesures physiques.
 
-### L16 — Niveau 10 « Le butoir » — partiel — non commité
+### L16 — Niveau 10 « Le butoir » — partiel — `feat(content): ajoute le niveau 10 « Le butoir » (L16)`
 
 - Tests ajoutés : `level-10-le-butoir.test.ts` — sortie de scène sans masse,
   référence joueur et document immuable, 12 poses robustes, reproduction des
@@ -1380,3 +1380,37 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/level-10-le-butoir-844x390.png` (non versionnées).
 - Pour l’auteur : la hauteur voulue pour les contre-exemples latéraux reste à
   préciser ; le niveau est jouable en attendant cette précision.
+
+### L17 — Niveau 11 « L’interrupteur » — partiel — non commité
+
+- Tests ajoutés : `level-11-l-interrupteur.test.ts` — échec sans masse, mesure de
+  la référence et de la grille robuste, pose gagnante mesurée, lecture de
+  `readState().devices` pour le levier et le convoyeur, contre-exemples, rotation
+  refusée, immuabilité et déterminisme. Le parcours mobile pose la masse et gagne.
+- Échec initial constaté : les sept tests rouges échouaient avec
+  `Le niveau « L’interrupteur » est absent.`. Après ajout exact de la géométrie,
+  la référence (6,2 ; 1,1) expirait au lieu de gagner.
+- Tests existants réécrits : `App.test.tsx` et `embedded-levels.test.ts` incluent
+  maintenant le onzième niveau ; aucun comportement antérieur n’a été retiré.
+- Fichiers touchés hors périmètre : `docs/etat.md`, ce journal et
+  `docs/levels/initial-progression.md` pour rapporter la mesure sans modifier la
+  fiche géométrique.
+- Écarts avec la tâche : le niveau est jouable, mais la référence ne marche pas.
+  Dans les six poses de robustesse annoncées, les deux à `x = 6,2` expirent ; les
+  quatre poses à `x = 6,0` ou `6,4` gagnent. La validation spécifique confirme
+  que leurs dispositifs sont à levier `right` et convoyeur `1` avant la victoire.
+- Mesures qui ne se reproduisent pas : la fiche attend une victoire à
+  (6,2 ; 1,1) et aux six poses `x ∈ {6,0 ; 6,2 ; 6,4}` × `y ∈ {0,8 ; 1,4}` ; la
+  simulation donne une expiration à la référence et aux deux poses à `x = 6,2`.
+  Les états des contre-exemples `x = 5,8` et `6,6` correspondent à la fiche :
+  levier `center` et `left` respectivement.
+- Contradictions rencontrées : la fiche de niveau et la physique divergent sur
+  la référence et deux candidats robustes. Aucune coordonnée n’a été ajustée.
+- Vérification finale : `pnpm check` passe — contenu (13 documents embarqués),
+  506 tests Vitest (43 fichiers), build et 39 parcours Playwright mobiles réussis ;
+  un test est ignoré car propre au projet desktop.
+- Captures au repos inspectées :
+  `test-results/levels/level-11-l-interrupteur-390x844.png` et
+  `test-results/levels/level-11-l-interrupteur-844x390.png` (non versionnées).
+- Pour l’auteur : préciser si la référence et les deux poses centrales de la
+  fenêtre doivent être déplacées pour correspondre à la simulation.

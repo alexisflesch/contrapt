@@ -167,6 +167,13 @@ pendant le travail.
   le refus de rotation, l’immuabilité et le déterminisme. Les deux contre-exemples
   latéraux annoncés gagnent aux trois hauteurs mesurées ; cet écart est consigné
   sans ajuster la scène (`src/content/levels/level-10-le-butoir.test.ts`).
+- Niveau 11 « L’interrupteur » jouable au tactile dans le chapitre « Mécanismes ».
+  La régression lit les états des dispositifs : les quatre poses gagnantes
+  mesurées placent le levier à droite et le convoyeur à `1`; les contre-exemples
+  le laissent au centre ou le placent à gauche. La référence annoncée à
+  (6,2 ; 1,1) expire et deux poses de la fenêtre annoncée n’activent pas le levier ;
+  l’écart est documenté sans changer la géométrie
+  (`src/content/levels/level-11-l-interrupteur.test.ts`).
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -187,10 +194,10 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Dix niveaux de campagne**, « Prolonger la pente », « Le pont »,
+- **Onze niveaux de campagne**, « Prolonger la pente », « Le pont »,
   « Incliner », « Moins, c’est mieux », « Le détour », « La bascule »,
-  « Placer la bascule », « Poutre et bascule », « Le tapis » et « Le butoir » ; les
-  4 autres niveaux de la campagne de 14 sont spécifiés dans
+  « Placer la bascule », « Poutre et bascule », « Le tapis », « Le butoir » et
+  « L’interrupteur » ; les 3 autres niveaux de la campagne de 14 sont spécifiés dans
   `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
 - **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés. Les métadonnées de défi existent au
@@ -215,13 +222,13 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 10 :
-typecheck, lint, formatage, Knip, contenu (12 documents embarqués), 498 tests
-Vitest (42 fichiers), build et 39 tests Playwright `mobile` (38 réussis, 1 ignoré
+`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 11 :
+typecheck, lint, formatage, Knip, contenu (13 documents embarqués), 506 tests
+Vitest (43 fichiers), build et 40 tests Playwright `mobile` (39 réussis, 1 ignoré
 car C3 est spécifique au projet desktop). Les captures au repos sont conservées
-sous `test-results/levels/` pour les niveaux 1 à 10, en portrait et paysage. La
-première gate L16 a expiré sur le parcours tactile préexistant du niveau 5 ; ce
-parcours passe isolément et dans la gate complète relancée sans modification.
+sous `test-results/levels/` pour les niveaux 1 à 11, en portrait et paysage. La
+première gate L16 avait expiré sur le parcours tactile préexistant du niveau 5 ;
+ce parcours passe isolément et dans la gate complète relancée sans modification.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

@@ -16,7 +16,11 @@ describe('campagne embarquée', () => {
       { id: 'poutres-et-bascule', title: 'Poutres et bascule' },
       { id: 'mecanismes', title: 'Mécanismes' },
     ]);
-    expect(campaignChapters[1]?.levels).toEqual([embeddedLevels[8], embeddedLevels[9]]);
+    expect(campaignChapters[1]?.levels).toEqual([
+      embeddedLevels[8],
+      embeddedLevels[9],
+      embeddedLevels[10],
+    ]);
     expect(flattenCampaignLevels(campaignChapters)).toEqual(embeddedLevels);
   });
 
@@ -56,8 +60,8 @@ describe('campagne embarquée', () => {
 });
 
 describe('niveaux embarqués', () => {
-  it('expose les dix premiers niveaux v2 valides dans l’ordre de campagne', () => {
-    expect(embeddedLevels).toHaveLength(10);
+  it('expose les onze premiers niveaux v2 valides dans l’ordre de campagne', () => {
+    expect(embeddedLevels).toHaveLength(11);
     expect(embeddedLevels[0]).toMatchObject({
       schemaVersion: 2,
       id: 'level-1-prolonger-la-pente',
@@ -446,6 +450,53 @@ describe('niveaux embarqués', () => {
         type: 'beam',
         transform: { position: { x: 6.5, y: 3.6 }, rotation: 0 },
         props: { size: 'short' },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+    ]);
+
+    expect(embeddedLevels[10]).toMatchObject({
+      schemaVersion: 2,
+      id: 'level-11-l-interrupteur',
+      metadata: { title: 'L’interrupteur' },
+      inventory: [
+        {
+          id: 'inventory-mass',
+          type: 'mass',
+          props: { weight: '10kg' },
+          quantity: 1,
+          permissions: { move: true, rotate: false, remove: true },
+        },
+      ],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [{ min: { x: 5.2, y: 0.4 }, max: { x: 7.8, y: 1.9 } }],
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+      wires: [{ id: 'wire-1', sourceId: 'lever', targetId: 'belt' }],
+    });
+    expect(embeddedLevels[10]?.objects).toEqual([
+      expect.objectContaining({
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 1.9, y: 1.8 }, rotation: 0 },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'belt',
+        type: 'conveyor',
+        transform: { position: { x: 2.2, y: 2.4 }, rotation: 0 },
+        props: { direction: 'stopped' },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'lever',
+        type: 'lever',
+        transform: { position: { x: 6.5, y: 3.2 }, rotation: 0 },
+        props: { position: 'center' },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 4.4, y: 4.9 }, rotation: 0 },
         permissions: { move: false, rotate: false, remove: false },
       }),
     ]);

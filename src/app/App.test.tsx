@@ -623,6 +623,8 @@ describe('coque Contrapt!', () => {
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 9' })).toBeEnabled();
     expect(within(levelList).getByText('Niveau 10 · Le butoir')).toBeVisible();
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 10' })).toBeEnabled();
+    expect(within(levelList).getByText('Niveau 11 · L’interrupteur')).toBeVisible();
+    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 11' })).toBeEnabled();
   });
 
   it('navigue vers une page de réglages dédiée depuis le menu (ADR 0008)', () => {
