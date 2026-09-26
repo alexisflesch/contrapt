@@ -349,6 +349,19 @@ déplacer le mur ou le panier.
 **Contre-exemples.** Poutre seule (sortie de scène) ; bascule seule, pivot de 2,0
 à 5,2 et `y` de 2,6 à 4,2 (27 poses, aucune réussite) ; aucune action.
 
+**Poses accessibles au joueur.** La poutre moyenne de référence en (2,3 ; 1,5)
+à 15° tient dans la zone A. Avec la rotation tactile par pas de 15°, les cinq
+poses de bascule de la fenêtre à `x ∈ {3,7 ; 4,0 ; 4,3}` et
+`y ∈ {3,4 ; 3,8}` (en excluant les combinaisons non mesurées à `x = 3,7`)
+sont acceptées dans la zone B et gagnent avec cette poutre. Les mesures à 10°
+et 20° sont des mesures physiques, pas des angles que le contrôle tactile peut
+choisir.
+
+**Grille du contre-exemple à préciser.** La spec annonce 27 poses « bascule seule »
+avec les bornes x/y, mais ne donne pas les coordonnées discrètes de ces poses.
+Ne pas en déduire une grille arbitraire ; la recherche de minimalité reste à
+compléter lorsque les 27 coordonnées seront connues.
+
 ---
 
 ## Chapitre 2 — Mécanismes

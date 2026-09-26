@@ -153,6 +153,11 @@ pendant le travail.
   commun à la planche et au pied, le déterminisme et la position refusée à droite
   (`src/content/levels/level-7-placer-la-bascule.test.ts`). Le tiroir ne montre
   que la bascule disponible.
+- Niveau 8 « Poutre et bascule » jouable au tactile avec deux zones. Les 15
+  combinaisons physiques annoncées gagnent et cinq poses sont acceptées par les
+  zones pour la solution à deux objets (`src/content/levels/level-8-poutre-et-bascule.test.ts`).
+  La preuve qu’une bascule seule ne gagne pas reste non vérifiée : la source ne
+  donne pas les coordonnées des 27 poses annoncées.
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -173,14 +178,16 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Sept niveaux de campagne**, « Prolonger la pente », « Le pont »,
-  « Incliner », « Moins, c’est mieux », « Le détour », « La bascule » et
-  « Placer la bascule » ; les 7 autres niveaux de la campagne de 14 sont
-  spécifiés dans
+- **Huit niveaux de campagne**, « Prolonger la pente », « Le pont »,
+  « Incliner », « Moins, c’est mieux », « Le détour », « La bascule »,
+  « Placer la bascule » et « Poutre et bascule » ; les 6 autres niveaux de la
+  campagne de 14 sont spécifiés dans
   `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
 - **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés. Les métadonnées de défi existent au
-  format v2 et sont utilisées par les niveaux 4 et 5.
+  format v2 et sont utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité
+  à deux objets du niveau 8 reste à compléter avec les coordonnées de sa grille
+  « bascule seule ».
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
 - **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
@@ -199,11 +206,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 7 :
-typecheck, lint, formatage, Knip, contenu (9 niveaux embarqués), 477 tests Vitest
-(39 fichiers), build et 36 tests Playwright `mobile` (35 réussis, 1 ignoré car C3
+`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 8 :
+typecheck, lint, formatage, Knip, contenu (10 niveaux embarqués), 484 tests Vitest
+(40 fichiers), build et 37 tests Playwright `mobile` (36 réussis, 1 ignoré car C3
 est spécifique au projet desktop). Les captures au repos sont conservées sous
-`test-results/levels/` pour les niveaux 1 à 7, en portrait et paysage.
+`test-results/levels/` pour les niveaux 1 à 8, en portrait et paysage.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

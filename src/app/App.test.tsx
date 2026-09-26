@@ -617,6 +617,8 @@ describe('coque Contrapt!', () => {
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 6' })).toBeEnabled();
     expect(within(levelList).getByText('Niveau 7 · Placer la bascule')).toBeVisible();
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 7' })).toBeEnabled();
+    expect(within(levelList).getByText('Niveau 8 · Poutre et bascule')).toBeVisible();
+    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 8' })).toBeEnabled();
   });
 
   it('navigue vers une page de réglages dédiée depuis le menu (ADR 0008)', () => {

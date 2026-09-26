@@ -475,7 +475,10 @@ Inclut le test de hit-test planche/pied (même identifiant).
 
 #### L14 — Niveau 8 « Poutre et bascule » ●●●
 
-Fenêtre de robustesse étroite : lire le § Point d’attention de la spec.
+Fenêtre de robustesse étroite : lire le § Point d’attention de la spec. La
+grille de 27 poses « bascule seule » n’est pas énumérée : ne pas l’inventer ;
+consigner la preuve de minimalité comme non vérifiée et poursuivre les tâches
+suivantes indépendantes.
 
 ### Phase C — Chapitre 2
 
@@ -1281,3 +1284,36 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/level-7-placer-la-bascule-844x390.png` (non versionnées).
 - Pour l’auteur : U13 reste différé ; il précisera la zone de pose autorisée,
   notamment pour les niveaux à plusieurs zones.
+
+### L14 — Niveau 8 « Poutre et bascule » — partiel — `feat(content): ajoute le niveau 8 « Poutre et bascule » (L14)`
+
+- Tests ajoutés : `level-8-poutre-et-bascule.test.ts` — échec sans action,
+  référence joueur, 15 combinaisons physiques, cinq combinaisons accessibles dans
+  les zones, poutre seule, rotation de bascule refusée et déterminisme. Le parcours
+  mobile tourne la poutre avec sa poignée, pose la bascule et gagne.
+- Échec initial constaté : les sept tests rouges échouaient avec
+  `Le niveau « Poutre et bascule » est absent.`.
+- Tests existants réécrits : `App.test.tsx` et `embedded-levels.test.ts` incluent
+  maintenant le huitième niveau dans la campagne ; aucun comportement existant
+  n’a été retiré.
+- Fichiers touchés hors périmètre : `docs/etat.md` et ce journal (obligatoires),
+  et `docs/levels/initial-progression.md` qui distingue les poses physiques,
+  celles accessibles au tactile, et la grille absente du contre-exemple.
+- Écarts avec la tâche : la recherche prouvant l’absence de solution avec une
+  bascule seule est laissée de côté ; les coordonnées des 27 poses ne sont pas
+  spécifiées. Le reste du niveau est livré.
+- Mesures qui ne se reproduisent pas : aucune dans la fenêtre documentée ; les 15
+  combinaisons physiques gagnent. Les cinq solutions à poutre posée à 15° et
+  bascule en (4,0 ; 3,4), (4,0 ; 3,8), (4,3 ; 3,4), (4,3 ; 3,8) ou (3,7 ; 3,4)
+  sont acceptées par les zones et gagnent.
+- Contradictions rencontrées : aucune. La grille « bascule seule » est incomplète
+  dans la spécification, sans mesure contraire.
+- Vérification finale : `pnpm check` passe — typecheck, lint, formatage, Knip,
+  contenu (10 niveaux), 484 tests Vitest (40 fichiers), build et 36 parcours
+  Playwright mobiles réussis ; un test desktop est ignoré dans ce projet.
+- Captures au repos inspectées :
+  `test-results/levels/level-8-poutre-et-bascule-390x844.png` et
+  `test-results/levels/level-8-poutre-et-bascule-844x390.png` (non versionnées).
+- Pour l’auteur : si la preuve de minimalité est requise, fournir les coordonnées
+  exactes de la grille des 27 poses « bascule seule ». U13 reste différé ; le
+  niveau comporte deux zones.
