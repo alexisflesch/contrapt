@@ -420,5 +420,318 @@ découvrir une loi du moteur qu'aucun texte ne lui énonce. D et E sont les plus
 proches des niveaux 12 à 14 (rendement, délai) : ce sont les plus faciles à
 sacrifier ou à fondre dans un niveau existant.
 
+### Cinq niveaux de combinaison qui ne coûtent **aucune** ligne de code
+
+Avant d'ajouter des objets : il reste des niveaux exploitables avec les onze
+familles d'aujourd'hui. Aucun ne touche au schéma, au port physique ou aux
+sprites — un JSON, une régression, et le banc d'essai. Ce sont les contenus les
+moins chers du dépôt, et ils peuvent s'écrire pendant qu'une famille est en
+discussion.
+
+| Idée | Scène | Ce qu'elle apprend |
+| ---- | ----- | ------------------ |
+| **G — « Le mur d'air »** | ventilateur tourné vers le bas sur un ressaut ; la balle doit passer **à côté** du souffle sans s'y faire retenir | le souffle peut **retenir** et pas seulement pousser ; une zone invisible est un obstacle |
+| **H — « Le contrepoids »** | bascule surchargée d'un côté, balle de l'autre ; inventaire = la masse de 10 kg | la masse n'est pas un outil de franchissement : 35 fois la balle, ça ne se pose pas à côté d'elle |
+| **I — « La chaîne »** | le pied d'une bascule enfonce un bouton en s'abaissant ; le bouton commande une barrière que la balle franchit | une **séquence** complète sans que le joueur touche au dispositif : il n'ajoute que le maillon qui manque |
+| **J — « Deux cibles, un levier »** | un levier relié à une barrière **et** à un ventilateur ; le joueur ne choisit pas le câble, il choisit l'**instant** | un ordre peut avoir deux effets ; le niveau se joue sur le moment, pas sur le chemin |
+| **K — « Le retour »** | un convoyeur qui ramène la balle à son point de départ ; il faut l'en sortir avant le tour suivant | le convoyeur est aussi une **punition** : ce qu'il transporte, il peut le ramener |
+
+**J demande une vérification dans le code.** ADR 0009 fixe « un seul contrôleur
+par dispositif » mais ne dit pas si une **source** peut alimenter deux cibles. Si
+le schéma l'interdit, J est impossible et il vaut mieux le savoir avant d'y passer
+du temps ; s'il l'autorise, c'est une mécanique de premier ordre et gratuite — et
+le succédané le moins coûteux du verbe de la poulie (§ 6.6).
+
+
 ---
+
+## 6. Objets nouveaux que je propose
+
+Le filtre, dans l'ordre : (1) ouvre-t-il une case dans la tête du joueur (§ 2) ;
+(2) le document peut-il le décrire **sans casser** `LevelDocument v2` ; (3) le
+port physique sait-il déjà le faire ; (4) l'art existe-t-il ; (5) combien de
+niveaux l'exploitent. Une famille qui ne passe pas ces cinq questions reste un
+dessin dans `art/`.
+
+Chaque famille nouvelle devra fournir, comme l'exigent `AGENTS.md` et
+`architecture.md` : son schéma Zod, sa définition enregistrée, ses capacités, sa
+projection visuelle et son sprite exporté par `art/build-sprites.py`, ses poignées
+et permissions, ses validateurs, ses tests contractuels **et** ses tests de
+comportement, sa carte dans le tiroir, ses règles de sérialisation. Ce qui suit
+ne détaille que le design : rien n'est implémenté, et les coûts sont des ordres de
+grandeur, pas des devis.
+
+| Proposition | Verbe ouvert | Document | Coût | Art | Niveaux | Verdict |
+| ----------- | ------------ | -------- | ---- | --- | ------- | ------- |
+| Masse de 1 kg (variante de propriété) | doser un poids | inchangé | très faible | à dessin | 2+ | **oui, en premier** |
+| Boîte `box` (bois / métal) | boucher, empiler, lester | compatible | moyen | **dessiné** | 3+ | **oui** |
+| Pendule | ce qui revient | compatible | moyen | à dessiner | 2 | oui, après la boîte |
+| Clapet à sens unique | ne passer que dans un sens | compatible | moyen | à dessiner | 2 | oui |
+| Rails + chariot | transporter le long d'une pente | compatible | moyen-élevé | à dessiner | 1-2 | peut-être |
+| Poulie à contrepoids | deux endroits qui dépendent l'un de l'autre | **incompatible (v3)** | élevé | à dessiner | 2 | **différée** |
+
+### 6.1 Masse de 1 kg — une variante, pas une famille
+
+**Verbe.** *Doser un poids.* Le joueur n'a aujourd'hui qu'un seul poids : 10 kg,
+35 fois la balle. Il ne peut jamais peser le pour et le contre au sens propre, et
+aucune balance ne peut exister : une bascule balle contre masse est gagnée
+d'avance.
+
+**Le moins cher du dépôt :** une valeur de plus dans une propriété existante
+(`size: "1kg" | "10kg"`, défaut `"10kg"`), une entrée de plus dans
+`family-geometry.ts` (0,4 × 0,386 si on garde la densité), un second sprite. Les
+documents écrits aujourd'hui se décodent toujours : **aucune migration**. Il
+faudra juste un test « un document sans `size` reste une masse de 10 kg ».
+
+**Ce qu'elle débloque.** « L'équilibre » : balle sur un plateau, masse de 1 kg sur
+l'autre — 9,8 N contre 2,8 N, la masse gagne, et le joueur comprend que lourd ne
+se bat pas, ça se contourne. Et le niveau 8 de la campagne (poutre et bascule)
+pourrait exister en version « ⭐ » avec la masse de 1 kg à la place de la masse de
+10 kg.
+
+**Attention à la lisibilité :** 1 kg et 10 kg doivent se distinguer d'un coup
+d'œil à 390 px de large (taille *et* sprite *et* libellé dans la carte du tiroir) ;
+c'est un point pour la tâche U12, pas pour le domaine.
+
+### 6.2 Boîte `box` — bois et métal : l'art est déjà dessiné
+
+**Verbe.** *Boucher, empiler, faire masse.* Un volume qui se pousse, qui s'empile,
+qui bouche un trou — ni une balle (il ne roule pas), ni une poutre (il bouge).
+C'est l'objet qui manque pour que le décor devienne un matériau.
+
+**Modèle.** Un carré dynamique de 0,6 × 0,6, deux matériaux : **bois**
+(densité ≈ 0,7 → masse ≈ 0,25 kg, poids ≈ 2,5 N ; friction forte, restitution 0)
+et **métal** (densité ≈ 6 → masse ≈ 2,2 kg, poids ≈ 21 N ; restitution 0,1).
+Ces deux chiffres sont choisis pour une raison précise : le souffle d'un
+ventilateur à pleine puissance (5,4 N) **tient** la boîte de métal (le frottement
+dépasse la poussée) et **fait glisser** la boîte de bois, lentement. Une seule
+famille, un matériau, deux sprites — comme les trois tailles de poutre.
+
+**Document.** Un membre de plus dans l'union discriminée `objects`. Les anciens
+documents se décodent toujours ; les nouveaux exigent une application à jour. Pas
+de migration de schéma, un bump de version mineure, et un test de non-régression
+sur les JSON embarqués.
+
+**Ce qu'elle rend jouable.** Le **bouchon** : une boîte de bois ferme une goulotte,
+la balle la pousse, ça cède après un délai — un *timing* sans fil ni bouton, qui
+ne ressemble à rien de ce qui existe. L'**empilement** : deux boîtes font une
+marche plus haute qu'une poutre, mais instable. Le **lest** : une boîte de métal
+sur un plateau de bascule, et la question « est-ce que je la pousse ou je la
+contourne ».
+
+**Premier niveau proposé, « Le bouchon » :** goulotte en pente, boîte de bois qui
+la ferme, panier en contrebas. Le joueur ne peut pas retirer la boîte (elle est
+objet de départ, permissions à `false`) : il doit dériver la balle pour qu'elle aille
+la heurter **par le côté**. Contre-exemple : poutre posée sur la boîte → elle
+tient, et le joueur apprend qu'un frottement est une force.
+
+**Verdict.** Premier des « vraies » familles : l'art est dessiné, le modèle est un
+simple polygone, trois niveaux au moins l'exploitent, et elle n'introduit aucune
+primitive nouvelle dans le port.
+
+### 6.3 Pendule — un obstacle qui revient à heure fixe
+
+**Verbe.** *Ce qui revient.* Tout ce que la campagne connaît reste où on le met,
+ou se déclenche. Un pendule introduit un objet dont l'état **présent** dépend de
+ce qui est arrivé **deux secondes plus tôt** : le joueur lit une trajectoire dans
+le temps, plus seulement dans l'espace.
+
+**Modèle — et c'est ce qui le rend acceptable.** Un seul placement, comme la
+bascule : ancrage fixe, liaison rotule interne, lentille dynamique au bout d'une
+barre. `architecture.md` admet déjà qu'une famille visible soit « physiquement
+composée de plusieurs corps internes sans que cette composition devienne des
+placements de niveau ». Le document ne porte donc qu'une transformée : **aucune
+nouvelle relation persistante**, aucune migration.
+
+**Contrainte chiffrée.** La période d'un pendule simple est `T = 2π √(L/g)` :
+`L = 1,0` unité donne `T ≈ 2,0 s`, `L = 0,25` donne `T ≈ 1,0 s`. La borne que je
+propose au § 3 (aucune fenêtre de réussite plus courte que 0,5 s) impose donc
+`L ≥ 0,25`, et je recommande deux tailles — 1,0 et 1,5, soit 2,0 s et 2,4 s — pour
+que le rythme reste lisible sur un écran de téléphone. Le pendule doit aussi
+**s'amortir** : sans amortissement, il rejoue le même geste pendant les 20 s de la
+partie et le niveau devient une question de timing pur.
+
+**Premier niveau proposé, « Le métronome » :** la balle roule sur une poutre et
+doit franchir un portique dont le battant est le pendule ; le panier est derrière.
+Le joueur n'arrête pas le pendule — il choisit **où** la balle prend de la vitesse.
+Second usage, plus drôle : le pendule comme **maillet**, qui envoie la balle où
+elle ne pouvait pas aller seule.
+
+**Coût et risques.** Liaison rotule avec butées (déjà nécessaire pour levier,
+ventilateur et bascule : le port sait probablement faire) ; hit-test sur la
+lentille et la barre sous un seul identifiant (précédent : la bascule, tâche L13) ;
+sprite à deux calques dont un tourne autour d'un point qui n'est **pas** le centre
+du placement — le seul point à vérifier avant de se lancer, car les familles
+actuelles tournent autour de leur propre origine.
+
+### 6.4 Clapet à sens unique — le tamis
+
+**Verbe.** *Ne laisser passer que dans un sens.* Aucun objet de la campagne ne
+filtre : barrière et poutre bloquent dans les deux sens. Un clapet rend possible
+une chose nouvelle : **laisser la balle descendre et l'empêcher de remonter**, donc
+construire un chemin qui ne peut pas se défaire.
+
+**Modèle.** Une plaque articulée en son bord haut (rotule à une extrémité) et deux
+**taquets** qui la bloquent d'un côté : la balle venue d'en haut écarte la plaque,
+la balle venue d'en dessous trouve une plaque butée. Rien d'actif — pas de capteur,
+pas de fil, pas d'état à sérialiser : la géométrie fait le tri. Conséquence
+précieuse : le clapet ne demande **aucune** permission nouvelle, puisqu'on n'y
+change rien.
+
+**Document.** Une famille de plus, transformée simple et rotation par quarts de
+tour (le sens du tri doit se lire d'un coup d'œil). Compatible, pas de migration.
+
+**Premier niveau proposé, « Le tamis » :** deux paniers, un seul gagnant, et un
+tamis qui sépare les deux trajectoires selon que la balle arrive **sur** le clapet
+ou **contre** le clapet. Le joueur ne choisit pas un chemin, il choisit **de quel
+côté** il y arrive — le premier niveau du jeu où le mot « ou » a un sens.
+
+**À vérifier au banc avant d'écrire le JSON :** qu'une balle à ≈ 1 m/s écarte bien
+la plaque, et qu'une balle arrive par dessous ne franchit jamais les taquets par
+effet d'angle. Ces deux mesures font vivre ou mourir la famille.
+
+### 6.5 Rails et chariot — transporter le long d'une pente
+
+**Verbe.** *Porter le long d'une ligne dessinée par le décor.* Le convoyeur ne
+transporte qu'à l'horizontale ; sur une poutre inclinée, la balle roule à une
+vitesse qu'on ne maîtrise pas. Un chariot sur rail transporte **en pente**, à la
+vitesse que la pente donne, et il peut porter autre chose que la balle — une
+masse, une boîte.
+
+**Modèle.** Une **seule** famille, `monorail` : un rail rigide (trois tailles comme
+les poutres, orientable par quarts de tour) dont l'instance de simulation crée un
+curseur glissant le long d'une liaison coulissante. Deux placements distincts (rail
++ chariot) obligeraient à une relation persistante entre les deux ; je l'écarte
+pour cette raison, même si l'objet composite est moins évident à expliquer à
+l'écran.
+
+**Document** : compatible (`size` + `rotation`). **Port** : première liaison
+coulissante — une primitive de plus, petite mais réelle.
+
+**Verdict : peut-être.** Le verbe est vrai mais voisin de celui du convoyeur ; la
+différence (la pente, et un porteur qui transporte autre chose) vaut-elle une
+primitive de plus ? Je ne la propose qu'**après** la boîte et le clapet, et
+seulement si un deuxième niveau l'exploite : `AGENTS.md` demande un **deuxième cas
+réel** avant l'abstraction.
+
+### 6.6 Poulie à contrepoids — la plus demandée, la plus chère
+
+**Verbe.** *Deux endroits qui dépendent l'un de l'autre.* C'est le verbe qu'on
+attend d'un jeu de physique, et le seul dont l'absence se voit : « je voudrais
+tirer une corde d'ici pour faire monter un poids là-bas ».
+
+**Pourquoi c'est cher, concrètement.** Une poulie relie **deux placements** : la
+corde est une relation entre objets, comme le fil de commande. Il faudrait donc :
+
+1. une nouvelle collection persistante, par exemple
+   `links: [{ id, kind: "rope", aId, bId, length }]` — le contrat du document
+   change, donc **`LevelDocument v3`**, migration de `v2` vers `v3`, et tests
+   couvrant les deux versions comme l'exige `AGENTS.md` ;
+2. un **ADR** : une relation n'est pas un détail d'implémentation, c'est un
+   engagement sur ce que les niveaux pourront dire plus tard ;
+3. un port capable de liaisons à distance à longueur bornée, sans quoi le
+   déterminisme du pas fixe est en jeu ;
+4. dans l'éditeur, une gestuelle pour relier deux objets au pouce — là où le fil a
+   déjà la sienne ;
+5. et le plus sournois : une corde qui s'enroule autour d'un corps tiers, qui se
+   tend à l'envers ou qui en attrape un autre est une source de bugs sans fin. Il
+   faudrait la restreindre à un trajet franc, ce qui la rend moins intéressante.
+
+**Ce qui donne l'essentiel du verbe sans toucher au port.** Deux voies gratuites :
+
+- **un levier, deux fils** (barrière *et* ventilateur commandés par le même
+  levier) : une décision, deux endroits — c'est le niveau J du § 5, et le vrai
+  succédané du verbe ;
+- **une boîte de métal comme contrepoids** (§ 6.2) sur un plateau de bascule : un
+  poids en fait monter un autre, sans corde, avec une lecture immédiate.
+
+**Recommandation : différer.** Écrire ces deux niveaux. Si l'auteur en redemande un
+troisième qui soit impossible sans corde, ouvrir l'ADR et le `v3`. Une migration de
+document est difficile à défaire ; c'est précisément la discipline que le dépôt
+s'impose ailleurs.
+
+### 6.7 Ce que je ne propose volontairement pas
+
+- **le fluide** (sable, eau) : il faudrait un solveur, et le pas fixe n'y est pas
+  préparé ;
+- **l'aimant** : une force à distance de plus, mais le ventilateur occupe déjà la
+  case « pousser sans toucher » ;
+- **le ressort relié** (un ressort entre deux objets) : le même problème que la
+  corde — c'est une relation, donc un `v3` ;
+- **des objectifs composés ou séquentiels** : l'architecture est explicite, un seul
+  `goal.type === 'basket'`, et aucun niveau de ce document n'en demande plus ;
+- **du code dans les niveaux** : ni code exécutable ni URL d'asset distante, et
+  cette limite est le contrat qui permet le partage par lien ;
+- **un second moteur, un second renderer, un ECS** : rien ici ne les justifie.
+
+
+## 7. Ce que l'écran doit rendre lisible
+
+Ces niveaux ne sont jouables que si quatre informations arrivent au joueur. Je ne
+propose ici **aucun style, aucune couleur, aucune mise en page** — seulement
+l'information que l'image doit transmettre, et le constat de ce qui manque. Tout
+ce qui suit relève du § 6 de la feuille de route (interface visible) : des tâches
+à l'essai, avec validation et captures par l'auteur, pas des tâches
+d'implémentation autonome.
+
+| Ce qui doit se voir | Pourquoi sans quoi le niveau ne se joue pas | État |
+| ------------------- | ------------------------------------------ | ---- |
+| **Le cône du ventilateur** | B et C se résolvent en lisant une **zone invisible** : un joueur qui ne voit pas le cône ne peut pas le manquer exprès | le souffle n'est dessiné nulle part, à ma connaissance |
+| **L'empreinte de la barrière** | A et E consistent à comprendre qu'un **sol va disparaître** : sans les deux montants restés vides, une barrière fermée est un simple trait et son ouverture n'est pas anticipable | à vérifier ; deux montants non simulés suffisent |
+| **Le sens et l'impulsion d'un fil** | E et F tournent autour d'un **ordre qui part d'ici et agit là-bas, un peu plus tard** : ADR 0009 stocke une relation sans tracé, donc c'est au rendu de dire qui commande quoi, et de faire voir l'instant où ça passe | le sens est peut-être déjà dessiné ; l'impulsion ne l'est pas |
+| **Le capuchon enfoncé ou reposé** | le bouton est **momentané** : la trappe reste ouverte parce qu'une masse pèse encore ; si l'enfoncement ne se voit pas, la causalité devient invisible | à vérifier sur le sprite `button-cap` |
+
+Deux remarques de conception qui ne coûtent rien :
+
+- **un délai ne se voit pas, il se devine.** E et F demandent au joueur d'attendre
+  un instant qu'il ne peut pas mesurer. Le minimum qui rende ça honnête, c'est
+  l'impulsion visible sur le fil — pas un compte à rebours à l'écran, qui
+  transformerait un puzzle en question de rapidité.
+- **deux familles se distinguent par un chiffre** (masse 1 kg / 10 kg, boîte bois /
+  métal). Un sprite et un libellé dans la carte du tiroir suffisent ; à 390 px de
+  large, la différence de taille seule ne se lit pas.
+
+---
+
+## 8. Décisions à trancher, méthode, journal
+
+### 8.1 Ce que seul l'auteur peut décider
+
+Mes recommandations sont en gras ; ce document ne tranche rien.
+
+1. **Un chapitre 3 de six niveaux, ou rien ?** → **garder A, B, C, F** et juger
+   D et E à l'usage. Six niveaux de plus porteraient la campagne à vingt ; la
+   feuille de route en fixe quatorze.
+2. **Un niveau peut-il reposer sur une loi du moteur qu'aucun texte n'énonce ?**
+   C est ce niveau : personne ne devine que l'air porte plus qu'il ne pèse. →
+   **oui, à condition** que l'aide du niveau donne une phrase (« l'air porte la
+   balle tant qu'elle est dans le courant ») ; sinon supprimer C.
+3. **Le joueur doit-il pouvoir tourner autre chose qu'une poutre ou un levier ?**
+   D aurait besoin d'un tremplin orientable par le joueur. → **non** : ces niveaux
+   tournent l'objet **dans le document**, comme le ventilateur du niveau 4
+   (`rotation: -π/2`). Coût nul, aucune permission nouvelle, et la difficulté
+   reste un choix de pose, pas de réglage.
+4. **Une source de fil peut-elle alimenter deux cibles ?** Le niveau J et le
+   succédané de la poulie en dépendent. → **à vérifier dans le schéma** ; si
+   c'est interdit, l'autoriser est un changement mineur et compatible, sinon
+   abandonner J.
+5. **La masse de 1 kg ?** → **oui**, première chose à faire : elle coûte une
+   valeur de propriété et ouvre les niveaux à balance.
+6. **La boîte bois / métal ?** → **oui**, première famille nouvelle ; l'art est
+   déjà dessiné et elle n'ajoute aucune primitive au port.
+7. **La poulie, le pendule, le clapet, les rails ?** → **poulie : non** (elle
+   exige `LevelDocument v3` et un ADR) ; pendule et clapet **oui**, mais après la
+   boîte et seulement si deux niveaux chacun les exploitent ; rails : **pas avant
+   un deuxième cas réel**.
+8. **Le palier 🏆 de E** se gagne avec une seule masse, mais à quelques centièmes
+   près. → **l'écarter géométriquement** (décaler le bouton de 0,4 unité) et
+   l'écrire comme test de non-régression, plutôt que de le laisser comme solution
+   minime illisible.
+9. **Trois fonds de scène dessinent trois chapitres** et ne sont pas servis. →
+   un fond par chapitre seulement quand la dette D3 (fond qui suit la caméra,
+   tâche U2) est réparée.
+10. **Où atterrit ce document ?** → réécrire la partie retenue dans un document de
+    campagne frère (`levels/progression-chapitre-3.md`), y reprendre le formalisme
+    des mesures de `initial-progression.md`, et **supprimer ce fichier** ; le garder
+    comme annexe d'idées ferait deux sources pour un même contenu.
 
