@@ -919,3 +919,29 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   projet desktop.
 - Non vérifié : aucune vérification demandée par L3 ne reste à faire.
 - Pour l’auteur : aucune capture ni question.
+
+### L4 — Harnais de régression et recherche de solutions — fait — `test(content): ajoute le harnais de recherche de niveaux (L4)`
+
+- Tests ajoutés : `level-regression.test.ts` — le niveau 1 réussit, le panier
+  déplacé conduit à une sortie de scène, un niveau bloqué atteint le timeout,
+  les pas sont déterministes, une étape refusée nomme son numéro et son code,
+  les degrés sont convertis en radians, et la recherche choisit un déplacement
+  gagnant parmi une solution et une fausse candidate tout en ignorant une pose
+  refusée par la zone.
+- Échec initial constaté : la suite rouge ne pouvait pas importer
+  `./level-regression` avant la création du harnais. Un premier contrôle d’erreur
+  attendait aussi une majuscule absente de la phrase réellement produite ; le
+  motif du test a été aligné sur le message français.
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : `docs/feuille-de-route-luna.md` (journal de
+  reprise) et `docs/etat.md` (état livré et résultat de la gate).
+- Écarts avec la tâche : aucun. La garde du harnais lève une erreur après 1 300
+  pas si les évaluateurs ne concluent pas ; le timeout normal du niveau reste
+  produit par l’évaluateur de simulation.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Vérification finale : `pnpm check` passe — typecheck, lint, formatage, Knip,
+  validation du contenu, 414 tests Vitest, build et 29 tests Playwright mobiles
+  réussis ; C3 est ignoré dans le projet mobile car réservé au projet desktop.
+- Non vérifié : aucune vérification demandée par L4 ne reste à faire.
+- Pour l’auteur : aucune question.
