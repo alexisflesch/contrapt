@@ -786,6 +786,10 @@ commencer de ta propre initiative.
   (26 septembre 2026) ; les exporter par `art/build-sprites.py` et câbler les
   trois sprites, une fois le dessin validé par l’auteur. La mascotte de
   `art/assets/bolt/` n’a pas encore d’usage décidé.
+- **U13 — Zones de construction** : mettre en évidence en mode joueur la ou
+  les zones où une pose est autorisée. Follow-up demandé après les niveaux 1 à
+  3 ; différé à une session ultérieure. Captures pour validation dans les trois
+  formats indiqués au début de cette section.
 
 ## 7. En attente de l’auteur — ne pas commencer
 

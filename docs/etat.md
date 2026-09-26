@@ -133,6 +133,9 @@ pendant le travail.
 
 ## Dettes et limites explicites
 
+- **Zones de pose peu visibles** : le joueur ne voit pas clairement où
+  l’empreinte d’un objet peut tenir. Mise en évidence des zones demandée pour
+  un suivi UI ultérieur (U13), différé à une session ultérieure.
 - **Aperçu de placement en CSS.** L’overlay DOM `.placement-preview`
   (`src/ui/BoardView.tsx`) n’a ni la forme, ni la taille, ni la rotation de
   l’objet ; le fantôme dessiné par le renderer (C1) reste à faire.
