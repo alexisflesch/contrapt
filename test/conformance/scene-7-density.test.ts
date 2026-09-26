@@ -27,8 +27,6 @@ const EXPECTED_PARAMETERS = {
   repetitions: 5,
 };
 
-const EXPECTED_CANDIDATES = ['planck-1.5.0', 'rapier-0.20.0'] as const;
-
 const EXPECTED_SAMPLING_POLICY = {
   warmupSteps: 120,
   measuredSteps: 600,
@@ -69,87 +67,75 @@ describe('scene 7 density conformance contract', () => {
     expect(harness.samplingPolicy).toEqual(EXPECTED_SAMPLING_POLICY);
   });
 
-  it('measures exactly both candidates in a stable order', () => {
-    const harness = createScene7DensityHarness();
-
-    expect(harness.measurements.map(({ candidateId }) => candidateId)).toEqual(EXPECTED_CANDIDATES);
-  });
-
   it('observes the physical counts before and after destruction for every repetition', () => {
     const harness = createScene7DensityHarness();
+    const observations = harness.measurement.observations;
 
-    for (const measurement of harness.measurements) {
-      const observations = measurement.observations;
-      expect(observations).toHaveLength(EXPECTED_PARAMETERS.repetitions);
-      assert.ok(observations);
-      for (const observation of observations) {
-        expect(observation.countsBeforeDestroy).toEqual({
-          bodies: 30,
-          colliders: 30,
-          joints: 6,
-        });
-        expect(observation.countsAfterDestroy).toEqual({
-          bodies: 0,
-          colliders: 0,
-          joints: 0,
-        });
-      }
+    expect(observations).toHaveLength(EXPECTED_PARAMETERS.repetitions);
+    assert.ok(observations);
+    for (const observation of observations) {
+      expect(observation.countsBeforeDestroy).toEqual({
+        bodies: 30,
+        colliders: 30,
+        joints: 6,
+      });
+      expect(observation.countsAfterDestroy).toEqual({
+        bodies: 0,
+        colliders: 0,
+        joints: 0,
+      });
     }
   });
 
-  it('repeats a finite candidate-neutral position and velocity snapshot within tolerance', () => {
+  it('repeats a finite position and velocity snapshot within tolerance', () => {
     const harness = createScene7DensityHarness();
+    const measurement = harness.measurement;
+    const observations = measurement.observations;
 
-    for (const measurement of harness.measurements) {
-      expect(measurement.durationsMs).toHaveLength(EXPECTED_PARAMETERS.repetitions);
-      expect(measurement.durationsMs.every(Number.isFinite)).toBe(true);
-      expect(Number.isFinite(measurement.percentiles.p50)).toBe(true);
-      expect(Number.isFinite(measurement.percentiles.p95)).toBe(true);
-      expect(Number.isFinite(measurement.percentiles.p99)).toBe(true);
+    expect(measurement.durationsMs).toHaveLength(EXPECTED_PARAMETERS.repetitions);
+    expect(measurement.durationsMs.every(Number.isFinite)).toBe(true);
+    expect(Number.isFinite(measurement.percentiles.p50)).toBe(true);
+    expect(Number.isFinite(measurement.percentiles.p95)).toBe(true);
+    expect(Number.isFinite(measurement.percentiles.p99)).toBe(true);
+    expect(observations).toBeDefined();
+    assert.ok(observations);
 
-      const observations = measurement.observations;
-      expect(observations).toBeDefined();
-      assert.ok(observations);
+    const referenceObservation = observations[0];
+    expect(referenceObservation).toBeDefined();
+    if (referenceObservation === undefined) return;
+    expect(referenceObservation.snapshot.bodies).toHaveLength(30);
 
-      const referenceObservation = observations[0];
-      expect(referenceObservation).toBeDefined();
-      if (referenceObservation === undefined) continue;
-      expect(referenceObservation.snapshot.bodies).toHaveLength(30);
+    for (const observation of observations) {
+      expect(observation.snapshot.bodies.map(({ placementId }) => placementId)).toEqual(
+        EXPECTED_SNAPSHOT_PLACEMENT_IDS,
+      );
+    }
 
-      for (const observation of observations) {
-        expect(observation.snapshot.bodies.map(({ placementId }) => placementId)).toEqual(
-          EXPECTED_SNAPSHOT_PLACEMENT_IDS,
+    for (const body of referenceObservation.snapshot.bodies) {
+      expect(body.placementId).not.toHaveLength(0);
+      expectFiniteVector(body.position);
+      expectFiniteVector(body.linearVelocity);
+    }
+
+    for (const observation of observations.slice(1)) {
+      expect(observation.snapshot.bodies).toHaveLength(referenceObservation.snapshot.bodies.length);
+      for (const [index, body] of observation.snapshot.bodies.entries()) {
+        const referenceBody = referenceObservation.snapshot.bodies[index];
+        expect(referenceBody).toBeDefined();
+        if (referenceBody === undefined) continue;
+        expect(body.placementId).toBe(referenceBody.placementId);
+        expect(Math.abs(body.position.x - referenceBody.position.x)).toBeLessThanOrEqual(
+          EXPECTED_OBSERVATION_TOLERANCE,
         );
-      }
-
-      for (const body of referenceObservation.snapshot.bodies) {
-        expect(body.placementId).not.toHaveLength(0);
-        expectFiniteVector(body.position);
-        expectFiniteVector(body.linearVelocity);
-      }
-
-      for (const observation of observations.slice(1)) {
-        expect(observation.snapshot.bodies).toHaveLength(
-          referenceObservation.snapshot.bodies.length,
+        expect(Math.abs(body.position.y - referenceBody.position.y)).toBeLessThanOrEqual(
+          EXPECTED_OBSERVATION_TOLERANCE,
         );
-        for (const [index, body] of observation.snapshot.bodies.entries()) {
-          const referenceBody = referenceObservation.snapshot.bodies[index];
-          expect(referenceBody).toBeDefined();
-          if (referenceBody === undefined) continue;
-          expect(body.placementId).toBe(referenceBody.placementId);
-          expect(Math.abs(body.position.x - referenceBody.position.x)).toBeLessThanOrEqual(
-            EXPECTED_OBSERVATION_TOLERANCE,
-          );
-          expect(Math.abs(body.position.y - referenceBody.position.y)).toBeLessThanOrEqual(
-            EXPECTED_OBSERVATION_TOLERANCE,
-          );
-          expect(
-            Math.abs(body.linearVelocity.x - referenceBody.linearVelocity.x),
-          ).toBeLessThanOrEqual(EXPECTED_OBSERVATION_TOLERANCE);
-          expect(
-            Math.abs(body.linearVelocity.y - referenceBody.linearVelocity.y),
-          ).toBeLessThanOrEqual(EXPECTED_OBSERVATION_TOLERANCE);
-        }
+        expect(
+          Math.abs(body.linearVelocity.x - referenceBody.linearVelocity.x),
+        ).toBeLessThanOrEqual(EXPECTED_OBSERVATION_TOLERANCE);
+        expect(
+          Math.abs(body.linearVelocity.y - referenceBody.linearVelocity.y),
+        ).toBeLessThanOrEqual(EXPECTED_OBSERVATION_TOLERANCE);
       }
     }
   });

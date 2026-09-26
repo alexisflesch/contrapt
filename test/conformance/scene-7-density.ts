@@ -1,4 +1,3 @@
-import RAPIER from '@dimforge/rapier2d-compat';
 import { Box, Circle, RevoluteJoint, World as PlanckWorld } from 'planck';
 import type { Body as PlanckBody } from 'planck';
 
@@ -105,13 +104,6 @@ interface DensitySimulation {
   readonly destroy: () => PhysicsResourceCounts;
 }
 
-type CandidateId = 'planck-1.5.0' | 'rapier-0.20.0';
-
-interface DensityCandidate {
-  readonly candidateId: CandidateId;
-  readonly createSimulation: () => DensitySimulation;
-}
-
 interface DensityPercentiles {
   readonly p50: number;
   readonly p95: number;
@@ -144,7 +136,6 @@ interface DensityObservation extends DensityObservationBeforeDestroy {
 }
 
 interface DensityMeasurement {
-  readonly candidateId: CandidateId;
   readonly durationsMs: readonly number[];
   readonly percentiles: DensityPercentiles;
   readonly observations: readonly DensityObservation[];
@@ -167,7 +158,7 @@ interface Scene7DensityHarness {
   };
   readonly parameters: typeof PARAMETERS;
   readonly samplingPolicy: typeof SAMPLING_POLICY;
-  readonly measurements: readonly DensityMeasurement[];
+  readonly measurement: DensityMeasurement;
 }
 
 interface PlanckSnapshotSource {
@@ -175,21 +166,10 @@ interface PlanckSnapshotSource {
   readonly body: PlanckBody;
 }
 
-interface RapierSnapshotSource {
-  readonly placementId: string;
-  readonly body: RAPIER.RigidBody;
-}
-
 const sortSnapshotBodies = (
   bodies: readonly DensitySnapshotBody[],
 ): readonly DensitySnapshotBody[] =>
   [...bodies].sort(({ placementId: left }, { placementId: right }) => left.localeCompare(right));
-
-const readRapierCounts = (world: RAPIER.World): PhysicsResourceCounts => ({
-  bodies: world.bodies.len(),
-  colliders: world.colliders.len(),
-  joints: world.impulseJoints.len(),
-});
 
 const createPlanckSimulation = (): DensitySimulation => {
   const world = new PlanckWorld({ gravity: { x: 0, y: -9.81 } });
@@ -285,117 +265,12 @@ const createPlanckSimulation = (): DensitySimulation => {
   };
 };
 
-const createRapierSimulation = (): DensitySimulation => {
-  const world = new RAPIER.World({ x: 0, y: -9.81 });
-  world.timestep = PARAMETERS.fixedTimeStep;
-  const snapshotSources: RapierSnapshotSource[] = [];
-
-  const createCollider = (
-    descriptor: RAPIER.ColliderDesc,
-    body: RAPIER.RigidBody,
-  ): RAPIER.Collider => {
-    const collider = world.createCollider(
-      descriptor
-        .setDensity(MATERIAL.density)
-        .setFriction(MATERIAL.friction)
-        .setRestitution(MATERIAL.restitution),
-      body,
-    );
-    return collider;
-  };
-
-  for (const object of SCENE_OBJECTS) {
-    switch (object.kind) {
-      case 'ball': {
-        const body = world.createRigidBody(
-          RAPIER.RigidBodyDesc.dynamic().setTranslation(object.position.x, object.position.y),
-        );
-        createCollider(RAPIER.ColliderDesc.ball(object.radius), body);
-        snapshotSources.push({ placementId: object.id, body });
-        break;
-      }
-      case 'basket':
-      case 'beam': {
-        const body = world.createRigidBody(
-          RAPIER.RigidBodyDesc.fixed()
-            .setTranslation(object.position.x, object.position.y)
-            .setRotation(object.angle),
-        );
-        createCollider(RAPIER.ColliderDesc.cuboid(object.halfWidth, object.halfHeight), body);
-        snapshotSources.push({ placementId: object.id, body });
-        break;
-      }
-      case 'seesaw': {
-        const base = world.createRigidBody(
-          RAPIER.RigidBodyDesc.fixed().setTranslation(object.position.x, object.position.y),
-        );
-        createCollider(
-          RAPIER.ColliderDesc.cuboid(object.baseHalfWidth, object.baseHalfHeight),
-          base,
-        );
-        snapshotSources.push({ placementId: `${object.id}:base`, body: base });
-
-        const board = world.createRigidBody(
-          RAPIER.RigidBodyDesc.dynamic().setTranslation(object.position.x, object.position.y),
-        );
-        createCollider(
-          RAPIER.ColliderDesc.cuboid(object.boardHalfWidth, object.boardHalfHeight),
-          board,
-        );
-        snapshotSources.push({ placementId: `${object.id}:board`, body: board });
-
-        world.createImpulseJoint(
-          RAPIER.JointData.revolute({ x: 0, y: 0 }, { x: 0, y: 0 }),
-          base,
-          board,
-          true,
-        );
-        break;
-      }
-    }
-  }
-
-  let countsAfterDestroy: PhysicsResourceCounts | undefined;
-  return {
-    step: () => {
-      world.step();
-    },
-    captureObservation: () => ({
-      countsBeforeDestroy: readRapierCounts(world),
-      snapshot: {
-        bodies: sortSnapshotBodies(
-          snapshotSources.map(({ placementId, body }) => {
-            const position = body.translation();
-            const linearVelocity = body.linvel();
-            return {
-              placementId,
-              position: { x: position.x, y: position.y },
-              linearVelocity: { x: linearVelocity.x, y: linearVelocity.y },
-            };
-          }),
-        ),
-      },
-    }),
-    destroy: () => {
-      if (countsAfterDestroy !== undefined) return countsAfterDestroy;
-
-      for (const joint of world.impulseJoints.getAll()) world.removeImpulseJoint(joint, true);
-      for (const collider of world.colliders.getAll()) world.removeCollider(collider, true);
-      for (const body of world.bodies.getAll()) world.removeRigidBody(body);
-
-      countsAfterDestroy = readRapierCounts(world);
-      world.free();
-      return countsAfterDestroy;
-    },
-  };
-};
-
-const measureCandidate = (candidate: DensityCandidate): DensityMeasurement => {
+const measurePlanck = (): DensityMeasurement => {
   const durationsMs: number[] = [];
   const observations: DensityObservation[] = [];
 
   for (let repetition = 0; repetition < PARAMETERS.repetitions; repetition += 1) {
-    const simulation = candidate.createSimulation();
+    const simulation = createPlanckSimulation();
     try {
       for (let step = 0; step < PARAMETERS.warmupSteps; step += 1) simulation.step();
 
@@ -417,7 +292,6 @@ const measureCandidate = (candidate: DensityCandidate): DensityMeasurement => {
 
   const percentiles = calculateDurationPercentiles(durationsMs);
   return {
-    candidateId: candidate.candidateId,
     durationsMs,
     observations,
     percentiles: {
@@ -427,10 +301,6 @@ const measureCandidate = (candidate: DensityCandidate): DensityMeasurement => {
     },
   };
 };
-
-// Rapier initialise son module WebAssembly de manière asynchrone. L'attente au
-// chargement garde createScene7DensityHarness synchrone, comme le contrat de test.
-await RAPIER.init();
 
 export const createScene7DensityHarness = (): Scene7DensityHarness => ({
   fixture: {
@@ -449,8 +319,5 @@ export const createScene7DensityHarness = (): Scene7DensityHarness => ({
   },
   parameters: PARAMETERS,
   samplingPolicy: SAMPLING_POLICY,
-  measurements: [
-    measureCandidate({ candidateId: 'planck-1.5.0', createSimulation: createPlanckSimulation }),
-    measureCandidate({ candidateId: 'rapier-0.20.0', createSimulation: createRapierSimulation }),
-  ],
+  measurement: measurePlanck(),
 });

@@ -57,8 +57,9 @@ pendant le travail.
   (0,8 × 0,505, collider trapèze + anneau).
 - Résistance au roulement de la balle (absente de Planck) : elle s’arrête sur une
   poutre plate.
-- Suite de conformité (`test/conformance/`) : protocole commun, scènes 6 et 7,
-  comparaison Planck/Rapier. La validation sur téléphone réel n’est pas faite.
+- Suite de conformité (`test/conformance/`) : protocole commun ; les scènes 6 et
+  7 sont conservées comme régressions contre Planck seul après la porte de validation.
+  La validation de Planck sur téléphone réel est consignée dans l’ADR 0002.
 
 ### Présentation et interface
 
@@ -139,9 +140,6 @@ pendant le travail.
 - **Deux boutons « Réinitialiser »** (libellé à remplacer par « Recommencer », voir
   `mobile-editor-interactions.md`) actifs simultanément après une simulation
   terminée (barre d’actions et bandeau de résultat).
-- **Rapier encore présent** : la porte de l’ADR 0002 est franchie (mesures sur
-  Pixel 7 et sur un Xiaomi bas de gamme consignées dans l’ADR), Rapier doit être
-  retiré des dépendances et des scènes 6 et 7.
 - **Premier affichage sur appareil lent** : sur un vieux Xiaomi, `/bench/play`
   a dû être rechargée une fois avant de fonctionner. Cause non établie.
 - **Mode auteur incomplet** : l’atelier ne permet ni d’éditer scène, zones,
@@ -151,9 +149,10 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après L1 : typecheck,
-lint, formatage, Knip, contenu, 393 tests Vitest (30 fichiers), build et 30
+`pnpm check` exécutée avec succès le 26 septembre 2026 après L2b : typecheck,
+lint, formatage, Knip, contenu, 392 tests Vitest (30 fichiers), build et 30
 tests Playwright `mobile` (29 réussis, C3 ignoré car spécifique au projet desktop).
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
-30 tests réussis, dont C3. Les tests lourds de frontière de couches et de banc
-dense conservent leur délai explicite de 30 s, sans assertion affaiblie.
+30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
+couches et de banc dense conservent leur délai explicite de 30 s, sans assertion
+affaiblie.

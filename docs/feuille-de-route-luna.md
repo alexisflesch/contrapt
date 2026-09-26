@@ -841,3 +841,27 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Non vérifié : aucun lien n’a changé dans le diff inspecté ; `format:check` et la
   gate globale ne couvrent toujours pas Markdown.
 - Pour l’auteur : L2 est bloquée par sa condition d’arrêt explicite.
+
+### L2b — Retirer Rapier — fait — `chore(simulation): retire Rapier après validation Planck (L2b)`
+
+- Tests ajoutés : aucun ; les deux tests de conformité vérifient désormais
+  Planck seul.
+- Échec initial constaté : les nouveaux contrats ont échoué comme prévu — scène 6,
+  `runScene6Lifecycle is not a function` ; scène 7,
+  `Cannot read properties of undefined (reading 'observations')`.
+- Tests existants réécrits : comparaisons Planck/Rapier des scènes 6 et 7 retirées ;
+  toutes les assertions Planck sur les mesures mémoire, destructions, comptes,
+  répétitions et snapshots conservées.
+- Fichiers touchés hors périmètre : `docs/feuille-de-route-luna.md` (journal
+  obligatoire de la reprise).
+- Écarts avec la tâche : aucun. `pnpm remove` a d’abord rencontré
+  `ERR_PNPM_UNEXPECTED_STORE` ; il a réussi avec le store d’origine passé à la
+  commande, sans modifier la configuration globale.
+- Mesures qui ne se reproduisent pas : aucune nouvelle mesure sur téléphone ; les
+  résultats qui ont fermé la porte restent consignés dans l’ADR 0002.
+- Contradictions rencontrées : aucune.
+- Vérification finale : `rg -n -i rapier src test package.json pnpm-lock.yaml` ne
+  trouve aucune référence ; `pnpm check` passe (392 tests Vitest, 29 parcours
+  Playwright mobile réussis et un test desktop ignoré dans ce projet).
+- Non vérifié : aucune vérification demandée par L2b ne reste à faire.
+- Pour l’auteur : aucune question.
