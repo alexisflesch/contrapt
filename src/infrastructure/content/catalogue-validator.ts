@@ -35,6 +35,7 @@ const formatIssuePath = (path: readonly PropertyKey[]): string => {
  */
 export const validateContentCatalog = (
   files: readonly ContentLevelFile[],
+  campaignLevelIds: ReadonlySet<string> = new Set<string>(),
 ): ContentCatalogValidationResult => {
   const issues: ContentCatalogIssue[] = [];
   const parsedFiles: Array<{ readonly filePath: string; readonly level: LevelDocument }> = [];
@@ -56,6 +57,24 @@ export const validateContentCatalog = (
         message: details,
       });
       continue;
+    }
+
+    if (campaignLevelIds.has(parsed.data.id)) {
+      const unlockedPlacements = parsed.data.objects.flatMap((placement, index) =>
+        placement.permissions.move || placement.permissions.rotate || placement.permissions.remove
+          ? [index]
+          : [],
+      );
+      if (unlockedPlacements.length > 0) {
+        for (const index of unlockedPlacements) {
+          issues.push({
+            filePath: file.filePath,
+            kind: 'invalid-file',
+            message: `objects[${String(index)}].permissions : les trois permissions doivent être false dans un niveau de campagne.`,
+          });
+        }
+        continue;
+      }
     }
 
     parsedFiles.push({ filePath: file.filePath, level: parsed.data });

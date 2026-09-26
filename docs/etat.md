@@ -152,8 +152,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après L5 : typecheck,
-lint, formatage, Knip, contenu, 420 tests Vitest (32 fichiers), build et 30
+`pnpm check` exécutée avec succès le 26 septembre 2026 après L6 : typecheck,
+lint, formatage, Knip, contenu, 425 tests Vitest (32 fichiers), build et 30
 tests Playwright `mobile` (29 réussis, C3 ignoré car spécifique au projet desktop).
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de

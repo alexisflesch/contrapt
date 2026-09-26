@@ -1,5 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 
+import { embeddedLevels } from '../src/content/embedded-levels';
 import {
   validateContentCatalog,
   type ContentLevelFile,
@@ -34,7 +35,8 @@ for (const fileName of fileNames) {
   }
 }
 
-const result = validateContentCatalog(files);
+const campaignLevelIds = new Set(embeddedLevels.map((level) => level.id));
+const result = validateContentCatalog(files, campaignLevelIds);
 
 if (!result.valid) {
   for (const issue of result.issues) {

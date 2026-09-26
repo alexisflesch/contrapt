@@ -1,7 +1,60 @@
 import { describe, expect, it } from 'vitest';
 
-import { embeddedLevels, embeddedWorkshopDocument } from './embedded-levels';
+import {
+  campaignChapters,
+  createCampaign,
+  embeddedLevels,
+  embeddedWorkshopDocument,
+  flattenCampaignLevels,
+  nextCampaignLevel,
+} from './embedded-levels';
+import { levelDocumentSchema } from '../domain/level-document';
 import { createSimulationSession } from '../simulation/simulation-session';
+
+describe('campagne embarquée', () => {
+  it('conserve les chapitres ordonnés et dérive la liste à plat', () => {
+    expect(campaignChapters.map(({ id, title }) => ({ id, title }))).toEqual([
+      { id: 'poutres-et-bascule', title: 'Poutres et bascule' },
+      { id: 'mecanismes', title: 'Mécanismes' },
+    ]);
+    expect(campaignChapters[1]?.levels).toEqual([]);
+    expect(flattenCampaignLevels(campaignChapters)).toEqual(embeddedLevels);
+  });
+
+  it('donne le niveau suivant dans un chapitre puis dans le suivant, sans suivant au dernier', () => {
+    const first = embeddedLevels[0];
+    if (first === undefined) throw new Error('Le niveau 1 est absent.');
+    const second = levelDocumentSchema.parse({ ...first, id: 'second-level' });
+    const third = levelDocumentSchema.parse({ ...first, id: 'third-level' });
+    const chapters = [
+      { id: 'chapter-one', title: 'Premier', levels: [first, second] },
+      { id: 'chapter-two', title: 'Second', levels: [third] },
+    ];
+
+    expect(nextCampaignLevel(first.id, chapters)).toEqual(second);
+    expect(nextCampaignLevel(second.id, chapters)).toEqual(third);
+    expect(nextCampaignLevel(third.id, chapters)).toBeUndefined();
+    expect(nextCampaignLevel('unknown-level', chapters)).toBeUndefined();
+  });
+
+  it('refuse les identifiants de chapitre ou de niveau dupliqués sur toute la campagne', () => {
+    const level = embeddedLevels[0];
+    if (level === undefined) throw new Error('Le niveau 1 est absent.');
+
+    expect(() =>
+      createCampaign([
+        { id: 'chapter-one', title: 'Premier', levels: [level] },
+        { id: 'chapter-two', title: 'Second', levels: [level] },
+      ]),
+    ).toThrow(/identifiant de niveau/);
+    expect(() =>
+      createCampaign([
+        { id: 'same-chapter', title: 'Premier', levels: [] },
+        { id: 'same-chapter', title: 'Second', levels: [] },
+      ]),
+    ).toThrow(/identifiant de chapitre/);
+  });
+});
 
 describe('niveaux embarques', () => {
   it('expose la fixture du niveau 1 Laisser tomber comme un document v2 valide', () => {

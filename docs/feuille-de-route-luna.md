@@ -966,3 +966,29 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   réussis ; C3 est ignoré dans le projet mobile car réservé au projet desktop.
 - Non vérifié : aucune vérification demandée par L5 ne reste à faire.
 - Pour l’auteur : aucune question.
+
+### L6 — Catalogue de campagne en chapitres — fait — `feat(content): organise la campagne en chapitres (L6)`
+
+- Tests ajoutés : `embedded-levels.test.ts` — ordre des chapitres et aplatissement,
+  niveau suivant dans le même chapitre et dans le suivant, aucun suivant au dernier,
+  identifiants uniques des chapitres et niveaux ; `catalogue-validator.test.ts` —
+  permissions actives refusées pour un niveau de campagne et conservées pour un
+  niveau hors campagne.
+- Échec initial constaté : `campaignChapters` et les fonctions de campagne
+  manquaient ; `validateContentCatalog` acceptait aussi un objet placé avec des
+  permissions actives dans un niveau explicitement marqué comme campagne.
+- Tests existants réécrits : aucun ; `embeddedLevels` demeure dérivé des chapitres
+  pour ses appelants actuels.
+- Fichiers touchés hors périmètre : `docs/feuille-de-route-luna.md` (journal
+  obligatoire) et `docs/etat.md` (état livré et résultat de la gate).
+- Écarts avec la tâche : aucun. `scripts/validate-content.ts` transmet au
+  validateur les identifiants dérivés du catalogue ; l’atelier et la démo restent
+  hors de cette règle.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Vérification finale : `pnpm content:check` valide les trois JSON actuels ;
+  `pnpm check` passe — typecheck, lint, formatage, Knip, contenu, 425 tests
+  Vitest, build et 29 tests Playwright mobiles réussis ; C3 est ignoré dans le
+  projet mobile car réservé au projet desktop.
+- Non vérifié : aucune vérification demandée par L6 ne reste à faire.
+- Pour l’auteur : aucune question.

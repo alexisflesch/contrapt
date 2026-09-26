@@ -72,6 +72,53 @@ describe('validateContentCatalog', () => {
     });
   });
 
+  it('refuse les permissions actives sur les objets placés d’un niveau de campagne', () => {
+    const unlockedCampaignLevel = {
+      ...validLevel,
+      objects: [
+        ...validLevel.objects,
+        {
+          id: 'beam-1',
+          type: 'beam',
+          transform: { position: { x: 1, y: 2 }, rotation: 0 },
+          props: { size: 'short' },
+          permissions: { move: true, rotate: true, remove: true },
+        },
+      ],
+    };
+
+    const result = validateContentCatalog(
+      [file('campaign.json', unlockedCampaignLevel)],
+      new Set(['first-drop']),
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.issues).toEqual([
+      {
+        filePath: 'campaign.json',
+        kind: 'invalid-file',
+        message:
+          'objects[2].permissions : les trois permissions doivent être false dans un niveau de campagne.',
+      },
+    ]);
+  });
+
+  it('n’impose pas les permissions de campagne à un document hors campagne', () => {
+    const workshop = {
+      ...validLevel,
+      id: 'free-workshop',
+      objects: validLevel.objects,
+    };
+
+    const result = validateContentCatalog(
+      [file('workshop.json', workshop)],
+      new Set(['first-drop']),
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.issues).toEqual([]);
+  });
+
   it('signale une erreur de lecture JSON avec un message exploitable', () => {
     const result = validateContentCatalog([
       {
