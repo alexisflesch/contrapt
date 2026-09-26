@@ -159,6 +159,42 @@ describe('ConstructionAttempt', () => {
     expect(Object.isFrozen(result.state.document.objects.at(-1))).toBe(true);
   });
 
+  it('keeps a two-object challenge valid while consuming its inventory', () => {
+    const source = createLevel();
+    const attempt = createConstructionAttempt({
+      ...source,
+      challenge: { elegantObjectCount: 2, minimalObjectCount: 2 },
+      inventory: source.inventory.map((entry) =>
+        entry.id === 'short-beams' ? { ...entry, quantity: 2 } : entry,
+      ),
+    });
+    const first = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'short-beams',
+      placementId: 'first-challenge-beam',
+      transform: { position: { x: 4, y: 5 }, rotation: 0 },
+    }).execute(attempt);
+
+    expect(first.status).toBe('accepted');
+    if (first.status !== 'accepted') return;
+    expect(first.state.document.inventory[0]?.quantity).toBe(1);
+
+    const second = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'short-beams',
+      placementId: 'second-challenge-beam',
+      transform: { position: { x: 6, y: 6 }, rotation: 0 },
+    }).execute(first.state);
+
+    expect(second.status).toBe('accepted');
+    if (second.status !== 'accepted') return;
+    expect(second.state.document.inventory[0]?.quantity).toBe(0);
+    expect(second.state.provenance).toEqual({
+      'first-challenge-beam': 'short-beams',
+      'second-challenge-beam': 'short-beams',
+    });
+  });
+
   it.each([
     ['unknown-entry', 'missing-entry', 'inventory-entry-not-found'],
     ['depleted-entry', 'empty-seesaws', 'inventory-depleted'],

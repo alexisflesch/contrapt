@@ -56,8 +56,8 @@ describe('campagne embarquée', () => {
 });
 
 describe('niveaux embarqués', () => {
-  it('expose les quatre premiers niveaux v2 valides dans l’ordre de campagne', () => {
-    expect(embeddedLevels).toHaveLength(4);
+  it('expose les cinq premiers niveaux v2 valides dans l’ordre de campagne', () => {
+    expect(embeddedLevels).toHaveLength(5);
     expect(embeddedLevels[0]).toMatchObject({
       schemaVersion: 2,
       id: 'level-1-prolonger-la-pente',
@@ -211,6 +211,44 @@ describe('niveaux embarqués', () => {
         id: 'back',
         type: 'beam',
         props: { size: 'short' },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+    ]);
+
+    expect(embeddedLevels[4]).toMatchObject({
+      schemaVersion: 2,
+      id: 'level-5-le-detour',
+      metadata: { title: 'Le détour' },
+      inventory: [
+        { id: 'inventory-beam-short', type: 'beam', props: { size: 'short' }, quantity: 1 },
+        { id: 'inventory-beam-medium', type: 'beam', props: { size: 'medium' }, quantity: 1 },
+      ],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [
+        { min: { x: 0.6, y: 0.9 }, max: { x: 4, y: 2.05 } },
+        { min: { x: 1.6, y: 2.7 }, max: { x: 6.2, y: 4.3 } },
+      ],
+      challenge: { elegantObjectCount: 2, minimalObjectCount: 2 },
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+    });
+    expect(embeddedLevels[4]?.objects).toEqual([
+      expect.objectContaining({
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 1.5, y: 0.6 }, rotation: 0 },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'roof',
+        type: 'beam',
+        transform: { position: { x: 1.6, y: 2.3 }, rotation: 0 },
+        props: { size: 'medium' },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 1.2, y: 4.9 }, rotation: 0 },
         permissions: { move: false, rotate: false, remove: false },
       }),
     ]);

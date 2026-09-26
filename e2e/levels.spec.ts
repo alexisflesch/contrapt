@@ -6,6 +6,7 @@ const levelOnePath = '/levels/level-1-prolonger-la-pente/play';
 const levelTwoPath = '/levels/level-2-le-pont/play';
 const levelThreePath = '/levels/level-3-incliner/play';
 const levelFourPath = '/levels/level-4-moins-c-est-mieux/play';
+const levelFivePath = '/levels/level-5-le-detour/play';
 
 interface WorldPoint {
   readonly x: number;
@@ -205,6 +206,64 @@ test('niveau 4 : choisir la poutre longue et gagner au tactile', async ({ page }
   await expect
     .poll(async () => !(await canvas.screenshot()).equals(beforeRotation), { timeout: 2_000 })
     .toBe(true);
+  await page.getByRole('button', { name: 'Tester' }).tap();
+
+  const result = page.getByRole('region', { name: 'Résultat du niveau' });
+  await expect(result).toBeVisible({ timeout: 15_000 });
+  await expect(result.getByText('Victoire')).toBeVisible();
+});
+
+test('niveau 5 : détourner la balle avec deux poutres tournées au tactile', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await page.goto(levelFivePath);
+
+  await expect(page.getByText('Niveau 5 · Le détour')).toBeVisible();
+  const board = page.getByRole('region', { name: 'Plateau de jeu' });
+  const canvas = board.getByRole('img', { name: 'Rendu du plateau' });
+  await expect(board).toBeVisible();
+
+  const drawer = page.getByRole('region', { name: 'Objets disponibles' });
+  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  await expect(drawer.locator('.object-card')).toHaveCount(2);
+  const shortBeam = drawer.getByRole('button', { name: 'Poutre courte, quantité : 1' });
+  const mediumBeam = drawer.getByRole('button', { name: 'Poutre moyenne, quantité : 1' });
+  await expect(shortBeam).toBeEnabled();
+  await expect(mediumBeam).toBeEnabled();
+  await shortBeam.tap();
+  await tapWorldPoint(page, { x: 2.3, y: 1.4 });
+  await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
+
+  const rotateAt = async (point: WorldPoint, angleDegrees: number): Promise<void> => {
+    const beforeRotation = await canvas.screenshot();
+    const center = await screenPointForWorld(page, point);
+    expect(center).not.toBeNull();
+    if (center === null) return;
+    const targetAngle = (angleDegrees * Math.PI) / 180;
+    const handleRadius = ROTATION_HANDLE_DISTANCE_CSS_PIXELS;
+    await dragScreenPoints(
+      page,
+      { x: center.x, y: center.y - handleRadius },
+      {
+        x: center.x + handleRadius * Math.sin(targetAngle),
+        y: center.y - handleRadius * Math.cos(targetAngle),
+      },
+    );
+    await expect
+      .poll(async () => !(await canvas.screenshot()).equals(beforeRotation), { timeout: 2_000 })
+      .toBe(true);
+  };
+
+  // Player rotation snaps to 15° increments; this angle is also in the measured window.
+  await rotateAt({ x: 2.3, y: 1.4 }, 15);
+  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  await expect(drawer.getByRole('button', { name: 'Poutre courte, quantité : 0' })).toBeDisabled();
+  await expect(mediumBeam).toBeEnabled();
+  await mediumBeam.tap();
+  await tapWorldPoint(page, { x: 3.8, y: 3.5 });
+  await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
+  await rotateAt({ x: 3.8, y: 3.5 }, -15);
   await page.getByRole('button', { name: 'Tester' }).tap();
 
   const result = page.getByRole('region', { name: 'Résultat du niveau' });

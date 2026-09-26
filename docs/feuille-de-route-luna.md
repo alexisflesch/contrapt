@@ -1172,3 +1172,44 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   et `test-results/levels/level-4-moins-c-est-mieux-844x390.png` (non versionnées).
 - Pour l’auteur : le follow-up U13 « mettre en évidence les zones de pose » est
   consigné en § 6 et reste différé ; aucune question bloquante.
+
+### L11 — Niveau 5 « Le détour » — fait — `feat(content): ajoute le niveau 5 « Le détour » (L11)`
+
+- Tests ajoutés : `level-5-le-detour.test.ts` — échec sans action, deux références,
+  36 combinaisons physiques, 16 combinaisons acceptées par les zones, deux poses
+  atteignables à 15° au tactile, deux contre-exemples, grille minimale de 1 680
+  poses, déterminisme et reset exact. `construction-attempt.test.ts` couvre la
+  consommation du stock avec un défi dont le minimum est 2.
+- Échec initial constaté : les régressions L11 échouaient parce que le niveau
+  était absent. Après son ajout, la première pose réduisait le stock à 1 et
+  `levelDocumentSchema` la refusait (`invalid-level-document`) alors que le stock
+  initial contenait bien deux objets. Le test rouge dédié échouait à
+  `expect(first.status).toBe('accepted')`, attendu « accepted », reçu « rejected ».
+- Tests existants réécrits : `App.test.tsx` et
+  `embedded-levels.test.ts` listent et valident le niveau 5. Le harnais
+  `level-regression.ts` valide maintenant une projection de tentative dont le
+  stock représente les quantités restantes ; les commandes valident toujours le
+  stock initial reconstruit à partir de la provenance, et le schéma persistant
+  reste strict.
+- Fichiers touchés hors périmètre : `docs/etat.md` et ce journal (obligatoires),
+  `src/domain/level-document.ts`, `src/application/construction/` et
+  `src/content/level-regression.ts` pour la validation correcte des tentatives
+  portant un défi minimal supérieur à 1.
+- Écarts avec la tâche : aucun. Aucun ajustement de géométrie ; la grille de
+  minimalité complète s’exécute en moins d’une seconde dans Vitest.
+- Mesures qui ne se reproduisent pas : aucune. La spécification indiquait 1 512
+  poses et 9 angles, alors que −45° à 90° par 15° compte 10 angles. Le test suit
+  les bornes explicites et vérifie 2 tailles × 10 angles × 12 positions x × 7
+  positions y = 1 680 poses, sans solution à un objet.
+- Contradictions rencontrées : les 36 combinaisons physiques gagnent, mais les
+  zones refusent certaines empreintes complètes. Parmi ces résultats, les
+  commandes acceptent 16 combinaisons avec les angles de la grille ; le pas UI de
+  15° laisse deux positions complètes gagnantes. La régression et le parcours
+  tactile couvrent ces sous-ensembles séparément.
+- Vérification finale : `pnpm check` passe — contenu (7 niveaux), 466 tests
+  Vitest (37 fichiers), build et 33 tests Playwright mobiles réussis ; C3 est
+  ignoré dans ce projet car réservé au projet desktop.
+- Captures au repos à inspecter : `test-results/levels/level-5-le-detour-390x844.png`
+  et `test-results/levels/level-5-le-detour-844x390.png` (non versionnées).
+- Pour l’auteur : deux zones exigent deux emplacements distincts. Le follow-up
+  U13 de mise en évidence reste différé comme demandé.

@@ -136,6 +136,13 @@ pendant le travail.
   reset (`src/content/levels/level-4-moins-c-est-mieux.test.ts`). Le parcours
   mobile choisit la poutre longue, la tourne à la poignée et gagne sur
   `/levels/level-4-moins-c-est-mieux/play`.
+- Niveau 5 « Le détour » jouable de bout en bout avec deux zones et deux
+  entrées de poutre. Sa régression vérifie les 36 combinaisons physiques, les 16
+  poses autorisées par les zones, les deux solutions atteignables aux rotations
+  tactiles de 15°, l’absence de solution à une poutre sur 1 680 poses, les
+  contre-exemples, le déterminisme et le reset
+  (`src/content/levels/level-5-le-detour.test.ts`). Le parcours mobile tourne les
+  deux poutres et gagne sur `/levels/level-5-le-detour/play`.
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -155,12 +162,13 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Quatre niveaux de campagne**, « Prolonger la pente », « Le pont »,
-  « Incliner » et « Moins, c’est mieux » ; les 10 autres niveaux de la campagne
+- **Cinq niveaux de campagne**, « Prolonger la pente », « Le pont »,
+  « Incliner », « Moins, c’est mieux » et « Le détour » ; les 9 autres niveaux de la campagne
   de 14 sont spécifiés dans
   `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
-- **Défi d’objets, progression, stockage local, partage, PWA** : décidés
-  (ADR 0010, 0011, 0012), non implémentés.
+- **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
+  (ADR 0010, 0011, 0012), non implémentés. Les métadonnées de défi existent au
+  format v2 et sont utilisées par les niveaux 4 et 5.
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
 - **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
@@ -179,11 +187,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 4 :
-typecheck, lint, formatage, Knip, contenu (6 niveaux embarqués), 456 tests Vitest
-(36 fichiers), build et 33 tests Playwright `mobile` (32 réussis, 1 ignoré car C3
+`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 5 :
+typecheck, lint, formatage, Knip, contenu (7 niveaux embarqués), 466 tests Vitest
+(37 fichiers), build et 34 tests Playwright `mobile` (33 réussis, 1 ignoré car C3
 est spécifique au projet desktop). Les captures au repos sont conservées sous
-`test-results/levels/` pour les niveaux 1 à 4, en portrait et paysage.
+`test-results/levels/` pour les niveaux 1 à 5, en portrait et paysage.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

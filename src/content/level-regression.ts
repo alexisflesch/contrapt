@@ -5,7 +5,7 @@ import {
   rotatePlacement,
   type ConstructionErrorCode,
 } from '../application/construction';
-import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
+import { levelDocumentAttemptSchema, type LevelDocument } from '../domain/level-document';
 import { resolveAttemptOutcome } from '../domain/attempt-failure-evaluator';
 import { createSimulationSession, type SimulationSnapshot } from '../simulation/simulation-session';
 
@@ -64,7 +64,9 @@ const fixedStepOutcome = (reason: 'out-of-scene' | 'timeout'): LevelRunOutcome =
   reason === 'out-of-scene' ? 'out-of-scene' : 'timed-out';
 
 export const runLevel = (document: LevelDocument): LevelRun => {
-  const level = levelDocumentSchema.parse(document);
+  // Attempts expose remaining inventory, so validate their full structure and
+  // relations while leaving the initial-stock challenge check to construction.
+  const level = levelDocumentAttemptSchema.parse(document);
   const session = createSimulationSession(level, { fixedStepSeconds: FIXED_STEP_SECONDS });
   let ballEnteredTarget = false;
 

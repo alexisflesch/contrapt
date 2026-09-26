@@ -246,14 +246,27 @@ Zones : A `x 0,6 → 4,0`, `y 0,9 → 2,05` ; B `x 1,6 → 6,2`, `y 2,7 → 4,3`
 
 **Référence.** Courte en (2,3 ; 1,4) à 10° ; moyenne en (3,8 ; 3,5) à −15°.
 
-**Robustesse mesurée.** Courte à 10° ou 15° en (2,3 ; 1,4) ; moyenne à −10°,
-−15° ou −20°, `x ∈ {3,8 ; 4,2}` × `y ∈ {3,2 ; 3,5 ; 3,8}` : toutes gagnent.
+**Robustesse physique mesurée.** Les 36 combinaisons de la courte à 10° ou 15°
+en (2,3 ; 1,4) avec la moyenne à −10°, −15° ou −20°, `x ∈ {3,8 ; 4,2}` ×
+`y ∈ {3,2 ; 3,5 ; 3,8}` gagnent.
+
+**Poses acceptées par les zones.** Pour la poutre moyenne, le confinement de
+l’empreinte accepte, pour chacun des `x ∈ {3,8 ; 4,2}` : `y = 3,2` à −10°,
+`y = 3,5` à −10° ou −15°, et `y = 3,8` à −10°. Avec la courte à 10° ou 15°,
+cela donne 16 combinaisons gagnantes acceptées par les commandes.
+
+**Parcours tactile.** La poignée tourne par pas de 15°. Les poses complètes
+atteignables dans cette fenêtre sont donc la courte à 15° et la moyenne à −15°
+en `y = 3,5`, avec `x ∈ {3,8 ; 4,2}` pour cette seconde poutre ; les deux poses
+gagnent.
 
 **Contre-exemples.** Aucune poutre (temps écoulé sur le toit) ; la courte seule
 (sortie de scène à droite) ; la courte décalée en (2,5 ; 1,5) (la balle la manque
-et tombe sur le toit). **Minimalité mesurée** : aucune des 1 512 poses d’une seule
-poutre (courte ou moyenne, 9 angles de −45° à 90°, `x` de 0,4 à 4,8, `y` de 1,0 à
-4,0) ne réussit.
+et tombe sur le toit).
+
+**Minimalité mesurée.** Aucune des 1 680 poses d’une seule poutre (courte ou
+moyenne, 10 angles de −45° à 90° par 15°, `x` de 0,4 à 4,8 par 0,4, `y` de 1,0
+à 4,0 par 0,5) ne réussit. Les zones écartent les poses dont l’empreinte sort.
 
 ### Niveau 6 — La bascule
 

@@ -496,6 +496,7 @@ interface DocumentRelationsInput {
 const addLevelDocumentRelationIssues = (
   document: DocumentRelationsInput,
   issues: LevelDocumentValidationIssue[],
+  validateChallengeAgainstInventory = true,
 ): void => {
   addUniqueIdentifierIssues(document.objects, 'objects', issues);
   addUniqueIdentifierIssues(document.inventory, 'inventory', issues);
@@ -532,7 +533,7 @@ const addLevelDocumentRelationIssues = (
       (total, entry) => total + entry.quantity,
       0,
     );
-    if (minimalObjectCount > inventoryObjectCount) {
+    if (validateChallengeAgainstInventory && minimalObjectCount > inventoryObjectCount) {
       issues.push({
         path: ['challenge', 'minimalObjectCount'],
         message: 'Le nombre minimal connu ne peut pas dépasser la quantité totale de l’inventaire.',
@@ -617,6 +618,25 @@ export const levelDocumentSchema = levelDocumentV2StructureSchema.superRefine(
   (document, context) => {
     const issues: LevelDocumentValidationIssue[] = [];
     addLevelDocumentRelationIssues(document, issues);
+    addSceneContainmentIssues(document, issues);
+    addQuarterTurnIssues(document.objects, issues);
+    addControlWireIssues(document.objects, document.wires, issues);
+    for (const issue of issues) {
+      context.addIssue({ code: 'custom', path: [...issue.path], message: issue.message });
+    }
+  },
+);
+
+/**
+ * Construction attempts expose remaining inventory in their document while
+ * the challenge is defined against the original stock. Use this schema only
+ * for that ephemeral projection; `ConstructionAttempt` separately restores
+ * quantities from validated provenance before accepting a candidate.
+ */
+export const levelDocumentAttemptSchema = levelDocumentV2StructureSchema.superRefine(
+  (document, context) => {
+    const issues: LevelDocumentValidationIssue[] = [];
+    addLevelDocumentRelationIssues(document, issues, false);
     addSceneContainmentIssues(document, issues);
     addQuarterTurnIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);

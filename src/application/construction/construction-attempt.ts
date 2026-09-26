@@ -1,6 +1,11 @@
 import { initialObjectFamilyRegistry } from '../../domain/object-family-registry';
 import { placementFootprintCorners } from '../../domain/placement-footprint';
-import { levelDocumentSchema, rotationMode, type LevelDocument } from '../../domain/level-document';
+import {
+  levelDocumentAttemptSchema,
+  levelDocumentSchema,
+  rotationMode,
+  type LevelDocument,
+} from '../../domain/level-document';
 import type { Command, CommandState } from '../history';
 
 export type ConstructionContext = 'player' | 'author';
@@ -123,16 +128,6 @@ const reject = (reason: ConstructionErrorCode): ConstructionCommandOutcome => ({
   reason,
 });
 
-const acceptCandidate = (
-  documentCandidate: unknown,
-  provenance: Readonly<Record<string, string>>,
-): ConstructionCommandOutcome => {
-  const validation = levelDocumentSchema.safeParse(documentCandidate);
-  if (!validation.success) return reject('invalid-level-document');
-
-  return { status: 'accepted', state: freezeAttempt(validation.data, provenance) };
-};
-
 const coordinateTolerance = (left: number, right: number): number =>
   Number.EPSILON * 16 * Math.max(1, Math.abs(left), Math.abs(right));
 
@@ -169,6 +164,49 @@ const definitionsMatch = (placement: Placement, inventoryEntry: InventoryEntry):
     placement.permissions.rotate === inventoryEntry.permissions.rotate &&
     placement.permissions.remove === inventoryEntry.permissions.remove
   );
+};
+
+const acceptCandidate = (
+  documentCandidate: unknown,
+  provenance: Readonly<Record<string, string>>,
+): ConstructionCommandOutcome => {
+  const attemptValidation = levelDocumentAttemptSchema.safeParse(documentCandidate);
+  if (!attemptValidation.success) return reject('invalid-level-document');
+  const attemptDocument = attemptValidation.data;
+  const placementsById = new Map(
+    attemptDocument.objects.map((placement) => [placement.id, placement]),
+  );
+  const consumedByInventoryId = new Map<string, number>();
+
+  for (const [placementId, inventoryEntryId] of Object.entries(provenance)) {
+    const placement = placementsById.get(placementId);
+    const inventoryEntry = attemptDocument.inventory.find(({ id }) => id === inventoryEntryId);
+    if (placement === undefined || inventoryEntry === undefined) continue;
+    if (!definitionsMatch(placement, inventoryEntry)) continue;
+    consumedByInventoryId.set(
+      inventoryEntryId,
+      (consumedByInventoryId.get(inventoryEntryId) ?? 0) + 1,
+    );
+  }
+
+  // A player attempt stores remaining quantities in its document, while the
+  // challenge invariant is defined against the level's original inventory.
+  // Reconstruct that inventory for validation, then retain the remaining
+  // quantities in the accepted attempt for the drawer and depletion checks.
+  const inventoryForValidation = attemptDocument.inventory.map((entry) => ({
+    ...entry,
+    quantity: entry.quantity + (consumedByInventoryId.get(entry.id) ?? 0),
+  }));
+  const validation = levelDocumentSchema.safeParse({
+    ...attemptDocument,
+    inventory: inventoryForValidation,
+  });
+  if (!validation.success) return reject('invalid-level-document');
+
+  return {
+    status: 'accepted',
+    state: freezeAttempt({ ...validation.data, inventory: attemptDocument.inventory }, provenance),
+  };
 };
 
 export const placeFromInventory = (input: PlaceFromInventoryInput): ConstructionCommand => ({
