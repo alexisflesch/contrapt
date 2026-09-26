@@ -1133,3 +1133,42 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Capture portrait du niveau 3, tiroir ouvert et inspectée :
   `test-results/levels/level-3-tiroir-portrait.png` (non versionnée).
 - Pour l’auteur : aucune question.
+
+### L10 — Niveau 4 « Moins, c’est mieux » — fait — `feat(content): ajoute le niveau 4 « Moins, c’est mieux » (L10)`
+
+- Tests ajoutés : `level-4-moins-c-est-mieux.test.ts` — échec initial, les deux
+  références, les fenêtres mesurées, contre-exemples, minimum d’un objet,
+  déterminisme, immuabilité, reset et une pose longue intérieure utilisée par le
+  geste tactile.
+- Échec initial constaté : le toucher de référence à (3,2 ; 2,2) était refusé
+  avec « Action refusée : choisissez une position dans la zone de construction. »
+  La pose à plat a une extrémité exactement sur `x = 0,2`, borne de la zone ; la
+  conversion écran → monde peut arrondir le point au-delà. À (3,3 ; 2,2), la
+  poutre garde 0,1 unité de marge, puis la rotation tactile à 15° gagne.
+- Tests existants réécrits : `App.test.tsx` et
+  `embedded-levels.test.ts` incluent désormais le niveau 4 dans la campagne ; le
+  test du tiroir attend « 1 entrée » au lieu de « 1 famille », car une taille de
+  poutre est maintenant une entrée sélectionnable distincte.
+- Fichiers touchés hors périmètre : `docs/etat.md` et ce journal (obligatoires).
+  La spécification L3 dans `docs/levels/initial-progression.md` précise aussi
+  quelles mesures physiques sont réellement accessibles avec la règle
+  exécutable de confinement complet.
+- Écarts avec la tâche : aucun ; le parcours mobile joue la référence à un objet
+  et la rotation avec la poignée. Le parcours à deux objets est couvert par la
+  régression headless.
+- Mesures qui ne se reproduisent pas : le candidat physique à (3,3 ; 2,2), 15°
+  gagne ; les coordonnées monde produites par le toucher de (3,2 ; 2,2) sont
+  (3,1999998 ; 2,1999998) et refusées à la limite.
+- Contradictions rencontrées : aucune entre JSON, commandes exécutables et
+  simulation. La documentation corrige deux mesures L3 non jouables (pose longue
+  à `y = 1,8` et une combinaison de poutres courtes qui ne gagne pas).
+- Vérification finale : `pnpm check` passe — typecheck, lint, formatage, Knip,
+  contenu (6 niveaux), 456 tests Vitest (36 fichiers), build et 32 tests
+  Playwright mobiles réussis ; C3 est ignoré dans ce projet car réservé au
+  projet desktop. Prettier passe sur `docs/etat.md`, la spécification de
+  progression et cette entrée isolée. Le fichier de feuille de route complet
+  conserve les écarts historiques décrits dans le blocage L2.
+- Captures au repos inspectées : `test-results/levels/level-4-moins-c-est-mieux-390x844.png`
+  et `test-results/levels/level-4-moins-c-est-mieux-844x390.png` (non versionnées).
+- Pour l’auteur : le follow-up U13 « mettre en évidence les zones de pose » est
+  consigné en § 6 et reste différé ; aucune question bloquante.

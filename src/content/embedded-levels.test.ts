@@ -56,8 +56,8 @@ describe('campagne embarquée', () => {
 });
 
 describe('niveaux embarqués', () => {
-  it('expose les trois premiers niveaux v2 valides dans l’ordre de campagne', () => {
-    expect(embeddedLevels).toHaveLength(3);
+  it('expose les quatre premiers niveaux v2 valides dans l’ordre de campagne', () => {
+    expect(embeddedLevels).toHaveLength(4);
     expect(embeddedLevels[0]).toMatchObject({
       schemaVersion: 2,
       id: 'level-1-prolonger-la-pente',
@@ -179,6 +179,38 @@ describe('niveaux embarqués', () => {
         type: 'beam',
         transform: { position: { x: 7.35, y: 3.4 }, rotation: Math.PI / 2 },
         props: { size: 'medium' },
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+    ]);
+
+    expect(embeddedLevels[3]).toMatchObject({
+      schemaVersion: 2,
+      id: 'level-4-moins-c-est-mieux',
+      metadata: { title: 'Moins, c’est mieux' },
+      inventory: [
+        { id: 'inventory-beam-short', type: 'beam', props: { size: 'short' }, quantity: 2 },
+        { id: 'inventory-beam-long', type: 'beam', props: { size: 'long' }, quantity: 1 },
+      ],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [{ min: { x: 0.2, y: 1 }, max: { x: 6.4, y: 4 } }],
+      challenge: { elegantObjectCount: 2, minimalObjectCount: 1 },
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+    });
+    expect(embeddedLevels[3]?.objects).toEqual([
+      expect.objectContaining({
+        id: 'ball-1',
+        type: 'ball',
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'basket-1',
+        type: 'basket',
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+      expect.objectContaining({
+        id: 'back',
+        type: 'beam',
+        props: { size: 'short' },
         permissions: { move: false, rotate: false, remove: false },
       }),
     ]);

@@ -196,11 +196,23 @@ Zone : `x 0,2 → 6,4`, `y 1,0 → 4,0`.
 
 **Références.**
 
-- 1 objet : poutre longue en (3,2 ; 2,2) à 15°. Mesuré gagnant aussi à 10° et
-  20°, et pour `y ∈ {1,8 ; 2,2 ; 2,6}` à `x = 3,2`.
+- 1 objet : poutre longue en (3,2 ; 2,2) à 15°. Les mesures physiques
+  gagnent aussi à 10° et 20° au même point, et à 15° pour
+  `y ∈ {1,8 ; 2,2 ; 2,6}` à `x = 3,2`.
+
+**Pose accessible au joueur.** À `y = 1,8`, l’empreinte de la poutre longue
+sort par le haut de la zone (`y = 1,0`) et la commande la refuse. Les poses à
+`y = 2,2` et `y = 2,6`, ainsi que les rotations de 10° et 20° à `y = 2,2`,
+restent accessibles. Le parcours tactile dépose d’abord la poutre à plat en
+(3,3 ; 2,2), puis la tourne à 15° avec la poignée ; cette pose gagne aussi.
+À plat en `x = 3,2`, ses coins tombent exactement sur la borne gauche `x = 0,2`
+de la zone : l’arrondi de la conversion du toucher en coordonnées monde peut la
+faire refuser. Le point intérieur `x = 3,3` garde une marge de 0,1 unité.
+
 - 2 objets : courte en (1,6 ; 1,6) à 15° puis courte en (3,8 ; 2,8) à 15°.
-  Mesuré gagnant pour la seconde en `x ∈ {3,6 ; 4,0}` × `y ∈ {2,4 ; 2,8 ; 3,2}`,
-  à 15° et 20°.
+  Les mesures indiquent des succès pour la seconde en `x ∈ {3,6 ; 4,0}` ×
+  `y ∈ {2,4 ; 2,8 ; 3,2}`, à 15° et 20°, sauf (3,6 ; 3,2) à 20° : cette
+  combinaison, pourtant plaçable, ne gagne pas dans la régression actuelle.
 
 **Contre-exemples.** Aucune poutre ; une seule poutre courte (aucune réussite
 mesurée pour `x ∈ {1,2 ; 1,6 ; 2,0}`, `y ∈ {1,5 ; 2,0 ; 2,5}`, 15° à 30°). Le
@@ -208,7 +220,8 @@ test de minimalité (règle 7) porte ici sur « aucune solution à 0 objet ».
 
 **Point d’attention.** La fenêtre de la poutre longue est étroite en `x` (3,2
 sûr, 3,5 partiel). Si elle ne tient pas en test, élargir en déplaçant le panier
-ou le mur, pas en retouchant la physique.
+ou le mur, pas en retouchant la physique. La pose tactile intérieure à `x = 3,3`
+est couverte séparément de la référence mesurée à `x = 3,2`.
 
 ### Niveau 5 — Le détour
 

@@ -31,6 +31,20 @@ export const objectKinds: readonly ObjectCatalogEntry[] = [
   { kind: 'Tremplin', description: 'Renvoie vers le haut ce qui tombe dessus' },
 ];
 
+export const inventoryTypeByObjectKind = {
+  Balle: 'ball',
+  Panier: 'basket',
+  Poutre: 'beam',
+  Bascule: 'seesaw',
+  Masse: 'mass',
+  Levier: 'lever',
+  Convoyeur: 'conveyor',
+  Bouton: 'button',
+  Ventilateur: 'fan',
+  Barrière: 'barrier',
+  Tremplin: 'springboard',
+} as const satisfies Readonly<Record<ObjectKind, string>>;
+
 export const inventoryByObjectKind: Readonly<Record<ObjectKind, string>> = {
   Balle: 'inventory-ball',
   Panier: 'inventory-basket',

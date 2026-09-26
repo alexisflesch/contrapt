@@ -282,7 +282,7 @@ describe('coque Contrapt!', () => {
     const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
     fireEvent.click(within(drawer).getByRole('button', { name: 'Ouvrir le catalogue' }));
 
-    expect(within(drawer).getByText('1 famille')).toBeVisible();
+    expect(within(drawer).getByText('1 entrée')).toBeVisible();
     expect(drawer.querySelectorAll('.object-card')).toHaveLength(1);
     const beamCard = within(drawer).getByRole('button', {
       name: 'Poutre moyenne, quantité : 1',
@@ -609,6 +609,8 @@ describe('coque Contrapt!', () => {
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 2' })).toBeEnabled();
     expect(within(levelList).getByText('Niveau 3 · Incliner')).toBeVisible();
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 3' })).toBeEnabled();
+    expect(within(levelList).getByText('Niveau 4 · Moins, c’est mieux')).toBeVisible();
+    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 4' })).toBeEnabled();
   });
 
   it('navigue vers une page de réglages dédiée depuis le menu (ADR 0008)', () => {

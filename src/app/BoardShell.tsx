@@ -130,6 +130,7 @@ export function BoardShell({ initialDocument, mode, title, subtitle }: BoardShel
         <ObjectDrawer
           session={session}
           selectedObject={pointers.placementTool?.kind}
+          selectedInventoryEntryId={pointers.placementTool?.inventoryEntryId}
           isDrawerOpen={isDrawerOpen}
           isSideLayout={isSideLayout}
           isPlacementActive={pointers.placementTool !== null}
@@ -139,8 +140,8 @@ export function BoardShell({ initialDocument, mode, title, subtitle }: BoardShel
           onCloseDrawer={() => {
             setIsDrawerOpen(false);
           }}
-          onSelectKind={(kind) => {
-            pointers.activatePlacement(kind);
+          onSelectKind={(kind, inventoryEntryId) => {
+            pointers.activatePlacement(kind, inventoryEntryId);
             setIsDrawerOpen(false);
           }}
         />

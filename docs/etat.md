@@ -129,6 +129,13 @@ pendant le travail.
   le déterminisme et le reset exact (`src/content/levels/level-3-incliner.test.ts`).
   Le parcours mobile tourne réellement la poignée et gagne sur
   `/levels/level-3-incliner/play`.
+- Niveau 4 « Moins, c’est mieux » jouable de bout en bout. Les deux références
+  (une poutre longue ou deux courtes) gagnent ; le défi déclare 2 objets élégants
+  et 1 objet minimal. La régression vérifie les fenêtres mesurées, les
+  contre-exemples, l’absence de solution à zéro objet, le déterminisme et le
+  reset (`src/content/levels/level-4-moins-c-est-mieux.test.ts`). Le parcours
+  mobile choisit la poutre longue, la tourne à la poignée et gagne sur
+  `/levels/level-4-moins-c-est-mieux/play`.
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -148,8 +155,9 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Trois niveaux de campagne**, « Prolonger la pente », « Le pont » et
-  « Incliner » ; les 11 autres niveaux de la campagne de 14 sont spécifiés dans
+- **Quatre niveaux de campagne**, « Prolonger la pente », « Le pont »,
+  « Incliner » et « Moins, c’est mieux » ; les 10 autres niveaux de la campagne
+  de 14 sont spécifiés dans
   `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
 - **Défi d’objets, progression, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés.
@@ -171,12 +179,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après le correctif du
-tiroir : typecheck, lint, formatage, Knip, contenu (5 niveaux embarqués),
-446 tests Vitest (35 fichiers), build et 32 tests Playwright `mobile` (31
-réussis, 1 ignoré car C3 est spécifique au projet desktop). Les six captures au
-repos sont conservées sous
-`test-results/levels/` pour les niveaux 1 à 3, en portrait et paysage.
+`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 4 :
+typecheck, lint, formatage, Knip, contenu (6 niveaux embarqués), 456 tests Vitest
+(36 fichiers), build et 33 tests Playwright `mobile` (32 réussis, 1 ignoré car C3
+est spécifique au projet desktop). Les captures au repos sont conservées sous
+`test-results/levels/` pour les niveaux 1 à 4, en portrait et paysage.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

@@ -112,7 +112,7 @@ interface UseBoardPointersOptions {
 interface BoardPointersController {
   readonly placementTool: PlacementTool | null;
   readonly placementPreview: PlacementPreview | null;
-  readonly activatePlacement: (kind: ObjectKind) => void;
+  readonly activatePlacement: (kind: ObjectKind, inventoryEntryId?: string) => void;
   /** The toolbar's "Annuler le placement" button: cancels the projection and clears the active tool. */
   readonly cancelPlacement: () => void;
   readonly boardPointerHandlers: BoardPointerHandlers;
@@ -375,7 +375,10 @@ export function useBoardPointers({
     }
   };
 
-  const activatePlacement = (kind: ObjectKind): void => {
+  const activatePlacement = (
+    kind: ObjectKind,
+    inventoryEntryId = inventoryByObjectKind[kind],
+  ): void => {
     const placementId = `placement-${String(nextPlacementNumber.current)}`;
     nextPlacementNumber.current += 1;
     const result = beginEditorManipulation(sessionRef.current, { kind: 'placement', placementId });
@@ -385,7 +388,7 @@ export function useBoardPointers({
     }
 
     updateSession(result.session);
-    updatePlacementTool({ kind, placementId, inventoryEntryId: inventoryByObjectKind[kind] });
+    updatePlacementTool({ kind, placementId, inventoryEntryId });
     setPlacementPreview(null);
     hasValidPlacementPreview.current = false;
     activePointer.current = null;

@@ -2,7 +2,7 @@ import {
   currentEditorAttempt,
   type EditorSession,
 } from '../application/editor-session/editor-session';
-import { inventoryByObjectKind, objectKinds, type ObjectKind } from '../app/object-catalog';
+import { inventoryTypeByObjectKind, objectKinds, type ObjectKind } from '../app/object-catalog';
 import { spriteThumbnailPath, type SpriteFamily } from '../presentation/sprite-loader';
 
 /** The same art the board draws, pre-composed, so a catalogue card looks like the object it places. */
@@ -25,18 +25,20 @@ const spriteFamilyByKind: Readonly<Record<ObjectKind, SpriteFamily>> = {
 interface ObjectDrawerProps {
   readonly session: EditorSession;
   readonly selectedObject: ObjectKind | undefined;
+  readonly selectedInventoryEntryId: string | undefined;
   readonly isDrawerOpen: boolean;
   readonly isSideLayout: boolean;
   readonly isPlacementActive: boolean;
   readonly onToggleDrawer: () => void;
   readonly onCloseDrawer: () => void;
-  readonly onSelectKind: (kind: ObjectKind) => void;
+  readonly onSelectKind: (kind: ObjectKind, inventoryEntryId?: string) => void;
 }
 
 /** The catalogue of placeable object families: a collapsible drawer on phones, an open side panel in landscape/tablet. */
 export function ObjectDrawer({
   session,
   selectedObject,
+  selectedInventoryEntryId,
   isDrawerOpen,
   isSideLayout,
   isPlacementActive,
@@ -47,13 +49,19 @@ export function ObjectDrawer({
   const drawerIsExpanded = isDrawerOpen || isSideLayout;
   const inventory =
     session.mode === 'resolution' ? currentEditorAttempt(session).document.inventory : null;
-  const visibleObjectKinds =
+  const drawerEntries =
     inventory === null
-      ? objectKinds
-      : objectKinds.filter(({ kind }) =>
-          inventory.some(({ id }) => id === inventoryByObjectKind[kind]),
-        );
-  const objectCountLabel = `${String(visibleObjectKinds.length)} ${visibleObjectKinds.length === 1 ? 'famille' : 'familles'}`;
+      ? objectKinds.map((catalogEntry) => ({ ...catalogEntry, inventoryEntry: undefined }))
+      : inventory.flatMap((inventoryEntry) => {
+          const catalogEntry = objectKinds.find(
+            ({ kind }) => inventoryTypeByObjectKind[kind] === inventoryEntry.type,
+          );
+          return catalogEntry === undefined ? [] : [{ ...catalogEntry, inventoryEntry }];
+        });
+  const objectCountLabel =
+    inventory === null
+      ? `${String(drawerEntries.length)} familles`
+      : `${String(drawerEntries.length)} ${drawerEntries.length === 1 ? 'entrée' : 'entrées'}`;
 
   return (
     <>
@@ -101,20 +109,21 @@ export function ObjectDrawer({
 
         <div className="drawer-content">
           <div className="object-list" id="object-list" hidden={!drawerIsExpanded}>
-            {visibleObjectKinds.map(({ kind, description }) => {
-              const inventoryEntry =
-                inventory?.find(({ id }) => id === inventoryByObjectKind[kind]) ?? undefined;
+            {drawerEntries.map(({ kind, description, inventoryEntry }) => {
               const beamSizeLabel =
                 inventoryEntry?.type === 'beam'
                   ? beamSizeLabels[inventoryEntry.props.size]
                   : undefined;
               const displayName =
                 kind === 'Poutre' && beamSizeLabel !== undefined ? `Poutre ${beamSizeLabel}` : kind;
+              const isSelected =
+                selectedObject === kind &&
+                (inventoryEntry === undefined || selectedInventoryEntryId === inventoryEntry.id);
 
               return (
                 <button
-                  className={`object-card${selectedObject === kind ? ' object-card-selected' : ''}`}
-                  key={kind}
+                  className={`object-card${isSelected ? ' object-card-selected' : ''}`}
+                  key={inventoryEntry?.id ?? kind}
                   type="button"
                   disabled={session.phase !== 'construction' || inventoryEntry?.quantity === 0}
                   aria-label={
@@ -124,9 +133,9 @@ export function ObjectDrawer({
                         : kind
                       : `${displayName}, quantité : ${String(inventoryEntry.quantity)}`
                   }
-                  aria-pressed={selectedObject === kind}
+                  aria-pressed={isSelected}
                   onClick={() => {
-                    onSelectKind(kind);
+                    onSelectKind(kind, inventoryEntry?.id);
                   }}
                 >
                   <span className="object-thumb" aria-hidden="true">
@@ -145,7 +154,7 @@ export function ObjectDrawer({
                     </span>
                   </span>
                   <span className="object-card-action" aria-hidden="true">
-                    {selectedObject === kind ? '✓' : '+'}
+                    {isSelected ? '✓' : '+'}
                   </span>
                 </button>
               );
