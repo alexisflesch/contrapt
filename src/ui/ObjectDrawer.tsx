@@ -1,8 +1,13 @@
-import type { EditorSession } from '../application/editor-session/editor-session';
-import { objectKinds, type ObjectKind } from '../app/object-catalog';
+import {
+  currentEditorAttempt,
+  type EditorSession,
+} from '../application/editor-session/editor-session';
+import { inventoryByObjectKind, objectKinds, type ObjectKind } from '../app/object-catalog';
 import { spriteThumbnailPath, type SpriteFamily } from '../presentation/sprite-loader';
 
 /** The same art the board draws, pre-composed, so a catalogue card looks like the object it places. */
+const beamSizeLabels = { short: 'courte', medium: 'moyenne', long: 'longue' } as const;
+
 const spriteFamilyByKind: Readonly<Record<ObjectKind, SpriteFamily>> = {
   Balle: 'ball',
   Panier: 'basket',
@@ -40,6 +45,15 @@ export function ObjectDrawer({
   onSelectKind,
 }: ObjectDrawerProps) {
   const drawerIsExpanded = isDrawerOpen || isSideLayout;
+  const inventory =
+    session.mode === 'resolution' ? currentEditorAttempt(session).document.inventory : null;
+  const visibleObjectKinds =
+    inventory === null
+      ? objectKinds
+      : objectKinds.filter(({ kind }) =>
+          inventory.some(({ id }) => id === inventoryByObjectKind[kind]),
+        );
+  const objectCountLabel = `${String(visibleObjectKinds.length)} ${visibleObjectKinds.length === 1 ? 'famille' : 'familles'}`;
 
   return (
     <>
@@ -62,7 +76,7 @@ export function ObjectDrawer({
             <span className="eyebrow">Catalogue</span>
             <h2>Objets disponibles</h2>
           </div>
-          <span className="object-count">{objectKinds.length} familles</span>
+          <span className="object-count">{objectCountLabel}</span>
           <button
             className="drawer-toggle"
             type="button"
@@ -87,34 +101,55 @@ export function ObjectDrawer({
 
         <div className="drawer-content">
           <div className="object-list" id="object-list" hidden={!drawerIsExpanded}>
-            {objectKinds.map(({ kind, description }) => (
-              <button
-                className={`object-card${selectedObject === kind ? ' object-card-selected' : ''}`}
-                key={kind}
-                type="button"
-                disabled={session.phase !== 'construction'}
-                aria-label={kind === 'Poutre' ? 'Poutre moyenne' : kind}
-                aria-pressed={selectedObject === kind}
-                onClick={() => {
-                  onSelectKind(kind);
-                }}
-              >
-                <span className="object-thumb" aria-hidden="true">
-                  <img
-                    src={spriteThumbnailPath(spriteFamilyByKind[kind])}
-                    alt=""
-                    draggable={false}
-                  />
-                </span>
-                <span className="object-card-copy">
-                  <strong>{kind}</strong>
-                  <span>{description}</span>
-                </span>
-                <span className="object-card-action" aria-hidden="true">
-                  {selectedObject === kind ? '✓' : '+'}
-                </span>
-              </button>
-            ))}
+            {visibleObjectKinds.map(({ kind, description }) => {
+              const inventoryEntry =
+                inventory?.find(({ id }) => id === inventoryByObjectKind[kind]) ?? undefined;
+              const beamSizeLabel =
+                inventoryEntry?.type === 'beam'
+                  ? beamSizeLabels[inventoryEntry.props.size]
+                  : undefined;
+              const displayName =
+                kind === 'Poutre' && beamSizeLabel !== undefined ? `Poutre ${beamSizeLabel}` : kind;
+
+              return (
+                <button
+                  className={`object-card${selectedObject === kind ? ' object-card-selected' : ''}`}
+                  key={kind}
+                  type="button"
+                  disabled={session.phase !== 'construction' || inventoryEntry?.quantity === 0}
+                  aria-label={
+                    inventoryEntry === undefined
+                      ? kind === 'Poutre'
+                        ? 'Poutre moyenne'
+                        : kind
+                      : `${displayName}, quantité : ${String(inventoryEntry.quantity)}`
+                  }
+                  aria-pressed={selectedObject === kind}
+                  onClick={() => {
+                    onSelectKind(kind);
+                  }}
+                >
+                  <span className="object-thumb" aria-hidden="true">
+                    <img
+                      src={spriteThumbnailPath(spriteFamilyByKind[kind])}
+                      alt=""
+                      draggable={false}
+                    />
+                  </span>
+                  <span className="object-card-copy">
+                    <strong>{displayName}</strong>
+                    <span>
+                      {inventoryEntry === undefined
+                        ? description
+                        : `Quantité : ${String(inventoryEntry.quantity)}`}
+                    </span>
+                  </span>
+                  <span className="object-card-action" aria-hidden="true">
+                    {selectedObject === kind ? '✓' : '+'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <p className="drawer-hint" aria-live="polite" hidden={!drawerIsExpanded}>

@@ -91,7 +91,7 @@ const tapWorldPoint = (x: number, y: number): void => {
 
 const placeCampaignBeam = (x: number, y: number): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Poutre moyenne' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Poutre courte/ }));
   tapWorldPoint(x, y);
 };
 
@@ -273,6 +273,30 @@ describe('coque Contrapt!', () => {
     for (const actionName of ['Tester', 'Zoom arrière', 'Ajuster à la scène', 'Zoom avant']) {
       expect(screen.getByRole('button', { name: actionName })).toBeVisible();
     }
+  });
+
+  it('limite le catalogue du mode joueur aux objets de l’inventaire du niveau', () => {
+    window.history.replaceState(null, '', '/levels/level-3-incliner/play');
+    render(<App />);
+
+    const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Ouvrir le catalogue' }));
+
+    expect(within(drawer).getByText('1 famille')).toBeVisible();
+    expect(drawer.querySelectorAll('.object-card')).toHaveLength(1);
+    const beamCard = within(drawer).getByRole('button', {
+      name: 'Poutre moyenne, quantité : 1',
+    });
+    expect(beamCard).toBeEnabled();
+    expect(within(drawer).queryByRole('button', { name: 'Balle' })).not.toBeInTheDocument();
+
+    fireEvent.click(beamCard);
+    tapWorldPoint(3.2, 2.5);
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Ouvrir le catalogue' }));
+
+    expect(
+      within(drawer).getByRole('button', { name: 'Poutre moyenne, quantité : 0' }),
+    ).toBeDisabled();
   });
 
   it('ouvre l’atelier depuis le menu et expose le plateau et les familles du catalogue', () => {

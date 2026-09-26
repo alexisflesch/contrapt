@@ -1111,3 +1111,21 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/level-3-incliner-844x390.png`. Les captures des niveaux 1
   et 2 ont aussi été conservées après la dernière gate.
 - Pour l’auteur : aucune question.
+
+### L9b — Correctif du tiroir en mode joueur — fait — suivi de L9
+
+- Test rouge ajouté dans `App.test.tsx` : au niveau 3, le catalogue exposait 11
+  familles au lieu de l’unique poutre moyenne de l’inventaire.
+- Le tiroir filtre maintenant ses cartes sur l’inventaire de la tentative, affiche
+  la quantité et la taille de poutre, puis désactive l’entrée à quantité zéro.
+  Le mode création conserve les onze familles du catalogue.
+- Les tests mobiles L1 et L2 cherchaient auparavant « Poutre moyenne » bien que
+  leurs inventaires déclarent une poutre courte ; leurs attentes utilisent
+  désormais la variante réellement disponible. Le parcours L3 vérifie une carte,
+  la quantité et l’absence de la balle.
+- Vérification finale : `pnpm check` passe — typecheck, lint, formatage, Knip,
+  contenu (5 niveaux), 446 tests Vitest, build et 31 tests Playwright mobiles
+  réussis ; C3 est ignoré dans le projet mobile car spécifique au projet desktop.
+- Capture portrait du niveau 3, tiroir ouvert et inspectée :
+  `test-results/levels/level-3-tiroir-portrait.png` (non versionnée).
+- Pour l’auteur : aucune question.

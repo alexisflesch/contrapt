@@ -128,6 +128,11 @@ test('niveau 3 : poser puis tourner la poutre de référence avec la poignée au
   await expect(board).toBeVisible();
 
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  const drawer = page.getByRole('region', { name: 'Objets disponibles' });
+  await expect(drawer.locator('.object-count')).toHaveText('1 famille');
+  await expect(drawer.locator('.object-card')).toHaveCount(1);
+  await expect(drawer.getByText('Quantité : 1')).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Balle' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Poutre moyenne' }).tap();
   await tapWorldPoint(page, { x: 3.2, y: 2.5 });
   const closeProperties = page.getByRole('button', { name: 'Fermer les propriétés' });
@@ -175,7 +180,7 @@ test('niveau 2 : poser puis glisser la poutre avant de gagner au tactile', async
   await expect(board).toBeVisible();
 
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
-  await page.getByRole('button', { name: 'Poutre moyenne' }).tap();
+  await page.getByRole('button', { name: 'Poutre courte' }).tap();
   await tapWorldPoint(page, { x: 2.8, y: 1.95 });
   const closeProperties = page.getByRole('button', { name: 'Fermer les propriétés' });
   await expect(closeProperties).toBeVisible();
@@ -239,7 +244,7 @@ test('niveau 1 : échouer sans poutre puis résoudre par toucher', async ({ page
   await failedResult.getByRole('button', { name: 'Réinitialiser' }).tap();
 
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
-  await page.getByRole('button', { name: 'Poutre moyenne' }).tap();
+  await page.getByRole('button', { name: 'Poutre courte' }).tap();
   await tapWorldPoint(page, { x: 5.0, y: 2.15 });
   await page.getByRole('button', { name: 'Tester' }).tap();
 

@@ -30,7 +30,7 @@ test('affiche la coque Contrapt! sur un écran mobile, prête à jouer le niveau
   // Level 1 provides one short beam; free editing history stays unavailable.
   await expect(page.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
-  await expect(page.getByRole('button', { name: 'Poutre moyenne' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Poutre courte' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Annuler' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Rétablir' })).toBeDisabled();
 });

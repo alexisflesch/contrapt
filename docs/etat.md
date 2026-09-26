@@ -79,6 +79,9 @@ pendant le travail.
   plateau : sélection au toucher/clic, désélection sur le vide, déplacement direct
   en une seule entrée d’historique, poignée de rotation des poutres, annulation
   atomique sur `pointercancel` ou second doigt.
+- Tiroir du mode joueur limité aux familles présentes dans l’inventaire du
+  niveau ; il affiche la quantité restante et la taille de poutre. Une entrée à
+  quantité zéro reste visible et désactivée. L’atelier garde les onze familles.
 - Panneau « Propriétés » (rail droit en grand format, tiroir compact sur petit
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
   rotation libre des poutres et par quarts de tour du ventilateur, de la
@@ -165,10 +168,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après L9 : typecheck,
-lint, formatage, Knip, contenu (5 niveaux embarqués), 445 tests Vitest (35
-fichiers), build et 32 tests Playwright `mobile` (31 réussis, C3 ignoré car
-spécifique au projet desktop). Les six captures au repos sont conservées sous
+`pnpm check` exécutée avec succès le 26 septembre 2026 après le correctif du
+tiroir : typecheck, lint, formatage, Knip, contenu (5 niveaux embarqués),
+446 tests Vitest (35 fichiers), build et 32 tests Playwright `mobile` (31
+réussis, 1 ignoré car C3 est spécifique au projet desktop). Les six captures au
+repos sont conservées sous
 `test-results/levels/` pour les niveaux 1 à 3, en portrait et paysage.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
