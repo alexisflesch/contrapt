@@ -100,6 +100,33 @@ Les scènes 1 à 5 et 8 ne sont plus des mesures comparatives : elles sont écri
 une fois, contre Planck, et deviennent la suite de régression permanente. Ce
 recentrage divise par trois le coût de la première tranche.
 
+## Résultat de la porte — 26 septembre 2026 : franchie, Planck confirmé
+
+Scène 7 mesurée sur téléphone réel par l'auteur, avec la page `/bench` déployée
+sur GitHub Pages (scène dense de 31 corps dynamiques et 6 articulations,
+`src/app/bench/dense-bench-document.ts`) :
+
+| Appareil                              | Médiane / pas | 95e centile / pas | Pire cas | Plateau |
+| ------------------------------------- | ------------- | ----------------- | -------- | ------- |
+| Pixel 7                               | 0,6 ms        | 1,5 ms            | 20,6 ms  | fluide  |
+| Xiaomi d'environ 7 ans (bas de gamme) | 2,3 ms        | 5,2 ms            | 65,9 ms  | fluide  |
+
+Le 95e centile reste sous 8 ms par pas même sur l'appareil bas de gamme, et le
+jeu de la scène sur le plateau est fluide sur les deux. Les pires cas isolés
+(jusqu'à 66 ms) sont compatibles avec des pauses du ramasse-miettes ou de la
+compilation à chaud ; ils ne se traduisent pas par une saccade visible, et le
+rattrapage de la boucle est plafonné à 5 pas par image. La scène 6 (création,
+reset et destruction répétés) a été mesurée en Node sur les deux moteurs sans
+croissance mémoire anormale chez Planck.
+
+La décision n'est donc pas rouverte. Conformément aux conséquences ci-dessous,
+Rapier est retiré du dépôt ; les scènes 6 et 7 restent dans la suite de
+conformité, contre Planck seul.
+
+Observation à suivre : sur le Xiaomi, la page `/bench/play` a dû être rechargée
+une fois pour fonctionner. Cause non établie (chargement lent des sprites,
+premier accès à froid ?) ; consignée comme dette dans `etat.md`.
+
 ## Conséquences
 
 - Un seul moteur entre dans le graphe d'import de production : Planck. Rapier

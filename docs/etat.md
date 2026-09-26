@@ -90,8 +90,8 @@ pendant le travail.
   dynamiques et 6 articulations, mesure de la physique seule (médiane, 95e
   centile, pire cas sur 1 200 pas) et `/bench/play` qui joue la scène sur le
   plateau avec un compteur d'images par seconde. Sur le PC de développement :
-  95e centile 1,3 ms par pas, 60 images/s. La mesure sur téléphone reste à
-  faire.
+  95e centile 1,3 ms par pas, 60 images/s. Sur téléphone : voir ADR 0002
+  § Résultat de la porte (Planck confirmé).
 
 ### Contenu
 
@@ -130,9 +130,11 @@ pendant le travail.
 - **Deux boutons « Réinitialiser »** (libellé à remplacer par « Recommencer », voir
   `mobile-editor-interactions.md`) actifs simultanément après une simulation
   terminée (barre d’actions et bandeau de résultat).
-- **Conformité physique** : la porte de validation sur téléphone réel (scènes 6
-  et 7) n’est pas franchie ; la dépendance de développement Rapier reste donc
-  présente et l’ADR 0002 réouvrable.
+- **Rapier encore présent** : la porte de l’ADR 0002 est franchie (mesures sur
+  Pixel 7 et sur un Xiaomi bas de gamme consignées dans l’ADR), Rapier doit être
+  retiré des dépendances et des scènes 6 et 7.
+- **Premier affichage sur appareil lent** : sur un vieux Xiaomi, `/bench/play`
+  a dû être rechargée une fois avant de fonctionner. Cause non établie.
 - **Mode auteur incomplet** : l’atelier ne permet ni d’éditer scène, zones,
   inventaire ou objectif, ni d’enregistrer, exporter ou partager un niveau.
 - `format:check` ne couvre pas le Markdown.

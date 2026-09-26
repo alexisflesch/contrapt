@@ -152,9 +152,8 @@ Pour situer chaque tâche. Le jeu est fini quand :
    l’exporter en fichier, de l’importer et de le partager par lien (ADR 0011) ;
 4. l’application s’installe et se joue hors ligne (ADR 0012) ;
 5. la gate tourne en CI ;
-6. l’auteur a validé l’interface et la direction artistique, et a mesuré sur un
-   vrai téléphone d’entrée de gamme que la physique tient 60 images par seconde
-   dans une scène chargée (page de mesure L29, porte de l’ADR 0002).
+6. l’auteur a validé l’interface et la direction artistique. (Planck est validé
+   sur téléphone depuis le 26 septembre 2026, ADR 0002.)
 
 Tu portes la logique de 1 à 5. L’interface visible (§ 6) et le point 6
 reviennent à l’auteur ou à un autre agent.
@@ -199,6 +198,45 @@ en forme. Si Prettier modifie un bloc de code ou casse un lien, s’arrêter.
 Périmètre : `package.json`, fichiers `*.md` (reformatage seul).
 Sortie : `pnpm format:check` couvre les `.md` ; `pnpm check` vert. À partir de
 cette tâche, tout Markdown que tu écris doit passer `pnpm format:check`.
+
+#### L2b — Retirer Rapier ●●
+
+La porte de l’ADR 0002 est franchie (§ Résultat de la porte) : Rapier doit
+quitter le dépôt. Retirer `@dimforge/rapier2d-compat` de `package.json` (et du
+lockfile par `pnpm remove`), puis, dans `test/conformance/scene-6-lifecycle.ts`,
+`scene-7-density.ts` et leurs tests, supprimer les chemins Rapier en gardant
+**toutes** les assertions qui portent sur Planck. Les comparaisons
+Planck/Rapier disparaissent avec Rapier ; les nommer dans le journal. Mettre à
+jour `etat.md` (dette retirée).
+
+Périmètre : `package.json`, `pnpm-lock.yaml`, `test/conformance/`,
+`docs/etat.md`. Sortie : `grep -ri rapier src test package.json` ne renvoie
+rien ; `pnpm check` vert.
+
+#### L2c — Réessayer un sprite dont le chargement a échoué ●●
+
+**Constat.** Sur un vieux téléphone, `/bench/play` a dû être rechargée pour
+s’afficher (ADR 0002 § Résultat de la porte). Cause probable, lue dans le code :
+dans `src/presentation/sprite-loader.ts`, un asset dont le chargement échoue
+passe à l’état `failed` **définitivement** — toute demande suivante renvoie la
+même erreur sans réessayer — et `src/ui/BoardView.tsx` avale l’erreur de rendu
+(`.catch(() => undefined)`). Un seul échec réseau laisse donc le plateau vide
+jusqu’au rechargement.
+
+**Comportement attendu.** Un asset en échec est **retenté** à la demande
+suivante, au plus 3 tentatives au total par asset, puis reste en échec. Les
+tentatives ne sont pas automatiques en boucle : c’est le rendu suivant (nouvel
+appel de `loadForFamilies`) qui les déclenche. Aucun `setTimeout` ni horloge
+dans le chargeur.
+
+Tests rouges d’abord (`sprite-loader.test.ts`, avec l’adaptateur `fetch` factice
+déjà utilisé) : un échec puis un succès → l’asset devient `ready` au deuxième
+appel ; trois échecs → `failed` définitif, pas de quatrième `fetch` ; un asset en
+cours de chargement n’est jamais lancé deux fois.
+
+Périmètre : `src/presentation/sprite-loader.ts` et son test. Ne pas toucher à
+`BoardView.tsx` sauf si un rendu n’est jamais redemandé après l’échec — dans ce
+cas, s’arrêter et le décrire.
 
 #### L3 — La zone de construction contient l’objet entier ●●
 
@@ -734,8 +772,6 @@ commencer de ta propre initiative.
 
 ## 7. En attente de l’auteur — ne pas commencer
 
-- Mesure sur téléphone réel avec la page L29 ; retrait de Rapier une fois la
-  porte franchie.
 - Icônes de la PWA : l’auteur les dépose dans `art/` (L28 les exporte alors vers
   `public/`) ; validation du dessin des poutres.
 - Tout ce que les tâches ci-dessus marquent « bloqué ».
