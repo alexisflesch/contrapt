@@ -7,6 +7,7 @@ const levelTwoPath = '/levels/level-2-le-pont/play';
 const levelThreePath = '/levels/level-3-incliner/play';
 const levelFourPath = '/levels/level-4-moins-c-est-mieux/play';
 const levelFivePath = '/levels/level-5-le-detour/play';
+const levelSixPath = '/levels/level-6-la-bascule/play';
 
 interface WorldPoint {
   readonly x: number;
@@ -266,6 +267,23 @@ test('niveau 5 : détourner la balle avec deux poutres tournées au tactile', as
   await rotateAt({ x: 3.8, y: 3.5 }, -15);
   await page.getByRole('button', { name: 'Tester' }).tap();
 
+  const result = page.getByRole('region', { name: 'Résultat du niveau' });
+  await expect(result).toBeVisible({ timeout: 15_000 });
+  await expect(result.getByText('Victoire')).toBeVisible();
+});
+
+test('niveau 6 : lancer l’observation sans poser d’objet et voir la balle gagner', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'mobile',
+    'La résolution sans action est vérifiée sur mobile.',
+  );
+  await page.goto(levelSixPath);
+
+  await expect(page.getByText('Niveau 6 · La bascule')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Objets disponibles' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Tester' }).tap();
   const result = page.getByRole('region', { name: 'Résultat du niveau' });
   await expect(result).toBeVisible({ timeout: 15_000 });
   await expect(result.getByText('Victoire')).toBeVisible();

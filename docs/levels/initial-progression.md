@@ -24,10 +24,11 @@ constantes physiques.
   directement dans le panier (décision de l’auteur, 26 septembre 2026). Le
   validateur de contenu l’impose aux niveaux de campagne ; l’atelier et les
   niveaux créés par un auteur n’y sont pas soumis.
-- **Chaque niveau demande au moins une action du joueur**, sauf le niveau 6 qui
-  présente la bascule. Lancer la simulation sans rien faire doit échouer : le
-  joueur apprend dès le niveau 1 que l’échec est normal et que « Recommencer »
-  existe.
+- **Chaque niveau demande au moins une action de construction**, sauf le niveau 6
+  qui présente la bascule. Dans les autres niveaux, lancer la simulation sans
+  rien poser doit échouer : le joueur apprend dès le niveau 1 que l’échec est
+  normal et que « Recommencer » existe. Le niveau 6 se résout tel quel après que
+  le joueur a lancé la simulation.
 - Une solution ne repose jamais sur un rebond de précision, un tunneling ou un
   réglage au pixel près : chaque solution de référence est accompagnée d’une
   **fenêtre de robustesse** mesurée (grille de positions qui réussissent toutes).

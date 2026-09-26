@@ -1213,3 +1213,35 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   et `test-results/levels/level-5-le-detour-844x390.png` (non versionnées).
 - Pour l’auteur : deux zones exigent deux emplacements distincts. Le follow-up
   U13 de mise en évidence reste différé comme demandé.
+
+### L12 — Niveau 6 « La bascule » — fait — `feat(content): ajoute le niveau 6 « La bascule » (L12)`
+
+- Tests ajoutés : `level-6-la-bascule.test.ts` — victoire sans poser d’objet,
+  inventaire vide, 9 combinaisons mesurées, rotation de la planche avant la
+  réussite, résultat en 120 pas et reset exact du snapshot (dont vitesse
+  angulaire).
+- Échec initial constaté : les trois tests rouges échouaient avec
+  `Le niveau « La bascule » est absent.`. Le premier parcours E2E attendait une
+  victoire sans lancer « Tester » ; après correction, il vérifie le lancement
+  sans placement puis la victoire. Le tiroir n’est pas rendu lorsque l’inventaire
+  est vide.
+- Tests existants réécrits : `App.test.tsx` et
+  `embedded-levels.test.ts` incluent le sixième niveau dans la campagne.
+- Fichiers touchés hors périmètre : `docs/etat.md` et ce journal (obligatoires).
+  La règle commune de `docs/levels/initial-progression.md` a été précisée :
+  seule la construction est omise pour L6, le joueur lance toujours la simulation.
+- Écarts avec la tâche : aucun ; aucune action de construction ni aucun objet
+  d’inventaire n’est requis.
+- Mesures qui ne se reproduisent pas : aucune. Les neuf combinaisons de balle
+  (`x ∈ {3,9 ; 4,2 ; 4,5}`) et panier (`x ∈ {5,2 ; 5,6 ; 6,0}`) gagnent ; la
+  planche a tourné avant la victoire et revient exactement à son snapshot initial.
+- Contradictions rencontrées : le principe commun disait « lancer la simulation
+  sans rien faire doit échouer » alors que L12 est une observation qui se résout
+  sans construction. Le principe a été clarifié pour exempter explicitement le
+  niveau 6.
+- Vérification finale : `pnpm check` passe — contenu (8 niveaux), 469 tests
+  Vitest (38 fichiers), build et 34 tests Playwright mobiles réussis ; C3 est
+  ignoré dans ce projet car réservé au projet desktop.
+- Captures au repos à inspecter : `test-results/levels/level-6-la-bascule-390x844.png`
+  et `test-results/levels/level-6-la-bascule-844x390.png` (non versionnées).
+- Pour l’auteur : aucune question ; le niveau se lance sans action de pose.

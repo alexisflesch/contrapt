@@ -143,6 +143,11 @@ pendant le travail.
   contre-exemples, le déterminisme et le reset
   (`src/content/levels/level-5-le-detour.test.ts`). Le parcours mobile tourne les
   deux poutres et gagne sur `/levels/level-5-le-detour/play`.
+- Niveau 6 « La bascule » se résout après le lancement de la simulation, sans
+  inventaire ni zone de pose. Sa régression vérifie les neuf positions mesurées,
+  le mouvement de la planche avant la victoire, son angle final et le reset exact
+  (`src/content/levels/level-6-la-bascule.test.ts`). Le parcours mobile lance
+  l’observation sans poser d’objet sur `/levels/level-6-la-bascule/play`.
 - `pnpm content:check` valide les JSON embarqués.
 
 ## Dettes et limites explicites
@@ -162,8 +167,9 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Cinq niveaux de campagne**, « Prolonger la pente », « Le pont »,
-  « Incliner », « Moins, c’est mieux » et « Le détour » ; les 9 autres niveaux de la campagne
+- **Six niveaux de campagne**, « Prolonger la pente », « Le pont »,
+  « Incliner », « Moins, c’est mieux », « Le détour » et « La bascule » ; les 8
+  autres niveaux de la campagne
   de 14 sont spécifiés dans
   `levels/initial-progression.md`. Aucun bouton « Niveau suivant ».
 - **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
@@ -187,11 +193,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 5 :
-typecheck, lint, formatage, Knip, contenu (7 niveaux embarqués), 466 tests Vitest
-(37 fichiers), build et 34 tests Playwright `mobile` (33 réussis, 1 ignoré car C3
+`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 6 :
+typecheck, lint, formatage, Knip, contenu (8 niveaux embarqués), 469 tests Vitest
+(38 fichiers), build et 35 tests Playwright `mobile` (34 réussis, 1 ignoré car C3
 est spécifique au projet desktop). Les captures au repos sont conservées sous
-`test-results/levels/` pour les niveaux 1 à 5, en portrait et paysage.
+`test-results/levels/` pour les niveaux 1 à 6, en portrait et paysage.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

@@ -4,6 +4,7 @@ import levelTwo from './levels/level-2-le-pont.json';
 import levelThree from './levels/level-3-incliner.json';
 import levelFour from './levels/level-4-moins-c-est-mieux.json';
 import levelFive from './levels/level-5-le-detour.json';
+import levelSix from './levels/level-6-la-bascule.json';
 import workshop from './levels/workshop.json';
 
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
@@ -55,6 +56,7 @@ export const campaignChapters = createCampaign([
       parseEmbeddedLevel(levelThree),
       parseEmbeddedLevel(levelFour),
       parseEmbeddedLevel(levelFive),
+      parseEmbeddedLevel(levelSix),
     ],
   },
   { id: 'mecanismes', title: 'Mécanismes', levels: [] },
