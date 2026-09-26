@@ -443,6 +443,7 @@ test('niveau 11 : poser la masse à gauche du levier pour gagner au tactile', as
   await expect(drawer.getByRole('button', { name: 'Balle' })).toHaveCount(0);
   await drawer.getByRole('button', { name: 'Masse, quantité : 1' }).tap();
   await tapWorldPoint(page, { x: 6.0, y: 0.8 });
+  await openPropertiesIfCompact(page);
   await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
   await page.getByRole('button', { name: 'Tester' }).tap();
 

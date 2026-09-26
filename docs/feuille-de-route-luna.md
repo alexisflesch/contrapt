@@ -1483,7 +1483,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : la poutre courte tourne de +30° par la poignée tactile ; la zone
   de pose n’est pas mise en évidence, conformément au follow-up U13 différé.
 
-### L18b — Niveau 13 « Deux tapis » — bloqué — commit de constat L18b
+### L18b — Niveau 13 « Deux tapis » — bloqué — `bae0190 docs(content): consigne le blocage du niveau 13 (L18b)`
 
 - Régression L13 : aucun test de niveau 13 ; l’arrêt intervient pendant la
   conception, avant JSON et régression.
@@ -1517,3 +1517,52 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   1 ignoré car C3 est spécifique au projet desktop).
 - Pour l’auteur : une nouvelle idée de scène est nécessaire pour L13 ; les trois
   géométries testées ne sont pas des références à reprendre.
+
+### L18c — Niveau 14 « Grand final » — bloqué — commit de constat L18c
+
+- Régression L14 : aucun test de niveau 14 ; après trois esquisses, aucune
+  géométrie n’atteint la marge de robustesse demandée. Aucun JSON, test E2E ou
+  capture de niveau n’a été créé.
+- Échec initial constaté : dans la première esquisse, la balle quitte la scène
+  après le démarrage du convoyeur ou reste bloquée près de la bascule. Dans la
+  deuxième, la bascule placée en (3,8 ; 4,1) et la poutre en (6,5 ; 5,8), +20°,
+  laissent la balle bloquée en (5,95 ; 5,14) après 1 200 pas.
+- Troisième esquisse mesurée : scène 16 × 9 ; balle (1,9 ; 1,6), convoyeur arrêté
+  (2,5 ; 2,2), levier central (13,4 ; 3,2) relié au convoyeur, bascule fixe
+  (7,5 ; 4,6), panier (14,2 ; 8,0). La référence place une masse en
+  (12,9 ; 0,8), une poutre longue en (5,2 ; 3,2) tournée à +15°, puis une
+  deuxième poutre longue en (10,65 ; 6,3) tournée à +15°. Elle gagne en 449 pas.
+- Fenêtres mesurées : avec le reste de la référence fixé, la masse à y = 0,8
+  gagne en x = 12,85, 12,90, 13,00 et 13,15 sur la grille x = 12,2..13,6 au pas
+  de 0,05 ; une grille x = 12,7..13,2 au pas de 0,05 et y = 0,8..1,8 au pas de
+  0,1 confirme que ces succès sont isolés. La plus grande bande continue mesurée
+  ne fait que 0,05 en x. La poutre d’approche a deux bandes gagnantes, x = 4,4..4,9
+  et x = 5,35..6,0, à y = 3,2 et +15°. La poutre de sortie gagne de x = 10,2 à
+  10,85 à y = 6,3 et +15°.
+- Tests de moindre cardinalité aux poses de référence : masse seule, deux poutres
+  seules, masse avec seulement la poutre d’approche et masse avec seulement la
+  poutre de sortie échouent. La recherche complète de minimalité n’a pas été
+  poursuivie, car la masse n’atteint pas la marge minimale après la troisième
+  esquisse.
+- Tests E2E préexistants modifiés : le parcours mobile L11 ouvre l’inspecteur
+  compact s’il est replié avant sa fermeture. La capture montrait le bouton
+  `Ouvrir les propriétés` ; le parcours ciblé passe après correction. Aucune
+  assertion n’a été retirée ou affaiblie.
+- Fichiers touchés : `docs/etat.md`, ce journal,
+  `docs/levels/initial-progression.md` pour consigner les mesures, et
+  `e2e/levels.spec.ts` pour stabiliser le parcours tactile L11 ; aucun code de
+  campagne n’a été modifié.
+- Écarts avec la tâche : L14 n’est pas jouable ; régression, recherche complète de
+  minimalité, parcours tactile et captures restent à faire après une nouvelle
+  proposition de scène.
+- Mesures qui ne se reproduisent pas : les 449 pas de la référence sont
+  déterministes, mais la masse n’a aucune bande gagnante continue de 0,3 unité.
+- Contradictions rencontrées : aucune ; l’arrêt après trois esquisses est la règle
+  de L18.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 520
+  tests Vitest (44 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
+  1 ignoré car C3 est spécifique au projet desktop). La gate précédente avait
+  expiré sur L11 faute d’ouvrir l’inspecteur compact ; le parcours ciblé passe
+  après correction ; la gate complète passe également après correction.
+- Pour l’auteur : une nouvelle idée de scène est nécessaire ; ne pas reprendre
+  cette géométrie comme référence validée.

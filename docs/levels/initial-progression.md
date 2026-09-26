@@ -559,6 +559,20 @@ esquisses ; ne pas reprendre ces coordonnées comme une solution validée.
   Au moins une bascule, un convoyeur et un levier. Solution minimale d’au moins
   3 objets, inventaire en surplus.
 
+**Mesures L18c — aucun plan retenu.** Trois esquisses n’ont pas donné une fenêtre
+robuste pour chaque objet posé : (1) le convoyeur fait sortir la balle de scène
+ou celle-ci reste bloquée près d’une bascule fixe ; (2) une bascule posée en
+(3,8 ; 4,1) et une poutre +20° en (6,5 ; 5,8) laissent la balle en (5,95 ; 5,14)
+après 1 200 pas. (3) La scène 16 × 9 avec balle en (1,9 ; 1,6), convoyeur en
+(2,5 ; 2,2), levier en (13,4 ; 3,2), bascule fixe en (7,5 ; 4,6) et panier en
+(14,2 ; 8,0) gagne en 449 pas avec une masse en (12,9 ; 0,8), une poutre longue
+en (5,2 ; 3,2) tournée à +15°, et une seconde poutre longue en (10,65 ; 6,3)
+tournée à +15°. Toutefois, la masse ne gagne qu’en x = 12,85, 12,90, 13,00 et
+13,15 à y = 0,8 sur la grille au pas de 0,05 ; la plus grande bande continue ne
+fait que 0,05. Les poutres ont des bandes gagnantes de 0,5 et 0,65 (approche),
+puis 0,65 (sortie), mais la référence échoue donc au critère L18c. L18c s’arrête
+après trois esquisses ; ne pas reprendre ces coordonnées comme solution validée.
+
 Pour chacun : régression complète (règles 1 à 7), minimalité établie par
 recherche sur grille, et deux captures pour l’auteur.
 

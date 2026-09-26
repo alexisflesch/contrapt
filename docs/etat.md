@@ -207,9 +207,9 @@ pendant le travail.
 - **Douze niveaux de campagne**, « Prolonger la pente », « Le pont »,
   « Incliner », « Moins, c’est mieux », « Le détour », « La bascule »,
   « Placer la bascule », « Poutre et bascule », « Le tapis », « Le butoir »,
-  « L’interrupteur » et « Le bon ordre ». Le niveau 13 « Deux tapis » est bloqué
-  après trois esquisses sans fenêtre de robustesse de 0,3 unité ; le niveau 14
-  reste à concevoir. Aucun bouton « Niveau suivant ».
+  « L’interrupteur » et « Le bon ordre ». Les niveaux 13 « Deux tapis » et 14
+  « Grand final » sont bloqués après trois esquisses sans fenêtre de robustesse de
+  0,3 unité. Aucun bouton « Niveau suivant ».
 - **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
   (ADR 0010, 0011, 0012), non implémentés. Les métadonnées de défi existent au
   format v2 et sont utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité
@@ -233,7 +233,7 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après le constat L18b : typecheck, lint,
+`pnpm check` passe le 27 septembre 2026 après le constat L18c : typecheck, lint,
 formatage, Knip, contenu (14 niveaux embarqués), 520 tests Vitest (44 fichiers), build et
 42 tests Playwright `mobile` (41 réussis, 1 ignoré car C3 est spécifique au projet
 desktop). Le parcours mobile L17b ouvre maintenant l’inspecteur compact avant de
