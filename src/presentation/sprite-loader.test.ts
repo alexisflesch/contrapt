@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { levelDocumentSchema } from '../domain/level-document';
 import {
+  publicAssetUrl,
   createImageBitmapSpriteDecoder,
   createSpriteLoader,
   spriteAssetPath,
@@ -311,5 +312,19 @@ describe('sprite loader contract', () => {
     expect(decoded.width).toBe(bitmap.width);
     expect(decoded.height).toBe(bitmap.height);
     expect(decoded.source).toBe(blob);
+  });
+});
+
+describe('chemins des assets publics', () => {
+  it('préfixe le chemin de base du déploiement, avec ou sans barre finale', () => {
+    expect(publicAssetUrl('/assets/sprites/ball-base@2x.png', '/')).toBe(
+      '/assets/sprites/ball-base@2x.png',
+    );
+    expect(publicAssetUrl('/assets/sprites/ball-base@2x.png', '/contrapt/')).toBe(
+      '/contrapt/assets/sprites/ball-base@2x.png',
+    );
+    expect(publicAssetUrl('/assets/sprites/thumbs/ball.png', '/contrapt')).toBe(
+      '/contrapt/assets/sprites/thumbs/ball.png',
+    );
   });
 });

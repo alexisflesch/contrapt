@@ -85,6 +85,20 @@ bibliothèque.
 - `docs/decisions/0003-project-bootstrap.md` § Ce qui reste non décidé est mis
   à jour pour retirer le routeur de la liste ouverte et renvoyer ici.
 
+## Amendement du 26 septembre 2026
+
+- Routes ajoutées, absentes des menus : `/bench` et `/bench/play`, la page de
+  mesure de performance de la porte de l'ADR 0002 ; `/shared` est prévue par
+  l'ADR 0011.
+- **Chemin de base.** L'application peut être servie sous un sous-chemin
+  (GitHub Pages : `/contrapt/`). Le build lit `CONTRAPT_BASE_PATH` (défaut `/`) ;
+  Vite préfixe alors JS, CSS et `url()` des feuilles de style, `BrowserRouter`
+  reçoit `basename={import.meta.env.BASE_URL}`, et les chemins d'assets publics
+  passent par `publicAssetUrl` (`src/presentation/sprite-loader.ts`).
+- **Hébergement.** GitHub Pages, par `.github/workflows/deploy-pages.yml`, avec
+  `404.html` copié d'`index.html` comme repli des routes profondes. Cela tranche
+  le repli 404 laissé ouvert ci-dessous.
+
 ## Ce qui reste non décidé
 
 - Le contenu réel de `/settings` : cette ADR pose seulement la route et une

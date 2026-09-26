@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { embeddedLevels } from '../content/embedded-levels';
+import { BenchPage } from './BenchPage';
+import { BenchPlayPage } from './BenchPlayPage';
 import { EditorPage } from './EditorPage';
 import { LevelsPage } from './LevelsPage';
 import { PlayLevelPage } from './PlayLevelPage';
@@ -18,7 +20,7 @@ const defaultLevelId = embeddedLevels[0]?.id ?? null;
 /** Route declarations only (ADR 0008); each route's screen lives in its own page module. */
 export function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route
           path="/"
@@ -33,6 +35,8 @@ export function App() {
         <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
         <Route path="/editor" element={<EditorPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/bench" element={<BenchPage />} />
+        <Route path="/bench/play" element={<BenchPlayPage />} />
         <Route path="*" element={<Navigate to="/levels" replace />} />
       </Routes>
     </BrowserRouter>

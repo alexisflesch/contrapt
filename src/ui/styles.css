@@ -1683,3 +1683,18 @@ select:focus-visible {
     animation: none !important;
   }
 }
+
+/* Page de mesure (/bench/play) : compteur d’images par seconde, outil de diagnostic. */
+.bench-frame-meter {
+  position: fixed;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 50;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--night-900);
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}

@@ -80,6 +80,19 @@ pendant le travail.
 - Atelier libre `src/content/levels/workshop.json` (scène 16 × 9, inventaire de
   99 par famille, contexte auteur).
 
+### Déploiement et mesure
+
+- Déploiement GitHub Pages par `.github/workflows/deploy-pages.yml` (push sur
+  `main` ou lancement manuel), sous le sous-chemin `/contrapt/` (ADR 0008,
+  amendement). Build vérifié localement sous ce sous-chemin : routes profondes,
+  sprites et fonds chargés sans erreur.
+- Page de mesure `/bench` (porte de l'ADR 0002) : scène dense de 31 corps
+  dynamiques et 6 articulations, mesure de la physique seule (médiane, 95e
+  centile, pire cas sur 1 200 pas) et `/bench/play` qui joue la scène sur le
+  plateau avec un compteur d'images par seconde. Sur le PC de développement :
+  95e centile 1,3 ms par pas, 60 images/s. La mesure sur téléphone reste à
+  faire.
+
 ### Contenu
 
 - Niveau 1 « Laisser tomber » jouable de bout en bout, avec test de régression
@@ -127,7 +140,7 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 sur `7ebd85b` :
-typecheck, lint, formatage, Knip, contenu, 333 tests Vitest (26 fichiers),
+`pnpm check` exécutée avec succès le 26 septembre 2026 (page de mesure et déploiement) :
+typecheck, lint, formatage, Knip, contenu, 343 tests Vitest (29 fichiers),
 build, 29 parcours Playwright `mobile` (1 ignoré, réservé au desktop).
 `playwright test --project=desktop` : 29 réussis, 1 échec (voir dettes).

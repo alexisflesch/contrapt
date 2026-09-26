@@ -23,9 +23,19 @@ type SpriteLoadState = 'idle' | 'loading' | 'ready' | 'failed';
 export const spriteAssetsForFamily = (family: SpriteFamily): readonly SpriteAsset[] =>
   spriteAssetsByFamily[family];
 
+/**
+ * A `public/` path under the deployment's base path (`/` locally, `/contrapt/`
+ * on GitHub Pages). Asset paths stay absolute from the site root on purpose:
+ * a relative path would break under nested routes (ADR 0008).
+ */
+export const publicAssetUrl = (path: string, basePath: string): string =>
+  `${basePath.replace(/\/$/, '')}${path}`;
+
+const deploymentBasePath = import.meta.env.BASE_URL;
+
 /** One pre-composed picture per family, for catalogue cards (built by `art/build-sprites.py`). */
 export const spriteThumbnailPath = (family: SpriteFamily): string =>
-  `/assets/sprites/thumbs/${family}.png`;
+  publicAssetUrl(`/assets/sprites/thumbs/${family}.png`, deploymentBasePath);
 
 export type DecodedSprite = Readonly<{
   readonly width: number;
@@ -86,7 +96,7 @@ const createRecords = (): ReadonlyMap<SpriteAsset, SpriteRecord> =>
   );
 
 export const spriteAssetPath = (asset: SpriteAsset, scale: SpriteScale): string =>
-  `/assets/sprites/${asset}@${String(scale)}x.png`;
+  publicAssetUrl(`/assets/sprites/${asset}@${String(scale)}x.png`, deploymentBasePath);
 
 const toError = (reason: unknown): Error =>
   reason instanceof Error ? reason : new Error(String(reason));

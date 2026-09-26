@@ -663,7 +663,11 @@ Test E2E : premier chargement, `context.setOffline(true)`, rechargement, le
 niveau 1 s’affiche. Mettre à jour ADR 0003 si la politique de dépendances
 l’exige.
 
-#### L29 — Page de mesure de performance pour téléphone ●●
+#### L29 — Page de mesure de performance pour téléphone — **fait** (26 septembre 2026, hors journal)
+
+Livrée avant la reprise : `src/app/BenchPage.tsx`, `src/app/BenchPlayPage.tsx`,
+`src/app/bench/`. Ne rien refaire ; la description ci-dessous reste pour
+mémoire.
 
 **Pourquoi.** L’ADR 0002 a choisi Planck avant mesure. Sa « porte de validation »
 dit : si un téléphone d’entrée de gamme ne tient pas 60 images par seconde dans

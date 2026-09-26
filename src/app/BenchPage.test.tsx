@@ -1,0 +1,54 @@
+// @vitest-environment jsdom
+
+import '@testing-library/jest-dom/vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import { App } from './App';
+import { BenchPage } from './BenchPage';
+
+afterEach(cleanup);
+
+describe('page de mesure de performance (/bench, ADR 0002)', () => {
+  it('mesure chaque pas de physique avec l’horloge injectée et rend un verdict lisible', () => {
+    let clock = 0;
+    const now = (): number => {
+      clock += 0.5;
+      return clock;
+    };
+    render(
+      <MemoryRouter initialEntries={['/bench']}>
+        <BenchPage now={now} />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mesurer la physique' }));
+
+    const result = screen.getByRole('region', { name: 'Résultat de la mesure' });
+    expect(within(result).getByText(/1200 pas/)).toBeVisible();
+    expect(within(result).getByText(/95e centile : 0,50 ms/)).toBeVisible();
+    expect(within(result).getByText('Physique : OK')).toBeVisible();
+  });
+
+  it('propose de jouer la scène dense sur le vrai plateau', () => {
+    render(
+      <MemoryRouter initialEntries={['/bench']}>
+        <BenchPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Jouer la scène sur le plateau' })).toBeVisible();
+  });
+
+  it('joue la scène dense sur le plateau partagé avec un compteur d’images par seconde', () => {
+    window.history.replaceState(null, '', '/bench/play');
+    render(<App />);
+
+    expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+    expect(screen.getByRole('status', { name: 'Images par seconde' })).toHaveTextContent(
+      /Images\/s/,
+    );
+    expect(screen.getByRole('button', { name: 'Tester' })).toBeVisible();
+  });
+});
