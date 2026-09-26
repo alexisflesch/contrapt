@@ -822,3 +822,22 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Contradictions rencontrées : aucune.
 - Non vérifié : aucune zone liée à L1.
 - Pour l’auteur : aucune capture demandée pour cette correction de test.
+
+### L2 — Couvrir le Markdown par `format:check` — bloqué — `docs(roadmap): consigne le blocage du format Markdown (L2)`
+
+- Tests ajoutés : aucun (tâche d’outillage documentaire).
+- Échec initial constaté : `pnpm format` a ajouté des lignes vides à l’intérieur
+  du bloc fenced `markdown` de `.codex/skills/orchestrate/references/protocol.md`,
+  par exemple après `## Objectif` et `## Résultat` ; L2 exige l’arrêt dans ce cas.
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : aucun ; les changements automatiques de
+  formatage ont tous été restaurés.
+- Écarts avec la tâche : les globs Prettier restent inchangés ; L2 n’est pas
+  terminée.
+- Mesures qui ne se reproduisent pas : aucune.
+- Vérification finale : `pnpm check` passe (393 tests Vitest ; 29 tests mobiles,
+  avec C3 ignoré car propre au projet desktop).
+- Contradictions rencontrées : aucune.
+- Non vérifié : aucun lien n’a changé dans le diff inspecté ; `format:check` et la
+  gate globale ne couvrent toujours pas Markdown.
+- Pour l’auteur : L2 est bloquée par sa condition d’arrêt explicite.
