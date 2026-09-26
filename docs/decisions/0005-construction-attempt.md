@@ -38,6 +38,23 @@ sa transformée appartient à au moins un rectangle, bornes incluses. Vérifier 
 géométrie complète attend les dimensions provenant du futur catalogue physique ;
 elles ne sont pas disponibles dans le contrat persistant actuel.
 
+## Amendement du 26 septembre 2026
+
+Cet amendement remplace la règle précédente du centre seul. En contexte `player`,
+la pose, le déplacement et la rotation sont acceptés uniquement si les quatre
+coins de l’empreinte complète transformée appartiennent à une même zone de
+construction. Les bords sont inclus. Un objet ne peut pas répartir son empreinte
+entre deux zones adjacentes. Le calcul utilise une tolérance limitée à l’erreur
+numérique des coordonnées flottantes pour préserver l’inclusion aux bords après
+rotation. Le contexte `author` reste sans contrainte de zone.
+
+Les empreintes locales sont celles de `src/domain/family-geometry.ts` : balle
+(bornes de son cercle, inchangées par la rotation), panier, poutre selon sa taille,
+bascule (planche et pied, depuis le pivot), masse, levier selon sa position
+initiale, convoyeur, bouton, ventilateur (corps), barrière selon son état ouvert
+ou fermé, et tremplin. Pour les formes rectangulaires, la rotation s’applique
+autour de l’origine du placement avant le contrôle des quatre coins.
+
 ## Conséquences
 
 - `LevelDocument` reste partageable sans historique d'une partie particulière ;

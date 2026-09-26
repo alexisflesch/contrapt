@@ -37,8 +37,9 @@ pendant le travail.
   regroupement des prévisualisations).
 - `ConstructionAttempt` : placement depuis l’inventaire, déplacement, rotation,
   propriétés, retrait, relier/délier un fil, pour les contextes joueur et auteur,
-  avec permissions, zone de construction (centre seulement, voir dettes),
-  protection de l’objectif et provenance éphémère (ADR 0005).
+  avec permissions, zone de construction (empreinte entière contenue dans une
+  même zone en contexte joueur), protection de l’objectif et provenance éphémère
+  (ADR 0005).
 - `EditorSession` : tentative, historique, sélection, manipulation groupée,
   phases construction/simulation/pause/résultat, reset exact.
 - Évaluateurs purs : objectif panier (durée de maintien injectée) et échec de
@@ -116,9 +117,6 @@ pendant le travail.
 
 ## Dettes et limites explicites
 
-- **Test de zone au centre seulement.** En contexte joueur, seul le centre du
-  placement doit être dans une zone de construction ; l’empreinte entière n’est
-  pas vérifiée alors que `family-geometry.ts` fournit désormais les dimensions.
 - **Aperçu de placement en CSS.** L’overlay DOM `.placement-preview`
   (`src/ui/BoardView.tsx`) n’a ni la forme, ni la taille, ni la rotation de
   l’objet ; le fantôme dessiné par le renderer (C1) reste à faire.
@@ -154,8 +152,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après L2c : typecheck,
-lint, formatage, Knip, contenu, 394 tests Vitest (30 fichiers), build et 30
+`pnpm check` exécutée avec succès le 26 septembre 2026 après L3 : typecheck,
+lint, formatage, Knip, contenu, 406 tests Vitest (31 fichiers), build et 30
 tests Playwright `mobile` (29 réussis, C3 ignoré car spécifique au projet desktop).
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de

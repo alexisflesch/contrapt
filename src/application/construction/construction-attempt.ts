@@ -1,4 +1,5 @@
 import { initialObjectFamilyRegistry } from '../../domain/object-family-registry';
+import { placementFootprintCorners } from '../../domain/placement-footprint';
 import { levelDocumentSchema, rotationMode, type LevelDocument } from '../../domain/level-document';
 import type { Command, CommandState } from '../history';
 
@@ -132,14 +133,21 @@ const acceptCandidate = (
   return { status: 'accepted', state: freezeAttempt(validation.data, provenance) };
 };
 
-/**
- * V1 checks the placement centre only. Full-shape containment belongs to the
- * future physical catalogue because object dimensions do not exist in v1 yet.
- */
-const isCentreInsideBuildZone = (document: LevelDocument, position: WorldPosition): boolean =>
-  document.buildZones.some(
-    ({ min, max }) =>
-      position.x >= min.x && position.x <= max.x && position.y >= min.y && position.y <= max.y,
+const coordinateTolerance = (left: number, right: number): number =>
+  Number.EPSILON * 16 * Math.max(1, Math.abs(left), Math.abs(right));
+
+const isCoordinateInside = (value: number, min: number, max: number): boolean =>
+  value + coordinateTolerance(value, min) >= min && value - coordinateTolerance(value, max) <= max;
+
+/** A full object footprint must fit in one build zone; shared edges are inclusive. */
+const isFootprintInsideBuildZone = (
+  document: LevelDocument,
+  corners: ReturnType<typeof placementFootprintCorners>,
+): boolean =>
+  document.buildZones.some(({ min, max }) =>
+    corners.every(
+      ({ x, y }) => isCoordinateInside(x, min.x, max.x) && isCoordinateInside(y, min.y, max.y),
+    ),
   );
 
 /** Properties are flat objects of strings, so comparing their entries is exact. */
@@ -173,7 +181,10 @@ export const placeFromInventory = (input: PlaceFromInventoryInput): Construction
     }
     if (
       input.context === 'player' &&
-      !isCentreInsideBuildZone(state.document, input.transform.position)
+      !isFootprintInsideBuildZone(
+        state.document,
+        placementFootprintCorners(inventoryEntry, input.transform),
+      )
     ) {
       return reject('outside-build-zone');
     }
@@ -210,7 +221,16 @@ export const movePlacement = (input: MovePlacementInput): ConstructionCommand =>
     if (input.context === 'player' && !placement.permissions.move) {
       return reject('move-not-permitted');
     }
-    if (input.context === 'player' && !isCentreInsideBuildZone(state.document, input.position)) {
+    if (
+      input.context === 'player' &&
+      !isFootprintInsideBuildZone(
+        state.document,
+        placementFootprintCorners(placement, {
+          ...placement.transform,
+          position: input.position,
+        }),
+      )
+    ) {
       return reject('outside-build-zone');
     }
     if (
@@ -245,7 +265,13 @@ export const rotatePlacement = (input: RotatePlacementInput): ConstructionComman
     }
     if (
       input.context === 'player' &&
-      !isCentreInsideBuildZone(state.document, placement.transform.position)
+      !isFootprintInsideBuildZone(
+        state.document,
+        placementFootprintCorners(placement, {
+          ...placement.transform,
+          rotation: input.rotation,
+        }),
+      )
     ) {
       return reject('outside-build-zone');
     }

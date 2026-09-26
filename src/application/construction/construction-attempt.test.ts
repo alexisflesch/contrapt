@@ -179,7 +179,7 @@ describe('ConstructionAttempt', () => {
     expect(attempt).toEqual(before);
   });
 
-  it('enforces build zones for the player using the placement centre', () => {
+  it('rejects a player placement whose full footprint is outside build zones', () => {
     const attempt = createConstructionAttempt(createLevel());
 
     const result = placeFromInventory({
@@ -192,6 +192,109 @@ describe('ConstructionAttempt', () => {
     expectRejected(result, 'outside-build-zone');
     expect(attempt.document.inventory[0]?.quantity).toBe(1);
     expect(attempt.provenance).toEqual({});
+  });
+
+  it('rejects a player placement when the beam end leaves the zone although its centre is inside', () => {
+    const attempt = createConstructionAttempt(createLevel());
+    const before = structuredClone(attempt);
+
+    const result = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'short-beams',
+      placementId: 'edge-beam',
+      transform: { position: { x: 9.5, y: 5 }, rotation: 0 },
+    }).execute(attempt);
+
+    expectRejected(result, 'outside-build-zone');
+    expect(attempt).toEqual(before);
+  });
+
+  it('accepts a player placement whose full footprint reaches the inclusive zone boundary', () => {
+    const attempt = createConstructionAttempt(createLevel());
+
+    const result = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'short-beams',
+      placementId: 'edge-beam',
+      transform: { position: { x: 9, y: 5 }, rotation: 0 },
+    }).execute(attempt);
+
+    expect(result.status).toBe('accepted');
+    if (result.status !== 'accepted') return;
+    expect(result.state.document.objects.at(-1)?.transform.position).toEqual({ x: 9, y: 5 });
+    expect(result.state.document.inventory[0]?.quantity).toBe(0);
+  });
+
+  it('accepts a rotated player footprint at an inclusive boundary despite rounding error', () => {
+    const attempt = createConstructionAttempt(createLevel());
+
+    const result = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'short-beams',
+      placementId: 'rotated-edge-beam',
+      transform: { position: { x: 0.125, y: 5 }, rotation: Math.PI / 2 },
+    }).execute(attempt);
+
+    expect(result.status).toBe('accepted');
+  });
+
+  it('rejects a player move when the centre stays in-zone but the beam footprint leaves it', () => {
+    const attempt = createConstructionAttempt(createLevel());
+    const placed = placeBeam().execute(attempt);
+    if (placed.status !== 'accepted') throw new Error('placement should be accepted');
+    const before = structuredClone(placed.state);
+
+    const moved = movePlacement({
+      context: 'player',
+      placementId: 'placed-beam',
+      position: { x: 9.5, y: 5 },
+    }).execute(placed.state);
+
+    expect(moved).toEqual({ status: 'rejected', reason: 'outside-build-zone' });
+    expect(placed.state).toEqual(before);
+  });
+
+  it('rejects a player rotation that moves a corner outside the zone without changing the document', () => {
+    const attempt = createConstructionAttempt(createLevel());
+    const placed = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'short-beams',
+      placementId: 'edge-beam',
+      transform: { position: { x: 5, y: 9.5 }, rotation: 0 },
+    }).execute(attempt);
+    if (placed.status !== 'accepted') throw new Error('placement should be accepted');
+    const before = structuredClone(placed.state);
+
+    const rotated = rotatePlacement({
+      context: 'player',
+      placementId: 'edge-beam',
+      rotation: Math.PI / 4,
+    }).execute(placed.state);
+
+    expect(rotated).toEqual({ status: 'rejected', reason: 'outside-build-zone' });
+    expect(placed.state).toEqual(before);
+    expect(attempt.document.objects.some(({ id }) => id === 'edge-beam')).toBe(false);
+  });
+
+  it('requires the whole footprint to fit in one zone instead of spanning adjacent zones', () => {
+    const level = createLevel();
+    const attempt = createConstructionAttempt({
+      ...level,
+      buildZones: [
+        { min: { x: 0, y: 0 }, max: { x: 5, y: 10 } },
+        { min: { x: 5, y: 0 }, max: { x: 10, y: 10 } },
+      ],
+    });
+
+    const result = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'short-beams',
+      placementId: 'spanning-beam',
+      transform: { position: { x: 5, y: 5 }, rotation: 0 },
+    }).execute(attempt);
+
+    expectRejected(result, 'outside-build-zone');
+    expect(attempt.document.inventory[0]?.quantity).toBe(1);
   });
 
   it('lets the author place and move outside future player build zones and permissions', () => {

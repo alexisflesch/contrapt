@@ -270,7 +270,13 @@ rotation, est contenue dans **une même** zone, bornes incluses. En contexte
 | `mass`     | `massGeometry.footprint`                                       |
 | `lever`    | `leverFootprint(props.position)`                               |
 | `conveyor` | `conveyorGeometry.footprint`                                   |
+| `button`     | `buttonGeometry.footprint`                                      |
+| `fan`        | `fanGeometry.body.footprint`                                    |
+| `barrier`    | `barrierFootprint(props.state)`                                 |
+| `springboard` | `springboardGeometry.footprint`                                 |
 
+Le registre et le schéma du dépôt contiennent onze familles ; les quatre dernières
+lignes complètent la table initiale à partir de leurs empreintes exécutables.
 Une zone est un rectangle aligné sur les axes : un rectangle tourné y est contenu
 si et seulement si ses quatre coins y sont.
 
@@ -886,3 +892,30 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Non vérifié : aucune vérification demandée par L2c ne reste à faire.
 - Pour l’auteur : retester `/bench/play` sur le vieux Xiaomi pour confirmer qu’un
   rechargement manuel n’est plus nécessaire.
+
+### L3 — La zone de construction contient l’objet entier — fait — `fix(construction): confine les objets aux zones (L3)`
+
+- Tests ajoutés : `construction-attempt.test.ts` — refus de pose, déplacement et
+  rotation quand un coin sort, acceptation sur une limite inclusive y compris après
+  rotation, refus d’un objet réparti entre deux zones ; `placement-footprint.test.ts`
+  — coins tournés et empreintes des onze familles.
+- Échec initial constaté : les quatre tests comportementaux rouges acceptaient la
+  pose, le déplacement, la rotation ou le chevauchement des zones avec le seul
+  centre dans une zone.
+- Tests existants réécrits : titre du test qui vérifie le rejet d’une pose hors
+  zone, car il ne vérifiait plus le centre seul ; aucun test auteur modifié.
+- Fichiers touchés hors périmètre : `docs/feuille-de-route-luna.md` pour le journal
+  obligatoire et l’extension de la table des empreintes ; `docs/architecture.md`
+  pour corriger le compte périmé de sept familles.
+- Écarts avec la tâche : aucun. La table L3 nommait sept familles alors que le
+  registre, le schéma et `family-geometry.ts` en définissent onze ; les quatre
+  empreintes exécutables manquantes ont été ajoutées avant l’implémentation.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : table L3 (sept familles) contre registre et schéma
+  (onze familles). Décision documentée dans la table : suivre les géométries déjà
+  définies dans le code pour les onze types.
+- Vérification finale : `pnpm check` passe — 406 tests Vitest, build et 29 tests
+  Playwright mobiles réussis ; C3 est ignoré dans le projet mobile car réservé au
+  projet desktop.
+- Non vérifié : aucune vérification demandée par L3 ne reste à faire.
+- Pour l’auteur : aucune capture ni question.
