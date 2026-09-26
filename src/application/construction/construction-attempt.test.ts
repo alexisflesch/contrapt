@@ -382,7 +382,7 @@ describe('ConstructionAttempt', () => {
     ).toEqual({ x: 4, y: 5 });
   });
 
-  it('rotates only beams and applies player permission and zone checks', () => {
+  it('rotates free-angle objects and applies player permission and zone checks', () => {
     const attempt = createConstructionAttempt(createLevel());
 
     expect(
@@ -409,6 +409,24 @@ describe('ConstructionAttempt', () => {
     expect(
       rotated.state.document.objects.find(({ id }) => id === 'placed-beam')?.transform.rotation,
     ).toBe(1.5);
+  });
+
+  it('rotates a lever in author mode and validates the resulting angle', () => {
+    const attempt = createConstructionAttempt(createWiringLevel());
+    const rotate = (rotation: number) =>
+      rotatePlacement({ context: 'author', placementId: 'lever-1', rotation }).execute(attempt);
+
+    const rotated = rotate(Math.PI / 2);
+    expect(rotated.status).toBe('accepted');
+    if (rotated.status === 'accepted') {
+      expect(
+        rotated.state.document.objects.find(({ id }) => id === 'lever-1')?.transform.rotation,
+      ).toBe(Math.PI / 2);
+    }
+    expect(rotate((136 * Math.PI) / 180)).toEqual({
+      status: 'rejected',
+      reason: 'invalid-level-document',
+    });
   });
 
   it('turns a fan by quarter turns only', () => {

@@ -1890,6 +1890,63 @@ describe('coque Contrapt!', () => {
     expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).not.toBeInTheDocument();
   });
 
+  it('arrête les boutons de rotation aux deux limites du levier', () => {
+    render(<App />);
+    placeWorkshopObject('Levier');
+    const panel = screen.getByRole('region', { name: 'Propriétés de Levier' });
+
+    for (let step = 0; step < 9; step += 1) {
+      fireEvent.click(within(panel).getByRole('button', { name: 'Rotation positive' }));
+    }
+    expect(within(panel).getByRole('button', { name: 'Rotation positive' })).toBeDisabled();
+    expect(within(panel).getByRole('button', { name: 'Rotation négative' })).toBeEnabled();
+
+    for (let step = 0; step < 18; step += 1) {
+      fireEvent.click(within(panel).getByRole('button', { name: 'Rotation négative' }));
+    }
+    expect(within(panel).getByRole('button', { name: 'Rotation négative' })).toBeDisabled();
+    expect(within(panel).getByRole('button', { name: 'Rotation positive' })).toBeEnabled();
+  });
+
+  it('tourne un levier par sa poignée en une seule entrée d’historique', () => {
+    render(<App />);
+    const board = placeWorkshopObject('Levier');
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    const leverPanel = screen.getByRole('region', { name: 'Propriétés de Levier' });
+    expect(leverPanel).toBeVisible();
+    expect(within(leverPanel).getByRole('button', { name: 'Rotation positive' })).toHaveTextContent(
+      '15°',
+    );
+    expect(leverPanel).toHaveTextContent('Rotation limitée à ±135°.');
+
+    // Start outside the lever sprite but inside the rendered rotation handle,
+    // so this gesture cannot be mistaken for a direct object move.
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 380,
+      clientY: 193,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 193,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 193,
+    });
+
+    fireEvent.click(undoButton);
+    expect(screen.getByRole('region', { name: 'Propriétés de Levier' })).toBeVisible();
+    fireEvent.click(undoButton);
+    expect(screen.queryByRole('region', { name: 'Propriétés de Levier' })).not.toBeInTheDocument();
+    expect(undoButton).toBeDisabled();
+  });
+
   it('déplace une poutre par sa poignée de rotation en une commande et annule la projection', () => {
     render(<App />);
     const board = placeWorkshopBeam();

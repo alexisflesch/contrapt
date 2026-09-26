@@ -219,6 +219,44 @@ describe('LevelDocument v2', () => {
     ).toBe(false);
   });
 
+  it('autorise rotate=true sur un levier placé ou en inventaire', () => {
+    const rotatableLever = {
+      ...lever('lever-rotatable'),
+      permissions: { move: true, rotate: true, remove: true },
+    };
+    const candidate = {
+      ...validLevel,
+      objects: [...validLevel.objects, rotatableLever],
+      inventory: [
+        ...validLevel.inventory,
+        {
+          id: 'inventory-lever',
+          type: 'lever',
+          props: { position: 'center' },
+          quantity: 1,
+          permissions: { move: true, rotate: true, remove: true },
+        },
+      ],
+    };
+
+    expect(levelDocumentSchema.safeParse(candidate).success).toBe(true);
+  });
+
+  it('autorise la rotation libre du levier jusqu’à ±135° et refuse les angles qui croisent la butée physique', () => {
+    const rotated = (rotation: number) => ({
+      ...validLevel,
+      objects: [
+        ...validLevel.objects,
+        { ...lever('lever-rotated'), transform: { position: { x: 2, y: 8 }, rotation } },
+      ],
+    });
+
+    expect(levelDocumentSchema.safeParse(rotated((-135 * Math.PI) / 180)).success).toBe(true);
+    expect(levelDocumentSchema.safeParse(rotated((135 * Math.PI) / 180)).success).toBe(true);
+    expect(issuePaths(rotated((136 * Math.PI) / 180))).toEqual(['objects.4.transform.rotation']);
+    expect(issuePaths(rotated((-136 * Math.PI) / 180))).toEqual(['objects.4.transform.rotation']);
+  });
+
   it('accepte un levier relié à un convoyeur, chacun avec son état initial', () => {
     const parsed = levelDocumentSchema.safeParse(
       withWires(

@@ -35,6 +35,8 @@ const MAX_INVENTORY_QUANTITY = 999;
 const MAX_CHALLENGE_OBJECT_COUNT = 999;
 const MAX_WORLD_COORDINATE = 1_000_000;
 const MAX_ROTATION_RADIANS = 100_000;
+/** Planck wraps body angles at ±π; beyond ±135° a lever notch crosses that seam. */
+export const MAX_LEVER_ROTATION_RADIANS = (3 * Math.PI) / 4;
 
 /** ADR 0007 - Scène d'un niveau: world-unit bounds a scene rectangle must fit within. */
 const MIN_SCENE_SIZE = 4;
@@ -360,11 +362,12 @@ const addUniqueIdentifierIssues = (
 };
 
 /**
- * How a family turns: a beam at any angle, a fan, barrier or springboard by
- * quarter turns (the four directions it can face), anything else never.
+ * How a family turns: beams and levers at free angles, a fan, barrier or
+ * springboard by quarter turns, anything else never. Lever placement is also
+ * bounded to ±135° by `MAX_LEVER_ROTATION_RADIANS`.
  */
 export const rotationMode = (type: ObjectPlacement['type']): 'free' | 'quarter-turn' | 'fixed' => {
-  if (type === 'beam') return 'free';
+  if (type === 'beam' || type === 'lever') return 'free';
   if (type === 'fan' || type === 'barrier' || type === 'springboard') return 'quarter-turn';
   return 'fixed';
 };
@@ -375,6 +378,23 @@ const QUARTER_TURN_TOLERANCE = 1e-6;
 
 const isQuarterTurn = (rotation: number): boolean =>
   Math.abs(rotation / QUARTER_TURN - Math.round(rotation / QUARTER_TURN)) < QUARTER_TURN_TOLERANCE;
+
+const addLeverRotationIssues = (
+  objects: readonly ObjectPlacement[],
+  issues: LevelDocumentValidationIssue[],
+): void => {
+  objects.forEach((placement, index) => {
+    if (
+      placement.type === 'lever' &&
+      Math.abs(placement.transform.rotation) > MAX_LEVER_ROTATION_RADIANS
+    ) {
+      issues.push({
+        path: ['objects', index, 'transform', 'rotation'],
+        message: 'La rotation du levier doit rester comprise entre −135° et 135°.',
+      });
+    }
+  });
+};
 
 const addQuarterTurnIssues = (
   objects: readonly ObjectPlacement[],
@@ -619,6 +639,7 @@ export const levelDocumentSchema = levelDocumentV2StructureSchema.superRefine(
     const issues: LevelDocumentValidationIssue[] = [];
     addLevelDocumentRelationIssues(document, issues);
     addSceneContainmentIssues(document, issues);
+    addLeverRotationIssues(document.objects, issues);
     addQuarterTurnIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);
     for (const issue of issues) {
@@ -638,6 +659,7 @@ export const levelDocumentAttemptSchema = levelDocumentV2StructureSchema.superRe
     const issues: LevelDocumentValidationIssue[] = [];
     addLevelDocumentRelationIssues(document, issues, false);
     addSceneContainmentIssues(document, issues);
+    addLeverRotationIssues(document.objects, issues);
     addQuarterTurnIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);
     for (const issue of issues) {

@@ -156,14 +156,16 @@ reliés.
 
 ### Modèle
 
-- socle statique polygonal et poignée dynamique sur pivot, limitée à ±45° ;
-- trois crans — gauche, centre, droite — tenus par un moteur à couple limité :
-  assez pour résister à la gravité, trop peu pour résister à un choc ;
+- socle polygonal orientable par l'auteur de −135° à +135° ; poignée dynamique
+  sur pivot, limitée à ±45° par rapport au socle ;
+- trois crans — gauche, centre, droite — tenus par un moteur à couple limité et
+  compensés pour que la gravité due à l'orientation du socle ne change pas le
+  cran de départ ; un choc peut toujours faire basculer la poignée ;
 - propriété `position` : la position de départ imposée par le niveau ;
-- le joueur n'agit jamais sur un levier pendant la simulation ; seul un objet
-  qui le percute peut le faire changer de cran ;
+- le joueur ne tourne pas un levier pendant la simulation ; seul un objet qui le
+  percute peut lui faire changer de cran ;
 - l'état lu est gauche au-delà de −22,5°, droite au-delà de +22,5°, centre entre
-  les deux.
+  les deux, relativement à l'orientation du socle.
 
 ## Convoyeur
 
@@ -298,10 +300,11 @@ interface InventoryEntry {
 Le schéma concret est une union Zod stricte discriminée afin que les propriétés
 soient typées selon `type` ; il fait autorité (`src/domain/level-document.ts`).
 Balle, panier et bascule n'acceptent aucune propriété. La rotation est libre
-pour les poutres et par quarts de tour pour le ventilateur, la barrière et le
-tremplin (`rotationMode`, `src/domain/level-document.ts`) : une autre rotation
-de ces trois familles est refusée, et `permissions.rotate` doit être `false`
-pour toutes les autres familles.
+pour les poutres ; le levier peut tourner entre −135° et +135° ; le ventilateur,
+la barrière et le tremplin tournent par quarts de tour (`rotationMode`,
+`src/domain/level-document.ts`). Toute autre rotation de ces trois familles est
+refusée, et `permissions.rotate` doit être `false` pour les familles qui ne
+peuvent pas tourner.
 
 Les premiers niveaux peuvent n'offrir qu'une ou deux poutres. La balle, le panier
 et la bascule peuvent être placés par l'auteur avec leurs trois permissions à

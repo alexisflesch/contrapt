@@ -15,6 +15,30 @@ const boardBounds = async (board: Locator) => {
   return bounds;
 };
 
+const screenPointForWorld = async (
+  canvas: Locator,
+  point: { readonly x: number; readonly y: number },
+): Promise<{ readonly x: number; readonly y: number }> => {
+  const bounds = await canvas.boundingBox();
+  const rawOrigin = await canvas.getAttribute('data-camera-origin');
+  const zoom = Number(await canvas.getAttribute('data-camera-zoom'));
+  expect(bounds).not.toBeNull();
+  expect(rawOrigin).not.toBeNull();
+  expect(Number.isFinite(zoom) && zoom > 0).toBe(true);
+  if (bounds === null || rawOrigin === null || !Number.isFinite(zoom) || zoom <= 0) {
+    throw new Error('Le repère caméra doit être disponible pour viser une coordonnée monde.');
+  }
+  const [originX, originY] = rawOrigin.split(',').map(Number);
+  expect(Number.isFinite(originX) && Number.isFinite(originY)).toBe(true);
+  if (originX === undefined || originY === undefined) {
+    throw new Error('L’origine caméra doit contenir les deux coordonnées.');
+  }
+  return {
+    x: bounds.x + (point.x - originX) * zoom,
+    y: bounds.y + (point.y - originY) * zoom,
+  };
+};
+
 const closeCompactProperties = async (page: Page): Promise<void> => {
   const close = page.getByRole('button', { name: 'Fermer les propriétés' });
   if ((await close.count()) > 0 && (await close.first().isVisible())) {
@@ -46,6 +70,43 @@ const placeBeamAtBoardCenter = async (page: Page): Promise<Locator> => {
   const properties = page.getByRole('region', { name: 'Propriétés de Poutre' });
   await expect(properties).toBeVisible();
   return properties;
+};
+
+const dragTouchPoints = async (
+  page: Page,
+  start: { readonly x: number; readonly y: number },
+  target: { readonly x: number; readonly y: number },
+): Promise<void> => {
+  const touchSession = await page.context().newCDPSession(page);
+  let touchStarted = false;
+  try {
+    await touchSession.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ id: 1, x: start.x, y: start.y, radiusX: 1, radiusY: 1, force: 1 }],
+    });
+    touchStarted = true;
+    for (let step = 1; step <= 8; step += 1) {
+      const progress = step / 8;
+      await touchSession.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [
+          {
+            id: 1,
+            x: start.x + (target.x - start.x) * progress,
+            y: start.y + (target.y - start.y) * progress,
+            radiusX: 1,
+            radiusY: 1,
+            force: 1,
+          },
+        ],
+      });
+    }
+  } finally {
+    if (touchStarted) {
+      await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    }
+    await touchSession.detach();
+  }
 };
 
 const waitForCanvasToMatch = async (canvas: Locator, expected: Buffer): Promise<void> => {
@@ -150,4 +211,46 @@ test('C3 — place, déplace, modifie et supprime une poutre dans Chromium deskt
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'Ce parcours est la validation Chromium desktop.');
   await runConstructionInteractions(page);
+});
+
+test('L17b — tourne le levier de 90° dans chaque sens au tactile', async ({ page }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'mobile',
+    'La poignée tactile du levier est testée sur mobile.',
+  );
+  await openWorkshop(page);
+  const openCatalogue = page.getByRole('button', { name: 'Ouvrir le catalogue' });
+  if (await openCatalogue.count()) await openCatalogue.click();
+  await page.getByRole('button', { name: 'Levier' }).click();
+
+  const board = page.getByRole('region', { name: 'Plateau de jeu' });
+  const canvas = board.getByRole('img', { name: 'Rendu du plateau' });
+  const bounds = await canvas.boundingBox();
+  expect(bounds).not.toBeNull();
+  if (bounds === null) throw new Error('Le canvas du plateau doit être visible.');
+  const centre = await screenPointForWorld(canvas, { x: 8, y: 4.5 });
+  await page.touchscreen.tap(centre.x, centre.y);
+  await expect(page.getByRole('region', { name: 'Propriétés de Levier' })).toBeVisible();
+  await closeCompactProperties(page);
+  const initial = await canvas.screenshot();
+  await canvas.screenshot({ path: 'test-results/levels/lever-rotation-0deg.png' });
+  const undo = page.getByRole('button', { name: 'Annuler', exact: true });
+  const redo = page.getByRole('button', { name: 'Rétablir', exact: true });
+
+  const upperLeft = { x: centre.x - 20, y: centre.y - 20 };
+  const upperRight = { x: centre.x + 20, y: centre.y - 20 };
+  await dragTouchPoints(page, upperLeft, upperRight);
+  const positiveRotation = await waitForCanvasToDiffer(canvas, initial);
+  await canvas.screenshot({ path: 'test-results/levels/lever-rotation-positive-90deg.png' });
+  await expect(undo).toBeEnabled();
+  await undo.click();
+  await expect(redo).toBeEnabled();
+  await waitForCanvasToMatch(canvas, initial);
+
+  await dragTouchPoints(page, upperRight, upperLeft);
+  const negativeRotation = await waitForCanvasToDiffer(canvas, initial);
+  await canvas.screenshot({ path: 'test-results/levels/lever-rotation-negative-90deg.png' });
+  expect(negativeRotation.equals(positiveRotation)).toBe(false);
+  await undo.click();
+  await waitForCanvasToMatch(canvas, initial);
 });

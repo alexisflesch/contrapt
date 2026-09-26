@@ -304,7 +304,8 @@ export function BoardView({
               ? {
                   ...projection,
                   objects: projection.objects.map((object) =>
-                    object.id === selectedPlacementId && object.family === 'beam'
+                    object.id === selectedPlacementId &&
+                    (object.family === 'beam' || object.family === 'lever')
                       ? { ...object, rotatable: true }
                       : object,
                   ),

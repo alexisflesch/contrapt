@@ -569,6 +569,7 @@ type ConveyorDirection = 'left' | 'stopped' | 'right';
 interface WiringScene {
   readonly conveyor: ConveyorDirection;
   readonly lever?: LeverPosition;
+  readonly leverRotation?: number;
   /** Where a ball is dropped from, if any; otherwise it waits far away. */
   readonly ballDrop?: { readonly x: number; readonly y: number };
 }
@@ -578,7 +579,12 @@ interface WiringScene {
  * when `lever` is given. The goal ball and basket sit out of the way unless
  * the ball is dropped on the lever.
  */
-const createWiringLevelDocument = ({ conveyor, lever, ballDrop }: WiringScene): LevelDocument =>
+const createWiringLevelDocument = ({
+  conveyor,
+  lever,
+  leverRotation = 0,
+  ballDrop,
+}: WiringScene): LevelDocument =>
   levelDocumentSchema.parse({
     schemaVersion: 2,
     id: 'physics-port-wiring',
@@ -612,7 +618,7 @@ const createWiringLevelDocument = ({ conveyor, lever, ballDrop }: WiringScene): 
             {
               id: 'lever-1',
               type: 'lever',
-              transform: { position: { x: 6, y: 0 }, rotation: 0 },
+              transform: { position: { x: 6, y: 0 }, rotation: leverRotation },
               props: { position: lever },
               permissions,
             },
@@ -1485,6 +1491,63 @@ describe('port physique candidat-neutre', () => {
         },
       );
     }
+  });
+
+  it('tient les trois crans tous les 15° dans la plage d’orientation ±135°', () => {
+    const rotations = Array.from(
+      { length: 19 },
+      (_, index) => ((index * 15 - 135) * Math.PI) / 180,
+    );
+    const failures: string[] = [];
+
+    for (const rotation of rotations) {
+      for (const position of ['left', 'center', 'right'] as const) {
+        withSession(
+          createWiringLevelDocument({
+            conveyor: 'stopped',
+            lever: position,
+            leverRotation: rotation,
+          }),
+          (session) => {
+            session.advanceFixedSteps(180);
+            const state = session.readState();
+            const actual = device(state, 'lever-1');
+            const handle = body(state, 'lever-1', 'handle');
+            const expectedAngle = { left: -Math.PI / 4, center: 0, right: Math.PI / 4 }[position];
+            const degrees = (rotation * 180) / Math.PI;
+
+            if (actual.kind !== 'lever' || actual.position !== position) {
+              failures.push(
+                `${String(degrees)}° ${position}: cran ${actual.kind === 'lever' ? actual.position : actual.kind}`,
+              );
+            }
+            if (Math.abs(handle.rotation - rotation - expectedAngle) > 0.05) {
+              failures.push(
+                `${String(degrees)}° ${position}: angle ${String(handle.rotation - rotation)}`,
+              );
+            }
+          },
+        );
+      }
+    }
+
+    expect(failures).toEqual([]);
+  });
+
+  it('bascule un levier tourné à 90° sous l’impact d’une balle tombée sur le pommeau', () => {
+    const level = createWiringLevelDocument({
+      conveyor: 'stopped',
+      lever: 'center',
+      leverRotation: Math.PI / 2,
+      ballDrop: { x: 6.7, y: -3 },
+    });
+
+    withSession(level, (session) => {
+      session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+
+      expect(device(session.readState(), 'lever-1')).toMatchObject({ position: 'right' });
+      expect(device(session.readState(), 'conveyor-1')).toMatchObject({ direction: 1 });
+    });
   });
 
   it('bascule le levier sous l’impact d’une balle, et le convoyeur suit en pleine simulation', () => {

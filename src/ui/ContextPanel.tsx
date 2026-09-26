@@ -6,7 +6,7 @@ import {
   updatePlacementProperties,
 } from '../application/construction/construction-attempt';
 import { controlCircuits } from '../domain/control-circuits';
-import { rotationMode } from '../domain/level-document';
+import { MAX_LEVER_ROTATION_RADIANS, rotationMode } from '../domain/level-document';
 import {
   currentEditorAttempt,
   type EditorSession,
@@ -58,9 +58,9 @@ const wiringPrompts = {
 } as const;
 
 /**
- * The panel for the currently selected placement: move, rotate (beams freely,
- * fans, barriers and springboards by quarter turns)
- * and remove. Renders `null` when nothing is selected or outside
+ * The panel for the currently selected placement: move; rotate beams freely,
+ * levers within their supported range, and fans, barriers or springboards by
+ * quarter turns; and remove. Renders `null` when nothing is selected or outside
  * `'construction'` — `BoardShell` hands it to `InspectorDrawer`, which shows it
  * in the right rail (wide) or as a compact sheet, next to `LevelResult`. The two are mutually exclusive by
  * phase (this only ever has content during `'construction'`, `LevelResult`
@@ -156,12 +156,22 @@ export function ContextPanel({
           ))}
         </div>
       )}
+      {selectedPlacement.type === 'lever' && canRotate && (
+        <p className="context-restriction">Rotation limitée à ±135°.</p>
+      )}
       {rotationStep !== null && canRotate && (
         <div className="context-rotation-controls">
           {(['négative', 'positive'] as const).map((direction) => (
             <Button
               key={direction}
               aria-label={`Rotation ${direction}`}
+              disabled={
+                selectedPlacement.type === 'lever' &&
+                Math.abs(
+                  selectedPlacement.transform.rotation +
+                    (direction === 'positive' ? rotationStep.radians : -rotationStep.radians),
+                ) > MAX_LEVER_ROTATION_RADIANS
+              }
               onClick={() => {
                 onExecuteCommand(
                   rotatePlacement({

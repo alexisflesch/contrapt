@@ -1381,7 +1381,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : la hauteur voulue pour les contre-exemples latéraux reste à
   préciser ; le niveau est jouable en attendant cette précision.
 
-### L17 — Niveau 11 « L’interrupteur » — partiel — non commité
+### L17 — Niveau 11 « L’interrupteur » — partiel — `c198331 feat(content): ajoute le niveau 11 « L’interrupteur » (L17)`
 
 - Tests ajoutés : `level-11-l-interrupteur.test.ts` — échec sans masse, mesure de
   la référence et de la grille robuste, pose gagnante mesurée, lecture de
@@ -1414,3 +1414,31 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels/level-11-l-interrupteur-844x390.png` (non versionnées).
 - Pour l’auteur : préciser si la référence et les deux poses centrales de la
   fenêtre doivent être déplacées pour correspondre à la simulation.
+
+
+### L17b — Levier orientable — fait — commit à enregistrer
+
+- Tests ajoutés ou modifiés : tenue de chacun des trois crans toutes les 15° de
+  −135° à +135° pendant trois secondes, impact d’une balle sur le levier tourné,
+  permissions de rotation, limite de domaine, rotation par poignée en une entrée
+  d’historique, bornes des boutons et geste Playwright tactile dans les deux sens.
+- Échec initial constaté : la compensation seule ne maintenait pas tous les crans
+  à 180° ; la limite physique est donc bornée à ±135°. Le premier parcours
+  Playwright ne changeait pas le rendu : le panneau de propriétés compact
+  recouvrait la poignée et recevait le toucher. Une fois ce panneau fermé, le
+  pointer tactile atteint le plateau et les deux rotations réussissent.
+- Fichiers touchés : `level-document.ts`, `simulation-session.ts`, interactions
+  éditeur, tests de domaine/application/simulation/App/E2E et les sections Levier
+  et Inventaire de `catalogue-initial.md`.
+- Écarts avec la tâche : le problème à 180° est évité par la limite ±135° prévue
+  comme solution de repli dans la spécification ; la compensation et la rotation
+  dans cette plage sont couvertes.
+- Vérification finale : `pnpm check` passe — contenu (13 documents embarqués),
+  513 tests Vitest (43 fichiers), build et 40 parcours Playwright mobiles réussis ;
+  un test est ignoré car C3 est spécifique au projet desktop. Le parcours L17b
+  vérifie chaque sens et l’annulation par une commande.
+- Captures inspectées (non versionnées) :
+  `test-results/levels/lever-rotation-0deg.png`,
+  `test-results/levels/lever-rotation-positive-90deg.png` et
+  `test-results/levels/lever-rotation-negative-90deg.png`.
+- Pour l’auteur : aucune question ouverte sur L17b. Le follow-up U13 reste différé.

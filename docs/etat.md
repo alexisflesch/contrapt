@@ -77,17 +77,17 @@ pendant le travail.
   cadrage, recadrage sur vrai redimensionnement seulement.
 - Hit-test pur `src/presentation/board-hit-test.ts` (cible ≥ 44 px CSS). Sur le
   plateau : sélection au toucher/clic, désélection sur le vide, déplacement direct
-  en une seule entrée d’historique, poignée de rotation des poutres, annulation
-  atomique sur `pointercancel` ou second doigt.
+  en une seule entrée d’historique, poignées de rotation des poutres et des
+  leviers en atelier, annulation atomique sur `pointercancel` ou second doigt.
 - Tiroir du mode joueur limité aux familles présentes dans l’inventaire du
   niveau ; il affiche la quantité restante et la taille de poutre. Une entrée à
   quantité zéro reste visible et désactivée. L’atelier garde les onze familles.
 - Panneau « Propriétés » (rail droit en grand format, tiroir compact sur petit
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
-  rotation libre des poutres et par quarts de tour du ventilateur, de la
-  barrière et du tremplin (boutons et poignée), état de départ du ventilateur
-  et de la barrière,
-  câblage levier/bouton → appareil au toucher, suppression.
+  rotation libre des poutres, limitée à ±135° pour les leviers, et par quarts
+  de tour du ventilateur, de la barrière et du tremplin (boutons et poignée),
+  états de départ du ventilateur et de la barrière, câblage levier/bouton →
+  appareil au toucher, suppression.
 - Fils de commande routés orthogonalement, ponts aux croisements, lettres de
   circuit (`src/presentation/control-wires.ts`, `wire-renderer.ts`).
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
@@ -167,6 +167,10 @@ pendant le travail.
   le refus de rotation, l’immuabilité et le déterminisme. Les deux contre-exemples
   latéraux annoncés gagnent aux trois hauteurs mesurées ; cet écart est consigné
   sans ajuster la scène (`src/content/levels/level-10-le-butoir.test.ts`).
+- En atelier, un levier peut être orienté de −135° à +135° par boutons ou par
+  poignée tactile. La simulation compense le couple gravitationnel dû à cette
+  orientation : les trois crans tiennent dans toute la plage mesurée et restent
+  sensibles aux chocs.
 - Niveau 11 « L’interrupteur » jouable au tactile dans le chapitre « Mécanismes ».
   La régression lit les états des dispositifs : les quatre poses gagnantes
   mesurées placent le levier à droite et le convoyeur à `1`; les contre-exemples
@@ -222,13 +226,14 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` exécutée avec succès le 26 septembre 2026 après le niveau 11 :
-typecheck, lint, formatage, Knip, contenu (13 documents embarqués), 506 tests
-Vitest (43 fichiers), build et 40 tests Playwright `mobile` (39 réussis, 1 ignoré
-car C3 est spécifique au projet desktop). Les captures au repos sont conservées
-sous `test-results/levels/` pour les niveaux 1 à 11, en portrait et paysage. La
-première gate L16 avait expiré sur le parcours tactile préexistant du niveau 5 ;
-ce parcours passe isolément et dans la gate complète relancée sans modification.
+`pnpm check` exécutée avec succès le 26 septembre 2026 après L17b : typecheck,
+lint, formatage, Knip, contenu (13 documents embarqués), 513 tests Vitest (43
+fichiers), build et 41 tests Playwright `mobile` (40 réussis, 1 ignoré car C3 est
+spécifique au projet desktop). Les captures au repos sont conservées sous
+`test-results/levels/` pour les niveaux 1 à 11, en portrait et paysage ; les trois
+orientations du levier y sont aussi capturées. La première gate L16 avait expiré
+sur le parcours tactile préexistant du niveau 5 ; ce parcours passe isolément et
+dans la gate complète relancée sans modification.
 `pnpm build && pnpm exec playwright test --project=desktop` passe également :
 30 tests réussis, dont C3 (vérifié pendant L1). Les tests lourds de frontière de
 couches et de banc dense conservent leur délai explicite de 30 s, sans assertion

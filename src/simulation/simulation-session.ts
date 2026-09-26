@@ -311,6 +311,9 @@ const LEVER_NOTCH_STIFFNESS = 12;
 /** Past this angle either side of upright, the lever reads as left or right. */
 const LEVER_SWITCH_ANGLE = leverGeometry.tilt / 2;
 const CONVEYOR_SPEED = 1.5;
+
+const shortestAngleDifference = (angle: number, reference: number): number =>
+  Math.atan2(Math.sin(angle - reference), Math.cos(angle - reference));
 const conveyorDirections = { left: -1, stopped: 0, right: 1 } as const;
 
 const MASS_RING = new Circle(
@@ -990,15 +993,26 @@ class PlanckSimulationSession implements SimulationSession {
   }
 
   #leverPosition({ base, handle }: LeverRecord): LeverPosition {
-    return leverPositionFromAngle(handle.getAngle() - base.getAngle());
+    return leverPositionFromAngle(shortestAngleDifference(handle.getAngle(), base.getAngle()));
   }
 
   /** Aims each lever's motor at its nearest notch before the step. */
   #pullLeversToNotches(): void {
     for (const lever of this.#levers) {
-      const angle = lever.handle.getAngle() - lever.base.getAngle();
+      const angle = shortestAngleDifference(lever.handle.getAngle(), lever.base.getAngle());
       const notch = leverAngle(leverPositionFromAngle(angle));
       lever.joint.setMotorSpeed((notch - angle) * LEVER_NOTCH_STIFFNESS);
+
+      // Preserve the same notch torque when the whole lever is rotated. Gravity
+      // acts on the handle in world coordinates; cancel only the difference
+      // between that torque and the torque it would exert on an upright lever.
+      const pivot = lever.base.getPosition();
+      const centre = lever.handle.getWorldCenter();
+      const rx = centre.x - pivot.x;
+      const ry = centre.y - pivot.y;
+      const baseAngle = lever.base.getAngle();
+      const uprightX = rx * Math.cos(-baseAngle) - ry * Math.sin(-baseAngle);
+      lever.handle.applyTorque(-(rx - uprightX) * lever.handle.getMass() * GRAVITY, true);
     }
   }
 
