@@ -94,7 +94,9 @@ pendant le travail.
   appareil au toucher, suppression.
 - Fils de commande droits, sous les objets, translucides (presque effacés en
   simulation), lettres de circuit (`src/presentation/control-wires.ts`,
-  `wire-renderer.ts`).
+  `wire-renderer.ts`). Le rouge est réservé à la balle de l’objectif (U19) : la
+  palette des circuits n’a ni rouge ni teinte voisine, la poignée du levier
+  n’est plus rouge, et la balle du tiroir du joueur est bleue.
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
   `/editor`, `/demo` (machine en chaîne qui se résout seule, testée),
   `/settings` (vide) et `/shared` (niveau éphémère décodé depuis le fragment URL).
@@ -259,9 +261,6 @@ pendant le travail.
   travail d’interface.
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
-- **Vignette de balle toujours rouge** dans le catalogue : une balle posée
-  depuis l’inventaire n’est pas celle de l’objectif et apparaît bleue sur le
-  plateau.
 - **Deux boutons « Réinitialiser »** (libellé à remplacer par « Recommencer », voir
   `mobile-editor-interactions.md`) actifs simultanément après une simulation
   terminée (barre d’actions et bandeau de résultat).

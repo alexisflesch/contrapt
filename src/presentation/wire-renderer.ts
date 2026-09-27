@@ -32,9 +32,11 @@ export type WireCanvas = {
 
 /**
  * Circuit colours, in circuit order. Colour is only a second cue: the
- * circuit letter is always drawn at both ends (ADR 0009).
+ * circuit letter is always drawn at both ends (ADR 0009). Red is reserved for
+ * the goal's ball, so no circuit is red or near it; every colour stays
+ * readable on the cream board.
  */
-const CIRCUIT_COLOURS = ['#e53935', '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#00897b'];
+const CIRCUIT_COLOURS = ['#1e88e5', '#2e7d32', '#b36b00', '#8e24aa', '#00897b'];
 const CASING_COLOUR = '#1d1f24';
 /** Wire sizes are CSS pixels, like the selection outline: readable at every zoom. */
 const CASING_WIDTH = 4;

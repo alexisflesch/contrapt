@@ -59,6 +59,8 @@ prototypes et ne servent pas de modèle.
   machine : elles appuient sur des boutons, basculent des leviers, chargent des
   bascules. C'est déjà le cas : toute balle autre que `goal.ballId` est
   dessinée en bleu, avec la même physique ; le format de niveau ne change pas.
+  Le rouge est **réservé à l'objectif** : aucun autre élément du plateau (fils,
+  poignée de levier, vignette d'une balle de l'inventaire) n'est rouge.
 
 ## 3. Repères
 

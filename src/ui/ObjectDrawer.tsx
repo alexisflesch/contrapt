@@ -3,7 +3,11 @@ import {
   type EditorSession,
 } from '../application/editor-session/editor-session';
 import { inventoryTypeByObjectKind, objectKinds, type ObjectKind } from '../app/object-catalog';
-import { spriteThumbnailPath, type SpriteFamily } from '../presentation/sprite-loader';
+import {
+  spriteThumbnailPath,
+  type SpriteFamily,
+  type SpriteThumbnail,
+} from '../presentation/sprite-loader';
 
 /** The same art the board draws, pre-composed, so a catalogue card looks like the object it places. */
 const beamSizeLabels = { short: 'courte', medium: 'moyenne', long: 'longue' } as const;
@@ -21,6 +25,10 @@ const spriteFamilyByKind: Readonly<Record<ObjectKind, SpriteFamily>> = {
   Barrière: 'barrier',
   Tremplin: 'springboard',
 };
+
+/** A ball from the player's inventory is never the goal's: it is drawn blue. */
+const playerThumbnail = (family: SpriteFamily): SpriteThumbnail =>
+  family === 'ball' ? 'second-ball' : family;
 
 interface ObjectDrawerProps {
   readonly session: EditorSession;
@@ -140,7 +148,11 @@ export function ObjectDrawer({
                 >
                   <span className="object-thumb" aria-hidden="true">
                     <img
-                      src={spriteThumbnailPath(spriteFamilyByKind[kind])}
+                      src={spriteThumbnailPath(
+                        inventoryEntry === undefined
+                          ? spriteFamilyByKind[kind]
+                          : playerThumbnail(spriteFamilyByKind[kind]),
+                      )}
                       alt=""
                       draggable={false}
                     />

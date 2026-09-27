@@ -50,9 +50,12 @@ export const publicAssetUrl = (path: string, basePath: string): string =>
 
 const deploymentBasePath = import.meta.env.BASE_URL;
 
+/** A family's picture, plus the blue ball: a ball that is not the goal's. */
+export type SpriteThumbnail = SpriteFamily | 'second-ball';
+
 /** One pre-composed picture per family, for catalogue cards (built by `art/build-sprites.py`). */
-export const spriteThumbnailPath = (family: SpriteFamily): string =>
-  publicAssetUrl(`/assets/sprites/thumbs/${family}.png`, deploymentBasePath);
+export const spriteThumbnailPath = (thumbnail: SpriteThumbnail): string =>
+  publicAssetUrl(`/assets/sprites/thumbs/${thumbnail}.png`, deploymentBasePath);
 
 export type DecodedSprite = Readonly<{
   readonly width: number;

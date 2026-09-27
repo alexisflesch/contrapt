@@ -176,4 +176,10 @@ describe('sprites du plateau', () => {
       expect(publicFile(spriteAssetPath(asset, 2)).byteLength).toBeGreaterThan(0);
     }
   });
+
+  it('fournit la vignette de la balle bleue, celle qui n’est pas l’objectif', () => {
+    const blue = publicFile(spriteThumbnailPath('second-ball'));
+    expect(blue.byteLength).toBeLessThanOrEqual(SPRITE_BUDGET_BYTES);
+    expect(pngSize(blue)).toEqual(pngSize(publicFile(spriteThumbnailPath('ball'))));
+  });
 });

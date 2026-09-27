@@ -134,9 +134,9 @@ for folder, prefix in (("ball", "ball"), ("second-ball", "second-ball")):
         export(spin, ball_frame, 0.6, 0.6, f"{prefix}-spin"),
         export(load(f"{folder}/{prefix}-highlight.png"), ball_frame, 0.6, 0.6, f"{prefix}-highlight"),
     ]
-    if prefix == "ball":
-        # La vignette du catalogue reste la balle rouge.
-        save(composite([(layer, (0, 0)) for layer in ball_layers], ball_layers[0].size), THUMBS / "ball.png")
+    # Deux vignettes : la balle rouge (objectif, catalogue de l'auteur) et la
+    # bleue, la seule qu'un joueur pose depuis son inventaire.
+    save(composite([(layer, (0, 0)) for layer in ball_layers], ball_layers[0].size), THUMBS / f"{prefix}.png")
 
 # Panier : arrière et lèvre avant sur le même cadre, empreinte figée 1,5 × 1,1.
 basket_frame = (106, 278, 1148, 1029)

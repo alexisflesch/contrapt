@@ -829,6 +829,11 @@ commencer de ta propre initiative.
 - **U17 — Éditer un niveau de la campagne** : ouvrir un niveau embarqué dans le
   mode auteur, sur une copie (brouillon L26), pour que l’auteur ajuste un niveau
   existant puis l’exporte.
+- **U19 — Le rouge n'appartient qu'à l'objectif** : poignée de levier redessinée,
+  palette des fils sans rouge, balle bleue dans le tiroir du joueur.
+- **U20 — Catalogue de l'atelier** : « Balle rouge (objectif) » et « Balle
+  bleue » ; en mode auteur, le catalogue ajoute n'importe quelle famille à
+  n'importe quel niveau, brouillons de campagne compris.
 
 ## 7. En attente de l’auteur — ne pas commencer
 
@@ -2000,3 +2005,26 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : valider l’emplacement dans la liste, la réouverture du
   brouillon existant (sans « repartir de l’original ») et l’enregistrement à
   chaque commande plutôt que par `decideDraftAutosave`.
+
+### U19 — Le rouge n’appartient qu’à l’objectif — fait — `feat(presentation): réserve le rouge à la balle de l’objectif (U19)`
+
+- Assets : la poignée de levier redessinée par l’auteur est exportée par
+  `art/build-sprites.py` (seuls `lever-handle@2x.png` et `thumbs/lever.png`
+  changent ; géométrie mesurée identique). Le script exporte aussi
+  `thumbs/second-ball.png`, la balle bleue, sur le même cadre que la rouge.
+- Fils : palette des circuits sans rouge ni teinte voisine (bleu, vert, ambre,
+  violet, sarcelle), chacune à ≥ 30° de teinte de la balle rouge et des autres,
+  contraste ≥ 3 sur le fond crème.
+- Tiroir : en mode joueur, la vignette d’une balle de l’inventaire est bleue.
+- Tests ajoutés : `src/presentation/wire-renderer.test.ts` (teinte, contraste,
+  distinction, relevés sur le tracé et les pastilles),
+  `src/ui/ObjectDrawer.test.tsx` (balle bleue du joueur),
+  `sprite-assets.test.ts › fournit la vignette de la balle bleue…`.
+- Échec initial constaté : « #e53935 ne rappelle pas le rouge… » et contraste
+  de `#43a047` (2,79) et `#fb8c00` (2,00) < 3 ; ENOENT sur
+  `thumbs/second-ball.png` ; vignette `thumbs/ball.png` au lieu de la bleue.
+- Tests existants réécrits : aucun.
+- Vérification : `pnpm check` passe (681 tests Vitest ; 47 E2E mobiles réussis,
+  1 ignoré).
+- Captures : hors dépôt, `…/scratchpad/captures/u19/` (niveau 12 avec levier et
+  fil, tiroir joueur avec la balle bleue ; 390 × 844, 844 × 390, 1440 × 900).
