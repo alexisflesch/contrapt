@@ -252,11 +252,14 @@ pendant le travail.
 - **Mode auteur incomplet** : l’atelier ne permet pas encore de créer et gérer
   ces commandes dans l’interface, ni d’enregistrer, exporter ou partager un niveau.
 - `format:check` ne couvre pas le Markdown.
-- Aucune CI distante ni matrice de téléphones physiques.
+- Le workflow `.github/workflows/check.yml` exécute la gate sur push et pull
+  request avec Node 24, cache pnpm et Chromium Playwright. Son premier passage
+  distant reste à vérifier au prochain push ; aucune matrice de téléphones
+  physiques n’est définie.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après L26 : typecheck, lint,
+`pnpm check` passe le 27 septembre 2026 après L27 : typecheck, lint,
 formatage, Knip, contenu (14 niveaux embarqués), 632 tests Vitest (52 fichiers),
 build et 44 tests Playwright `mobile` (43 réussis, 1 ignoré car C3 est
 spécifique au projet desktop). Une première exécution a eu un timeout intermittent
