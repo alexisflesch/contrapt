@@ -236,15 +236,20 @@ pendant le travail.
   de `/bench/play`. Le chargeur retente maintenant un asset en échec lors des
   rendus suivants, au plus trois fois ; le comportement doit encore être vérifié
   sur cet appareil.
-- **Mode auteur incomplet** : l’atelier ne permet ni d’éditer scène, zones,
-  inventaire ou objectif, ni d’enregistrer, exporter ou partager un niveau.
+- **Commandes auteur L25** : `src/application/construction/authoring-commands.ts`
+  fournit les commandes annulables pour la scène, les zones, l’inventaire, les
+  permissions, l’objectif, les métadonnées et le défi. Elles sont refusées en
+  contexte joueur et chaque document accepté est revalidé par le schéma. Aucune
+  interface auteur ne les expose encore.
+- **Mode auteur incomplet** : l’atelier ne permet pas encore de créer et gérer
+  ces commandes dans l’interface, ni d’enregistrer, exporter ou partager un niveau.
 - `format:check` ne couvre pas le Markdown.
 - Aucune CI distante ni matrice de téléphones physiques.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après L24 : typecheck, lint,
-formatage, Knip, contenu (14 niveaux embarqués), 575 tests Vitest (49 fichiers),
+`pnpm check` passe le 27 septembre 2026 après L25 : typecheck, lint,
+formatage, Knip, contenu (14 niveaux embarqués), 611 tests Vitest (50 fichiers),
 build et 44 tests Playwright `mobile` (43 réussis, 1 ignoré car C3 est
 spécifique au projet desktop). Le parcours mobile L17b ouvre maintenant
 l’inspecteur compact avant de

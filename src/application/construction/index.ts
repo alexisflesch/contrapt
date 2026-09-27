@@ -1,4 +1,23 @@
 export {
+  addBuildZone,
+  addInventoryEntry,
+  moveBuildZone,
+  removeBuildZone,
+  removeInventoryEntry,
+  removeLevelChallenge,
+  resizeBuildZone,
+  setLevelChallenge,
+  updateInventoryPermissions,
+  updateInventoryProperties,
+  updateInventoryQuantity,
+  updateLevelDescription,
+  updateLevelGoal,
+  updateLevelTitle,
+  updatePlacementPermissions,
+  updateScene,
+} from './authoring-commands';
+
+export {
   connectControlWire,
   createConstructionAttempt,
   disconnectControlWire,

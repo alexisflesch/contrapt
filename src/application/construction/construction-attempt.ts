@@ -28,6 +28,14 @@ export type ConstructionErrorCode =
   | 'wiring-not-permitted'
   | 'wire-already-connected'
   | 'wire-not-found'
+  | 'authoring-only'
+  | 'scene-excludes-content'
+  | 'build-zone-not-found'
+  | 'identifier-already-used'
+  | 'inventory-entry-in-use'
+  | 'placement-has-inventory-provenance'
+  | 'goal-ball-not-found'
+  | 'goal-basket-not-found'
   | 'invalid-level-document';
 
 /**
@@ -208,6 +216,12 @@ const acceptCandidate = (
     state: freezeAttempt({ ...validation.data, inventory: attemptDocument.inventory }, provenance),
   };
 };
+
+/** Revalidate a document edited by an author while retaining attempt provenance. */
+export const acceptAuthoringCandidate = (
+  state: ConstructionAttempt,
+  documentCandidate: unknown,
+): ConstructionCommandOutcome => acceptCandidate(documentCandidate, state.provenance);
 
 export const placeFromInventory = (input: PlaceFromInventoryInput): ConstructionCommand => ({
   execute: (state) => {

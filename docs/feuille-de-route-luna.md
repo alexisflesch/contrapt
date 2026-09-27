@@ -1735,3 +1735,33 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : l’ouverture `/shared` et le message invalide sont lisibles au
   toucher ; le follow-up U13 sur la mise en évidence des zones de placement reste
   différé comme demandé.
+
+### L25 — Commandes d’auteur — fait — commit dédié L25
+
+- Tests ajoutés : `authoring-commands.test.ts` — 36 tests couvrent chaque
+  commande, son cycle annuler/rétablir, les refus dans le contexte joueur,
+  l’exclusion d’objets ou de zones par une scène, les index absents et les
+  documents invalides.
+- Échec initial constaté : avant l’implémentation, le test ciblé échoue avec
+  `TypeError: (0 , updateScene) is not a function`.
+- Tests existants modifiés : aucun ; un nouveau fichier de tests est ajouté.
+- Fichiers touchés : `authoring-commands.ts` et son test,
+  `construction-attempt.ts` (codes stables et validation partagée),
+  `construction/index.ts`, `docs/etat.md` et ce journal.
+- Écarts avec la tâche : aucun. Les zones n’ont pas d’identifiant dans le
+  schéma ; les commandes les adressent par leur index dans l’ordre courant. Les
+  commandes auteur seules sont acceptées, les refus côté joueur utilisent
+  `authoring-only`, et `acceptAuthoringCandidate` revalide le document produit.
+- Mesures qui ne se reproduisent pas : le premier test d’ajout d’inventaire
+  utilisait une entrée de masse sans sa propriété `weight: "10kg"` ; corrigé
+  selon le schéma. Le premier `check:fast` a exposé le type `unknown` du résultat
+  générique de schéma de propriétés ; la comparaison no-op utilise maintenant
+  les props typées après recherche de la bonne famille. La première gate complète
+  ne signalait que le formatage Prettier des deux nouveaux fichiers ; après
+  formatage, `pnpm check` passe.
+- Contradictions rencontrées : aucune. Pas de changement du schéma de niveau,
+  pas de style ni d’interface ajoutés.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 611
+  tests Vitest (50 fichiers), build et 44 parcours Playwright mobiles (43
+  réussis, 1 ignoré car C3 est spécifique au projet desktop).
+- Captures : sans objet, L25 n’ajoute aucune interface visible.
