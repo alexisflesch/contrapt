@@ -105,15 +105,16 @@ export const puzzleFromWorkshop = (workshop: LevelDocument): PuzzleConversion =>
     return { inventoryId: entry.id, transform: placement.transform };
   });
 
+  const { challenge: ignoredChallenge, ...workshopWithoutChallenge } = workshop;
+  void ignoredChallenge;
   const validation = levelDocumentSchema.safeParse({
-    ...workshop,
+    ...workshopWithoutChallenge,
     objects: decor,
     inventory,
     buildZones:
       workshop.buildZones.length > 0
         ? workshop.buildZones
         : [{ min: workshop.scene.min, max: workshop.scene.max }],
-    challenge: { elegantObjectCount: toPlace.length, minimalObjectCount: toPlace.length },
     solution: { placements },
   });
   return validation.success
@@ -124,8 +125,9 @@ export const puzzleFromWorkshop = (workshop: LevelDocument): PuzzleConversion =>
 /**
  * The inverse of `puzzleFromWorkshop`, to reopen a puzzle in the workshop
  * (U17): each pose of the solution is back on the board, marked to place.
- * The inventory and the challenge stay: the workshop never shows them, and
- * the export derives both again. A document without solution is returned
+ * The inventory stays: the workshop never shows it, and the export derives it
+ * again. Challenges in a campaign draft are not exported. A document without
+ * solution is returned
  * as is, and so is one whose workshop form would not be valid.
  */
 export const workshopFromPuzzle = (puzzle: LevelDocument): LevelDocument => {

@@ -118,7 +118,6 @@ const expectedPuzzle: LevelDocument = {
   buildZones: [{ min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } }],
   scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
   wires: [],
-  challenge: { elegantObjectCount: 4, minimalObjectCount: 4 },
   solution: {
     placements: [
       {
@@ -156,6 +155,14 @@ describe('passage de l’atelier au puzzle (U22, ADR 0013)', () => {
 
     expect(result).toEqual({ status: 'ok', puzzle: expectedPuzzle });
     expect(levelDocumentSchema.safeParse(expectedPuzzle).success).toBe(true);
+  });
+
+  it('n’ajoute ni ne conserve de seuils de défi dans le puzzle exporté (U24)', () => {
+    const result = puzzleFromWorkshop(
+      workshop({ challenge: { elegantObjectCount: 1, minimalObjectCount: 1 } }),
+    );
+
+    expect(result.status === 'ok' ? result.puzzle.challenge : undefined).toBeUndefined();
   });
 
   it('conserve les zones de construction existantes et les fils du décor', () => {

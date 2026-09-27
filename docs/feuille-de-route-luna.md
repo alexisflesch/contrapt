@@ -6,7 +6,7 @@ dans l’ordre. Ces tâches d’interface sont **autorisées par l’auteur** (l
 de § 6 ne s’y applique pas) ; captures aux trois formats dans le journal, mais
 l’auteur valide plus tard, sans bloquer l’avancée.
 
-**Fait.** Toute la logique L1 à L28 ; P1 ; interface U4 à U6, U13 à U23, U4b
+**Fait.** Toute la logique L1 à L28 ; P1 ; interface U4 à U6, U13 à U24, U4b
 (modale de victoire), U5b (niveaux verrouillés, déblocage sous `pnpm dev`),
 U14b (fils en équerre). Rendus visuels acceptés en l’état par l’auteur.
 
@@ -17,24 +17,21 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
 
 ## Prochaines tâches, dans l’ordre
 
-1. **U24 — Pas de palier pour les puzzles exportés.** Un puzzle produit par
-   l’atelier (U22) n’a ni `challenge` ni ⭐/🏆 : retirer les seuils calculés à
-   l’export (`src/application/puzzle/puzzle-workshop.ts`), tests d’abord.
-2. **U25 — Fils « à placer ».** Le fil est un objet d’inventaire comme les
+1. **U25 — Fils « à placer ».** Le fil est un objet d’inventaire comme les
    autres (U15, U21). Aujourd’hui l’export refuse un objet à placer relié par un
    fil : lever ce refus. Un fil peut être marqué « à placer » ; il passe dans
    l’inventaire (`wire`) et dans la solution de référence ; un objet à placer
    relié garde son fil dans la solution. Amender ADR 0013 si le format bouge.
-3. **U26 — Catalogue auteur dans un brouillon de campagne.** L’agent U22 a
+2. **U26 — Catalogue auteur dans un brouillon de campagne.** L’agent U22 a
    signalé que le brouillon du niveau 1 n’affiche pas le catalogue auteur
    (`hasInventory`, `src/app/BoardShell.tsx`) ; l’auteur n’a pas reproduit
    (le niveau 1 a bien une poutre en inventaire). Reproduire d’abord ; si faux,
    le noter au journal et passer.
-4. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
+3. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
    caractères Unicode (↺, ↩, →, ☰, ?, 🔒, etc.) par des icônes `lucide-react`.
    Dépendance structurante : ADR court d’abord. Garder des libellés
    accessibles. Les paliers ✅ ⭐ 🏆 peuvent devenir des icônes aussi.
-5. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
+4. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
    `docs/levels/nouveaux-niveaux.md`, générer un JSON « à peu près » (pas de
    calibrage fin) au format U22 : décor, objets à placer en inventaire,
    solution de référence approximative. Les enregistrer dans la campagne à la
@@ -48,7 +45,7 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
    exigée : ancienne campagne jamais publiée). Questions ouvertes du document
    (§ 2 de `nouveaux-niveaux.md`, fin) : appliquer les réponses de l’auteur
    si elles y figurent, sinon choisir l’option la plus simple et la noter.
-6. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
+5. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
    U1, U7, U8, U10, U11, U2, U3 ; minuteur animé (`art/assets/timer/`).
 
 **Dettes notées, non prioritaires.** Durée de la vérification d’export (deux
@@ -2445,3 +2442,19 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Non vérifié : validation visuelle par l’auteur.
 - Pour l’auteur : captures `test-results/u23/atelier-{390x844,844x390,1440x900}.png`.
 
+
+### U24 — Pas de palier pour les puzzles exportés — fait — `fix(application): retire les paliers des puzzles exportés (U24)`
+
+- Tests ajoutés : `puzzle-workshop.test.ts` vérifie qu’un `challenge` source est
+  ignoré et que le puzzle exporté n’en contient aucun.
+- Échec initial constaté : le convertisseur ajoutait toujours
+  `elegantObjectCount` et `minimalObjectCount` ; 4 tests échouaient après la
+  mise à jour de l’attendu.
+- Tests existants réécrits : l’attendu du puzzle et des vérifications a été
+  aligné sur l’absence de défi dans un export d’atelier.
+- Fichiers touchés hors périmètre : aucun.
+- Écarts avec la tâche : aucun.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Non vérifié : aucun.
+- Pour l’auteur : aucun.

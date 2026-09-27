@@ -77,6 +77,9 @@ pendant le travail.
   <titre> » ne sont plus rendus sur le plateau ; « Mode éditeur » et les actions
   restent accessibles. Le parcours E2E produit des captures en 390 × 844,
   844 × 390 et 1440 × 900.
+- Export U24 : les puzzles produits par l’atelier ne portent aucun `challenge` ;
+  les seuils ⭐/🏆 sont réservés aux niveaux qui les définissent explicitement.
+
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
   cadrage, recadrage sur vrai redimensionnement seulement.
@@ -362,8 +365,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` après le correctif U21 et U23 (27 septembre 2026) : typecheck,
-lint, formatage, Knip, contenu, 788 tests Vitest (66 fichiers), build et 56
+`pnpm check` après le correctif U21, U23 et U24 (27 septembre 2026) : typecheck,
+lint, formatage, Knip, contenu, 789 tests Vitest (66 fichiers), build et 56
 tests Playwright `mobile` (55 réussis, 1 ignoré).
 
 `pnpm check` après U5 (27 septembre 2026) : passe d’une traite — typecheck,
