@@ -1004,6 +1004,24 @@ select:focus-visible {
   line-height: 1.3;
 }
 
+/* U4 : palier et objets posés d'une victoire de campagne (ADR 0010). */
+.level-result-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.level-result-tier {
+  font-size: var(--text-s);
+  line-height: 1.3;
+}
+
+.level-result-challenge {
+  color: var(--muted-ink);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
 .level-result-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1016,6 +1034,26 @@ select:focus-visible {
   padding: 0 var(--space-2);
   white-space: normal;
   text-align: center;
+}
+
+/*
+ * U4 : trois actions sur une ligne à 390 px ; « Recommencer », un seul mot,
+ * garde sa largeur et les deux autres se partagent le reste en retour à la ligne.
+ */
+.level-result-actions-three {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.level-result-actions-three .btn {
+  flex: 1 1 0;
+  gap: 4px;
+  padding: 0 6px;
+  font-size: var(--text-s);
+}
+
+.level-result-actions-three .level-result-replay {
+  flex: 0 0 auto;
 }
 
 /* 6e. Propriétés */

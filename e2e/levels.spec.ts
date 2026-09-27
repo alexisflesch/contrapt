@@ -60,6 +60,21 @@ const tapWorldPoint = async (page: Page, point: WorldPoint): Promise<void> => {
   await page.touchscreen.tap(screenPoint.x, screenPoint.y);
 };
 
+/** U4 : captures du bandeau de résultat aux trois formats de validation (§ 6). */
+const captureResultFormats = async (page: Page, pathPrefix: string): Promise<void> => {
+  const initial = page.viewportSize();
+  for (const { width, height } of [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize({ width, height });
+    await expect(page.getByRole('region', { name: 'Résultat du niveau' })).toBeVisible();
+    await page.screenshot({ path: `${pathPrefix}-${String(width)}x${String(height)}.png` });
+  }
+  if (initial !== null) await page.setViewportSize(initial);
+};
+
 const openPropertiesIfCompact = async (page: Page): Promise<void> => {
   const open = page.getByRole('button', { name: 'Ouvrir les propriétés' });
   if ((await open.count()) > 0 && (await open.first().isVisible())) {
@@ -265,6 +280,10 @@ test('niveau 4 : choisir la poutre longue et gagner au tactile', async ({ page }
   const result = page.getByRole('region', { name: 'Résultat du niveau' });
   await expect(result).toBeVisible({ timeout: 15_000 });
   await expect(result.getByText('Victoire')).toBeVisible();
+  // U4 : une seule poutre longue atteint le minimum connu du défi (ADR 0010).
+  await expect(result.getByText('🏆 Minimal')).toBeVisible();
+  await expect(result.getByText('avec 1 objet.')).toBeVisible();
+  await captureResultFormats(page, 'test-results/u4/niveau-4-minimal');
 });
 
 test('niveau 5 : détourner la balle avec deux poutres tournées au tactile', async ({
@@ -594,6 +613,34 @@ test('niveau 2 : poser puis glisser la poutre avant de gagner au tactile', async
   await expect(victoryResult).toBeVisible({ timeout: 15_000 });
   await expect(victoryResult.getByText('Victoire')).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('U4 — affiche le palier puis ouvre le niveau suivant au tactile', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await page.goto(levelOnePath);
+  await expect(page.getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  await page.getByRole('button', { name: 'Poutre courte' }).tap();
+  await tapWorldPoint(page, { x: 5.0, y: 2.15 });
+  await page.getByRole('button', { name: 'Tester' }).tap();
+
+  const result = page.getByRole('region', { name: 'Résultat du niveau' });
+  await expect(result).toBeVisible({ timeout: 15_000 });
+  await expect(result).toHaveAttribute('data-level-tier', 'resolved');
+  await expect(result.getByText('✅ Résolu')).toBeVisible();
+  await expect(result.getByText('avec 1 objet.')).toBeVisible();
+  await expect(result.getByRole('button', { name: /Recommencer/ })).toHaveCount(1);
+  await captureResultFormats(page, 'test-results/u4/niveau-1-resolu');
+
+  const next = result.getByRole('button', { name: 'Niveau suivant' });
+  await next.scrollIntoViewIfNeeded();
+  await next.tap();
+  await expect(page).toHaveURL(/\/levels\/level-2-le-pont\/play$/);
+  await expect(page.getByText('Niveau 2 · Le pont')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Résultat du niveau' })).toHaveCount(0);
 });
 
 test('niveau 1 : échouer sans poutre puis résoudre par toucher', async ({ page }, testInfo) => {

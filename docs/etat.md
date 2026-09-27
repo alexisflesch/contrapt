@@ -101,6 +101,15 @@ pendant le travail.
   « Recommencer le niveau » et restaure le document initial après confirmation.
   Dans les deux modes, la remise à zéro ferme les tiroirs et sélections ; après
   une victoire d’atelier, le résultat conserve uniquement « Retour à l’édition ».
+- **U4 — bandeau de résultat de campagne** : après une victoire sur un niveau de
+  la campagne, le bandeau affiche le palier obtenu par la tentative (✅ Résolu,
+  ⭐ Élégant, 🏆 Minimal, `data-level-tier`), le nombre d’objets posés compté au
+  lancement, puis la révélation progressive de l’ADR 0010 calculée sur le
+  meilleur résultat enregistré (« Tu penses pouvoir le faire avec N ? », puis
+  « Record à battre : 🏆 avec N objets. », rien après 🏆 ; « Nouveau record »
+  sous le minimum connu). « Niveau suivant » ouvre le niveau suivant de la
+  campagne s’il existe et est débloqué ; une seule commande « Recommencer ».
+  L’atelier, la démonstration et les niveaux partagés gardent le bandeau simple.
 - Panneau « Propriétés » (rail droit en grand format, tiroir compact sur petit
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
   rotation libre des poutres, limitée à ±135° pour les leviers, et par quarts
@@ -237,11 +246,6 @@ pendant le travail.
 
 ## Dettes et limites explicites
 
-- **Zones de pose peu visibles** : le joueur ne voit pas clairement où
-  l’empreinte complète d’un objet peut être posée, surtout quand plusieurs zones
-  existent. Leur mise en évidence des régions autorisées est différée (U13) à une
-  session ultérieure ; ce suivi répond aux refus de pose déroutants signalés par
-  l’auteur le 27 septembre 2026.
 - **Aperçu de placement en CSS.** L’overlay DOM `.placement-preview`
   (`src/ui/BoardView.tsx`) n’a ni la forme, ni la taille, ni la rotation de
   l’objet ; le fantôme dessiné par le renderer (C1) reste à faire.
@@ -323,6 +327,10 @@ pendant le travail.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U4 (27 septembre 2026) : passe d’une traite — typecheck,
+lint, formatage, Knip, contenu, 740 tests Vitest (62 fichiers), build et 54
+tests Playwright `mobile` (53 réussis, 1 ignoré).
 
 `pnpm check` après U21 (27 septembre 2026) : passe d’une traite au second
 essai — typecheck, lint, formatage, Knip, contenu, 727 tests Vitest (61

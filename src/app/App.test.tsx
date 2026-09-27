@@ -837,6 +837,43 @@ describe('coque TinkerBolt', () => {
     });
   });
 
+  it('affiche le palier, les objets posés et ouvre le niveau suivant après une victoire de campagne (U4)', () => {
+    const animationFrames = createAnimationFrameHarness();
+    const { repository } = createProgressRepository();
+    render(<App progressRepository={repository} />);
+
+    openEmbeddedLevelOne();
+    placeCampaignBeam(5.0, 2.15);
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 360);
+
+    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
+    expect(result).toHaveAttribute('data-level-tier', 'resolved');
+    expect(within(result).getByText('✅ Résolu')).toBeVisible();
+    expect(within(result).getByText('avec 1 objet.')).toBeVisible();
+    expect(within(result).getAllByRole('button', { name: /Recommencer/ })).toHaveLength(1);
+
+    fireEvent.click(within(result).getByRole('button', { name: 'Niveau suivant' }));
+
+    expect(window.location.pathname).toBe('/levels/level-2-le-pont/play');
+    expect(screen.getByText('Niveau 2 · Le pont')).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).toBeNull();
+  });
+
+  it('n’affiche pas le bandeau de campagne hors campagne (U4)', () => {
+    const animationFrames = createAnimationFrameHarness();
+    window.history.replaceState(null, '', '/demo');
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 600);
+
+    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
+    expect(result).toHaveTextContent('Victoire');
+    expect(result).not.toHaveAttribute('data-level-tier');
+    expect(within(result).queryByRole('button', { name: 'Niveau suivant' })).toBeNull();
+  });
+
   it('laisse un niveau verrouillé jouable quand son URL est ouverte directement', () => {
     const { repository } = createProgressRepository();
     window.history.replaceState(null, '', '/levels/level-12-le-bon-ordre/play');

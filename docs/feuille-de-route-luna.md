@@ -1,9 +1,33 @@
-# Remarque mainteneur
-A intégrer quelque part dans la feuille de route :
+# Tableau de bord (27 septembre 2026)
 
-- quand on est sur l'éditeur de niveau, que la balle atteint le panier (après avoir cliqué sur "Tester"), un bouton "Rejouer le niveau" apparaît : il supprime tout ce qu'on a fait. C'est une UX horrible. Et le bouton "retour à la liste des niveaux" n'a aucun sens. Je pense que c'est un artéfact de factorisation entre "jouer un niveau" et "construire un niveau" : il faudra le réparer
+Vue d’ensemble en une page ; le détail reste dans § 5, § 6 et le journal (§ 8).
 
-- Le levier doit pouvoir être tourné de 90° dans tous les sens (on peut le mettre à la verticale, sur un plafond, etc). Pour l'instant il ne peut pas tourner, c'est à corriger. Ca doit être comme pour le ventilateur ou la barrière ou encore le ressort.
+**Fait.** Toute la logique L1 à L28 (fondations, progression, fichiers et
+partage, commandes d’auteur, brouillons, CI, PWA) ; niveaux 1 à 12 ; P1 ; côté
+interface U4, U6, U13 à U21.
+
+**Partiel ou bloqué.**
+
+- L2 (Markdown hors `format:check`) : bloqué.
+- L14, L16, L17 (niveaux 8, 10, 11) : jouables, preuves de robustesse
+  incomplètes.
+- L18b, L18c (niveaux 13 et 14) : bloqués, aucune géométrie assez robuste.
+
+**Reste à faire — interface (§ 6, captures et validation de l’auteur).**
+
+- U5 liste des niveaux par chapitres : manque pour le critère 2 de § 4
+  (U4 livré, en attente de validation visuelle de l’auteur).
+- U9 interface du mode auteur (scène, zones, inventaire, objectif, défi,
+  brouillons, import) : manque pour le critère 3 de § 4.
+- U1 fantôme de placement, U2 fond qui suit la caméra, U3 ombre portée, U7
+  balle suivie, U8 aide du niveau 1, U10 invitation PWA, U11 réglages, U12
+  poutres en trois tailles.
+- Minuteur animé (`art/assets/timer/README.md`) : pas encore de tâche.
+
+**En attente de l’auteur.** Icônes PWA, dessin des poutres (§ 7) ; tri des
+propositions déposées le 27 septembre (`docs/propositions-*.md`,
+`docs/proposition-evolutions-canary.md`, `docs/levels/idees-niveaux.md`,
+`docs/levels/propositions-evolution-astra.md`).
 
 # Feuille de route — reprise de l’implémentation
 
@@ -2221,3 +2245,42 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : vérifier les captures ; « Ràz atelier » / « Recommencer le
   niveau » doivent rester à gauche de « Tester » et « Annuler » doit recevoir le
   focus à l’ouverture.
+
+### U4 — Bandeau de résultat — fait — `feat(ui): affiche le bandeau de résultat de campagne (U4)`
+
+- Tests ajoutés : `src/ui/LevelResult.test.tsx` (8 tests : bandeau simple hors
+  campagne, palier et compte, accord « objet/objets » et « sans poser d’objet »,
+  cible ⭐, record 🏆 révélé, rien après 🏆, nouveau record, « Niveau suivant »
+  présent ou absent, une seule commande « Recommencer ») ; `src/app/App.test.tsx`
+  › « affiche le palier, les objets posés et ouvre le niveau suivant après une
+  victoire de campagne (U4) » et « n’affiche pas le bandeau de campagne hors
+  campagne (U4) » ; `e2e/levels.spec.ts` › « U4 — affiche le palier puis ouvre le
+  niveau suivant au tactile » et assertion 🏆 ajoutée au parcours du niveau 4.
+- Échec initial constaté : sans implémentation, 6 tests sur 8 du composant
+  échouaient (`data-level-tier` absent, « ✅ Résolu » et « Niveau suivant »
+  introuvables) ; le test d’intégration échouait sur `data-level-tier`.
+- Tests existants réécrits : aucun.
+- Fichiers touchés : `src/ui/LevelResult.tsx`, `src/ui/Panel.tsx` (prop
+  `dataAttributes` pour exposer `data-level-tier`), `src/ui/styles.css`,
+  `src/app/BoardShell.tsx` (prop `campaignVictory`), `src/app/PlayLevelPage.tsx`,
+  tests ci-dessus. Aucun changement du domaine ni de l’application.
+- Écarts avec la tâche : aucun. Le palier affiché est celui de la tentative ;
+  l’indice suit le meilleur résultat enregistré (`nextChallengeHint` de L21),
+  pour ne jamais « re-cacher » une cible déjà révélée. Pas de ligne « meilleur
+  résultat » quand la tentative fait moins bien que le record.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune. Textes choisis au plus simple (ADR 0010
+  laisse le texte à l’interface) : « ✅ Résolu avec 1 objet. », « Tu penses
+  pouvoir le faire avec N ? », « Record à battre : 🏆 avec N objets. »,
+  « Nouveau record : moins que le minimum connu ! ».
+- Vérification finale : `pnpm check` passe d’une traite — 740 tests Vitest,
+  build et 54 tests Playwright `mobile` (53 réussis, 1 ignoré).
+- Non vérifié visuellement : les indices ⭐ et 🏆 (couverts par tests DOM
+  seulement ; aucun parcours E2E ne gagne un niveau à défi avec un surplus).
+- Pour l’auteur : captures `test-results/u4/niveau-1-resolu-390x844.png`,
+  `-844x390.png`, `-1440x900.png` (✅ et « Niveau suivant ») et
+  `test-results/u4/niveau-4-minimal-390x844.png`, `-844x390.png`,
+  `-1440x900.png` (🏆). En portrait, les trois boutons tiennent sur une ligne
+  dans la bande réservée de 104 px, « Retour aux niveaux » sur trois lignes ;
+  à valider, ou retirer « Retour aux niveaux » du bandeau de victoire (le menu
+  y mène déjà) si l’auteur le préfère.

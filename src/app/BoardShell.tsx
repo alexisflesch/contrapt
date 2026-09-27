@@ -14,7 +14,7 @@ import type { ConstructionAttempt } from '../application/construction';
 import { AppFrame } from '../ui/AppFrame';
 import { BoardView } from '../ui/BoardView';
 import { ContextPanel } from '../ui/ContextPanel';
-import { LevelResult } from '../ui/LevelResult';
+import { LevelResult, type CampaignVictory } from '../ui/LevelResult';
 import { InspectorDrawer } from '../ui/InspectorDrawer';
 import { Button } from '../ui/Button';
 import { ObjectDrawer } from '../ui/ObjectDrawer';
@@ -37,6 +37,8 @@ interface BoardShellProps {
   readonly onSimulationCompleted?: (outcome: AttemptOutcome) => void;
   /** Called with each newly committed author document (U17 draft autosave). */
   readonly onDocumentCommitted?: (document: LevelDocument) => void;
+  /** U4: tier, object count and next level after a campaign victory. */
+  readonly campaignVictory?: CampaignVictory | null;
 }
 
 /**
@@ -54,6 +56,7 @@ export function BoardShell({
   onSimulationLaunched,
   onSimulationCompleted,
   onDocumentCommitted,
+  campaignVictory = null,
 }: BoardShellProps) {
   const navigate = useNavigate();
   const {
@@ -330,6 +333,7 @@ export function BoardShell({
                 onReplay={resetToInitialAttempt}
                 onReset={simulation.restoreConstruction}
                 onReturnToLevels={returnToLevels}
+                {...(campaignVictory === null ? {} : { campaign: campaignVictory })}
               />
             }
           />

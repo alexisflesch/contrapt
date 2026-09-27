@@ -11,6 +11,8 @@ interface PanelProps {
   /** Renders the panel as a modal dialog (`role="dialog"`, `aria-modal`); see `Dialog.tsx`. */
   readonly isModalDialog?: boolean;
   readonly ref?: Ref<HTMLElement>;
+  /** `data-*` attributes exposing state to tests and styles (e.g. `data-level-tier`). */
+  readonly dataAttributes?: Readonly<Record<`data-${string}`, string>>;
   readonly children: ReactNode;
 }
 
@@ -26,6 +28,7 @@ export function Panel({
   className,
   isModalDialog = false,
   ref,
+  dataAttributes,
   children,
 }: PanelProps) {
   return (
@@ -34,6 +37,7 @@ export function Panel({
       className={`panel${className === undefined ? '' : ` ${className}`}`}
       aria-label={label}
       {...(isModalDialog ? { role: 'dialog', 'aria-modal': true } : {})}
+      {...dataAttributes}
     >
       <div className="panel-header">
         <h2 className="panel-title">{title}</h2>
