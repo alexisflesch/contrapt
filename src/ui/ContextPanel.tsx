@@ -80,8 +80,18 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
     ({ sourceId, targetId }) =>
       sourceId === selectedPlacement.id || targetId === selectedPlacement.id,
   );
+  // U21: the player unlinks only a wire he laid from the inventory, when
+  // its entry lets him take it back; the level's wires stay.
+  const canUnlink = (wireId: string): boolean => {
+    if (canEdit) return true;
+    const entryId = displayedAttempt.provenance[wireId];
+    return (
+      displayedAttempt.document.inventory.find(({ id }) => id === entryId)?.permissions.remove ===
+      true
+    );
+  };
   const disconnect = (wireId: string): void => {
-    onExecuteCommand(disconnectControlWire({ context: 'author', wireId }));
+    onExecuteCommand(disconnectControlWire({ context: canEdit ? 'author' : 'player', wireId }));
   };
 
   const moveSteps = [
@@ -303,7 +313,7 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
               <li key={wire.id}>
                 <span>Circuit {label}</span>
                 {wire.targetId === selectedPlacement.id && <span> : commandé</span>}
-                {canEdit && (
+                {canUnlink(wire.id) && (
                   <Button
                     aria-label={name}
                     onClick={() => {

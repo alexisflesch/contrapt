@@ -85,6 +85,25 @@ describe('codec de fichier de niveau', () => {
     expect(result.document.wires).toEqual(document.wires);
   });
 
+  it('fait un aller-retour identique d’un document avec un fil en inventaire (U21)', () => {
+    const level = getChallengeAndWiresLevel();
+    const document: LevelDocument = {
+      ...level,
+      inventory: [
+        ...level.inventory,
+        {
+          id: 'inventory-wire',
+          type: 'wire',
+          props: {},
+          quantity: 2,
+          permissions: { move: false, rotate: false, remove: true },
+        },
+      ],
+    };
+
+    expect(decodeLevelFile(encodeLevelFile(document))).toEqual({ status: 'ok', document });
+  });
+
   it('valide puis migre un document v1 vers un document v2 utilisable', () => {
     const result = decodeLevelFile(JSON.stringify(legacyDocument));
 

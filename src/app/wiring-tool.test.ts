@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { wiringGuide, wiringTap, type WiringStep } from './use-wiring-tool';
+import { wiringGuide, wiringStepAfterWire, wiringTap, type WiringStep } from './use-wiring-tool';
 
 const objects = [
   { id: 'lever-1', type: 'lever' },
@@ -82,5 +82,18 @@ describe('outil fil : source puis cible (U15)', () => {
       kind: 'next',
       step: sourceStep,
     });
+  });
+});
+
+describe('outil fil du joueur : un fil de l’inventaire par liaison (U21)', () => {
+  const onLever: WiringStep = { kind: 'target', sourceId: 'lever-1', linkedCount: 0 };
+
+  it('reste sur la source tant qu’il reste des fils, ou sans compte pour l’auteur', () => {
+    expect(wiringStepAfterWire(onLever, null)).toEqual({ ...onLever, linkedCount: 1 });
+    expect(wiringStepAfterWire(onLever, 2)).toEqual({ ...onLever, linkedCount: 1 });
+  });
+
+  it('quitte le geste quand l’inventaire n’a plus de fil', () => {
+    expect(wiringStepAfterWire(onLever, 0)).toBeNull();
   });
 });

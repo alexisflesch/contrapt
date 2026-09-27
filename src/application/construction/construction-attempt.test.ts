@@ -786,3 +786,203 @@ describe('fils de commande', () => {
     ).toEqual({ status: 'rejected', reason: 'invalid-level-document' });
   });
 });
+
+describe('fils de l’inventaire du joueur (U21)', () => {
+  const wireEntry = {
+    id: 'inventory-wires',
+    type: 'wire',
+    props: {},
+    quantity: 1,
+    permissions: { move: false, rotate: false, remove: true },
+  } as const;
+
+  /** The wiring level with one wire for the player and a level wire lever-1 → conveyor-2. */
+  const createPlayerWiringLevel = (
+    entry: LevelDocument['inventory'][number] = wireEntry,
+  ): LevelDocument => {
+    const level = createWiringLevel();
+    return {
+      ...level,
+      objects: [
+        ...level.objects,
+        {
+          id: 'button-1',
+          type: 'button',
+          props: {},
+          transform: { position: { x: 2, y: 2 }, rotation: 0 },
+          permissions: lockedPermissions,
+        },
+      ],
+      inventory: [...level.inventory, entry],
+      wires: [{ id: 'level-wire', sourceId: 'lever-1', targetId: 'conveyor-2' }],
+    };
+  };
+
+  const playerConnect = (
+    sourceId: string,
+    targetId: string,
+    inventoryEntryId = 'inventory-wires',
+    wireId = 'player-wire',
+  ) => connectControlWire({ context: 'player', wireId, sourceId, targetId, inventoryEntryId });
+
+  const quantityOf = (attempt: ConstructionAttempt, entryId: string): number | undefined =>
+    attempt.document.inventory.find(({ id }) => id === entryId)?.quantity;
+
+  it('consomme un fil de l’inventaire et en garde la provenance, annulable', () => {
+    const initial = createConstructionAttempt(createPlayerWiringLevel());
+
+    const connected = executeCommand(
+      createHistory(initial),
+      playerConnect('lever-1', 'conveyor-1'),
+    );
+
+    if (connected.status !== 'accepted') throw new Error('fil du joueur refusé');
+    const state = connected.history.state;
+    expect(state.document.wires).toContainEqual({
+      id: 'player-wire',
+      sourceId: 'lever-1',
+      targetId: 'conveyor-1',
+    });
+    expect(quantityOf(state, 'inventory-wires')).toBe(0);
+    expect(state.provenance).toEqual({ 'player-wire': 'inventory-wires' });
+
+    const undone = undo(connected.history);
+    if (undone.status !== 'accepted') throw new Error('undo refusé');
+    expect(undone.history.state).toEqual(initial);
+  });
+
+  it('refuse le joueur sans fil en inventaire, ou avec une entrée épuisée ou d’un autre genre', () => {
+    const attempt = createConstructionAttempt(createPlayerWiringLevel());
+    const depleted = createConstructionAttempt(
+      createPlayerWiringLevel({ ...wireEntry, quantity: 0 }),
+    );
+
+    expectRejected(
+      connectControlWire({
+        context: 'player',
+        wireId: 'player-wire',
+        sourceId: 'lever-1',
+        targetId: 'conveyor-1',
+      }).execute(attempt),
+      'wiring-not-permitted',
+    );
+    expectRejected(
+      playerConnect('lever-1', 'conveyor-1', 'missing').execute(attempt),
+      'inventory-entry-not-found',
+    );
+    expectRejected(
+      playerConnect('lever-1', 'conveyor-1', 'short-beams').execute(attempt),
+      'inventory-entry-kind-mismatch',
+    );
+    expectRejected(playerConnect('lever-1', 'conveyor-1').execute(depleted), 'inventory-depleted');
+  });
+
+  it('applique au joueur les règles du fil de l’auteur, sans consommer', () => {
+    const attempt = createConstructionAttempt(createPlayerWiringLevel());
+
+    expectRejected(
+      playerConnect('button-1', 'conveyor-1').execute(attempt),
+      'invalid-level-document',
+    );
+    expectRejected(
+      playerConnect('conveyor-1', 'lever-1').execute(attempt),
+      'invalid-level-document',
+    );
+    expectRejected(
+      playerConnect('lever-1', 'conveyor-2').execute(attempt),
+      'wire-already-connected',
+    );
+    expectRejected(
+      playerConnect('lever-1', 'conveyor-1', 'inventory-wires', 'lever-1').execute(attempt),
+      'identifier-already-used',
+    );
+  });
+
+  it('ne pose jamais un fil comme un objet', () => {
+    const attempt = createConstructionAttempt(createPlayerWiringLevel());
+
+    expectRejected(
+      placeFromInventory({
+        context: 'player',
+        inventoryEntryId: 'inventory-wires',
+        placementId: 'wire-object',
+        transform: { position: { x: 4, y: 5 }, rotation: 0 },
+      }).execute(attempt),
+      'inventory-entry-kind-mismatch',
+    );
+  });
+
+  it('rend au joueur le fil qu’il délie, jamais un fil du niveau', () => {
+    const initial = createConstructionAttempt(createPlayerWiringLevel());
+    const connected = playerConnect('lever-1', 'conveyor-1').execute(initial);
+    if (connected.status !== 'accepted') throw new Error('fil du joueur refusé');
+
+    const unlinked = disconnectControlWire({ context: 'player', wireId: 'player-wire' }).execute(
+      connected.state,
+    );
+
+    expect(unlinked).toEqual({ status: 'accepted', state: initial });
+    expectRejected(
+      disconnectControlWire({ context: 'player', wireId: 'level-wire' }).execute(connected.state),
+      'inventory-provenance-missing',
+    );
+  });
+
+  it('ne laisse pas délier un fil dont l’entrée interdit le retrait', () => {
+    const initial = createConstructionAttempt(
+      createPlayerWiringLevel({
+        ...wireEntry,
+        permissions: { move: false, rotate: false, remove: false },
+      }),
+    );
+    const connected = playerConnect('lever-1', 'conveyor-1').execute(initial);
+    if (connected.status !== 'accepted') throw new Error('fil du joueur refusé');
+
+    expectRejected(
+      disconnectControlWire({ context: 'player', wireId: 'player-wire' }).execute(connected.state),
+      'remove-not-permitted',
+    );
+  });
+
+  it('rend le fil quand le joueur retire l’objet qu’il reliait', () => {
+    const level = createPlayerWiringLevel();
+    const withLever: LevelDocument = {
+      ...level,
+      inventory: [
+        ...level.inventory,
+        {
+          id: 'inventory-levers',
+          type: 'lever',
+          props: { position: 'center' },
+          quantity: 1,
+          permissions: { move: true, rotate: true, remove: true },
+        },
+      ],
+    };
+    const initial = createConstructionAttempt(withLever);
+    const placed = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'inventory-levers',
+      placementId: 'player-lever',
+      transform: { position: { x: 3, y: 6 }, rotation: 0 },
+    }).execute(initial);
+    if (placed.status !== 'accepted') throw new Error('levier refusé');
+    const connected = playerConnect('player-lever', 'conveyor-1').execute(placed.state);
+    if (connected.status !== 'accepted') throw new Error('fil du joueur refusé');
+
+    const removed = removePlacement({ context: 'player', placementId: 'player-lever' }).execute(
+      connected.state,
+    );
+
+    expect(removed).toEqual({ status: 'accepted', state: initial });
+  });
+
+  it('garde valide un défi dont le seul objet est un fil, fil consommé', () => {
+    const initial = createConstructionAttempt({
+      ...createPlayerWiringLevel(),
+      challenge: { elegantObjectCount: 2, minimalObjectCount: 2 },
+    });
+
+    expect(playerConnect('lever-1', 'conveyor-1').execute(initial).status).toBe('accepted');
+  });
+});

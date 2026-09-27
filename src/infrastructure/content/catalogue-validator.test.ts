@@ -40,6 +40,29 @@ describe('validateContentCatalog', () => {
     expect(result.levels).toEqual([validLevel]);
   });
 
+  it('valide un niveau de campagne qui donne des fils au joueur (U21)', () => {
+    const levelWithWire = {
+      ...validLevel,
+      inventory: [
+        {
+          id: 'inventory-wire',
+          type: 'wire',
+          props: {},
+          quantity: 2,
+          permissions: { move: false, rotate: false, remove: true },
+        },
+      ],
+    };
+
+    const result = validateContentCatalog(
+      [file('level-1.json', levelWithWire)],
+      new Set(['first-drop']),
+    );
+
+    expect(result.issues).toEqual([]);
+    expect(result.levels).toEqual([levelWithWire]);
+  });
+
   it('signale le fichier dont le document ne respecte pas le schema strict', () => {
     const invalidLevel = {
       ...validLevel,

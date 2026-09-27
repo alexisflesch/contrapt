@@ -36,7 +36,8 @@ pendant le travail.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
   regroupement des prévisualisations).
 - `ConstructionAttempt` : placement depuis l’inventaire, déplacement, rotation,
-  propriétés, retrait, relier/délier un fil, pour les contextes joueur et auteur,
+  propriétés, retrait, relier/délier un fil (le joueur avec un fil de son
+  inventaire, rendu quand il le délie ; U21), pour les contextes joueur et auteur,
   avec permissions, zone de construction (empreinte entière contenue dans une
   même zone en contexte joueur), protection de l’objectif et provenance éphémère
   (ADR 0005).
@@ -99,8 +100,10 @@ pendant le travail.
   de tour du ventilateur, de la barrière et du tremplin (boutons et poignée),
   états de départ du ventilateur et de la barrière, circuits du fil et
   **Délier**, suppression.
-- Carte « Fil » du catalogue auteur (U15, atelier et brouillons, jamais en mode
-  joueur) : toucher la carte, puis un levier ou un bouton, puis chaque appareil
+- Carte « Fil » du catalogue auteur (U15, atelier et brouillons) ; en mode
+  joueur, carte « Fil » par entrée `wire` de l’inventaire, avec sa quantité,
+  désactivée une fois épuisée ; le geste s’arrête au dernier fil (U21). Le
+  joueur ne voit « Délier » que pour ses propres fils : toucher la carte, puis un levier ou un bouton, puis chaque appareil
   à commander (la source est sélectionnée, l’inspecteur compact reste fermé) ;
   le geste reste sur la source jusqu’à « Terminer les fils »
   (« Annuler le fil » avant le premier). Guidage et refus dans une carte
@@ -277,8 +280,16 @@ pendant le travail.
   production. Le test E2E confirme l’ouverture du niveau 1 après rechargement hors
   ligne. La proposition visible d’installation et de mise à jour (U10) reste un
   travail d’interface.
-- **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
-  l’inventaire en résolution ne peut pas être relié (ADR 0009).
+- **Fils du joueur (U21)** : le joueur ne relie qu’avec les fils de
+  l’inventaire du niveau ; aucun niveau de campagne n’en donne encore, et
+  l’atelier ne permet pas d’ajouter une entrée « Fil » à l’inventaire (pas
+  d’interface d’édition d’inventaire, voir « Mode auteur incomplet »).
+- **Inspecteur compact et sélection** : quand l’inspecteur compact est fermé
+  et qu’un objet reste sélectionné, toucher un autre objet ne le rouvre pas
+  (il faut « Ouvrir les propriétés ») ; constaté pendant U21, préexistant.
+- **E2E instable** : `e2e/levels.spec.ts` « niveau 9 : poser le convoyeur… »
+  échoue par intermittence (« Fermer les propriétés » introuvable), y compris
+  sur le commit précédent U21.
 - **Deux boutons « Réinitialiser »** (libellé à remplacer par « Recommencer », voir
   `mobile-editor-interactions.md`) actifs simultanément après une simulation
   terminée (barre d’actions et bandeau de résultat).
@@ -309,11 +320,17 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
+`pnpm check` après U21 (27 septembre 2026) : passe d’une traite au second
+essai — typecheck, lint, formatage, Knip, contenu, 727 tests Vitest (61
+fichiers), build et 51 tests Playwright `mobile` (50 réussis, 1 ignoré). Le
+premier essai avait échoué sur l’E2E instable du niveau 9 (voir les dettes).
+
+Exécution précédente :
 `pnpm check` après U15 (27 septembre 2026) : passe d’une traite — typecheck,
 lint, formatage, Knip, contenu, 704 tests Vitest (61 fichiers), build et 50
 tests Playwright `mobile` (49 réussis, 1 ignoré).
 
-Exécution précédente :
+Exécution antérieure :
 `pnpm check` après U19, U20 et le délai des recherches du niveau 12
 (27 septembre 2026) : passe d’une traite — typecheck, lint, formatage, Knip,
 contenu, 693 tests Vitest (60 fichiers), build et 48 tests Playwright `mobile`

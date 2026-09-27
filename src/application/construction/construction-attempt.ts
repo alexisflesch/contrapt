@@ -13,6 +13,7 @@ export type ConstructionContext = 'player' | 'author';
 export type ConstructionErrorCode =
   | 'inventory-entry-not-found'
   | 'inventory-depleted'
+  | 'inventory-entry-kind-mismatch'
   | 'placement-id-already-used'
   | 'placement-not-found'
   | 'placement-not-rotatable'
@@ -40,7 +41,9 @@ export type ConstructionErrorCode =
 
 /**
  * State for one editable construction. Provenance deliberately lives beside the
- * persistent document: it describes this attempt, not the authored level.
+ * persistent document: it describes this attempt, not the authored level. It
+ * maps the id of each object or wire (U21) the attempt took from the inventory
+ * to its inventory entry; a player's wire id never collides with an object id.
  */
 export interface ConstructionAttempt {
   readonly document: LevelDocument;
@@ -95,12 +98,16 @@ interface UpdatePlacementPropertiesInput {
   readonly props: Placement['props'];
 }
 
-/** Wiring is an authoring act in v1 (ADR 0009): the player never edits circuits. */
+/**
+ * ADR 0009, amended by U21: the author wires freely; the player wires only by
+ * consuming a wire entry of the inventory, named by `inventoryEntryId`.
+ */
 interface ConnectControlWireInput {
   readonly context: ConstructionContext;
   readonly wireId: string;
   readonly sourceId: string;
   readonly targetId: string;
+  readonly inventoryEntryId?: string | undefined;
 }
 
 interface DisconnectControlWireInput {
@@ -184,13 +191,18 @@ const acceptCandidate = (
   const placementsById = new Map(
     attemptDocument.objects.map((placement) => [placement.id, placement]),
   );
+  const wireIds = new Set(attemptDocument.wires.map(({ id }) => id));
   const consumedByInventoryId = new Map<string, number>();
 
-  for (const [placementId, inventoryEntryId] of Object.entries(provenance)) {
-    const placement = placementsById.get(placementId);
+  for (const [takenId, inventoryEntryId] of Object.entries(provenance)) {
+    const placement = placementsById.get(takenId);
     const inventoryEntry = attemptDocument.inventory.find(({ id }) => id === inventoryEntryId);
-    if (placement === undefined || inventoryEntry === undefined) continue;
-    if (!definitionsMatch(placement, inventoryEntry)) continue;
+    if (inventoryEntry === undefined) continue;
+    const consumed =
+      placement === undefined
+        ? inventoryEntry.type === 'wire' && wireIds.has(takenId)
+        : definitionsMatch(placement, inventoryEntry);
+    if (!consumed) continue;
     consumedByInventoryId.set(
       inventoryEntryId,
       (consumedByInventoryId.get(inventoryEntryId) ?? 0) + 1,
@@ -227,6 +239,7 @@ export const placeFromInventory = (input: PlaceFromInventoryInput): Construction
   execute: (state) => {
     const inventoryEntry = state.document.inventory.find(({ id }) => id === input.inventoryEntryId);
     if (inventoryEntry === undefined) return reject('inventory-entry-not-found');
+    if (inventoryEntry.type === 'wire') return reject('inventory-entry-kind-mismatch');
     if (inventoryEntry.quantity <= 0) return reject('inventory-depleted');
     if (state.document.objects.some(({ id }) => id === input.placementId)) {
       return reject('placement-id-already-used');
@@ -370,6 +383,33 @@ export const updatePlacementProperties = (
   },
 });
 
+/**
+ * Gives back to the inventory the wires in `wireIds` that this attempt took
+ * from it (U21), and forgets their provenance. Level wires are left alone.
+ */
+const returnWiresToInventory = (
+  inventory: readonly InventoryEntry[],
+  provenance: Readonly<Record<string, string>>,
+  wireIds: readonly string[],
+): { inventory: InventoryEntry[]; provenance: Record<string, string> } => {
+  const returnedByEntryId = new Map<string, number>();
+  for (const wireId of wireIds) {
+    const entryId = provenance[wireId];
+    if (entryId !== undefined) {
+      returnedByEntryId.set(entryId, (returnedByEntryId.get(entryId) ?? 0) + 1);
+    }
+  }
+  return {
+    inventory: inventory.map((entry) => {
+      const returned = returnedByEntryId.get(entry.id) ?? 0;
+      return returned === 0 ? entry : { ...entry, quantity: entry.quantity + returned };
+    }),
+    provenance: Object.fromEntries(
+      Object.entries(provenance).filter(([takenId]) => !wireIds.includes(takenId)),
+    ),
+  };
+};
+
 export const removePlacement = (input: RemovePlacementInput): ConstructionCommand => ({
   execute: (state) => {
     const placement = state.document.objects.find(({ id }) => id === input.placementId);
@@ -389,64 +429,125 @@ export const removePlacement = (input: RemovePlacementInput): ConstructionComman
       return reject('inventory-provenance-missing');
     }
 
-    let inventoryCandidate: unknown = state.document.inventory;
+    let inventory = state.document.inventory;
     if (sourceId !== undefined) {
-      const source = state.document.inventory.find(({ id }) => id === sourceId);
+      const source = inventory.find(({ id }) => id === sourceId);
       if (source === undefined) return reject('inventory-source-not-found');
       if (input.context === 'player' && !definitionsMatch(placement, source)) {
         return reject('inventory-provenance-mismatch');
       }
 
-      inventoryCandidate = state.document.inventory.map((entry) =>
+      inventory = inventory.map((entry) =>
         entry.id === source.id ? { ...entry, quantity: entry.quantity + 1 } : entry,
       );
     }
 
+    // A wire never outlives either of its ends; a player's wire goes back to
+    // the inventory it came from (U21).
+    const isCut = ({ sourceId: from, targetId: to }: { sourceId: string; targetId: string }) =>
+      from === placement.id || to === placement.id;
+    const returned = returnWiresToInventory(
+      inventory,
+      state.provenance,
+      state.document.wires.filter(isCut).map(({ id }) => id),
+    );
     const documentCandidate = {
       ...state.document,
       objects: state.document.objects.filter(({ id }) => id !== placement.id),
-      inventory: inventoryCandidate,
-      // A wire never outlives either of its ends.
-      wires: state.document.wires.filter(
-        ({ sourceId, targetId }) => sourceId !== placement.id && targetId !== placement.id,
-      ),
+      inventory: returned.inventory,
+      wires: state.document.wires.filter((wire) => !isCut(wire)),
     };
     const provenance = Object.fromEntries(
-      Object.entries(state.provenance).filter(([placementId]) => placementId !== placement.id),
+      Object.entries(returned.provenance).filter(([placementId]) => placementId !== placement.id),
     );
     return acceptCandidate(documentCandidate, provenance);
   },
 });
 
+/**
+ * The player's side of `connectControlWire` (U21): the wire comes from a wire
+ * entry of the inventory, which loses one unit and becomes its provenance.
+ */
+const takeWireFromInventory = (
+  state: ConstructionAttempt,
+  input: ConnectControlWireInput,
+):
+  | {
+      readonly status: 'taken';
+      readonly inventory: readonly InventoryEntry[];
+      readonly provenance: Readonly<Record<string, string>>;
+    }
+  | { readonly status: 'rejected'; readonly reason: ConstructionErrorCode } => {
+  if (input.context === 'author') {
+    return { status: 'taken', inventory: state.document.inventory, provenance: state.provenance };
+  }
+  if (input.inventoryEntryId === undefined)
+    return { status: 'rejected', reason: 'wiring-not-permitted' };
+  const entry = state.document.inventory.find(({ id }) => id === input.inventoryEntryId);
+  if (entry === undefined) return { status: 'rejected', reason: 'inventory-entry-not-found' };
+  if (entry.type !== 'wire') return { status: 'rejected', reason: 'inventory-entry-kind-mismatch' };
+  if (entry.quantity <= 0) return { status: 'rejected', reason: 'inventory-depleted' };
+  // Provenance keys objects and wires alike: a player's wire id stays apart.
+  if (
+    state.document.objects.some(({ id }) => id === input.wireId) ||
+    state.provenance[input.wireId] !== undefined
+  ) {
+    return { status: 'rejected', reason: 'identifier-already-used' };
+  }
+  return {
+    status: 'taken',
+    inventory: state.document.inventory.map((candidate) =>
+      candidate.id === entry.id ? { ...candidate, quantity: candidate.quantity - 1 } : candidate,
+    ),
+    provenance: { ...state.provenance, [input.wireId]: entry.id },
+  };
+};
+
 export const connectControlWire = (input: ConnectControlWireInput): ConstructionCommand => ({
   execute: (state) => {
-    if (input.context === 'player') return reject('wiring-not-permitted');
+    const taken = takeWireFromInventory(state, input);
+    if (taken.status === 'rejected') return reject(taken.reason);
     if (state.document.wires.some(({ targetId }) => targetId === input.targetId)) {
       return reject('wire-already-connected');
     }
 
     const documentCandidate = {
       ...state.document,
+      inventory: taken.inventory,
       wires: [
         ...state.document.wires,
         { id: input.wireId, sourceId: input.sourceId, targetId: input.targetId },
       ],
     };
-    return acceptCandidate(documentCandidate, state.provenance);
+    return acceptCandidate(documentCandidate, taken.provenance);
   },
 });
 
+/**
+ * Unlinks a wire. The player unlinks only a wire he laid, if its entry lets
+ * him take it back, and gets it back in the inventory (U21); level wires stay.
+ */
 export const disconnectControlWire = (input: DisconnectControlWireInput): ConstructionCommand => ({
   execute: (state) => {
-    if (input.context === 'player') return reject('wiring-not-permitted');
     if (!state.document.wires.some(({ id }) => id === input.wireId)) {
       return reject('wire-not-found');
     }
+    if (input.context === 'player') {
+      const entryId = state.provenance[input.wireId];
+      if (entryId === undefined) return reject('inventory-provenance-missing');
+      const entry = state.document.inventory.find(({ id }) => id === entryId);
+      if (entry === undefined) return reject('inventory-source-not-found');
+      if (!entry.permissions.remove) return reject('remove-not-permitted');
+    }
 
+    const returned = returnWiresToInventory(state.document.inventory, state.provenance, [
+      input.wireId,
+    ]);
     const documentCandidate = {
       ...state.document,
+      inventory: returned.inventory,
       wires: state.document.wires.filter(({ id }) => id !== input.wireId),
     };
-    return acceptCandidate(documentCandidate, state.provenance);
+    return acceptCandidate(documentCandidate, returned.provenance);
   },
 });

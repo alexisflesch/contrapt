@@ -1,4 +1,5 @@
 import {
+  connectControlWire,
   createConstructionAttempt,
   movePlacement,
   placeFromInventory,
@@ -35,6 +36,14 @@ export type PlayerStep =
       readonly kind: 'rotate';
       readonly placementId: string;
       readonly rotationDegrees: number;
+    }
+  | {
+      /** U21: lays a wire of the inventory from `sourceId` to `targetId`. */
+      readonly kind: 'wire';
+      readonly inventoryEntryId: string;
+      readonly wireId: string;
+      readonly sourceId: string;
+      readonly targetId: string;
     };
 
 const describePlayerStep = (step: PlayerStep): string => {
@@ -45,20 +54,34 @@ const describePlayerStep = (step: PlayerStep): string => {
       return `déplacement de « ${step.placementId} »`;
     case 'rotate':
       return `rotation de « ${step.placementId} »`;
+    case 'wire':
+      return `fil « ${step.wireId} » de « ${step.sourceId} » à « ${step.targetId} »`;
   }
 };
 
 class PlayerStepError extends Error {
   readonly stepNumber: number;
+  readonly step: PlayerStep;
   readonly reason: ConstructionErrorCode;
 
   constructor(stepNumber: number, step: PlayerStep, reason: ConstructionErrorCode) {
     super(`L’étape ${String(stepNumber)} (${describePlayerStep(step)}) a été refusée : ${reason}.`);
     this.name = 'PlayerStepError';
     this.stepNumber = stepNumber;
+    this.step = step;
     this.reason = reason;
   }
 }
+
+/**
+ * A search skips candidates the player could not play: a pose outside the
+ * build zones, or a wire the rules refuse (wrong ends, device already
+ * commanded). Any other refusal is a mistake in the candidates and fails.
+ */
+const isIllegalCandidate = (error: PlayerStepError): boolean =>
+  error.reason === 'outside-build-zone' ||
+  (error.step.kind === 'wire' &&
+    (error.reason === 'invalid-level-document' || error.reason === 'wire-already-connected'));
 
 const fixedStepOutcome = (reason: 'out-of-scene' | 'timeout'): LevelRunOutcome =>
   reason === 'out-of-scene' ? 'out-of-scene' : 'timed-out';
@@ -134,6 +157,14 @@ export const applyPlayerSteps = (
             placementId: step.placementId,
             rotation: (step.rotationDegrees * Math.PI) / 180,
           });
+        case 'wire':
+          return connectControlWire({
+            context: 'player',
+            inventoryEntryId: step.inventoryEntryId,
+            wireId: step.wireId,
+            sourceId: step.sourceId,
+            targetId: step.targetId,
+          });
       }
     })();
 
@@ -159,7 +190,7 @@ export const searchSolutions = (
     try {
       candidateDocument = applyPlayerSteps(document, selectedSteps);
     } catch (error) {
-      if (error instanceof PlayerStepError && error.reason === 'outside-build-zone') return;
+      if (error instanceof PlayerStepError && isIllegalCandidate(error)) return;
       throw error;
     }
 

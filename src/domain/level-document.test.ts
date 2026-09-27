@@ -588,6 +588,72 @@ describe('LevelDocument v2', () => {
   });
 });
 
+describe('fil dans l’inventaire du joueur (U21)', () => {
+  const wireEntry = {
+    id: 'inventory-wire',
+    type: 'wire',
+    props: {},
+    quantity: 2,
+    permissions: { move: false, rotate: false, remove: true },
+  } as const;
+
+  it('relit à l’identique un document sans fil en inventaire', () => {
+    const parsed = levelDocumentSchema.safeParse(validLevel);
+
+    expect(parsed.success && parsed.data).toEqual(validLevel);
+  });
+
+  it('accepte une entrée de fil avec sa quantité et la relit à l’identique', () => {
+    const candidate = { ...validLevel, inventory: [...validLevel.inventory, wireEntry] };
+
+    const parsed = levelDocumentSchema.safeParse(candidate);
+
+    expect(parsed.success && parsed.data).toEqual(candidate);
+  });
+
+  it('refuse un fil déplaçable, tournable, ou porteur de propriétés', () => {
+    expect(
+      issuePaths({
+        ...validLevel,
+        inventory: [
+          { ...wireEntry, permissions: { move: true, rotate: false, remove: true } },
+          { ...wireEntry, id: 'wire-b', permissions: { move: false, rotate: true, remove: true } },
+          { ...wireEntry, id: 'wire-c', props: { size: 'short' } },
+        ],
+      }),
+    ).toEqual([
+      'inventory.0.permissions.move',
+      'inventory.1.permissions.rotate',
+      'inventory.2.props',
+    ]);
+  });
+
+  it('compte les fils dans la quantité totale opposée au minimum connu', () => {
+    expect(
+      levelDocumentSchema.safeParse({
+        ...validLevel,
+        inventory: [...validLevel.inventory, { ...wireEntry, quantity: 1 }],
+        challenge: { elegantObjectCount: 2, minimalObjectCount: 2 },
+      }).success,
+    ).toBe(true);
+  });
+
+  it('n’accepte pas de fil dans l’inventaire d’un document v1', () => {
+    const v1 = {
+      schemaVersion: 1,
+      id: validLevel.id,
+      metadata: validLevel.metadata,
+      objects: validLevel.objects,
+      inventory: validLevel.inventory,
+      goal: validLevel.goal,
+      buildZones: validLevel.buildZones,
+    };
+
+    expect(levelDocumentV1Schema.safeParse(v1).success).toBe(true);
+    expect(levelDocumentV1Schema.safeParse({ ...v1, inventory: [wireEntry] }).success).toBe(false);
+  });
+});
+
 describe('migrateLevelDocumentV1ToV2', () => {
   const permissions = { move: false, rotate: false, remove: false } as const;
 

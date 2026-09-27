@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ConstructionAttempt } from '../construction';
-import { createConstructionAttempt, placeFromInventory } from '../construction';
+import { connectControlWire, createConstructionAttempt, placeFromInventory } from '../construction';
 import type { LevelDocument } from '../../domain/level-document';
 import {
   countObjectsUsed,
@@ -102,6 +102,59 @@ describe('progression de campagne', () => {
       const withMass = placeInventoryObject(withTwoBeams, 'inventory-mass', 'placed-mass');
 
       expect(countObjectsUsed(withMass)).toBe(3);
+    });
+
+    it('compte un fil posé par le joueur comme un objet, pas un fil du niveau (U21)', () => {
+      const level = createLevel();
+      const initial = createConstructionAttempt({
+        ...level,
+        objects: [
+          ...level.objects,
+          {
+            id: 'lever-1',
+            type: 'lever',
+            props: { position: 'center' },
+            transform: { position: { x: 2, y: 4 }, rotation: 0 },
+            permissions: fixed,
+          },
+          {
+            id: 'conveyor-1',
+            type: 'conveyor',
+            props: { direction: 'stopped' },
+            transform: { position: { x: 5, y: 4 }, rotation: 0 },
+            permissions: fixed,
+          },
+          {
+            id: 'fan-1',
+            type: 'fan',
+            props: { state: 'off' },
+            transform: { position: { x: 6, y: 1 }, rotation: 0 },
+            permissions: fixed,
+          },
+        ],
+        inventory: [
+          ...level.inventory,
+          {
+            id: 'inventory-wire',
+            type: 'wire',
+            props: {},
+            quantity: 1,
+            permissions: { move: false, rotate: false, remove: true },
+          },
+        ],
+        wires: [{ id: 'level-wire', sourceId: 'lever-1', targetId: 'fan-1' }],
+      });
+      const wired = connectControlWire({
+        context: 'player',
+        wireId: 'player-wire',
+        sourceId: 'lever-1',
+        targetId: 'conveyor-1',
+        inventoryEntryId: 'inventory-wire',
+      }).execute(initial);
+      if (wired.status === 'rejected') throw new Error(`Le fil a été refusé : ${wired.reason}`);
+
+      expect(countObjectsUsed(initial)).toBe(0);
+      expect(countObjectsUsed(wired.state)).toBe(1);
     });
 
     it('ignore une provenance sans placement vivant ni entrée d’inventaire', () => {

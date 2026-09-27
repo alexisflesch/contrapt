@@ -121,6 +121,28 @@ le seul indice), en petite pastille aussi translucide que le fil. La section
 « Routage indépendant, ponts en post-traitement » ci-dessus est caduque ; la
 chaîne devient objets et fils → ports → segment → dessin.
 
+## Amendement du 27 septembre 2026 — fil dans l'inventaire du joueur (U21)
+
+Décision de l'auteur : **un fil est un objet d'inventaire comme les autres** ;
+un puzzle peut en donner au joueur. La section « Le câblage est un acte
+d'auteur » ci-dessus est caduque pour les fils d'inventaire.
+
+- Format : l'inventaire v2 accepte `{ id, type: 'wire', quantity, props: {},
+  permissions }`, avec `move` et `rotate` toujours `false` (un fil n'a ni
+  position ni angle) ; `remove` dit si le joueur peut reprendre un fil qu'il a
+  posé, comme pour un objet. Ajout compatible, sans nouvelle version ni
+  migration ; l'inventaire v1 n'accepte pas de fil.
+- Commande : `connectControlWire` en contexte joueur exige `inventoryEntryId`
+  (sinon `wiring-not-permitted`), consomme une unité de cette entrée et
+  enregistre la provenance du fil (ADR 0005 : la provenance associe l'id d'un
+  objet ou d'un fil à son entrée). Mêmes règles de domaine que pour l'auteur.
+- Retrait : `disconnectControlWire` en contexte joueur ne délie qu'un fil
+  posé par le joueur (`inventory-provenance-missing` pour un fil du niveau) et
+  le rend à l'inventaire ; retirer un objet rend aussi les fils du joueur qui
+  y étaient attachés.
+- Défi : un fil posé par le joueur compte comme un objet (ADR 0010), et la
+  quantité de fils compte dans le total opposé à `minimalObjectCount`.
+
 ## Conséquences
 
 - Aucune dépendance ajoutée ; le port physique gagne des « dispositifs » dans

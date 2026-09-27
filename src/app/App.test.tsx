@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CampaignProgress } from '../application/progression';
 import type { ProgressRepository } from '../application/progression/progress-repository';
 import { embeddedLevels } from '../content/embedded-levels';
+import { levelDocumentSchema } from '../domain/level-document';
 import { encodeShareFragment } from '../infrastructure/level-share/level-share-codec';
 import { fitCameraToScene } from '../presentation/board-camera';
 import { ROTATION_HANDLE_DISTANCE_CSS_PIXELS } from '../presentation/rotation-handle-metrics';
@@ -2078,6 +2079,89 @@ describe('coque Contrapt!', () => {
     fireEvent.click(undoButton);
     expect(screen.queryByRole('region', { name: 'Propriétés de Levier' })).not.toBeInTheDocument();
     expect(undoButton).toBeDisabled();
+  });
+
+  it('relie un levier à un convoyeur avec le fil de l’inventaire, puis le délie ; un fil du niveau reste (U21)', async () => {
+    const locked = { move: false, rotate: false, remove: false } as const;
+    const placed = (id: string, type: string, x: number, y: number, props: object = {}) => ({
+      id,
+      type,
+      props,
+      transform: { position: { x, y }, rotation: 0 },
+      permissions: locked,
+    });
+    const wiredLevel = levelDocumentSchema.parse({
+      schemaVersion: 2,
+      id: 'u21-fil-joueur',
+      metadata: { title: 'Fil du joueur' },
+      objects: [
+        placed('ball-1', 'ball', 0.5, 0.5),
+        placed('basket-1', 'basket', 7.2, 4.8),
+        placed('lever-1', 'lever', 2, 3, { position: 'center' }),
+        placed('conveyor-1', 'conveyor', 5.5, 3, { direction: 'stopped' }),
+        placed('button-1', 'button', 2, 1.2),
+        placed('fan-1', 'fan', 5.5, 1.2, { state: 'off' }),
+      ],
+      inventory: [
+        {
+          id: 'inventory-wire',
+          type: 'wire',
+          props: {},
+          quantity: 1,
+          permissions: { move: false, rotate: false, remove: true },
+        },
+      ],
+      goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+      buildZones: [],
+      scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+      wires: [{ id: 'level-wire', sourceId: 'button-1', targetId: 'fan-1' }],
+    });
+    window.history.replaceState(null, '', `/shared${await encodeShareFragment(wiredLevel)}`);
+    render(<App />);
+    expect(await screen.findByText('Partage · Fil du joueur')).toBeVisible();
+    const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
+      name: 'Rendu du plateau',
+    });
+    const openCatalogue = (): void => {
+      const toggle = screen.queryByRole('button', { name: 'Ouvrir le catalogue' });
+      if (toggle !== null) fireEvent.click(toggle);
+    };
+    expect(canvas).toHaveAttribute('data-wires', 'button-1>fan-1');
+
+    openCatalogue();
+    fireEvent.click(screen.getByRole('button', { name: 'Fil de commande, quantité : 1' }));
+    expect(screen.getByText('Touchez un levier ou un bouton')).toBeVisible();
+    tapWorldPoint(2, 3);
+    expect(screen.getByText('Touchez l’appareil à commander')).toBeVisible();
+    // Mêmes règles que l’auteur : l’appareil du niveau a déjà son contrôleur.
+    tapWorldPoint(5.5, 1.2);
+    expect(
+      screen.getByText(
+        'Cet appareil a déjà un contrôleur : il n’obéit qu’à un seul levier ou bouton.',
+      ),
+    ).toBeVisible();
+    tapWorldPoint(5.5, 3);
+
+    expect(canvas).toHaveAttribute('data-wires', 'button-1>fan-1 lever-1>conveyor-1');
+    // Plus de fil : le geste s’arrête et la carte est désactivée.
+    expect(screen.queryByRole('group', { name: 'Pose d’un fil' })).toBeNull();
+    openCatalogue();
+    expect(screen.getByRole('button', { name: 'Fil de commande, quantité : 0' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer le catalogue' }));
+
+    // Le fil du niveau ne se délie pas.
+    tapWorldPoint(2, 1.2);
+    const buttonPanel = screen.getByRole('region', { name: 'Propriétés de Bouton' });
+    expect(within(buttonPanel).getByText('Circuit A')).toBeVisible();
+    expect(within(buttonPanel).queryByRole('button', { name: /Délier/ })).toBeNull();
+
+    // Le joueur délie le sien et le retrouve dans l’inventaire.
+    tapWorldPoint(2, 3);
+    const leverPanel = screen.getByRole('region', { name: 'Propriétés de Levier' });
+    fireEvent.click(within(leverPanel).getByRole('button', { name: 'Délier le circuit B' }));
+    expect(canvas).toHaveAttribute('data-wires', 'button-1>fan-1');
+    openCatalogue();
+    expect(screen.getByRole('button', { name: 'Fil de commande, quantité : 1' })).toBeEnabled();
   });
 
   it('ouvre un niveau partagé validé comme niveau joueur éphémère', async () => {

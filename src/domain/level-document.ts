@@ -144,7 +144,7 @@ const inventoryFields = {
   permissions: objectPermissionsSchema,
 };
 
-const inventoryEntrySchema = z.discriminatedUnion('type', [
+const placementInventoryEntrySchemas = [
   z.strictObject({
     ...inventoryFields,
     type: z.literal('ball'),
@@ -200,6 +200,33 @@ const inventoryEntrySchema = z.discriminatedUnion('type', [
     type: z.literal('springboard'),
     props: springboardPropertiesSchema,
   }),
+] as const;
+
+/** v1 inventories only ever held placeable families. */
+const placementInventoryEntrySchema = z.discriminatedUnion('type', placementInventoryEntrySchemas);
+
+/**
+ * U21 (ADR 0009, amendement du 27 septembre 2026): a wire the player may lay
+ * between a controller and a device. It has no position, angle or property,
+ * so `move` and `rotate` are always `false`; `remove` says whether the player
+ * may take back a wire he laid, like any object placed from the inventory.
+ */
+const wireInventoryEntrySchema = z.strictObject({
+  id: identifierSchema,
+  quantity: z.int().min(0).max(MAX_INVENTORY_QUANTITY),
+  type: z.literal('wire'),
+  props: z.strictObject({}),
+  permissions: z.strictObject({
+    move: z.literal(false),
+    rotate: z.literal(false),
+    remove: z.boolean(),
+  }),
+});
+
+/** v2 inventories add wires to the placeable families, compatibly (U21). */
+const inventoryEntrySchema = z.discriminatedUnion('type', [
+  ...placementInventoryEntrySchemas,
+  wireInventoryEntrySchema,
 ]);
 
 /**
@@ -311,6 +338,8 @@ const sharedDocumentFields = {
 const levelDocumentV1StructureSchema = z.strictObject({
   schemaVersion: z.literal(LEVEL_DOCUMENT_V1_SCHEMA_VERSION),
   ...sharedDocumentFields,
+  // Overrides the shared key in place, keeping the key order: no wire in v1.
+  inventory: z.array(placementInventoryEntrySchema).max(MAX_INVENTORY_ENTRIES),
 });
 
 const levelDocumentV2StructureSchema = z.strictObject({
@@ -325,6 +354,8 @@ const levelDocumentV2StructureSchema = z.strictObject({
 
 type ObjectPlacement = z.infer<typeof objectPlacementSchema>;
 type InventoryEntry = z.infer<typeof inventoryEntrySchema>;
+/** An inventory entry the player places on the board, as opposed to a wire. */
+export type PlaceableInventoryEntry = Exclude<InventoryEntry, { readonly type: 'wire' }>;
 type WorldPosition = z.infer<typeof worldPositionSchema>;
 type BuildZone = z.infer<typeof buildZoneSchema>;
 type Challenge = z.infer<typeof challengeSchema>;
@@ -419,6 +450,8 @@ const addRotationPermissionIssues = (
   issues: LevelDocumentValidationIssue[],
 ): void => {
   entries.forEach((entry, index) => {
+    // A wire's permissions forbid rotation structurally.
+    if (entry.type === 'wire') return;
     if (rotationMode(entry.type) === 'fixed' && entry.permissions.rotate) {
       issues.push({
         path: [property, index, 'permissions', 'rotate'],

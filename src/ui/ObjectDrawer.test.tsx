@@ -5,15 +5,31 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createConstructionAttempt } from '../application/construction';
 import { createEditorSession } from '../application/editor-session';
 import { embeddedWorkshopDocument } from '../content/embedded-levels';
+import type { LevelDocument } from '../domain/level-document';
 import { ObjectDrawer } from './ObjectDrawer';
+
+const withWires = (quantity: number): LevelDocument => ({
+  ...embeddedWorkshopDocument,
+  inventory: [
+    ...embeddedWorkshopDocument.inventory,
+    {
+      id: 'inventory-wire',
+      type: 'wire',
+      props: {},
+      quantity,
+      permissions: { move: false, rotate: false, remove: true },
+    },
+  ],
+});
 
 const renderDrawer = (
   mode: 'resolution' | 'creation',
-  onSelectWire: () => void = () => undefined,
+  onSelectWire: (inventoryEntryId?: string) => void = () => undefined,
+  document: LevelDocument = embeddedWorkshopDocument,
 ): HTMLElement => {
   render(
     <ObjectDrawer
-      session={createEditorSession(mode, createConstructionAttempt(embeddedWorkshopDocument))}
+      session={createEditorSession(mode, createConstructionAttempt(document))}
       selectedObject={undefined}
       selectedEntryKey={undefined}
       isDrawerOpen
@@ -64,9 +80,39 @@ describe('ObjectDrawer', () => {
     expect(within(drawer).getByText('10 objets')).toBeTruthy();
   });
 
-  it('ne montre jamais la carte Fil au joueur : il ne câble rien', () => {
+  it('ne montre pas de carte Fil au joueur dont l’inventaire n’a pas de fil', () => {
     const drawer = renderDrawer('resolution');
 
     expect(within(drawer).queryByRole('button', { name: /Fil/ })).toBeNull();
+  });
+
+  it('montre au joueur la carte Fil de son inventaire, avec sa quantité (U21)', () => {
+    const onSelectWire = vi.fn();
+    const drawer = renderDrawer('resolution', onSelectWire, withWires(2));
+
+    const wire = within(drawer).getByRole('button', { name: 'Fil de commande, quantité : 2' });
+    expect(wire.textContent).toContain('Quantité : 2');
+    expect(wire.querySelector('svg')).not.toBeNull();
+    expect(wire.hasAttribute('disabled')).toBe(false);
+    fireEvent.click(wire);
+    expect(onSelectWire).toHaveBeenCalledWith('inventory-wire');
+    expect(within(drawer).getByText('12 entrées')).toBeTruthy();
+  });
+
+  it('désactive la carte Fil épuisée, comme les autres (U21)', () => {
+    const drawer = renderDrawer('resolution', undefined, withWires(0));
+
+    expect(
+      within(drawer)
+        .getByRole('button', { name: 'Fil de commande, quantité : 0' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+  });
+
+  it('ne montre à l’auteur que sa propre carte Fil, même quand l’inventaire en contient', () => {
+    const drawer = renderDrawer('creation', undefined, withWires(2));
+
+    expect(within(drawer).getAllByRole('button', { name: /^Fil/ })).toHaveLength(1);
+    expect(within(drawer).getByRole('button', { name: 'Fil de commande' })).toBeTruthy();
   });
 });

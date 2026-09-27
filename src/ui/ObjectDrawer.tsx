@@ -97,9 +97,43 @@ interface ObjectDrawerProps {
   readonly onToggleDrawer: () => void;
   readonly onCloseDrawer: () => void;
   readonly onSelectKind: (kind: ObjectKind, source: PlacementSource) => void;
-  /** Whether the author's "Fil" tool is active (U15). */
+  /** Whether the "Fil" tool is active (U15, U21). */
   readonly isWiringActive: boolean;
-  readonly onSelectWire: () => void;
+  /** The author's card passes nothing; the player's names its inventory entry (U21). */
+  readonly onSelectWire: (inventoryEntryId?: string) => void;
+}
+
+interface WireCardProps {
+  readonly accessibleName: string;
+  readonly detail: string;
+  readonly isActive: boolean;
+  readonly isDisabled: boolean;
+  readonly onSelect: () => void;
+}
+
+/** The "Fil" card: the author's catalogue entry, or a wire entry of the player's inventory. */
+function WireCard({ accessibleName, detail, isActive, isDisabled, onSelect }: WireCardProps) {
+  return (
+    <button
+      className={`object-card object-card-wire${isActive ? ' object-card-selected' : ''}`}
+      type="button"
+      disabled={isDisabled}
+      aria-label={accessibleName}
+      aria-pressed={isActive}
+      onClick={onSelect}
+    >
+      <span className="object-thumb" aria-hidden="true">
+        <WireThumbnail />
+      </span>
+      <span className="object-card-copy">
+        <strong>Fil</strong>
+        <span>{detail}</span>
+      </span>
+      <span className="object-card-action" aria-hidden="true">
+        {isActive ? '✓' : '+'}
+      </span>
+    </button>
+  );
 }
 
 /**
@@ -171,10 +205,14 @@ export function ObjectDrawer({
     session.mode === 'resolution' ? currentEditorAttempt(session).document.inventory : null;
   const drawerCards =
     inventory === null ? authorCatalogue.map(authorCard) : inventory.flatMap(inventoryCards);
+  // U21: a puzzle may give the player wires, laid with the author's gesture.
+  const wireEntries = inventory?.filter((entry) => entry.type === 'wire') ?? [];
+  const entryCount = drawerCards.length + wireEntries.length;
   const objectCountLabel =
     inventory === null
       ? `${String(drawerCards.length)} objets`
-      : `${String(drawerCards.length)} ${drawerCards.length === 1 ? 'entrée' : 'entrées'}`;
+      : `${String(entryCount)} ${entryCount === 1 ? 'entrée' : 'entrées'}`;
+  const isConstruction = session.phase === 'construction';
 
   return (
     <>
@@ -251,29 +289,28 @@ export function ObjectDrawer({
               );
             })}
             {inventory === null && (
-              // The player never wires anything (ADR 0009): the card is the author's.
-              <button
-                className={`object-card object-card-wire${
-                  isWiringActive ? ' object-card-selected' : ''
-                }`}
-                type="button"
-                disabled={session.phase !== 'construction'}
-                aria-label="Fil de commande"
-                aria-pressed={isWiringActive}
-                onClick={onSelectWire}
-              >
-                <span className="object-thumb" aria-hidden="true">
-                  <WireThumbnail />
-                </span>
-                <span className="object-card-copy">
-                  <strong>Fil</strong>
-                  <span>Relie un levier ou un bouton à un appareil</span>
-                </span>
-                <span className="object-card-action" aria-hidden="true">
-                  {isWiringActive ? '✓' : '+'}
-                </span>
-              </button>
+              <WireCard
+                accessibleName="Fil de commande"
+                detail="Relie un levier ou un bouton à un appareil"
+                isActive={isWiringActive}
+                isDisabled={!isConstruction}
+                onSelect={() => {
+                  onSelectWire();
+                }}
+              />
             )}
+            {wireEntries.map((entry) => (
+              <WireCard
+                key={entry.id}
+                accessibleName={`Fil de commande, quantité : ${String(entry.quantity)}`}
+                detail={`Quantité : ${String(entry.quantity)}`}
+                isActive={isWiringActive}
+                isDisabled={!isConstruction || entry.quantity === 0}
+                onSelect={() => {
+                  onSelectWire(entry.id);
+                }}
+              />
+            ))}
           </div>
 
           <p className="drawer-hint" aria-live="polite" hidden={!drawerIsExpanded}>

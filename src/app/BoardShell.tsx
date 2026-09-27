@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { createConstructionAttempt } from '../application/construction/construction-attempt';
@@ -69,11 +69,16 @@ export function BoardShell({
     selectPlacement,
   } = useEditorSession(() => createEditorSession(mode, createConstructionAttempt(initialDocument)));
   const boardCamera = useBoardCamera(currentScene);
+  const clearSelection = useCallback((): void => {
+    updateSession(selectEditorPlacement(sessionRef.current, null));
+  }, [updateSession, sessionRef]);
   const wiring = useWiringTool({
     sessionRef,
     executeCommand,
     setFeedback,
     onSourceChosen: selectPlacement,
+    // The source was only marked for the gesture: the next tap opens its object.
+    onWiresExhausted: clearSelection,
   });
   const pointers = useBoardPointers({
     sessionRef,
@@ -218,12 +223,12 @@ export function BoardShell({
             setIsDrawerOpen(false);
           }}
           isWiringActive={wiring.wiringStep !== null}
-          onSelectWire={() => {
+          onSelectWire={(inventoryEntryId) => {
             // U15: the wire card is a tool like a placement card. It drops
             // the selection so the compact inspector leaves the board clear.
             if (pointers.placementTool !== null) pointers.cancelPlacement();
             updateSession(selectEditorPlacement(sessionRef.current, null));
-            wiring.startWiring();
+            wiring.startWiring(inventoryEntryId);
             setIsDrawerOpen(false);
           }}
         />

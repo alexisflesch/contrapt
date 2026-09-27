@@ -2145,3 +2145,47 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   e2e `smoke` et `campaign-draft` réécrits pour la règle (plus de carte rouge
   ni de panier ; une balle ajoutée reste bleue et l'objectif ne change pas).
 - Échec initial : cartes rouge et panier encore présentes, compteur à 12.
+
+### U21 — Fil dans l’inventaire du joueur — fait — `feat(construction): donne des fils au joueur par l’inventaire (U21)`
+
+- Format : entrée d’inventaire v2 `{ type: 'wire', quantity, props: {},
+  permissions }` avec `move`/`rotate` littéralement `false` (un fil n’a ni
+  position ni angle) et `remove` qui dit si le joueur reprend ses fils. v1
+  n’accepte pas de fil. Ajout compatible, sans migration ; ordre des clés
+  conservé.
+- Commandes : `connectControlWire` joueur exige `inventoryEntryId`, consomme
+  une unité et note la provenance (même table que les objets, clé = id du
+  fil ; un id de fil égal à un id d’objet est refusé). `disconnectControlWire`
+  joueur : fil du niveau refusé (`inventory-provenance-missing`), fil du joueur
+  rendu. Retirer un objet rend les fils du joueur qui y étaient attachés.
+  `countObjectsUsed` compte les fils ; la validation du défi reconstitue le
+  stock de fils.
+- Régression : étape `{ kind: 'wire', … }` ; `searchSolutions` écarte les fils
+  candidats refusés par les règles.
+- Interface : carte « Fil de commande, quantité : N » par entrée `wire` en mode
+  joueur, même geste qu’U15 ; le geste s’arrête et la source est désélectionnée
+  au dernier fil ; « Délier » seulement pour les fils du joueur.
+- Tests ajoutés : `level-document.test.ts` (5, U21), `construction-attempt.test.ts`
+  (8, U21), `progression/index.test.ts` (1), `level-regression.test.ts` (2),
+  codecs fichier et URL (1 chacun), `catalogue-validator.test.ts` (1),
+  `ObjectDrawer.test.tsx` (3), `wiring-tool.test.ts` (2), `App.test.tsx` (1,
+  niveau partagé), `e2e/player-wires.spec.ts` (mobile 390 × 844).
+- Échec initial constaté : chemins `inventory.N.type` au lieu d’accepter le fil ;
+  `wiring-not-permitted` pour le joueur avec fil ; `wiringStepAfterWire is not a
+  function` ; « Unable to find … "Fil de commande, quantité : 1" » ; étape
+  `wire` : « Cannot read properties of undefined (reading 'execute') ».
+- Tests existants réécrits : `ObjectDrawer.test.tsx` « ne montre jamais la carte
+  Fil au joueur » renommé « …dont l’inventaire n’a pas de fil » (même
+  assertion).
+- Fichiers touchés hors périmètre : `placement-footprint.ts` (type restreint
+  aux entrées posables).
+- Écarts : pas d’interface d’édition d’inventaire dans l’atelier, donc pas
+  d’ajout de « Fil » par l’auteur (commande `addInventoryEntry` compatible).
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune (ADR 0009 amendé).
+- Vérification : `pnpm check` passe au second essai (727 tests Vitest ; 50 E2E
+  mobiles réussis, 1 ignoré) ; le premier a échoué sur l’E2E du niveau 9.
+- Non vérifié : E2E « niveau 9 : poser le convoyeur » instable, aussi sur le
+  commit précédent (échecs intermittents à « Fermer les propriétés »).
+- Pour l’auteur : captures hors dépôt, `…/scratchpad/captures/u21/` ; valider
+  la fin du geste au dernier fil et `remove` comme permission de délier.

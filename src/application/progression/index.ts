@@ -30,14 +30,20 @@ const assertObjectCount = (objectsUsed: number): void => {
   }
 };
 
-/** Count live placements whose attempt provenance identifies an inventory entry. */
+/**
+ * Count live placements and wires (U21) whose attempt provenance identifies an
+ * inventory entry: a wire the player laid counts as one object.
+ */
 export const countObjectsUsed = (attempt: ConstructionAttempt): number => {
-  const placementIds = new Set(attempt.document.objects.map(({ id }) => id));
+  const takenIds = new Set([
+    ...attempt.document.objects.map(({ id }) => id),
+    ...attempt.document.wires.map(({ id }) => id),
+  ]);
   const inventoryEntryIds = new Set(attempt.document.inventory.map(({ id }) => id));
 
   return Object.entries(attempt.provenance).reduce(
-    (count, [placementId, inventoryEntryId]) =>
-      count + Number(placementIds.has(placementId) && inventoryEntryIds.has(inventoryEntryId)),
+    (count, [takenId, inventoryEntryId]) =>
+      count + Number(takenIds.has(takenId) && inventoryEntryIds.has(inventoryEntryId)),
     0,
   );
 };

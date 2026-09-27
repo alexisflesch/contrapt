@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { embeddedLevels } from '../../content/embedded-levels';
+import type { LevelDocument } from '../../domain/level-document';
 import { encodeLevelFile } from '../level-file/level-file-codec';
 import { crc32Ieee, decodeShareFragment, encodeShareFragment } from './level-share-codec';
 
@@ -45,6 +46,27 @@ describe('codec de partage par URL', () => {
     if (result.status !== 'ok') return;
     expect(result.document.challenge).toEqual(document.challenge);
     expect(result.document.wires).toEqual(document.wires);
+  });
+
+  it('encode et décode un niveau qui donne un fil au joueur (U21)', async () => {
+    const level = levelTwelve();
+    const document: LevelDocument = {
+      ...level,
+      inventory: [
+        ...level.inventory,
+        {
+          id: 'inventory-wire',
+          type: 'wire',
+          props: {},
+          quantity: 2,
+          permissions: { move: false, rotate: false, remove: true },
+        },
+      ],
+    };
+
+    const result = await decodeShareFragment(await encodeShareFragment(document));
+
+    expect(result).toEqual({ status: 'ok', document });
   });
 
   it('calcule le CRC-32 IEEE de référence', () => {

@@ -14,12 +14,11 @@ import {
   type WorldPolygon,
   type WorldRect,
 } from './family-geometry';
-import type { LevelDocument } from './level-document';
+import type { LevelDocument, PlaceableInventoryEntry } from './level-document';
 
 type Placement = LevelDocument['objects'][number];
-type InventoryEntry = LevelDocument['inventory'][number];
 type Transform = Placement['transform'];
-type FootprintSource = Placement | InventoryEntry;
+type FootprintSource = Placement | PlaceableInventoryEntry;
 
 const rectangleCorners = ({ x, y, width, height }: WorldRect): WorldPolygon => [
   { x, y },
@@ -78,7 +77,7 @@ export function placementFootprintCorners(
   transform?: Transform,
 ): WorldPolygon;
 export function placementFootprintCorners(
-  placement: InventoryEntry,
+  placement: PlaceableInventoryEntry,
   transform: Transform,
 ): WorldPolygon;
 export function placementFootprintCorners(
