@@ -8,6 +8,8 @@ import {
 } from '../application/editor-session/editor-session';
 import type { EditorSession } from '../application/editor-session/editor-session';
 import type { LevelDocument } from '../domain/level-document';
+import type { AttemptOutcome } from '../domain/attempt-failure-evaluator';
+import type { ConstructionAttempt } from '../application/construction';
 import { AppFrame } from '../ui/AppFrame';
 import { BoardView } from '../ui/BoardView';
 import { ContextPanel } from '../ui/ContextPanel';
@@ -28,6 +30,8 @@ interface BoardShellProps {
   readonly mode: EditorSession['mode'];
   readonly title: string;
   readonly subtitle: string;
+  readonly onSimulationLaunched?: (attempt: ConstructionAttempt) => void;
+  readonly onSimulationCompleted?: (outcome: AttemptOutcome) => void;
 }
 
 /**
@@ -37,7 +41,14 @@ interface BoardShellProps {
  * it with a fresh `EditorSession` instead of this component reacting to a
  * changed `initialDocument` prop mid-life.
  */
-export function BoardShell({ initialDocument, mode, title, subtitle }: BoardShellProps) {
+export function BoardShell({
+  initialDocument,
+  mode,
+  title,
+  subtitle,
+  onSimulationLaunched,
+  onSimulationCompleted,
+}: BoardShellProps) {
   const navigate = useNavigate();
   const {
     session,
@@ -66,7 +77,14 @@ export function BoardShell({ initialDocument, mode, title, subtitle }: BoardShel
     wiringSourceRef: wiring.wiringSourceRef,
     onWiringTap: wiring.completeWiring,
   });
-  const simulation = useSimulationRunner({ sessionRef, updateSession, setFeedback, pointers });
+  const simulation = useSimulationRunner({
+    sessionRef,
+    updateSession,
+    setFeedback,
+    pointers,
+    ...(onSimulationLaunched === undefined ? {} : { onSimulationLaunched }),
+    ...(onSimulationCompleted === undefined ? {} : { onSimulationCompleted }),
+  });
   const isSideLayout = useIsSideLayout();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);

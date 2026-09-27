@@ -1615,3 +1615,37 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   tests Vitest (46 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
   1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L20 n’ajoute aucune interface visible.
+
+
+### L21 — Branchement de la progression — fait — commit dédié L21
+
+- Tests ajoutés : le hook `useCampaignProgress()` est rendu avec Testing Library
+  et un dépôt injecté ; les déblocages, le palier et l’indice sont vérifiés, ainsi
+  que l’enregistrement d’un record. Les tests de l’application couvrent une
+  défaite non enregistrée, une victoire qui sauve le nombre d’objets du snapshot
+  de lancement, une victoire hors campagne ignorée, et l’accès direct à un niveau
+  verrouillé.
+- Échec initial constaté : le test du hook ne résolvait pas son module absent ; le
+  test d’intégration observait zéro appel au dépôt après une victoire de campagne.
+  Un premier sélecteur de test trouvait les deux boutons « Réinitialiser » ; il a
+  été borné au bandeau de résultat, sans changer le parcours testé.
+- Tests existants modifiés : `App.test.tsx` réinitialise désormais `localStorage`
+  entre tests pour isoler les records ; aucun comportement attendu n’a été retiré.
+- Fichiers touchés : progression (type public d’indice), provider, contexte et
+  hook dans `src/app/`, composition `App`, `PlayLevelPage`, `BoardShell` et
+  `use-simulation-runner.ts`, tests du hook et de l’application, `docs/etat.md` et
+  ce journal.
+- Écarts avec la tâche : aucun. Le nombre est calculé depuis le snapshot immuable
+  remis au lancement ; seul un résultat `won` de route campagne est enregistré.
+  Le niveau 12 reste accessible par son URL. La demande
+  `navigator.storage.persist()` suit l’ADR 0011, une seule fois après la première
+  victoire, et son refus ne bloque pas le jeu.
+- Mesures qui ne se reproduisent pas : le premier `check:fast` a dépassé le délai
+  de 5 s dans la grille L12. Le test passe isolément en 1,3 s, puis toute la suite
+  passe en 4,8 s pour ce même test.
+- Contradictions rencontrées : aucune. Aucun changement visuel n’a été effectué ;
+  l’état calculé est fourni au hook pour une interface ultérieure.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 556
+  tests Vitest (47 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
+  1 ignoré car C3 est spécifique au projet desktop).
+- Captures : sans objet, L21 n’ajoute aucune interface visible.

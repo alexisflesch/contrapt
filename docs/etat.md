@@ -210,14 +210,14 @@ pendant le travail.
   « L’interrupteur » et « Le bon ordre ». Les niveaux 13 « Deux tapis » et 14
   « Grand final » sont bloqués après trois esquisses sans fenêtre de robustesse de
   0,3 unité. Aucun bouton « Niveau suivant ».
-- **Progression de campagne** : les fonctions pures L19 comptent les objets
-  placés, calculent les paliers et indices, gardent le meilleur record et ouvrent
-  le niveau suivant ; le dépôt local L20 lit et écrit une enveloppe v1 validée et
-  sauvegarde les données invalides avant remplacement. Le branchement à
-  l’application L21 reste à faire. Le partage et la PWA restent décidés, mais non
-  implémentés (ADR 0011, 0012). Les métadonnées de défi v2 sont utilisées par les
-  niveaux 4, 5 et 8 ; la preuve de minimalité du niveau 8 reste à compléter avec
-  les coordonnées de sa grille « bascule seule ».
+- **Progression de campagne** : L19 calcule les paliers, records, indices et
+  déblocages ; L20 persiste les records dans une enveloppe locale validée ; L21
+  enregistre les victoires depuis le snapshot du lancement et expose le hook
+  `useCampaignProgress()` sans ajout visuel. La demande de stockage persistant est
+  faite une seule fois après la première victoire. Le partage et la PWA restent
+  décidés, mais non implémentés (ADR 0011, 0012). Les métadonnées de défi v2 sont
+  utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité du niveau 8 reste
+  à compléter avec les coordonnées de sa grille « bascule seule ».
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
 - **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
@@ -236,8 +236,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après L20 : typecheck, lint,
-formatage, Knip, contenu (14 niveaux embarqués), 552 tests Vitest (46 fichiers),
+`pnpm check` passe le 27 septembre 2026 après L21 : typecheck, lint,
+formatage, Knip, contenu (14 niveaux embarqués), 556 tests Vitest (47 fichiers),
 build et 42 tests Playwright `mobile` (41 réussis, 1 ignoré car C3 est
 spécifique au projet desktop). Le parcours mobile L17b ouvre maintenant
 l’inspecteur compact avant de

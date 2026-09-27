@@ -14,7 +14,7 @@ interface LevelProgress {
 export type CampaignProgress = Readonly<Partial<Record<string, LevelProgress>>>;
 
 /** The next threshold an interface may reveal after the saved best result. */
-type ChallengeHint =
+export type ChallengeHint =
   | { readonly nextTier: 'elegant'; readonly objectCount: number }
   | { readonly nextTier: 'minimal'; readonly objectCount: number }
   | null;

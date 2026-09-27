@@ -9,6 +9,7 @@ import {
   type EditorSession,
 } from '../application/editor-session/editor-session';
 import { resolveAttemptOutcome, type AttemptOutcome } from '../domain/attempt-failure-evaluator';
+import type { ConstructionAttempt } from '../application/construction';
 import {
   createSimulationSession,
   type SimulationSession,
@@ -52,6 +53,8 @@ interface UseSimulationRunnerOptions {
   readonly updateSession: (next: EditorSession) => void;
   readonly setFeedback: (message: string | null) => void;
   readonly pointers: SimulationLifecyclePointers;
+  readonly onSimulationLaunched?: (attempt: ConstructionAttempt) => void;
+  readonly onSimulationCompleted?: (outcome: AttemptOutcome) => void;
 }
 
 interface SimulationRunnerController {
@@ -85,6 +88,8 @@ export function useSimulationRunner({
   updateSession,
   setFeedback,
   pointers,
+  onSimulationLaunched,
+  onSimulationCompleted,
 }: UseSimulationRunnerOptions): SimulationRunnerController {
   const [simulationState, setSimulationState] = useState<SimulationSnapshot | null>(null);
   const [attemptOutcome, setAttemptOutcome] = useState<AttemptOutcome | null>(null);
@@ -150,6 +155,7 @@ export function useSimulationRunner({
         if (completed.status === 'accepted') {
           updateSession(completed.session);
           setAttemptOutcome(outcome);
+          onSimulationCompleted?.(outcome);
           simulationTimestampRef.current = null;
           return;
         }
@@ -187,6 +193,7 @@ export function useSimulationRunner({
     simulationTimestampRef.current = null;
     updateSimulationState(physicalSession.readState());
     updateSession(result.session);
+    onSimulationLaunched?.(simulationSnapshot);
     pointers.clearPlacementTool();
     pointers.resetGestureState();
     setFeedback(null);

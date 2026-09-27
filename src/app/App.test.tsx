@@ -4,6 +4,8 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { CampaignProgress } from '../application/progression';
+import type { ProgressRepository } from '../application/progression/progress-repository';
 import { embeddedLevels } from '../content/embedded-levels';
 import { fitCameraToScene } from '../presentation/board-camera';
 import { ROTATION_HANDLE_DISTANCE_CSS_PIXELS } from '../presentation/rotation-handle-metrics';
@@ -68,6 +70,15 @@ const openEmbeddedLevelOne = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
   fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
   fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
+};
+
+const createProgressRepository = (progress: CampaignProgress = {}) => {
+  const save = vi.fn(() => ({ status: 'ok' as const }));
+  const repository: ProgressRepository = {
+    load: () => ({ status: 'ok', progress }),
+    save,
+  };
+  return { repository, save };
 };
 
 const tapWorldPoint = (x: number, y: number): void => {
@@ -203,6 +214,7 @@ describe('coque Contrapt!', () => {
     // that navigates away (e.g. `openEmbeddedWorkshop`) leaks its route into
     // whichever test renders `<App />` next.
     window.history.replaceState(null, '', '/');
+    window.localStorage.clear();
     vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(boardCanvasRect);
   });
 
@@ -669,6 +681,60 @@ describe('coque Contrapt!', () => {
 
     expect(window.location.pathname).toBe('/levels');
     expect(screen.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
+  });
+
+  it('enregistre une victoire de campagne avec les objets présents au lancement', () => {
+    const animationFrames = createAnimationFrameHarness();
+    const { repository, save } = createProgressRepository();
+    render(<App progressRepository={repository} />);
+
+    openEmbeddedLevelOne();
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 360);
+    expect(screen.getByRole('region', { name: 'Résultat du niveau' })).toHaveTextContent('Échec');
+    expect(save).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      within(screen.getByRole('region', { name: 'Résultat du niveau' })).getByRole('button', {
+        name: 'Réinitialiser',
+      }),
+    );
+    placeCampaignBeam(5.0, 2.15);
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 360);
+
+    expect(screen.getByRole('region', { name: 'Résultat du niveau' })).toHaveTextContent(
+      'Victoire',
+    );
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith({
+      'level-1-prolonger-la-pente': { resolved: true, bestObjectCount: 1 },
+    });
+  });
+
+  it('laisse un niveau verrouillé jouable quand son URL est ouverte directement', () => {
+    const { repository } = createProgressRepository();
+    window.history.replaceState(null, '', '/levels/level-12-le-bon-ordre/play');
+    render(<App progressRepository={repository} />);
+
+    expect(screen.getByText('Niveau 12 · Le bon ordre')).toBeVisible();
+    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+  });
+
+  it('ne persiste pas les victoires hors campagne', () => {
+    const animationFrames = createAnimationFrameHarness();
+    const { repository, save } = createProgressRepository();
+    window.history.replaceState(null, '', '/demo');
+    render(<App progressRepository={repository} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 600);
+
+    expect(screen.getByRole('region', { name: 'Résultat du niveau' })).toHaveTextContent(
+      'Victoire',
+    );
+    expect(save).not.toHaveBeenCalled();
   });
 
   it('annonce l’échec sans action puis la victoire après la poutre de référence', () => {
