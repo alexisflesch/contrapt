@@ -184,7 +184,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
     expect(levelTwo).toEqual(pristineLevelTwo);
   });
 
-  it('fait d’une balle rouge posée l’objectif, puis l’annulation rend l’ancien (U20)', () => {
+  it('ajoute une balle bleue sans jamais changer la balle de l’objectif (U20)', () => {
     window.history.replaceState(null, '', '/levels');
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
@@ -195,14 +195,8 @@ describe('éditer un niveau de la campagne (U17)', () => {
     expect(storedDraft().goal.ballId).toBe('ball-1');
     expect(ballColours()).toEqual({ red: 'ball-1', blue: blueBallId });
 
-    placeFromCatalogue('Balle rouge (objectif)', 6.0, 0.8);
-    const redBallId = storedDraft().objects.at(-1)?.id ?? '';
-    expect(redBallId).not.toBe(blueBallId);
-    expect(storedDraft().goal.ballId).toBe(redBallId);
-    expect(ballColours()).toEqual({ red: redBallId, blue: `ball-1,${blueBallId}` });
-
     fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
     expect(storedDraft().goal.ballId).toBe('ball-1');
-    expect(ballColours()).toEqual({ red: 'ball-1', blue: blueBallId });
+    expect(ballColours()).toEqual({ red: 'ball-1', blue: '' });
   });
 });

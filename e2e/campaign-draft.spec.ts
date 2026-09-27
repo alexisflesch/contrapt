@@ -128,11 +128,11 @@ test('ajoute une poutre et une balle rouge au brouillon du niveau 2, puis annule
     .toEqual([{ size: 'short' }, { size: 'short' }, { size: 'medium' }]);
   expect((await storedDraft(page))?.inventory).toEqual(inventoryBefore);
 
-  await placeFromCatalogue(page, 'Balle rouge (objectif)', 6.0, 0.8);
-  const redBall = await canvas.getAttribute('data-red-balls');
-  expect(redBall).toMatch(/^placement-\d+$/u);
-  await expect(canvas).toHaveAttribute('data-blue-balls', 'ball-1');
-  await expect.poll(async () => (await storedDraft(page))?.goal.ballId).toBe(redBall);
+  await placeFromCatalogue(page, 'Balle bleue', 6.0, 0.8);
+  await expect(canvas).toHaveAttribute('data-red-balls', 'ball-1');
+  const blueBall = await canvas.getAttribute('data-blue-balls');
+  expect(blueBall).toMatch(/^placement-\d+$/u);
+  await expect.poll(async () => (await storedDraft(page))?.goal.ballId).toBe('ball-1');
 
   await page.getByRole('button', { name: 'Annuler' }).tap();
   await expect(canvas).toHaveAttribute('data-red-balls', 'ball-1');

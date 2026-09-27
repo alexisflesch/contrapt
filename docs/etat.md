@@ -82,13 +82,13 @@ pendant le travail.
 - Tiroir du mode joueur limité aux familles présentes dans l’inventaire du
   niveau ; il affiche la quantité restante et la taille de poutre. Une entrée à
   quantité zéro reste visible et désactivée. En mode auteur (atelier libre et
-  brouillon), le catalogue propose les onze familles, dont « Balle rouge
-  (objectif) » et « Balle bleue » (U20) : il pose l’objet directement dans le
+  brouillon), le catalogue propose toutes les familles sauf la balle rouge et
+  le panier de l’objectif, avec « Balle bleue » (U20) : il pose l’objet directement dans le
   niveau (commande `addAuthoredPlacement`), sans exiger ni consommer
   l’inventaire du joueur ; l’objet posé est verrouillé pour le joueur, comme
-  tout objet de départ. Une balle rouge posée devient `goal.ballId` et
-  l’ancienne balle d’objectif redevient une balle bleue ; l’annulation rend
-  l’ancien objectif. Le canevas expose `data-red-balls` et `data-blue-balls`.
+  tout objet de départ. La balle rouge et le panier de l’objectif sont
+  uniques et déjà posés : le catalogue ne les propose pas (décision auteur du
+  27 septembre 2026). Le canevas expose `data-red-balls` et `data-blue-balls`.
 - PWA L28 : le build génère un manifeste installable et un service worker qui
   précache l’application et ses assets ; les routes de jeu et d’atelier ont un
   repli hors ligne. Le hook `usePwaUpdateStatus(phase)` expose une mise à jour en

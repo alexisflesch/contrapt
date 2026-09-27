@@ -830,8 +830,8 @@ commencer de ta propre initiative.
   existant puis l’exporte.
 - **U19 — Le rouge n'appartient qu'à l'objectif** : poignée de levier redessinée,
   palette des fils sans rouge, balle bleue dans le tiroir du joueur.
-- **U20 — Catalogue de l'atelier** : « Balle rouge (objectif) » et « Balle
-  bleue » ; en mode auteur, le catalogue ajoute n'importe quelle famille à
+- **U20 — Catalogue de l'atelier** : « Balle bleue » seulement (la balle
+  rouge et le panier de l'objectif sont uniques et déjà posés) ; en mode auteur, le catalogue ajoute n'importe quelle famille à
   n'importe quel niveau, brouillons de campagne compris.
 
 ## 7. En attente de l’auteur — ne pas commencer
@@ -2124,3 +2124,15 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : vignette provisoire en SVG (deux bornes et un fil bleu),
   à remplacer par un dessin ; valider le maintien du geste sur la source après
   un fil.
+
+### U20b — Objectif unique dans le catalogue auteur — fait — `fix(editor): retire la balle rouge et le panier du catalogue auteur (U20b)`
+
+- Décision auteur du 27 septembre 2026 : tant que le document n'a qu'un
+  objectif, la balle rouge et le panier existent dès le départ et ne se posent
+  jamais. Les cartes « Balle rouge (objectif) » et « Panier » quittent le
+  catalogue auteur ; `addAuthoredPlacement` perd `becomesGoalBall` et ne
+  touche plus jamais `goal`.
+- Tests : `ObjectDrawer`, `App`, `CampaignDraftEditing`, commandes d'auteur,
+  e2e `smoke` et `campaign-draft` réécrits pour la règle (plus de carte rouge
+  ni de panier ; une balle ajoutée reste bleue et l'objectif ne change pas).
+- Échec initial : cartes rouge et panier encore présentes, compteur à 12.

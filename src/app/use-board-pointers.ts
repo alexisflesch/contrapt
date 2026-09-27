@@ -65,7 +65,6 @@ const placementCommand = (
           type: source.entry.type,
           props: source.entry.props,
           transform,
-          becomesGoalBall: source.entry.becomesGoalBall,
         });
 
 /** Ids already taken in the document: a reopened draft may hold `placement-1` already. */

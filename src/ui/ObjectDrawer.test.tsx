@@ -42,15 +42,14 @@ describe('ObjectDrawer', () => {
     expect(thumbnailOf(ball)).toMatch(/\/thumbs\/second-ball\.png$/);
   });
 
-  it('propose à l’auteur une balle rouge pour l’objectif et une balle bleue', () => {
+  it('ne propose à l’auteur ni balle rouge ni panier : l’objectif est déjà posé, et unique', () => {
     const drawer = renderDrawer('creation');
 
-    const red = within(drawer).getByRole('button', { name: 'Balle rouge (objectif)' });
     const blue = within(drawer).getByRole('button', { name: 'Balle bleue' });
-    expect(thumbnailOf(red)).toMatch(/\/thumbs\/ball\.png$/);
     expect(thumbnailOf(blue)).toMatch(/\/thumbs\/second-ball\.png$/);
-    expect(within(drawer).queryByRole('button', { name: 'Balle' })).toBeNull();
-    expect(within(drawer).getByText('12 objets')).toBeTruthy();
+    expect(within(drawer).queryByRole('button', { name: /Balle rouge/ })).toBeNull();
+    expect(within(drawer).queryByRole('button', { name: /Panier/ })).toBeNull();
+    expect(within(drawer).getByText('10 objets')).toBeTruthy();
   });
 
   it('propose à l’auteur la carte Fil, qui lance le câblage (U15)', () => {
@@ -62,7 +61,7 @@ describe('ObjectDrawer', () => {
     expect(wire.querySelector('svg')).not.toBeNull();
     fireEvent.click(wire);
     expect(onSelectWire).toHaveBeenCalledOnce();
-    expect(within(drawer).getByText('12 objets')).toBeTruthy();
+    expect(within(drawer).getByText('10 objets')).toBeTruthy();
   });
 
   it('ne montre jamais la carte Fil au joueur : il ne câble rien', () => {

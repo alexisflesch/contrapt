@@ -62,8 +62,6 @@ export interface AuthorCatalogueEntry {
   readonly description: string;
   readonly type: Placement['type'];
   readonly props: Placement['props'];
-  /** Only the red ball: it becomes the goal's ball. */
-  readonly becomesGoalBall: boolean;
 }
 
 const authorEntry = (
@@ -80,27 +78,20 @@ const authorEntry = (
     description,
     type,
     props,
-    becomesGoalBall: false,
   };
 };
 
-/** Red is the goal's alone: the author picks a red or a blue ball. */
+/**
+ * The goal's red ball and its basket are unique and already on the board
+ * (LevelDocument v2 has a single goal): the author only adds blue balls.
+ */
 export const authorCatalogue: readonly AuthorCatalogueEntry[] = [
-  {
-    ...authorEntry('Balle', 'ball'),
-    key: 'goal-ball',
-    name: 'Balle rouge (objectif)',
-    accessibleName: 'Balle rouge (objectif)',
-    description: 'La balle à mettre dans le panier',
-    becomesGoalBall: true,
-  },
   {
     ...authorEntry('Balle', 'ball'),
     name: 'Balle bleue',
     accessibleName: 'Balle bleue',
     description: 'Une pièce de la machine',
   },
-  authorEntry('Panier', 'basket'),
   { ...authorEntry('Poutre', 'beam', { size: 'medium' }), accessibleName: 'Poutre moyenne' },
   authorEntry('Bascule', 'seesaw'),
   authorEntry('Masse', 'mass', { weight: '10kg' }),

@@ -95,15 +95,13 @@ const addedMass = {
   type: 'mass',
   props: { weight: '10kg' },
   transform: { position: { x: 8, y: 4 }, rotation: 0 },
-  becomesGoalBall: false,
 } as const;
-const addedRedBall = {
+const addedBall = {
   context: 'author',
   placementId: 'ball-3',
   type: 'ball',
   props: {},
   transform: { position: { x: 4, y: 12 }, rotation: 0 },
-  becomesGoalBall: true,
 } as const;
 
 const authoringCommands: readonly {
@@ -133,7 +131,7 @@ const authoringCommands: readonly {
   },
   { label: 'supprime une zone', command: removeBuildZone({ context: 'author', index: 0 }) },
   { label: 'ajoute un objet hors inventaire', command: addAuthoredPlacement(addedMass) },
-  { label: 'ajoute la balle de l’objectif', command: addAuthoredPlacement(addedRedBall) },
+  { label: 'ajoute une balle', command: addAuthoredPlacement(addedBall) },
   {
     label: 'ajoute une entrée d’inventaire',
     command: addInventoryEntry({ context: 'author', entry: addedInventoryEntry }),
@@ -387,43 +385,14 @@ describe('commandes d’auteur', () => {
       expect(state.document.objects.some(({ id }) => id === 'mass-1')).toBe(true);
     });
 
-    it('fait d’une balle rouge la balle de l’objectif ; l’ancienne redevient une simple balle', () => {
-      const state = accepted(addAuthoredPlacement(addedRedBall));
-
-      expect(state.document.goal).toEqual({
-        type: 'basket',
-        ballId: 'ball-3',
-        basketId: 'basket-1',
-      });
-      expect(state.document.objects.find(({ id }) => id === 'ball-1')?.type).toBe('ball');
-    });
-
-    it('ne fait jamais d’une balle bleue l’objectif', () => {
-      const state = accepted(addAuthoredPlacement({ ...addedRedBall, becomesGoalBall: false }));
+    it('ne fait jamais d’une balle ajoutée l’objectif : il est unique et déjà posé', () => {
+      const state = accepted(addAuthoredPlacement(addedBall));
 
       expect(state.document.goal.ballId).toBe('ball-1');
       expect(state.document.objects.some(({ id }) => id === 'ball-3')).toBe(true);
     });
 
-    it('restaure l’ancien objectif à l’annulation et le rend au rétablissement', () => {
-      const history = createHistory<ConstructionAttempt>({
-        document: createLevel(),
-        provenance: {},
-      });
-      const applied = executeCommand(history, addAuthoredPlacement(addedRedBall));
-      if (applied.status !== 'accepted') throw new Error('la balle rouge doit être posée');
-
-      const undone = undo(applied.history);
-      if (undone.status !== 'accepted') throw new Error('la pose doit s’annuler');
-      expect(undone.history.state.document.goal.ballId).toBe('ball-1');
-      expect(undone.history.state.document.objects.some(({ id }) => id === 'ball-3')).toBe(false);
-
-      const redone = redo(undone.history);
-      if (redone.status !== 'accepted') throw new Error('la pose doit se rétablir');
-      expect(redone.history.state.document.goal.ballId).toBe('ball-3');
-    });
-
-    it('refuse un identifiant pris, une balle d’objectif qui n’est pas une balle et des propriétés invalides', () => {
+    it('refuse un identifiant pris et des propriétés invalides', () => {
       const state = { document: createLevel(), provenance: {} };
 
       expect(addAuthoredPlacement({ ...addedMass, placementId: 'beam-1' }).execute(state)).toEqual({
@@ -433,10 +402,6 @@ describe('commandes d’auteur', () => {
       expect(
         addAuthoredPlacement({ ...addedMass, placementId: 'beam-stock' }).execute(state),
       ).toEqual({ status: 'rejected', reason: 'identifier-already-used' });
-      expect(addAuthoredPlacement({ ...addedMass, becomesGoalBall: true }).execute(state)).toEqual({
-        status: 'rejected',
-        reason: 'goal-ball-not-found',
-      });
       expect(
         addAuthoredPlacement({ ...addedMass, props: { size: 'medium' } }).execute(state),
       ).toEqual({ status: 'rejected', reason: 'invalid-level-document' });

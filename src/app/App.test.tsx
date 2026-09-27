@@ -334,9 +334,9 @@ describe('coque Contrapt!', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
 
-    expect(screen.getByRole('button', { name: 'Balle rouge (objectif)' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Balle rouge/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
-    expect(screen.getByRole('button', { name: /Panier/ })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Panier/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Poutre/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Bascule/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Masse/ })).toBeVisible();
@@ -372,11 +372,11 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Panier/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Masse/ }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     expect(
-      screen.queryByRole('img', { name: 'Aperçu de placement : Panier' }),
+      screen.queryByRole('img', { name: 'Aperçu de placement : Masse' }),
     ).not.toBeInTheDocument();
 
     firePointerEvent(board, 'pointermove', {
@@ -386,7 +386,7 @@ describe('coque Contrapt!', () => {
       clientY: 100,
     });
 
-    const preview = screen.getByRole('img', { name: 'Aperçu de placement : Panier' });
+    const preview = screen.getByRole('img', { name: 'Aperçu de placement : Masse' });
     expect(preview).toBeVisible();
     const initialPosition = preview.getAttribute('data-position');
     expect(initialPosition).not.toBeNull();
@@ -423,10 +423,10 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Panier/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Masse/ }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
-    expect(within(board).queryByText(/Placement actif\s*:\s*Panier/i)).not.toBeInTheDocument();
+    expect(within(board).queryByText(/Placement actif\s*:\s*Masse/i)).not.toBeInTheDocument();
     expect(
       within(board).queryByRole('button', { name: 'Annuler le placement' }),
     ).not.toBeInTheDocument();

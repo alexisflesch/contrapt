@@ -48,10 +48,10 @@ test('ouvre l’atelier depuis le menu et expose les familles du catalogue', asy
     await openCatalogueButton.click();
   }
 
-  await expect(page.getByRole('button', { name: 'Balle rouge (objectif)' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Balle rouge/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Panier/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
   for (const objectName of [
-    'Panier',
     'Poutre',
     'Bascule',
     'Masse',

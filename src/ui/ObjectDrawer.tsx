@@ -57,11 +57,8 @@ const authorCard = (entry: AuthorCatalogueEntry): DrawerCard => ({
   name: entry.name,
   accessibleName: entry.accessibleName,
   detail: entry.description,
-  // The red ball is the goal's; any other ball is blue.
-  thumbnail:
-    entry.type === 'ball' && !entry.becomesGoalBall
-      ? 'second-ball'
-      : spriteFamilyByKind[entry.kind],
+  // The red ball is the goal's and never in the catalogue: a ball added here is blue.
+  thumbnail: entry.type === 'ball' ? 'second-ball' : spriteFamilyByKind[entry.kind],
   isDepleted: false,
   source: { from: 'catalogue', entry },
 });

@@ -92,8 +92,8 @@ interface UpdateLevelGoalInput {
 
 /**
  * An object the author places from the catalogue, outside the player's
- * inventory. A red ball becomes the goal's ball; the former one stays, as a
- * plain (blue) ball.
+ * inventory. It never becomes the goal: the goal's ball and basket are unique
+ * and already placed.
  */
 interface AddAuthoredPlacementInput {
   readonly context: ConstructionContext;
@@ -101,7 +101,6 @@ interface AddAuthoredPlacementInput {
   readonly type: Placement['type'];
   readonly props: Placement['props'];
   readonly transform: Placement['transform'];
-  readonly becomesGoalBall: boolean;
 }
 
 /** An object present at the start of a level is locked for the player. */
@@ -386,9 +385,6 @@ export const addAuthoredPlacement = (input: AddAuthoredPlacementInput): Authorin
     ) {
       return { status: 'rejected', reason: 'identifier-already-used' };
     }
-    if (input.becomesGoalBall && input.type !== 'ball') {
-      return { status: 'rejected', reason: 'goal-ball-not-found' };
-    }
     const placement = {
       id: input.placementId,
       type: input.type,
@@ -404,9 +400,6 @@ export const addAuthoredPlacement = (input: AddAuthoredPlacementInput): Authorin
       document: {
         ...state.document,
         objects: [...state.document.objects, placement],
-        goal: input.becomesGoalBall
-          ? { ...state.document.goal, ballId: input.placementId }
-          : state.document.goal,
       },
     };
   });
