@@ -212,8 +212,9 @@ pendant le travail.
   0,3 unité. Aucun bouton « Niveau suivant ».
 - **Progression de campagne** : les fonctions pures L19 comptent les objets
   placés, calculent les paliers et indices, gardent le meilleur record et ouvrent
-  le niveau suivant. Le dépôt local L20 et le branchement à l’application L21 ne
-  sont pas encore faits. Le partage et la PWA restent décidés, mais non
+  le niveau suivant ; le dépôt local L20 lit et écrit une enveloppe v1 validée et
+  sauvegarde les données invalides avant remplacement. Le branchement à
+  l’application L21 reste à faire. Le partage et la PWA restent décidés, mais non
   implémentés (ADR 0011, 0012). Les métadonnées de défi v2 sont utilisées par les
   niveaux 4, 5 et 8 ; la preuve de minimalité du niveau 8 reste à compléter avec
   les coordonnées de sa grille « bascule seule ».
@@ -235,10 +236,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après L19 : typecheck, lint,
-formatage, Knip, contenu (14 niveaux embarqués), 542 tests Vitest (45 fichiers), build et
-42 tests Playwright `mobile` (41 réussis, 1 ignoré car C3 est spécifique au projet
-desktop). Le parcours mobile L17b ouvre maintenant l’inspecteur compact avant de
+`pnpm check` passe le 27 septembre 2026 après L20 : typecheck, lint,
+formatage, Knip, contenu (14 niveaux embarqués), 552 tests Vitest (46 fichiers),
+build et 42 tests Playwright `mobile` (41 réussis, 1 ignoré car C3 est
+spécifique au projet desktop). Le parcours mobile L17b ouvre maintenant
+l’inspecteur compact avant de
 vérifier les propriétés du levier sélectionné. Les captures au repos sont
 conservées sous `test-results/levels/` pour les niveaux 1 à 12, en portrait et
 paysage ; les trois orientations du levier y sont aussi capturées. La première

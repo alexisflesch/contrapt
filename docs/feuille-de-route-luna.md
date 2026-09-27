@@ -1567,7 +1567,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : une nouvelle idée de scène est nécessaire ; ne pas reprendre
   cette géométrie comme référence validée.
 
-### L19 — Paliers et verrouillage — fait — commit dédié L19
+### L19 — Paliers et verrouillage — fait — `be95635 feat(application): ajoute les paliers et le verrouillage (L19)`
 
 - Tests ajoutés : `src/application/progression/index.test.ts` — 22 assertions sur
   les cinq fonctions pures : provenance des placements, objets fixes, seuils de
@@ -1591,3 +1591,27 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   tests Vitest (45 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
   1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L19 n’ajoute aucune interface visible.
+
+### L20 — Dépôt de progression local — fait — commit dédié L20
+
+- Tests ajoutés : `local-storage-progress-repository.test.ts` — absence de valeur,
+  aller-retour d’enveloppe, JSON invalide, enveloppes et données inconnues,
+  sauvegarde de secours avant remplacement, échec de sauvegarde, stockage
+  indisponible, quota dépassé et entrée de progression invalide.
+- Échec initial constaté : la suite ciblée ne pouvait pas charger
+  `local-storage-progress-repository`, absent avant l’implémentation.
+- Tests existants modifiés : aucun.
+- Fichiers touchés : port `progress-repository.ts`, adaptateur et test dans
+  `src/infrastructure/storage/`, `docs/etat.md` et ce journal.
+- Écarts avec la tâche : aucun. Une donnée invalide est copiée sous
+  `contrapt:backup:progress` avant remplacement et la lecture renvoie une
+  progression vide avec avertissement. Une sauvegarde de secours qui échoue
+  empêche l’écrasement ; les erreurs de quota et de stockage sont renvoyées comme
+  résultats typés.
+- Mesures qui ne se reproduisent pas : aucune ; les 10 tests ciblés passent.
+- Contradictions rencontrées : aucune. L’enveloppe stricte fixe `kind: progress`,
+  `version: 1` et vérifie la cohérence entre `resolved` et le record nullable.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 552
+  tests Vitest (46 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
+  1 ignoré car C3 est spécifique au projet desktop).
+- Captures : sans objet, L20 n’ajoute aucune interface visible.
