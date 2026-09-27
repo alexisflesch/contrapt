@@ -43,6 +43,8 @@ const closeCompactProperties = async (page: Page): Promise<void> => {
   const close = page.getByRole('button', { name: 'Fermer les propriétés' });
   if ((await close.count()) > 0 && (await close.first().isVisible())) {
     await close.first().click();
+    await expect(close.first()).toBeHidden();
+    await expect(page.locator('.context-panel')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Ouvrir les propriétés' })).toBeVisible();
   }
 };
@@ -440,4 +442,20 @@ test('U15 — relie un levier à un convoyeur par la carte Fil, au tactile', asy
   await guide.getByRole('button', { name: 'Annuler le fil' }).tap();
   await expect(guide).toBeHidden();
   await expect(canvas).toHaveAttribute('data-wires', wired ?? '');
+  await tapWorld(4, 4.5);
+  const wiredPanel = page.getByRole('region', { name: 'Propriétés de Levier' });
+  await expect(wiredPanel.getByText('Circuit A')).toBeVisible();
+  const wireRole = wiredPanel.getByRole('group', { name: /Pour le joueur · fil/ });
+  await wireRole.getByRole('button', { name: 'À placer' }).tap();
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.screenshot({
+      path: `test-results/u25/fil-${String(viewport.width)}x${String(viewport.height)}.png`,
+      fullPage: true,
+    });
+  }
 });

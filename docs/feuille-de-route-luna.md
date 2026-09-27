@@ -2459,10 +2459,12 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 
 - Tests ajoutés : schéma v2 (marqueur `wires[i].toPlace`, solution avec `wires`),
   conversion atelier↔puzzle, rejeu de la solution par `connectControlWire`,
-  commande auteur et panneau tactile.
+  commande auteur, panneau tactile et captures E2E aux trois formats.
 - Échec initial constaté : les cinq tests rouges confirmaient le refus U22 et
   l’absence des champs U25 ; la gate rapide a ensuite trouvé une fermeture JSX
   manquante et un matcher Vitest typé `any`, corrigés sans affaiblir les tests.
+  La capture E2E a aussi reproduit un flake de transition du drawer ; le helper
+  attend désormais son démontage effectif.
 - Production : les fils fixes restent dans le décor ; les fils marqués ou
   touchant un objet à placer deviennent une entrée `wire`, une connexion de
   solution et, si nécessaire, une référence `placementId` remappable.
@@ -2473,6 +2475,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Mesures qui ne se reproduisent pas : aucune.
 - Contradictions rencontrées : l’ADR 0013 décrivait encore le refus U22 et les
   seuils de défi exportés ; l’ADR a été amendée pour U25/U24.
-- Non vérifié : validation visuelle par l’auteur.
-- Pour l’auteur : les boutons « Fixe / À placer » apparaissent sous chaque fil
-  connecté dans l’inspecteur auteur.
+- Non vérifié : aucune.
+- Pour l’auteur : captures `test-results/u25/fil-{390x844,844x390,1440x900}.png` ;
+  les boutons « Fixe / À placer » apparaissent sous chaque fil connecté dans
+  l’inspecteur auteur.
