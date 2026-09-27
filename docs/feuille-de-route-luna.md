@@ -2513,3 +2513,29 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Contradictions rencontrées : aucune.
 - Non vérifié : validation visuelle finale par l’auteur.
 - Pour l’auteur : captures `test-results/u27/atelier-{390x844,844x390,1440x900}.png` produites par le smoke E2E.
+
+### N1 — Nouvelle campagne en esquisses — fait — `feat(content): remplace la campagne par 17 esquisses (N1)`
+
+- Lecture : `docs/levels/nouveaux-niveaux.md`, avec les choix par défaut
+  appliqués : scènes plus grandes, fils à partir du niveau 5 et bascule/tremplin
+  lorsqu’ils sont disponibles. Le niveau 15 (« Prenez votre temps ») est différé
+  car le produit n’a pas encore de minuteur.
+- Tests rouges : le nouveau contrat de registre a d’abord échoué contre les
+  12 anciens niveaux (17 identifiants attendus, cinq chapitres et descriptions
+  d’esquisse). Après implémentation, le registre et `pnpm content:check` sont
+  verts.
+- Production : 17 documents U22 approximatifs remplacent les 12 anciens JSON et
+  leurs tests de régression ; les identifiants sont nouveaux, les permissions
+  de décor sont verrouillées et les solutions sont présentes mais non calibrées.
+  Les tests transversaux utilisent des fixtures locales ou retirent la solution
+  embarquée quand ils vérifient un flux d’atelier générique.
+- Tests adaptés : catalogue, progression, brouillons, export, codec fichier,
+  partage, résultat, atelier et application. La gate pnpm check passe : 706
+  tests Vitest, contenu de 19 documents, build et 41 tests Playwright mobile
+  réussis (1 test desktop ignoré par le projet mobile). Le build a été exécuté
+  avant Playwright.
+- Écart assumé : le calibrage physique final reste à faire par l’auteur ; il n’y
+  a pas de champ « esquisse » distinct dans le schéma, le marquage est porté par
+  la description.
+- Captures dédiées produites pour la revue visuelle :
+  test-results/n1/campagne-{390x844,844x390,1440x900}.png.

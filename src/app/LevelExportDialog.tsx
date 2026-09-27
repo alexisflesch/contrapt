@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Download, Link2 } from 'lucide-react';
 
 import type { LevelDocument } from '../domain/level-document';
+import type { PuzzleRunner } from '../application/puzzle/puzzle-workshop';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { createShareLink, prepareLevelExport } from './level-export';
@@ -19,6 +20,7 @@ interface LevelExportDialogProps {
   readonly downloadFile?: DownloadFile;
   /** Injected for tests; defaults to `navigator.clipboard.writeText` when it exists. */
   readonly writeClipboard?: WriteClipboard | undefined;
+  readonly run?: PuzzleRunner;
 }
 
 type ShareState =
@@ -63,8 +65,9 @@ export function LevelExportDialog({
   basePath = import.meta.env.BASE_URL,
   downloadFile = downloadWithTemporaryLink,
   writeClipboard = browserClipboard(),
+  run,
 }: LevelExportDialogProps) {
-  const [preparation] = useState(() => prepareLevelExport(levelDocument));
+  const [preparation] = useState(() => prepareLevelExport(levelDocument, run));
   const [downloadedFileName, setDownloadedFileName] = useState<string | null>(null);
   const [share, setShare] = useState<ShareState>({ status: 'idle' });
 

@@ -148,7 +148,7 @@ Ne pas les utiliser dans un niveau avant qu'elles existent dans le code.
 1. **Esquisser** la chaîne sur papier : qui déclenche quoi, dans quel ordre, et
    où elle est cassée.
 2. **Écrire le document** JSON dans `src/content/levels/<id>.json`, en prenant
-   `level-12-le-bon-ordre.json` comme exemple de format. `id` est en kebab-case ;
+   `campaign-17-la-grande-machine.json` comme exemple de format. `id` est en kebab-case ;
    `schemaVersion: 2` ; les objets de départ ont leurs permissions à `false` ;
    l'inventaire donne `{ move: true, rotate: <selon le type>, remove: true }`.
 3. **Mesurer au banc**, dans un test Vitest à côté du niveau

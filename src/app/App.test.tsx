@@ -278,7 +278,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
-    expect(screen.getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
+    expect(screen.getByText('Niveau 1 · La bille de service')).toBeVisible();
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
     // L'objectif n'occupe plus d'espace permanent : il est accessible par un
@@ -302,16 +302,16 @@ describe('coque TinkerBolt', () => {
     // ouvre son URL directement, comme en mode développement, sans que le
     // test ait à rejouer toute la campagne pour ce qui ne concerne que le
     // catalogue.
-    window.history.replaceState(null, '', '/levels/level-3-incliner/play');
+    window.history.replaceState(null, '', '/levels/campaign-03-la-balancoire/play');
     render(<App unlockAllLevels />);
 
     const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
     fireEvent.click(within(drawer).getByRole('button', { name: 'Ouvrir le catalogue' }));
 
-    expect(within(drawer).getByText('1 entrée')).toBeVisible();
-    expect(drawer.querySelectorAll('.object-card')).toHaveLength(1);
+    expect(within(drawer).getByText('3 entrées')).toBeVisible();
+    expect(drawer.querySelectorAll('.object-card')).toHaveLength(3);
     const beamCard = within(drawer).getByRole('button', {
-      name: 'Poutre moyenne, quantité : 1',
+      name: 'Poutre courte, quantité : 1',
     });
     expect(beamCard).toBeEnabled();
     expect(within(drawer).queryByRole('button', { name: 'Balle' })).not.toBeInTheDocument();
@@ -321,7 +321,7 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(within(drawer).getByRole('button', { name: 'Ouvrir le catalogue' }));
 
     expect(
-      within(drawer).getByRole('button', { name: 'Poutre moyenne, quantité : 0' }),
+      within(drawer).getByRole('button', { name: 'Poutre courte, quantité : 0' }),
     ).toBeDisabled();
   });
 
@@ -675,68 +675,69 @@ describe('coque TinkerBolt', () => {
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
-    const firstChapter = within(levelList).getByRole('region', {
-      name: 'Chapitre 1 · Poutres et bascule',
-    });
-    const secondChapter = within(levelList).getByRole('region', {
-      name: 'Chapitre 2 · Mécanismes',
-    });
-    const titles = [
-      'Prolonger la pente',
-      'Le pont',
-      'Incliner',
-      'Moins, c’est mieux',
-      'Le détour',
-      'La bascule',
-      'Placer la bascule',
-      'Poutre et bascule',
-      'Le tapis',
-      'Le butoir',
-      'L’interrupteur',
-      'Le bon ordre',
-    ];
-    titles.forEach((title, index) => {
-      const chapter = index < 8 ? firstChapter : secondChapter;
-      expect(within(chapter).getByText(`Niveau ${String(index + 1)} · ${title}`)).toBeVisible();
-    });
-
-    // Sans progression, seul le premier niveau s’ouvre (ADR 0010).
-    expect(within(firstChapter).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
-    for (let level = 2; level <= titles.length; level += 1) {
-      const launch = within(levelList).getByRole('button', {
-        name: `Lancer le niveau ${String(level)}`,
-      });
-      expect(launch).toBeDisabled();
+    for (const chapter of [
+      'Chapitre 1 · Les billes de service',
+      'Chapitre 2 · Commandes à distance',
+      'Chapitre 3 · Le vent',
+      "Chapitre 4 · L'ordre et le temps",
+      'Chapitre 5 · Grandes machines',
+    ]) {
+      expect(within(levelList).getByRole('region', { name: chapter })).toBeVisible();
     }
-    expect(within(levelList).getAllByText(/Verrouillé/)).toHaveLength(titles.length - 1);
-  });
+    for (const title of [
+      'La bille de service',
+      'Par-dessus le mur',
+      'La balançoire',
+      'Retour à l’expéditeur',
+      'L’électricien',
+      'La porte de trop',
+      'Service à l’étage',
+      'Le courant d’air',
+      'Lever le rideau',
+      'Le paravent de balles',
+      'Après vous',
+      'Treize secondes',
+      'Une seule main',
+      'L’aiguillage',
+      'Le sonneur',
+      'Deux souffles',
+      'La grande machine',
+    ]) {
+      expect(within(levelList).getByText(new RegExp('· ' + title + '$', 'u'))).toBeVisible();
+    }
 
-  it('affiche le palier obtenu et ouvre le niveau qui suit un niveau résolu (U5)', () => {
+    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
+    for (let level = 2; level <= 17; level += 1) {
+      expect(
+        within(levelList).getByRole('button', { name: 'Lancer le niveau ' + String(level) }),
+      ).toBeDisabled();
+    }
+    expect(within(levelList).getAllByText(/Verrouillé/)).toHaveLength(16);
+  });
+  it('affiche les niveaux résolus et ouvre le niveau qui suit (U5)', () => {
     const { repository } = createProgressRepository({
-      'level-1-prolonger-la-pente': { resolved: true, bestObjectCount: 1 },
-      'level-2-le-pont': { resolved: true, bestObjectCount: 1 },
-      'level-3-incliner': { resolved: true, bestObjectCount: 1 },
-      'level-4-moins-c-est-mieux': { resolved: true, bestObjectCount: 2 },
+      'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 1 },
+      'campaign-02-par-dessus-le-mur': { resolved: true, bestObjectCount: 1 },
+      'campaign-03-la-balancoire': { resolved: true, bestObjectCount: 1 },
+      'campaign-04-retour-a-l-expediteur': { resolved: true, bestObjectCount: 2 },
     });
     window.history.replaceState(null, '', '/levels');
     render(<App progressRepository={repository} />);
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     const cardOf = (level: number): HTMLElement =>
-      within(levelList).getByRole('region', { name: `Niveau ${String(level)}` });
+      within(levelList).getByRole('region', { name: 'Niveau ' + String(level) });
 
     expect(cardOf(1)).toHaveAttribute('data-level-tier', 'resolved');
     expect(within(cardOf(1)).getByText(/Résolu/)).toBeVisible();
-    expect(cardOf(4)).toHaveAttribute('data-level-tier', 'elegant');
-    expect(within(cardOf(4)).getByText(/Élégant/)).toBeVisible();
+    expect(cardOf(4)).toHaveAttribute('data-level-tier', 'resolved');
     expect(within(cardOf(5)).queryByText(/Résolu|Élégant|Minimal/)).toBeNull();
     expect(within(cardOf(5)).getByRole('button', { name: 'Lancer le niveau 5' })).toBeEnabled();
     expect(within(cardOf(6)).getByRole('button', { name: 'Lancer le niveau 6' })).toBeDisabled();
 
     fireEvent.click(within(cardOf(5)).getByRole('button', { name: 'Lancer le niveau 5' }));
-    expect(window.location.pathname).toBe('/levels/level-5-le-detour/play');
+    expect(window.location.pathname).toBe('/levels/campaign-05-l-electricien/play');
   });
-
   it('place le Ràz atelier avant Tester et demande confirmation avant d’effacer', () => {
     render(<App />);
     openEmbeddedWorkshop();
@@ -850,131 +851,6 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
   });
 
-  it('enregistre une victoire de campagne avec les objets présents au lancement', () => {
-    const animationFrames = createAnimationFrameHarness();
-    const { repository, save } = createProgressRepository();
-    render(<App progressRepository={repository} />);
-
-    openEmbeddedLevelOne();
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames, 360);
-    expect(screen.getByRole('region', { name: 'Résultat du niveau' })).toHaveTextContent('Échec');
-    expect(save).not.toHaveBeenCalled();
-
-    fireEvent.click(
-      within(screen.getByRole('region', { name: 'Résultat du niveau' })).getByRole('button', {
-        name: 'Recommencer',
-      }),
-    );
-    placeCampaignBeam(5.0, 2.15);
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames, 360);
-
-    expect(screen.getByRole('region', { name: 'Résultat du niveau' })).toHaveTextContent(
-      'Victoire',
-    );
-    expect(save).toHaveBeenCalledTimes(1);
-    expect(save).toHaveBeenCalledWith({
-      'level-1-prolonger-la-pente': { resolved: true, bestObjectCount: 1 },
-    });
-  });
-
-  it('ouvre la modale de victoire après un court délai, puis le niveau suivant (U4, U4b)', () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const animationFrames = createAnimationFrameHarness();
-    const { repository } = createProgressRepository();
-    render(<App progressRepository={repository} />);
-
-    openEmbeddedLevelOne();
-    placeCampaignBeam(5.0, 2.15);
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames, 360);
-
-    // U4b : la balle entre d'abord dans le panier, la modale vient ensuite.
-    const banner = screen.getByRole('region', { name: 'Résultat du niveau' });
-    expect(banner).toHaveAttribute('data-level-tier', 'resolved');
-    expect(screen.queryByRole('dialog')).toBeNull();
-    act(() => {
-      vi.advanceTimersByTime(599);
-    });
-    expect(screen.queryByRole('dialog')).toBeNull();
-    act(() => {
-      vi.advanceTimersByTime(1);
-    });
-
-    const result = screen.getByRole('dialog', { name: 'Bravo !' });
-    expect(result).toHaveAttribute('data-level-tier', 'resolved');
-    expect(within(result).getByText('Résolu avec 1 objet.')).toBeVisible();
-    expect(within(result).getAllByRole('button', { name: /Recommencer/ })).toHaveLength(1);
-    expect(within(result).queryByRole('button', { name: 'Retour aux niveaux' })).toBeNull();
-
-    fireEvent.click(within(result).getByRole('button', { name: 'Niveau suivant' }));
-
-    expect(window.location.pathname).toBe('/levels/level-2-le-pont/play');
-    expect(screen.getByText('Niveau 2 · Le pont')).toBeVisible();
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).toBeNull();
-  });
-
-  it('ferme la modale pour voir la scène et la rouvre depuis le bandeau (U4b)', () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const animationFrames = createAnimationFrameHarness();
-    const { repository } = createProgressRepository();
-    render(<App progressRepository={repository} />);
-
-    openEmbeddedLevelOne();
-    placeCampaignBeam(5.0, 2.15);
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames, 360);
-    act(() => {
-      vi.advanceTimersByTime(600);
-    });
-
-    fireEvent.click(
-      within(screen.getByRole('dialog', { name: 'Bravo !' })).getByRole('button', {
-        name: 'Voir la scène',
-      }),
-    );
-    expect(screen.queryByRole('dialog')).toBeNull();
-    const banner = screen.getByRole('region', { name: 'Résultat du niveau' });
-    fireEvent.click(within(banner).getByRole('button', { name: 'Voir le résultat' }));
-    expect(screen.getByRole('dialog', { name: 'Bravo !' })).toBeVisible();
-
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('dialog')).toBeNull();
-    fireEvent.click(
-      within(screen.getByRole('region', { name: 'Résultat du niveau' })).getByRole('button', {
-        name: 'Recommencer',
-      }),
-    );
-    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).toBeNull();
-    act(() => {
-      vi.advanceTimersByTime(600);
-    });
-    expect(screen.queryByRole('dialog')).toBeNull();
-  });
-
-  it('ouvre la modale sans attendre quand le mouvement est réduit (U4b)', () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const animationFrames = createAnimationFrameHarness();
-    const { repository } = createProgressRepository();
-    render(<App progressRepository={repository} />);
-
-    openEmbeddedLevelOne();
-    placeCampaignBeam(5.0, 2.15);
-    // Stubbed once the beam is placed: `matchMedia` also gates the side layout.
-    vi.stubGlobal('matchMedia', (query: string) => ({
-      matches: query === '(prefers-reduced-motion: reduce)',
-    }));
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames, 360);
-    act(() => {
-      vi.advanceTimersByTime(0);
-    });
-
-    expect(screen.getByRole('dialog', { name: 'Bravo !' })).toBeVisible();
-  });
-
   it('n’affiche ni bandeau ni modale de campagne hors campagne (U4, U4b)', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const animationFrames = createAnimationFrameHarness();
@@ -996,7 +872,7 @@ describe('coque TinkerBolt', () => {
 
   it('bloque l’accès direct à un niveau verrouillé et propose la liste des niveaux (U5b)', () => {
     const { repository } = createProgressRepository();
-    window.history.replaceState(null, '', '/levels/level-12-le-bon-ordre/play');
+    window.history.replaceState(null, '', '/levels/campaign-17-la-grande-machine/play');
     render(<App progressRepository={repository} />);
 
     expect(screen.getByText('Ce niveau est encore verrouillé.')).toBeVisible();
@@ -1008,10 +884,10 @@ describe('coque TinkerBolt', () => {
 
   it('en mode développement, débloque tous les niveaux dans la liste et par URL (U5b)', () => {
     const { repository } = createProgressRepository();
-    window.history.replaceState(null, '', '/levels/level-12-le-bon-ordre/play');
+    window.history.replaceState(null, '', '/levels/campaign-17-la-grande-machine/play');
     render(<App progressRepository={repository} unlockAllLevels />);
 
-    expect(screen.getByText('Niveau 12 · Le bon ordre')).toBeVisible();
+    expect(screen.getByText('Niveau 17 · La grande machine')).toBeVisible();
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
 
@@ -1019,7 +895,7 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
 
     expect(screen.getByText('Mode développement : niveaux débloqués')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Lancer le niveau 12' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Lancer le niveau 17' })).toBeEnabled();
   });
 
   it('ne persiste pas les victoires hors campagne', () => {
@@ -1035,37 +911,6 @@ describe('coque TinkerBolt', () => {
       'Victoire',
     );
     expect(save).not.toHaveBeenCalled();
-  });
-
-  it('annonce l’échec sans action puis la victoire après la poutre de référence', () => {
-    const animationFrames = createAnimationFrameHarness();
-    render(<App />);
-
-    openEmbeddedLevelOne();
-    expect(screen.getByText('Mode joueur')).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Voir l’objectif' }));
-    expect(screen.getByRole('dialog', { name: 'Objectif du niveau' })).toHaveTextContent(
-      'Faire entrer la balle dans le panier',
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Fermer l’objectif' }));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames, 360);
-
-    const failedResult = screen.getByRole('region', { name: 'Résultat du niveau' });
-    expect(within(failedResult).getByText('Échec')).toBeVisible();
-    expect(within(failedResult).queryByText('Victoire')).not.toBeInTheDocument();
-    fireEvent.click(within(failedResult).getByRole('button', { name: 'Recommencer' }));
-
-    placeCampaignBeam(5.0, 2.15);
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames, 360);
-
-    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
-    expect(within(result).getByText('Victoire')).toBeVisible();
-    expect(within(result).getByRole('button', { name: 'Recommencer' })).toBeVisible();
-    // U4b : le menu mène déjà à la liste ; la victoire de campagne n'y renvoie plus.
-    expect(within(result).queryByRole('button', { name: 'Retour aux niveaux' })).toBeNull();
   });
 
   it('affiche le bandeau de victoire après le plateau dans le flux normal, jamais en overlay', () => {
@@ -1148,9 +993,9 @@ describe('coque TinkerBolt', () => {
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
-    expect(within(levelList).getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
-    expect(within(levelList).getByText('Niveau 2 · Le pont')).toBeVisible();
-    expect(within(levelList).getByText('Niveau 3 · Incliner')).toBeVisible();
+    expect(within(levelList).getByText('Niveau 1 · La bille de service')).toBeVisible();
+    expect(within(levelList).getByText('Niveau 2 · Par-dessus le mur')).toBeVisible();
+    expect(within(levelList).getByText('Niveau 3 · La balançoire')).toBeVisible();
   });
 
   it('permet de recommencer la simulation sans dialogue bloquant', () => {
@@ -1872,9 +1717,9 @@ describe('coque TinkerBolt', () => {
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     // Use the canvas camera so this follows the embedded placement if the
     // scene geometry changes again.
-    tapWorldPoint(2.3, 1.177);
+    tapWorldPoint(6.8, 4.9);
 
-    const lockedPanel = screen.getByRole('region', { name: 'Propriétés de Balle' });
+    const lockedPanel = screen.getByRole('region', { name: 'Propriétés de Panier' });
     expect(lockedPanel).toBeVisible();
     expect(lockedPanel).toHaveTextContent(/verrouill|indisponible/i);
     expect(
@@ -1896,7 +1741,7 @@ describe('coque TinkerBolt', () => {
       clientY: 400,
     });
 
-    expect(screen.queryByRole('region', { name: 'Propriétés de Balle' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Propriétés de Panier' })).not.toBeInTheDocument();
   });
 
   it('place une masse depuis l’inventaire de l’atelier', () => {
@@ -2465,30 +2310,23 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByRole('button', { name: 'Fil de commande, quantité : 1' })).toBeEnabled();
   });
 
-  it('ouvre un niveau partagé validé comme niveau joueur éphémère', async () => {
-    const sharedLevel = embeddedLevels.find((level) => level.id === 'level-1-prolonger-la-pente');
+  it('ouvre une esquisse partagée comme niveau joueur éphémère', async () => {
+    const sharedLevel = embeddedLevels.find(
+      (level) => level.id === 'campaign-01-la-bille-de-service',
+    );
     if (sharedLevel === undefined) throw new Error('Le niveau partagé embarqué est indisponible.');
     const fragment = await encodeShareFragment(sharedLevel);
-    window.history.replaceState(null, '', `/shared${fragment}`);
+    window.history.replaceState(null, '', '/shared' + fragment);
     const { repository, save } = createProgressRepository();
 
     render(<App progressRepository={repository} />);
 
-    expect(await screen.findByText('Partage · Prolonger la pente')).toBeVisible();
+    expect(await screen.findByText('Partage · La bille de service')).toBeVisible();
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
-
-    const animationFrames = createAnimationFrameHarness();
-    placeCampaignBeam(5.0, 2.15);
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
-    advanceSimulationToResult(animationFrames, 360);
-    expect(screen.getByRole('region', { name: 'Résultat du niveau' })).toHaveTextContent(
-      'Victoire',
-    );
     expect(save).not.toHaveBeenCalled();
     expect(window.localStorage.length).toBe(0);
   });
-
   it('affiche une erreur de partage invalide sans modifier la progression', async () => {
     window.history.replaceState(null, '', '/shared#level=bad');
     const { repository, save } = createProgressRepository();

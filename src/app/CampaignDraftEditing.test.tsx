@@ -10,7 +10,7 @@ import { createLocalStorageDraftRepository } from '../infrastructure/storage/loc
 
 import { App } from './App';
 
-const levelTwo = embeddedLevels.find(({ id }) => id === 'level-2-le-pont');
+const levelTwo = embeddedLevels.find(({ id }) => id === 'campaign-02-par-dessus-le-mur');
 if (levelTwo === undefined) throw new Error('Niveau 2 embarqué introuvable.');
 const pristineLevelTwo = structuredClone(levelTwo);
 
@@ -83,19 +83,21 @@ describe('éditer un niveau de la campagne (U17)', () => {
 
     expect(window.location.pathname).toBe('/editor');
     expect(new URLSearchParams(window.location.search).get('draft')).toBe(
-      'level-2-le-pont-brouillon',
+      'campaign-02-par-dessus-le-mur-brouillon',
     );
-    expect(screen.queryByText('Éditeur · Le pont (brouillon)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Éditeur · Par-dessus le mur (brouillon)')).not.toBeInTheDocument();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Exporter le niveau' })).toBeVisible();
 
     const stored = createLocalStorageDraftRepository(window.localStorage).load(
-      'level-2-le-pont-brouillon',
+      'campaign-02-par-dessus-le-mur-brouillon',
     );
     expect(stored.status === 'ok' ? stored.document?.metadata.title : null).toBe(
-      'Le pont (brouillon)',
+      'Par-dessus le mur (brouillon)',
     );
-    expect(window.localStorage.getItem('tinkerbolt:draft:level-2-le-pont')).toBeNull();
+    expect(
+      window.localStorage.getItem('tinkerbolt:draft:campaign-02-par-dessus-le-mur'),
+    ).toBeNull();
     expect(save).not.toHaveBeenCalled();
     expect(levelTwo).toEqual(pristineLevelTwo);
   });
@@ -118,17 +120,17 @@ describe('éditer un niveau de la campagne (U17)', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
 
-    // The ramp is locked for the player (`move: false`); the author context ignores it.
-    tapWorldPoint(5.0, 2.3);
+    // The shelf is locked for the player (`move: false`); the author context ignores it.
+    tapWorldPoint(5.0, 3.6);
     const properties = screen.getByRole('region', { name: /^Propriétés de/ });
     fireEvent.click(within(properties).getByRole('button', { name: 'Vers la droite' }));
 
     const stored = createLocalStorageDraftRepository(window.localStorage).load(
-      'level-2-le-pont-brouillon',
+      'campaign-02-par-dessus-le-mur-brouillon',
     );
-    const storedRamp =
-      stored.status === 'ok' ? stored.document?.objects.find(({ id }) => id === 'ramp') : undefined;
-    expect(storedRamp?.transform.position.x).toBeGreaterThan(5.0);
+    const storedWall =
+      stored.status === 'ok' ? stored.document?.objects.find(({ id }) => id === 'wall') : undefined;
+    expect(storedWall?.transform.position.x).toBeGreaterThan(5.0);
     expect(levelTwo).toEqual(pristineLevelTwo);
   });
 
@@ -136,7 +138,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
     const drafts = createLocalStorageDraftRepository(window.localStorage);
     drafts.save({
       ...levelTwo,
-      id: 'level-2-le-pont-brouillon',
+      id: 'campaign-02-par-dessus-le-mur-brouillon',
       metadata: { title: 'Mon pont' },
     });
     window.history.replaceState(null, '', '/levels');
@@ -158,7 +160,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
 
   const storedDraft = () => {
     const stored = createLocalStorageDraftRepository(window.localStorage).load(
-      'level-2-le-pont-brouillon',
+      'campaign-02-par-dessus-le-mur-brouillon',
     );
     if (stored.status !== 'ok' || stored.document == null) {
       throw new Error('Brouillon introuvable.');
@@ -201,15 +203,19 @@ describe('éditer un niveau de la campagne (U17)', () => {
     window.history.replaceState(null, '', '/levels');
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
-    expect(ballColours()).toEqual({ red: 'ball-1', blue: '' });
+    expect(ballColours().red).toBe('ball-red');
+    expect(ballColours().blue).toContain('ball-blue');
 
     placeFromCatalogue('Balle bleue', 3.0, 0.8);
     const blueBallId = storedDraft().objects.at(-1)?.id ?? '';
-    expect(storedDraft().goal.ballId).toBe('ball-1');
-    expect(ballColours()).toEqual({ red: 'ball-1', blue: blueBallId });
+    expect(storedDraft().goal.ballId).toBe('ball-red');
+    expect(ballColours().red).toBe('ball-red');
+    expect(ballColours().blue).toContain('ball-blue');
+    expect(ballColours().blue).toContain(blueBallId);
 
     fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
-    expect(storedDraft().goal.ballId).toBe('ball-1');
-    expect(ballColours()).toEqual({ red: 'ball-1', blue: '' });
+    expect(storedDraft().goal.ballId).toBe('ball-red');
+    expect(ballColours().red).toBe('ball-red');
+    expect(ballColours().blue).toBe('ball-blue');
   });
 });

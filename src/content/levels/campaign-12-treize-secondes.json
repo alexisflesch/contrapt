@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 2,
+  "id": "campaign-12-treize-secondes",
+  "metadata": {
+    "title": "Treize secondes",
+    "description": "Esquisse non calibrée. La bleue actionne le levier et la masse garde le bouton."
+  },
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 10, "y": 6.5 } },
+  "objects": [
+    {
+      "id": "ball-red",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 3, "y": 2.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 1.2, "y": 1.2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "belt",
+      "type": "conveyor",
+      "props": { "direction": "stopped" },
+      "transform": { "position": { "x": 3, "y": 2.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "lever",
+      "type": "lever",
+      "props": { "position": "center" },
+      "transform": { "position": { "x": 1, "y": 3.6 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "barrier-goal",
+      "type": "barrier",
+      "props": { "state": "closed" },
+      "transform": { "position": { "x": 5, "y": 3.2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "button-goal",
+      "type": "button",
+      "props": {},
+      "transform": { "position": { "x": 8, "y": 5.9 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "button-decoy",
+      "type": "button",
+      "props": {},
+      "transform": { "position": { "x": 5.5, "y": 4.7 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "shelf",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "transform": { "position": { "x": 1.2, "y": 0.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-goal",
+      "type": "basket",
+      "props": {},
+      "transform": { "position": { "x": 6, "y": 6 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-mass",
+      "type": "mass",
+      "props": { "weight": "10kg" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    },
+    {
+      "id": "inventory-short-beam",
+      "type": "beam",
+      "props": { "size": "short" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-conveyor",
+      "type": "conveyor",
+      "props": { "direction": "right" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-red", "basketId": "basket-goal" },
+  "buildZones": [{ "min": { "x": 0.3, "y": 0.3 }, "max": { "x": 9.7, "y": 6.2 } }],
+  "wires": [
+    { "id": "wire-lever-belt", "sourceId": "lever", "targetId": "belt" },
+    { "id": "wire-button-barrier", "sourceId": "button-goal", "targetId": "barrier-goal" }
+  ],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 1.2, "y": 1.7 }, "rotation": 0.261799 }
+      },
+      {
+        "inventoryId": "inventory-mass",
+        "transform": { "position": { "x": 8, "y": 5.2 }, "rotation": 0 }
+      }
+    ]
+  }
+}

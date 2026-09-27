@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 2,
+  "id": "campaign-03-la-balancoire",
+  "metadata": {
+    "title": "La balançoire",
+    "description": "Esquisse non calibrée. La masse charge la bascule pour catapulter la rouge."
+  },
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 8, "y": 5.5 } },
+  "objects": [
+    {
+      "id": "ball-red",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 5.5, "y": 4.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 1, "y": 1.2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "mass-fixed",
+      "type": "mass",
+      "props": { "weight": "10kg" },
+      "transform": { "position": { "x": 2.5, "y": 0.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "barrier-mass",
+      "type": "barrier",
+      "props": { "state": "closed" },
+      "transform": { "position": { "x": 2.5, "y": 1.2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "button",
+      "type": "button",
+      "props": {},
+      "transform": { "position": { "x": 3.2, "y": 4.9 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "red-bowl-left",
+      "type": "beam",
+      "props": { "size": "short" },
+      "transform": { "position": { "x": 5.1, "y": 4.8 }, "rotation": -0.2 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "red-bowl-right",
+      "type": "beam",
+      "props": { "size": "short" },
+      "transform": { "position": { "x": 5.9, "y": 4.8 }, "rotation": 0.2 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-goal",
+      "type": "basket",
+      "props": {},
+      "transform": { "position": { "x": 6.8, "y": 2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-seesaw",
+      "type": "seesaw",
+      "props": {},
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    },
+    {
+      "id": "inventory-short-beam",
+      "type": "beam",
+      "props": { "size": "short" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-springboard",
+      "type": "springboard",
+      "props": {},
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-red", "basketId": "basket-goal" },
+  "buildZones": [{ "min": { "x": 0.3, "y": 0.3 }, "max": { "x": 7.7, "y": 5.2 } }],
+  "wires": [{ "id": "wire-button-barrier", "sourceId": "button", "targetId": "barrier-mass" }],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 2.3, "y": 2.5 }, "rotation": -0.261799 }
+      },
+      {
+        "inventoryId": "inventory-seesaw",
+        "transform": { "position": { "x": 4.3, "y": 3.9 }, "rotation": 0 }
+      }
+    ]
+  }
+}

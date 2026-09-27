@@ -18,9 +18,9 @@ const createRepository = (
 
 function ProgressProbe() {
   const { levels, recordCampaignSuccess, unlockAllLevels } = useCampaignProgress();
-  const first = levels['level-1-prolonger-la-pente'];
-  const second = levels['level-2-le-pont'];
-  const challenged = levels['level-4-moins-c-est-mieux'];
+  const first = levels['campaign-01-la-bille-de-service'];
+  const second = levels['campaign-02-par-dessus-le-mur'];
+  const challenged = levels['campaign-04-retour-a-l-expediteur'];
 
   return (
     <>
@@ -31,7 +31,7 @@ function ProgressProbe() {
       <button
         type="button"
         onClick={() => {
-          recordCampaignSuccess('level-1-prolonger-la-pente', 0);
+          recordCampaignSuccess('campaign-01-la-bille-de-service', 0);
         }}
       >
         Enregistrer la victoire
@@ -41,9 +41,9 @@ function ProgressProbe() {
 }
 
 describe('useCampaignProgress', () => {
-  it('expose les déblocages, paliers et indices, puis persiste une réussite injectée', () => {
+  it('expose les déblocages et persiste une réussite injectée, puis persiste une réussite injectée', () => {
     const repository = createRepository({
-      'level-4-moins-c-est-mieux': { resolved: true, bestObjectCount: 3 },
+      'campaign-04-retour-a-l-expediteur': { resolved: true, bestObjectCount: 3 },
     });
 
     const originalStorageDescriptor = Object.getOwnPropertyDescriptor(navigator, 'storage');
@@ -75,14 +75,14 @@ describe('useCampaignProgress', () => {
       resolved: true,
       bestObjectCount: 3,
       tier: 'resolved',
-      nextChallengeHint: { nextTier: 'elegant', objectCount: 2 },
+      nextChallengeHint: null,
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la victoire' }));
 
     expect(repository.save).toHaveBeenCalledWith({
-      'level-1-prolonger-la-pente': { resolved: true, bestObjectCount: 0 },
-      'level-4-moins-c-est-mieux': { resolved: true, bestObjectCount: 3 },
+      'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 0 },
+      'campaign-04-retour-a-l-expediteur': { resolved: true, bestObjectCount: 3 },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la victoire' }));
     expect(persist).toHaveBeenCalledTimes(1);

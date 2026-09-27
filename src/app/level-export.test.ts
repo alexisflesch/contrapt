@@ -7,16 +7,20 @@ import { decodeShareFragment } from '../infrastructure/level-share/level-share-c
 
 import { buildShareUrl, createShareLink, prepareLevelExport } from './level-export';
 
-const levelFour = embeddedLevels.find(({ id }) => id === 'level-4-moins-c-est-mieux');
+const levelFour = embeddedLevels.find(({ id }) => id === 'campaign-04-retour-a-l-expediteur');
 if (levelFour === undefined) throw new Error('Niveau 4 embarqué introuvable.');
-const levelOne = embeddedLevels.find(({ id }) => id === 'level-1-prolonger-la-pente');
+const { solution: ignoredLevelFourSolution, ...levelFourWithoutSolution } = levelFour;
+void ignoredLevelFourSolution;
+const levelOne = embeddedLevels.find(({ id }) => id === 'campaign-01-la-bille-de-service');
 if (levelOne === undefined) throw new Error('Niveau 1 embarqué introuvable.');
+const { solution: ignoredSolution, ...levelOneWithoutSolution } = levelOne;
+void ignoredSolution;
 
 /** Level 1 as its author would build it: the reference beam in place, marked to place. */
 const levelOneWorkshop: LevelDocument = {
-  ...levelOne,
+  ...levelOneWithoutSolution,
   objects: [
-    ...levelOne.objects,
+    ...levelOneWithoutSolution.objects,
     {
       id: 'placement-1',
       type: 'beam',
@@ -28,17 +32,20 @@ const levelOneWorkshop: LevelDocument = {
   ],
 };
 
+const successfulExportRun = (document: LevelDocument): 'won' | 'lost' =>
+  document.objects.length > levelOne.objects.length ? 'won' : 'lost';
+
 describe('export d’un niveau (U16, U22)', () => {
   it('exporte le puzzle vérifié : décor fixe, objets à placer en inventaire, solution de référence', () => {
-    const result = prepareLevelExport(levelOneWorkshop);
+    const result = prepareLevelExport(levelOneWorkshop, successfulExportRun);
 
     expect(result.status).toBe('ready');
     if (result.status !== 'ready') return;
-    expect(result.fileName).toBe('level-1-prolonger-la-pente.json');
+    expect(result.fileName).toBe('campaign-01-la-bille-de-service.json');
     expect(result.mimeType).toBe('application/json');
     const decoded = decodeLevelFile(result.fileText);
     expect(decoded).toEqual({ status: 'ok', document: result.puzzle });
-    expect(result.puzzle.objects.map(({ id }) => id)).toEqual(['ball-1', 'slope', 'basket-1']);
+    expect(result.puzzle.objects.map(({ id }) => id)).toEqual(levelOne.objects.map(({ id }) => id));
     expect(result.puzzle.inventory).toEqual([
       {
         id: 'beam-a-placer',
@@ -84,7 +91,7 @@ describe('export d’un niveau (U16, U22)', () => {
 
   it('explique pourquoi un document invalide ne peut pas être exporté', () => {
     const depleted = {
-      ...levelFour,
+      ...levelFourWithoutSolution,
       inventory: levelFour.inventory.map((entry) => ({ ...entry, quantity: 0 })),
     };
 
@@ -92,7 +99,9 @@ describe('export d’un niveau (U16, U22)', () => {
 
     expect(result).toEqual({
       status: 'invalid',
-      reasons: ['Le nombre minimal connu ne peut pas dépasser la quantité totale de l’inventaire.'],
+      reasons: [
+        'Aucun objet n’est à placer : touchez chaque objet que le joueur devra poser, puis choisissez « À placer » dans ses propriétés.',
+      ],
     });
   });
 

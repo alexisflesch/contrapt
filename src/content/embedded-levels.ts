@@ -1,16 +1,21 @@
 import demo from './levels/demo.json';
-import levelOne from './levels/level-1-prolonger-la-pente.json';
-import levelTwo from './levels/level-2-le-pont.json';
-import levelThree from './levels/level-3-incliner.json';
-import levelFour from './levels/level-4-moins-c-est-mieux.json';
-import levelFive from './levels/level-5-le-detour.json';
-import levelSix from './levels/level-6-la-bascule.json';
-import levelSeven from './levels/level-7-placer-la-bascule.json';
-import levelEight from './levels/level-8-poutre-et-bascule.json';
-import levelNine from './levels/level-9-le-tapis.json';
-import levelTen from './levels/level-10-le-butoir.json';
-import levelEleven from './levels/level-11-l-interrupteur.json';
-import levelTwelve from './levels/level-12-le-bon-ordre.json';
+import campaignOne from './levels/campaign-01-la-bille-de-service.json';
+import campaignTwo from './levels/campaign-02-par-dessus-le-mur.json';
+import campaignThree from './levels/campaign-03-la-balancoire.json';
+import campaignFour from './levels/campaign-04-retour-a-l-expediteur.json';
+import campaignFive from './levels/campaign-05-l-electricien.json';
+import campaignSix from './levels/campaign-06-la-porte-de-trop.json';
+import campaignSeven from './levels/campaign-07-service-a-l-etage.json';
+import campaignEight from './levels/campaign-08-le-courant-d-air.json';
+import campaignNine from './levels/campaign-09-lever-le-rideau.json';
+import campaignTen from './levels/campaign-10-le-paravent-de-balles.json';
+import campaignEleven from './levels/campaign-11-apres-vous.json';
+import campaignTwelve from './levels/campaign-12-treize-secondes.json';
+import campaignThirteen from './levels/campaign-13-une-seule-main.json';
+import campaignFourteen from './levels/campaign-14-l-aiguillage.json';
+import campaignFifteen from './levels/campaign-15-le-sonneur.json';
+import campaignSixteen from './levels/campaign-16-deux-souffles.json';
+import campaignSeventeen from './levels/campaign-17-la-grande-machine.json';
 import workshop from './levels/workshop.json';
 
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
@@ -54,27 +59,50 @@ export const createCampaign = (
 
 export const campaignChapters = createCampaign([
   {
-    id: 'poutres-et-bascule',
-    title: 'Poutres et bascule',
+    id: 'les-billes-de-service',
+    title: 'Les billes de service',
     levels: [
-      parseEmbeddedLevel(levelOne),
-      parseEmbeddedLevel(levelTwo),
-      parseEmbeddedLevel(levelThree),
-      parseEmbeddedLevel(levelFour),
-      parseEmbeddedLevel(levelFive),
-      parseEmbeddedLevel(levelSix),
-      parseEmbeddedLevel(levelSeven),
-      parseEmbeddedLevel(levelEight),
+      parseEmbeddedLevel(campaignOne),
+      parseEmbeddedLevel(campaignTwo),
+      parseEmbeddedLevel(campaignThree),
     ],
   },
   {
-    id: 'mecanismes',
-    title: 'Mécanismes',
+    id: 'commandes-a-distance',
+    title: 'Commandes à distance',
     levels: [
-      parseEmbeddedLevel(levelNine),
-      parseEmbeddedLevel(levelTen),
-      parseEmbeddedLevel(levelEleven),
-      parseEmbeddedLevel(levelTwelve),
+      parseEmbeddedLevel(campaignFour),
+      parseEmbeddedLevel(campaignFive),
+      parseEmbeddedLevel(campaignSix),
+    ],
+  },
+  {
+    id: 'le-vent',
+    title: 'Le vent',
+    levels: [
+      parseEmbeddedLevel(campaignSeven),
+      parseEmbeddedLevel(campaignEight),
+      parseEmbeddedLevel(campaignNine),
+      parseEmbeddedLevel(campaignTen),
+    ],
+  },
+  {
+    id: 'l-ordre-et-le-temps',
+    title: "L'ordre et le temps",
+    levels: [
+      parseEmbeddedLevel(campaignEleven),
+      parseEmbeddedLevel(campaignTwelve),
+      parseEmbeddedLevel(campaignThirteen),
+      parseEmbeddedLevel(campaignFourteen),
+    ],
+  },
+  {
+    id: 'grandes-machines',
+    title: 'Grandes machines',
+    levels: [
+      parseEmbeddedLevel(campaignFifteen),
+      parseEmbeddedLevel(campaignSixteen),
+      parseEmbeddedLevel(campaignSeventeen),
     ],
   },
 ]);
@@ -100,8 +128,8 @@ export const nextCampaignLevel = (
 
 /**
  * The free-form creation starting point (ADR 0007 - `App.tsx:80-132` in
- * pixel units is retired). It is a validated embedded document exactly like
- * a campaign level, but it is explicitly not campaign content: `App.tsx`
+ * pixel units is retired). It is a validated embedded document exactly like a
+ * campaign level, but it is explicitly not campaign content: `App.tsx`
  * must not list it in the level list, and no code should infer "is the
  * workshop" from `id` string matching elsewhere.
  */

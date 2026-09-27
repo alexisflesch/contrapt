@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import type { LevelDocument, LevelDocumentV1 } from '../../domain/level-document';
-import { embeddedLevels } from '../../content/embedded-levels';
+import { embeddedDemoDocument } from '../../content/embedded-levels';
+import {
+  levelDocumentSchema,
+  type LevelDocument,
+  type LevelDocumentV1,
+} from '../../domain/level-document';
 import { decodeLevelFile, encodeLevelFile, MAX_LEVEL_FILE_SIZE_BYTES } from './level-file-codec';
 
 const legacyDocument: LevelDocumentV1 = {
@@ -29,11 +33,27 @@ const legacyDocument: LevelDocumentV1 = {
   buildZones: [{ min: { x: 0, y: 0 }, max: { x: 4, y: 2 } }],
 };
 
-const getChallengeAndWiresLevel = () => {
-  const level = embeddedLevels.find(({ id }) => id === 'level-12-le-bon-ordre');
-  if (level === undefined) throw new Error('Le niveau 12 embarqué est absent du test.');
-  return level;
-};
+const getChallengeAndWiresLevel = () =>
+  levelDocumentSchema.parse({
+    ...embeddedDemoDocument,
+    inventory: [
+      {
+        id: 'inventory-beam',
+        type: 'beam',
+        props: { size: 'short' },
+        quantity: 1,
+        permissions: { move: true, rotate: true, remove: true },
+      },
+      {
+        id: 'inventory-mass',
+        type: 'mass',
+        props: { weight: '10kg' },
+        quantity: 1,
+        permissions: { move: true, rotate: false, remove: true },
+      },
+    ],
+    challenge: { elegantObjectCount: 2, minimalObjectCount: 1 },
+  });
 
 describe('codec de fichier de niveau', () => {
   it('encode en JSON indenté, avec une nouvelle ligne finale et les clés du schéma dans l’ordre', () => {
@@ -196,7 +216,7 @@ describe('codec de fichier de niveau', () => {
     expect(result.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: ['objects', 0, 'transform', 'position', 'x'],
+          path: ['objects', 2, 'transform', 'position', 'x'],
         }),
       ]),
     );

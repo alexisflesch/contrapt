@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 2,
+  "id": "campaign-11-apres-vous",
+  "metadata": {
+    "title": "Après vous",
+    "description": "Esquisse non calibrée. Le détour de la bleue attend que la rouge atteigne le palier."
+  },
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 10, "y": 6.5 } },
+  "objects": [
+    {
+      "id": "ball-red",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 2, "y": 4.7 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue-a",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 0.8, "y": 1.2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue-b",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 7, "y": 1.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "fan",
+      "type": "fan",
+      "props": { "state": "on" },
+      "transform": { "position": { "x": 3, "y": 6 }, "rotation": -1.570796 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "button-fan",
+      "type": "button",
+      "props": {},
+      "transform": { "position": { "x": 1.8, "y": 5.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "palier",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "transform": { "position": { "x": 3.8, "y": 3.6 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "barrier-palier",
+      "type": "barrier",
+      "props": { "state": "closed" },
+      "transform": { "position": { "x": 4.8, "y": 3.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "belt",
+      "type": "conveyor",
+      "props": { "direction": "right" },
+      "transform": { "position": { "x": 7, "y": 2.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "lever",
+      "type": "lever",
+      "props": { "position": "right" },
+      "transform": { "position": { "x": 6.5, "y": 1.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-goal",
+      "type": "basket",
+      "props": {},
+      "transform": { "position": { "x": 8.8, "y": 6 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-short-beam",
+      "type": "beam",
+      "props": { "size": "short" },
+      "quantity": 3,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-springboard",
+      "type": "springboard",
+      "props": {},
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-mass",
+      "type": "mass",
+      "props": { "weight": "10kg" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-red", "basketId": "basket-goal" },
+  "buildZones": [{ "min": { "x": 0.3, "y": 0.3 }, "max": { "x": 9.7, "y": 6.2 } }],
+  "wires": [
+    { "id": "wire-button-fan", "sourceId": "button-fan", "targetId": "fan" },
+    { "id": "wire-lever-belt", "sourceId": "lever", "targetId": "belt" },
+    { "id": "wire-belt-barrier", "sourceId": "lever", "targetId": "barrier-palier" }
+  ],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 1.8, "y": 3 }, "rotation": 0.261799 }
+      },
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 3, "y": 5.2 }, "rotation": 0 }
+      },
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 8, "y": 3.4 }, "rotation": 0.261799 }
+      }
+    ]
+  }
+}

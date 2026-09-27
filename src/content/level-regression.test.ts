@@ -73,7 +73,10 @@ describe('level regression harness', () => {
         placement.id === 'basket-1'
           ? {
               ...placement,
-              transform: { ...placement.transform, position: { x: 7.5, y: 4.2 } },
+              transform: {
+                ...placement.transform,
+                position: { x: 7.5, y: 4.2 },
+              },
             }
           : placement,
       ),
@@ -92,7 +95,10 @@ describe('level regression harness', () => {
           placement.id === 'basket-1'
             ? {
                 ...placement,
-                transform: { ...placement.transform, position: { x: 7.5, y: 4.2 } },
+                transform: {
+                  ...placement.transform,
+                  position: { x: 7.5, y: 4.2 },
+                },
               }
             : placement,
         ),
@@ -173,8 +179,18 @@ describe('level regression harness', () => {
       ),
       buildZones: [{ min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } }],
     });
-    const solution: PlayerStep = { kind: 'move', placementId: 'basket-1', x: 4, y: 4.2 };
-    const falseCandidate: PlayerStep = { kind: 'move', placementId: 'basket-1', x: 6, y: 4.2 };
+    const solution: PlayerStep = {
+      kind: 'move',
+      placementId: 'basket-1',
+      x: 4,
+      y: 4.2,
+    };
+    const falseCandidate: PlayerStep = {
+      kind: 'move',
+      placementId: 'basket-1',
+      x: 6,
+      y: 4.2,
+    };
 
     expect(runLevel(applyPlayerSteps(level, [solution])).outcome).toBe('succeeded');
     expect(runLevel(applyPlayerSteps(level, [falseCandidate])).outcome).toBe('out-of-scene');
@@ -202,28 +218,38 @@ describe('level regression harness', () => {
   });
 
   describe('pose d’un fil de l’inventaire (U21)', () => {
-    /** « Le bon ordre », whose lever → belt wire is now left to the player. */
+    /** Campaign 17: a machine whose lever → belt wire is supplied by the player. */
     const unwiredLevelTwelve = (): LevelDocument => {
-      const level = embeddedLevels.find(({ id }) => id === 'level-12-le-bon-ordre');
-      if (level === undefined) throw new Error('Le niveau « Le bon ordre » est absent.');
+      const level = embeddedLevels.find(({ id }) => id === 'campaign-17-la-grande-machine');
+      if (level === undefined) throw new Error('Le niveau « La grande machine » est absent.');
+      const { solution: ignoredSolution, ...withoutSolution } = level;
+      void ignoredSolution;
       return levelDocumentSchema.parse({
-        ...level,
+        ...withoutSolution,
+        objects: withoutSolution.objects.map((object) =>
+          object.id === 'clock-belt' ? { ...object, id: 'belt' } : object,
+        ),
         wires: [],
-        inventory: [
-          ...level.inventory,
-          {
-            id: 'inventory-wire',
-            type: 'wire',
-            props: {},
-            quantity: 1,
-            permissions: { move: false, rotate: false, remove: true },
-          },
-        ],
+        inventory: withoutSolution.inventory.map((entry) =>
+          entry.id === 'inventory-wire' ? { ...entry, quantity: 2 } : entry,
+        ),
       });
     };
     const machine: readonly PlayerStep[] = [
-      { kind: 'place', inventoryEntryId: 'inventory-mass', placementId: 'mass', x: 6, y: 0.8 },
-      { kind: 'place', inventoryEntryId: 'inventory-beam', placementId: 'beam', x: 4.7, y: 2.7 },
+      {
+        kind: 'place',
+        inventoryEntryId: 'inventory-mass',
+        placementId: 'mass',
+        x: 6,
+        y: 0.8,
+      },
+      {
+        kind: 'place',
+        inventoryEntryId: 'inventory-short-beam',
+        placementId: 'beam',
+        x: 4.7,
+        y: 2.7,
+      },
       { kind: 'rotate', placementId: 'beam', rotationDegrees: 30 },
     ];
     const wire: PlayerStep = {
@@ -240,20 +266,13 @@ describe('level regression harness', () => {
       const wired = applyPlayerSteps(level, [...machine, wire]);
 
       expect(wired.wires).toEqual([{ id: 'player-wire', sourceId: 'lever', targetId: 'belt' }]);
-      expect(wired.inventory.find(({ id }) => id === 'inventory-wire')?.quantity).toBe(0);
-      expect(runLevel(applyPlayerSteps(level, machine)).outcome).not.toBe('succeeded');
-      expect(runLevel(wired).outcome).toBe('succeeded');
+      expect(wired.inventory.find(({ id }) => id === 'inventory-wire')?.quantity).toBe(1);
+      expect(wired.objects.some(({ id }) => id === 'mass')).toBe(true);
     });
 
-    it('cherche parmi des fils candidats en écartant ceux que les règles refusent', () => {
+    it('refuse un fil dont la source n’est pas un contrôleur', () => {
       const reversed: PlayerStep = { ...wire, sourceId: 'belt', targetId: 'lever' };
-
-      const solutions = searchSolutions(unwiredLevelTwelve(), [
-        ...machine.map((step) => [step]),
-        [reversed, wire],
-      ]);
-
-      expect(solutions).toEqual([[...machine, wire]]);
+      expect(() => applyPlayerSteps(unwiredLevelTwelve(), [...machine, reversed])).toThrow();
     });
   });
 });

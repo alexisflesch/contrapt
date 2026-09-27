@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 2,
+  "id": "campaign-17-la-grande-machine",
+  "metadata": {
+    "title": "La grande machine",
+    "description": "Esquisse non calibrée. Quatre cassures réunissent tout ce qui a été appris."
+  },
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 12, "y": 7.5 } },
+  "objects": [
+    {
+      "id": "ball-red",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 7, "y": 3 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue-one",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 0.8, "y": 1 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue-two",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 4.5, "y": 2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "lever",
+      "type": "lever",
+      "props": { "position": "center" },
+      "transform": { "position": { "x": 2, "y": 1.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "clock-belt",
+      "type": "conveyor",
+      "props": { "direction": "right" },
+      "transform": { "position": { "x": 3.5, "y": 2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "mass-clock",
+      "type": "mass",
+      "props": { "weight": "10kg" },
+      "transform": { "position": { "x": 3.5, "y": 1.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "seesaw-fixed",
+      "type": "seesaw",
+      "props": {},
+      "transform": { "position": { "x": 5, "y": 5.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "button",
+      "type": "button",
+      "props": {},
+      "transform": { "position": { "x": 7, "y": 6 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "barrier-red",
+      "type": "barrier",
+      "props": { "state": "closed" },
+      "transform": { "position": { "x": 7, "y": 2.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "fan",
+      "type": "fan",
+      "props": { "state": "off" },
+      "transform": { "position": { "x": 8.5, "y": 6.5 }, "rotation": -1.570796 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "springboard-fixed",
+      "type": "springboard",
+      "props": {},
+      "transform": { "position": { "x": 10, "y": 4.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "exit-ramp",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "transform": { "position": { "x": 10, "y": 3.5 }, "rotation": 0.261799 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-goal",
+      "type": "basket",
+      "props": {},
+      "transform": { "position": { "x": 11, "y": 7 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-short-beam",
+      "type": "beam",
+      "props": { "size": "short" },
+      "quantity": 2,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-medium-beam",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-long-beam",
+      "type": "beam",
+      "props": { "size": "long" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-springboard",
+      "type": "springboard",
+      "props": {},
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-mass",
+      "type": "mass",
+      "props": { "weight": "10kg" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    },
+    {
+      "id": "inventory-wire",
+      "type": "wire",
+      "props": {},
+      "quantity": 1,
+      "permissions": { "move": false, "rotate": false, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-red", "basketId": "basket-goal" },
+  "buildZones": [{ "min": { "x": 0.3, "y": 0.3 }, "max": { "x": 11.7, "y": 7.2 } }],
+  "wires": [],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 1.2, "y": 1.5 }, "rotation": 0.261799 }
+      },
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 4.5, "y": 4.8 }, "rotation": -0.261799 }
+      },
+      {
+        "inventoryId": "inventory-medium-beam",
+        "transform": { "position": { "x": 6, "y": 4 }, "rotation": 0 }
+      },
+      {
+        "inventoryId": "inventory-long-beam",
+        "transform": { "position": { "x": 9, "y": 4 }, "rotation": 0.261799 }
+      },
+      {
+        "inventoryId": "inventory-springboard",
+        "transform": { "position": { "x": 10, "y": 5.8 }, "rotation": 0 }
+      },
+      {
+        "inventoryId": "inventory-mass",
+        "transform": { "position": { "x": 5, "y": 5 }, "rotation": 0 }
+      }
+    ],
+    "wires": [
+      {
+        "id": "solution-wire-button-fan",
+        "inventoryId": "inventory-wire",
+        "sourceId": "button",
+        "targetId": "fan"
+      }
+    ]
+  }
+}

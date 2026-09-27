@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 2,
+  "id": "campaign-01-la-bille-de-service",
+  "metadata": {
+    "title": "La bille de service",
+    "description": "Esquisse non calibrée. La bleue ouvre la trappe pour livrer la rouge."
+  },
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 8, "y": 5.5 } },
+  "objects": [
+    {
+      "id": "ball-red",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 6.5, "y": 1.6 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 0.8, "y": 0.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "slope-blue",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "transform": { "position": { "x": 2, "y": 1.3 }, "rotation": 0.261799 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "barrier-red",
+      "type": "barrier",
+      "props": { "state": "closed" },
+      "transform": { "position": { "x": 6.5, "y": 2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "slope-red",
+      "type": "beam",
+      "props": { "size": "short" },
+      "transform": { "position": { "x": 6.2, "y": 3.6 }, "rotation": 0.261799 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "button",
+      "type": "button",
+      "props": {},
+      "transform": { "position": { "x": 3.5, "y": 4.9 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-goal",
+      "type": "basket",
+      "props": {},
+      "transform": { "position": { "x": 6.8, "y": 4.9 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-short-beam",
+      "type": "beam",
+      "props": { "size": "short" },
+      "quantity": 2,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-springboard",
+      "type": "springboard",
+      "props": {},
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-red", "basketId": "basket-goal" },
+  "buildZones": [{ "min": { "x": 0.3, "y": 0.3 }, "max": { "x": 7.7, "y": 5.2 } }],
+  "wires": [{ "id": "wire-button-barrier", "sourceId": "button", "targetId": "barrier-red" }],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 3.8, "y": 2.5 }, "rotation": -0.261799 }
+      },
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 6.8, "y": 3.5 }, "rotation": 0.261799 }
+      }
+    ]
+  }
+}

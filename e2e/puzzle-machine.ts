@@ -1,20 +1,50 @@
 import { expect, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
 
 import type { LevelDocument } from '../src/domain/level-document';
-import { decodeLevelFile } from '../src/infrastructure/level-file/level-file-codec';
 import { createLocalStorageDraftRepository } from '../src/infrastructure/storage/local-storage-draft-repository';
+import { levelDocumentSchema } from '../src/domain/level-document';
 
 // Playwright's loader does not import JSON modules: read level 1 through the L22 codec.
-const levelOneFile = decodeLevelFile(
-  readFileSync(
-    new URL('../src/content/levels/level-1-prolonger-la-pente.json', import.meta.url),
-    'utf8',
-  ),
-);
-if (levelOneFile.status !== 'ok') throw new Error('Niveau 1 embarqué illisible.');
-const levelOne = levelOneFile.document;
-
+const levelOne = levelDocumentSchema.parse({
+  schemaVersion: 2,
+  id: 'u22-fixture',
+  metadata: { title: 'Fixture U22' },
+  objects: [
+    {
+      id: 'ball-1',
+      type: 'ball',
+      props: {},
+      transform: { position: { x: 2.3, y: 1.177 }, rotation: 0 },
+      permissions: { move: false, rotate: false, remove: false },
+    },
+    {
+      id: 'slope',
+      type: 'beam',
+      props: { size: 'medium' },
+      transform: { position: { x: 2.2, y: 1.6 }, rotation: 0.2617993877991494 },
+      permissions: { move: false, rotate: false, remove: false },
+    },
+    {
+      id: 'basket-1',
+      type: 'basket',
+      props: {},
+      transform: { position: { x: 6.9, y: 4.9 }, rotation: 0 },
+      permissions: { move: false, rotate: false, remove: false },
+    },
+  ],
+  inventory: [
+    {
+      id: 'inventory-beam',
+      type: 'beam',
+      props: { size: 'short' },
+      quantity: 1,
+      permissions: { move: true, rotate: false, remove: true },
+    },
+  ],
+  goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+  buildZones: [{ min: { x: 3.6, y: 1.7 }, max: { x: 7, y: 2.9 } }],
+  scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+});
 /** U22: level 1 with its reference beam in place, still fixed — the author's complete machine. */
 const machine: LevelDocument = {
   ...levelOne,

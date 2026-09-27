@@ -16,7 +16,7 @@ test('affiche la coque TinkerBolt sur un écran mobile, prête à jouer le nivea
 
   await expect(page).toHaveTitle('TinkerBolt');
   await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
-  await expect(page.getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
+  await expect(page.getByText('Niveau 1 · La bille de service')).toBeVisible();
   await expect(page.getByText('Mode joueur')).toBeVisible();
   const board = page.getByRole('region', { name: 'Plateau de jeu' });
   await expect(board).toBeVisible();

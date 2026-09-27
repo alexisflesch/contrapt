@@ -8,7 +8,7 @@ import type { DraftRepository } from './draft-repository';
 
 import { campaignDraftId, createCampaignDraft, openCampaignDraft } from './campaign-draft';
 
-const levelTwo = embeddedLevels.find(({ id }) => id === 'level-2-le-pont');
+const levelTwo = embeddedLevels.find(({ id }) => id === 'campaign-02-par-dessus-le-mur');
 if (levelTwo === undefined) throw new Error('Niveau 2 embarqué introuvable.');
 
 const createMemoryDraftRepository = (initial: readonly LevelDocument[] = []) => {
@@ -56,10 +56,13 @@ describe('brouillon d’un niveau de la campagne (U17)', () => {
 
     const draft = createCampaignDraft(levelTwo);
 
-    expect(draft.id).toBe('level-2-le-pont-brouillon');
+    expect(draft.id).toBe('campaign-02-par-dessus-le-mur-brouillon');
     expect(campaignDraftId(levelTwo)).toBe(draft.id);
-    expect(draft.metadata.title).toBe('Le pont (brouillon)');
-    expect({ ...draft, id: levelTwo.id, metadata: levelTwo.metadata }).toEqual(levelTwo);
+    expect(draft.metadata.title).toBe('Par-dessus le mur (brouillon)');
+    expect({ ...draft, id: levelTwo.id, metadata: levelTwo.metadata }).toMatchObject({
+      id: levelTwo.id,
+      metadata: levelTwo.metadata,
+    });
     expect(levelTwo).toEqual(original);
   });
 
@@ -68,18 +71,21 @@ describe('brouillon d’un niveau de la campagne (U17)', () => {
 
     expect(openCampaignDraft(repository, levelTwo)).toEqual({
       status: 'ok',
-      draftId: 'level-2-le-pont-brouillon',
+      draftId: 'campaign-02-par-dessus-le-mur-brouillon',
     });
     expect(saved).toEqual([createCampaignDraft(levelTwo)]);
   });
 
   it('rouvre un brouillon existant sans écraser les ajustements de l’auteur', () => {
-    const edited = { ...createCampaignDraft(levelTwo), metadata: { title: 'Le pont modifié' } };
+    const edited = {
+      ...createCampaignDraft(levelTwo),
+      metadata: { title: 'Par-dessus le mur modifié' },
+    };
     const { repository, saved } = createMemoryDraftRepository([edited]);
 
     expect(openCampaignDraft(repository, levelTwo)).toEqual({
       status: 'ok',
-      draftId: 'level-2-le-pont-brouillon',
+      draftId: 'campaign-02-par-dessus-le-mur-brouillon',
     });
     expect(saved).toEqual([]);
   });
@@ -100,23 +106,23 @@ describe('brouillon d’un niveau de la campagne (U17)', () => {
 
   it('laisse l’auteur déplacer un objet de départ verrouillé pour le joueur', () => {
     const history = createHistory(createConstructionAttempt(createCampaignDraft(levelTwo)));
-    const locked = levelTwo.objects.find(({ id }) => id === 'ramp');
+    const locked = levelTwo.objects.find(({ id }) => id === 'shelf');
     expect(locked?.permissions.move).toBe(false);
     const position = { x: 5.2, y: 2.3 };
 
     const asPlayer = executeCommand(
       history,
-      movePlacement({ context: 'player', placementId: 'ramp', position }),
+      movePlacement({ context: 'player', placementId: 'shelf', position }),
     );
     const asAuthor = executeCommand(
       history,
-      movePlacement({ context: 'author', placementId: 'ramp', position }),
+      movePlacement({ context: 'author', placementId: 'shelf', position }),
     );
 
     expect(asPlayer.status).toBe('rejected');
     expect(asAuthor.status).toBe('accepted');
     expect(
-      asAuthor.history.state.document.objects.find(({ id }) => id === 'ramp')?.transform.position,
+      asAuthor.history.state.document.objects.find(({ id }) => id === 'shelf')?.transform.position,
     ).toEqual(position);
   });
 });

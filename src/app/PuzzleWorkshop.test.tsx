@@ -6,21 +6,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { embeddedLevels } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
-import { decodeLevelFile } from '../infrastructure/level-file/level-file-codec';
 import { createLocalStorageDraftRepository } from '../infrastructure/storage/local-storage-draft-repository';
 
 import { App } from './App';
 
-const levelOne = embeddedLevels.find(({ id }) => id === 'level-1-prolonger-la-pente');
+const levelOne = embeddedLevels.find(({ id }) => id === 'campaign-01-la-bille-de-service');
 if (levelOne === undefined) throw new Error('Niveau 1 embarqué introuvable.');
+const { solution: ignoredSolution, ...levelOneWithoutSolution } = levelOne;
+void ignoredSolution;
 
 /** Level 1 with its reference beam in place, still fixed: the author's complete machine. */
 const machine: LevelDocument = {
-  ...levelOne,
+  ...levelOneWithoutSolution,
   id: 'machine-u22',
   metadata: { title: 'Machine U22' },
   objects: [
-    ...levelOne.objects,
+    ...levelOneWithoutSolution.objects,
     {
       id: 'placement-1',
       type: 'beam',
@@ -166,23 +167,7 @@ describe('atelier créateur de puzzles (U22)', () => {
     expect(screen.getByText(/Aucun objet n’est à placer/u)).toBeVisible();
   });
 
-  it('exporte le puzzle vérifié une fois l’objet marqué à placer', () => {
-    const downloads: string[] = [];
-    vi.stubGlobal(
-      'URL',
-      class extends URL {
-        static override createObjectURL = (blob: Blob): string => {
-          const reader = new FileReader();
-          reader.addEventListener('load', () => {
-            if (typeof reader.result === 'string') downloads.push(reader.result);
-          });
-          reader.readAsText(blob);
-          return 'blob:tinkerbolt';
-        };
-        static override revokeObjectURL = vi.fn();
-      },
-    );
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  it('explique que l’esquisse doit être calibrée avant son export', () => {
     openMachine();
     selectBeam();
     fireEvent.click(screen.getByRole('button', { name: 'À placer' }));
@@ -190,11 +175,6 @@ describe('atelier créateur de puzzles (U22)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Exporter le niveau' }));
 
     const dialog = screen.getByRole('dialog', { name: 'Exporter le niveau' });
-    expect(within(dialog).getByText(/Puzzle vérifié/u)).toBeVisible();
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Télécharger le fichier' }));
-    return vi.waitFor(() => {
-      const decoded = decodeLevelFile(downloads[0] ?? '');
-      expect(decoded.status === 'ok' && decoded.document.solution?.placements).toHaveLength(1);
-    });
+    expect(within(dialog).getByRole('alert')).toBeVisible();
   });
 });

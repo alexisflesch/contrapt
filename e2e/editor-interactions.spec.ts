@@ -354,7 +354,7 @@ test('U6 — permet de recommencer un puzzle depuis son document initial', async
   await page.setViewportSize(
     testInfo.project.name === 'mobile' ? { width: 390, height: 844 } : { width: 1440, height: 900 },
   );
-  await page.goto('/levels/level-1-prolonger-la-pente/play');
+  await page.goto('/levels/campaign-01-la-bille-de-service/play');
 
   const reset = page.getByRole('button', { name: 'Recommencer le niveau' });
   const tester = page.getByRole('button', { name: 'Tester' });

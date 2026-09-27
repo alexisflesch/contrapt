@@ -16,7 +16,7 @@ Chaque tranche est verticale, commence par ses tests observables et se termine p
 | T3      | ✅ niveau 1 jouable ; fantôme (C1), ombre (C2) et fond suivant la caméra (D3) restent                      |
 | T4a     | ✅                                                                                                         |
 | T4b     | ✅ sélection, déplacement direct, poignée de rotation, propriétés ; parcours desktop à réparer (L1)        |
-| T5      | ⬜ campagne de 14 niveaux (`levels/initial-progression.md`) : feuille de route L6 à L18                    |
+| T5      | ◐ campagne de 17 esquisses (`levels/nouveaux-niveaux.md`) : calibration auteur encore à faire              |
 | T6      | ⬜ progression (ADR 0010), stockage et partage (ADR 0011), PWA (ADR 0012) : L19 à L28 ; interface U1 à U12 |
 
 L'ordre d'exécution courant est dans `feuille-de-route-luna.md`.

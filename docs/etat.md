@@ -125,8 +125,9 @@ pendant le travail.
   campagne s’il existe et est débloqué ; une seule commande « Recommencer ».
   L’atelier, la démonstration et les niveaux partagés gardent le bandeau simple.
 - **U5 — liste des niveaux par chapitres** : `/levels` regroupe les niveaux par
-  chapitre du catalogue L6 (« Chapitre 1 · Poutres et bascule », « Chapitre 2 ·
-  Mécanismes »), numérotation continue. Un niveau verrouillé reste visible avec
+  cinq chapitres : Les billes de service, Commandes à distance, Le vent,
+  L'ordre et le temps et Grandes machines. La numérotation est continue ; un
+  niveau verrouillé reste visible avec
   « Verrouillé » et un bouton « Lancer » désactivé ; un niveau résolu affiche
   son palier (icône et libellé, `data-level-tier`) recalculé depuis le meilleur
   résultat. « Éditer le niveau » (U17) reste disponible pour tous les niveaux ;
@@ -210,78 +211,24 @@ pendant le travail.
 
 ### Contenu
 
-- Niveau 1 « Prolonger la pente » jouable de bout en bout. Sa régression
-  headless vérifie l’échec sans action, la référence et sa fenêtre de robustesse,
-  les contre-exemples, le déterminisme, l’immuabilité du document et le reset
-  exact (`src/content/levels/level-1-prolonger-la-pente.test.ts`). Parcours tactile
-  mobile sur `/levels/level-1-prolonger-la-pente/play`.
-- Niveau 2 « Le pont » jouable de bout en bout. Sa régression vérifie l’échec sans
-  action, la pose puis le déplacement jusqu’à la référence, les 39 positions
-  mesurées, le refus de rotation, le déterminisme et le reset exact
-  (`src/content/levels/level-2-le-pont.test.ts`). Le parcours mobile pose la poutre,
-  la glisse avant de lancer, puis gagne sur `/levels/level-2-le-pont/play`.
-- Niveau 3 « Incliner » jouable de bout en bout. Sa régression vérifie l’échec
-  initial, la pose puis la rotation à 15°, les six poses robustes accessibles,
-  les mesures physiques hors zone, le refus des rotations/poses qui débordent,
-  le déterminisme et le reset exact (`src/content/levels/level-3-incliner.test.ts`).
-  Le parcours mobile tourne réellement la poignée et gagne sur
-  `/levels/level-3-incliner/play`.
-- Niveau 4 « Moins, c’est mieux » jouable de bout en bout. Les deux références
-  (une poutre longue ou deux courtes) gagnent ; le défi déclare 2 objets élégants
-  et 1 objet minimal. La régression vérifie les fenêtres mesurées, les
-  contre-exemples, l’absence de solution à zéro objet, le déterminisme et le
-  reset (`src/content/levels/level-4-moins-c-est-mieux.test.ts`). Le parcours
-  mobile choisit la poutre longue, la tourne à la poignée et gagne sur
-  `/levels/level-4-moins-c-est-mieux/play`.
-- Niveau 5 « Le détour » jouable de bout en bout avec deux zones et deux
-  entrées de poutre. Sa régression vérifie les 36 combinaisons physiques, les 16
-  poses autorisées par les zones, les deux solutions atteignables aux rotations
-  tactiles de 15°, l’absence de solution à une poutre sur 1 680 poses, les
-  contre-exemples, le déterminisme et le reset
-  (`src/content/levels/level-5-le-detour.test.ts`). Le parcours mobile tourne les
-  deux poutres et gagne sur `/levels/level-5-le-detour/play`.
-- Niveau 6 « La bascule » se résout après le lancement de la simulation, sans
-  inventaire ni zone de pose. Sa régression vérifie les neuf positions mesurées,
-  le mouvement de la planche avant la victoire, son angle final et le reset exact
-  (`src/content/levels/level-6-la-bascule.test.ts`). Le parcours mobile lance
-  l’observation sans poser d’objet sur `/levels/level-6-la-bascule/play`.
-- Niveau 7 « Placer la bascule » jouable au tactile. Sa régression vérifie
-  l’échec sans bascule, les 11 poses robustes, le refus de rotation, le hit-test
-  commun à la planche et au pied, le déterminisme et la position refusée à droite
-  (`src/content/levels/level-7-placer-la-bascule.test.ts`). Le tiroir ne montre
-  que la bascule disponible.
-- Niveau 8 « Poutre et bascule » jouable au tactile avec deux zones. Les 15
-  combinaisons physiques annoncées gagnent et cinq poses sont acceptées par les
-  zones pour la solution à deux objets (`src/content/levels/level-8-poutre-et-bascule.test.ts`).
-  La preuve qu’une bascule seule ne gagne pas reste non vérifiée : la source ne
-  donne pas les coordonnées des 27 poses annoncées.
-- Niveau 9 « Le tapis » jouable au tactile dans le chapitre « Mécanismes ».
-  Les 12 positions physiques gagnent ; six sont entièrement dans la zone de pose.
-  La régression vérifie les refus de confinement, la rotation interdite et le
-  déterminisme (`src/content/levels/level-9-le-tapis.test.ts`).
-- Niveau 10 « Le butoir » jouable au tactile dans le chapitre « Mécanismes ».
-  Sa régression vérifie l’échec sans masse, la référence, les 12 poses robustes,
-  le refus de rotation, l’immuabilité et le déterminisme. Les deux contre-exemples
-  latéraux annoncés gagnent aux trois hauteurs mesurées ; cet écart est consigné
-  sans ajuster la scène (`src/content/levels/level-10-le-butoir.test.ts`).
-- En atelier, un levier peut être orienté de −135° à +135° par boutons ou par
-  poignée tactile. La simulation compense le couple gravitationnel dû à cette
-  orientation : les trois crans tiennent dans toute la plage mesurée et restent
-  sensibles aux chocs. Les parcours E2E ouvrent l’inspecteur compact s’il est
-  replié avant d’interagir avec ses propriétés.
-- Niveau 11 « L’interrupteur » jouable au tactile dans le chapitre « Mécanismes ».
-  La régression lit les états des dispositifs : les quatre poses gagnantes
-  mesurées placent le levier à droite et le convoyeur à `1`; les contre-exemples
-  le laissent au centre ou le placent à gauche. La référence annoncée à
-  (6,2 ; 1,1) expire et deux poses de la fenêtre annoncée n’activent pas le levier ;
-  l’écart est documenté sans changer la géométrie
-  (`src/content/levels/level-11-l-interrupteur.test.ts`).
-- Niveau 12 « Le bon ordre » jouable au tactile dans « Mécanismes » : une masse
-  déclenche un levier câblé au convoyeur, puis une poutre tournée guide la balle.
-  Les 153 combinaisons des fenêtres mesurées gagnent ; une recherche sur 936
-  poses légales ne trouve aucune solution à un objet
-  (`src/content/levels/level-12-le-bon-ordre.test.ts`).
-- `pnpm content:check` valide les JSON embarqués.
+- **N1 — nouvelle campagne en esquisses** : 17 niveaux JSON au format U22 sont
+  embarqués sous les identifiants `campaign-01` à `campaign-17`, répartis en
+  cinq chapitres et accessibles dans l’ordre. Les scènes, décors, inventaires,
+  fils et solutions sont indicatifs ; chaque description commence par
+  « Esquisse non calibrée. » et aucun niveau ne porte encore de défi de
+  progression.
+- Les objets de décor sont verrouillés pour le joueur ; les inventaires et les
+  solutions approximatives suivent les familles décrites dans
+  `docs/levels/nouveaux-niveaux.md`. Le niveau 15 de ce document (minuteur)
+  est volontairement différé : `campaign-15` correspond au niveau 16,
+  « Le sonneur », puis `campaign-16` et `campaign-17` ferment la campagne
+  actuelle.
+- Tant que l’auteur n’a pas ajusté puis exporté les esquisses depuis U17/U22,
+  aucune régression headless ne prétend que leur solution gagne. Les tests de
+  registre, de schéma, de progression, de brouillon, de partage et les
+  parcours Playwright couvrent néanmoins leur chargement et leur navigation.
+- `pnpm content:check` valide les 19 documents embarqués : les 17 niveaux de
+  campagne, la démonstration et l’atelier.
 
 ## Dettes et limites explicites
 
@@ -297,27 +244,22 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
-- **Campagne à refaire** (décision auteur du 27 septembre 2026) : les niveaux
-  ci-dessous seront remplacés, voir `levels/nouveaux-niveaux.md`.
-- **Douze niveaux de campagne**, « Prolonger la pente », « Le pont »,
-  « Incliner », « Moins, c’est mieux », « Le détour », « La bascule »,
-  « Placer la bascule », « Poutre et bascule », « Le tapis », « Le butoir »,
-  « L’interrupteur » et « Le bon ordre ». Les niveaux 13 « Deux tapis » et 14
-  « Grand final » sont bloqués après trois esquisses sans fenêtre de robustesse de
-  0,3 unité. Aucun bouton « Niveau suivant ».
+- **Calibration des esquisses** (décision auteur du 27 septembre 2026) : les
+  17 niveaux de campagne sont livrés comme points de départ. L’auteur doit les
+  ouvrir avec « Éditer le niveau », ajuster la physique et exporter les
+  documents avant activation de régressions de solution.
 - **Progression de campagne** : L19 calcule les paliers, records, indices et
   déblocages ; L20 persiste les records dans une enveloppe locale validée ; L21
   enregistre les victoires depuis le snapshot du lancement et expose le hook
   `useCampaignProgress()` sans ajout visuel. La demande de stockage persistant est
   faite une seule fois après la première victoire. Le codec L23 et la route
   `/shared` L24 sont livrés ; les niveaux partagés restent hors campagne et ne
-  créent ni progression ni brouillon. La PWA L28 est livrée selon l’ADR 0012. Les
-  métadonnées de défi v2 sont
-  utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité du niveau 8 reste
-  à compléter avec les coordonnées de sa grille « bascule seule ».
+  créent ni progression ni brouillon. La PWA L28 est livrée selon l’ADR 0012.
+  Les esquisses actuelles ne portent aucun défi : les paliers restent réservés
+  aux niveaux calibrés qui en définissent explicitement un.
 - **Fichiers et partage** : L22 encode et décode les documents avec validation
   et migration ; L23 sérialise les fragments URL avec CRC-32 et décompression
-  bornée ; L24 valide `location.hash`, puis ouvre le document en mode joueur ou
+  bornée ; L24 valide location.hash, puis ouvre le document en mode joueur ou
   affiche une erreur avec un lien vers la liste.
 - **Brouillons L26** : `DraftRepository` et son adaptateur `localStorage` stockent
   un document par identifiant sous `tinkerbolt:draft:<id>`, avec l’index
@@ -372,7 +314,7 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` après U27 (27 septembre 2026) : passe — typecheck, lint, formatage, Knip, contenu, 798 tests Vitest (67 fichiers), build Vite/PWA et 55 tests Playwright `mobile` réussis (1 test desktop ignoré par ce projet).
+`pnpm check` après N1 (27 septembre 2026) : passe — typecheck, lint, formatage, Knip, contenu (19 documents), 706 tests Vitest (55 fichiers), build Vite/PWA et 41 tests Playwright `mobile` réussis (1 test desktop ignoré par ce projet).
 
 `pnpm check` après U26 et la réparation E2E du catalogue (27 septembre 2026) :
 typecheck, lint, formatage, Knip, contenu, 797 tests Vitest (66 fichiers), build

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { embeddedLevels } from '../../content/embedded-levels';
+import { embeddedDemoDocument } from '../../content/embedded-levels';
+import { levelDocumentSchema } from '../../domain/level-document';
 import type { LevelDocument } from '../../domain/level-document';
 import { encodeLevelFile } from '../level-file/level-file-codec';
 import { crc32Ieee, decodeShareFragment, encodeShareFragment } from './level-share-codec';
@@ -24,11 +25,27 @@ const compress = async (bytes: Uint8Array): Promise<Uint8Array> => {
   return new Uint8Array(await new Response(compressed).arrayBuffer());
 };
 
-const levelTwelve = () => {
-  const level = embeddedLevels.find(({ id }) => id === 'level-12-le-bon-ordre');
-  if (level === undefined) throw new Error('Le niveau 12 embarqué est absent du test.');
-  return level;
-};
+const levelTwelve = () =>
+  levelDocumentSchema.parse({
+    ...embeddedDemoDocument,
+    inventory: [
+      {
+        id: 'inventory-beam',
+        type: 'beam',
+        props: { size: 'short' },
+        quantity: 1,
+        permissions: { move: true, rotate: true, remove: true },
+      },
+      {
+        id: 'inventory-mass',
+        type: 'mass',
+        props: { weight: '10kg' },
+        quantity: 1,
+        permissions: { move: true, rotate: false, remove: true },
+      },
+    ],
+    challenge: { elegantObjectCount: 2, minimalObjectCount: 1 },
+  });
 
 afterEach(() => {
   vi.unstubAllGlobals();

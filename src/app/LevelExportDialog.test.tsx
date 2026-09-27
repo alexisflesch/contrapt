@@ -13,16 +13,19 @@ import { App } from './App';
 import { LevelExportDialog } from './LevelExportDialog';
 import { prepareLevelExport } from './level-export';
 
-const levelFour = embeddedLevels.find(({ id }) => id === 'level-4-moins-c-est-mieux');
+const levelFour = embeddedLevels.find(({ id }) => id === 'campaign-04-retour-a-l-expediteur');
 if (levelFour === undefined) throw new Error('Niveau 4 embarqué introuvable.');
-const levelOne = embeddedLevels.find(({ id }) => id === 'level-1-prolonger-la-pente');
+const levelOne = embeddedLevels.find(({ id }) => id === 'campaign-01-la-bille-de-service');
 if (levelOne === undefined) throw new Error('Niveau 1 embarqué introuvable.');
 
 /** Level 1 as its author would build it: the reference beam in place, marked to place. */
+const { solution: ignoredSolution, ...levelOneWithoutSolution } = levelOne;
+void ignoredSolution;
+
 const levelOneWorkshop: LevelDocument = {
-  ...levelOne,
+  ...levelOneWithoutSolution,
   objects: [
-    ...levelOne.objects,
+    ...levelOneWithoutSolution.objects,
     {
       id: 'placement-1',
       type: 'beam',
@@ -33,8 +36,12 @@ const levelOneWorkshop: LevelDocument = {
     },
   ],
 };
+
+const successfulExportRun = (document: LevelDocument): 'won' | 'lost' =>
+  document.objects.length > levelOne.objects.length ? 'won' : 'lost';
+
 const levelOnePuzzle = (): LevelDocument => {
-  const preparation = prepareLevelExport(levelOneWorkshop);
+  const preparation = prepareLevelExport(levelOneWorkshop, successfulExportRun);
   if (preparation.status !== 'ready') throw new Error('Le puzzle du niveau 1 est refusé.');
   return preparation.puzzle;
 };
@@ -63,6 +70,7 @@ const renderDialog = (
   render(
     <LevelExportDialog
       document={document}
+      run={successfulExportRun}
       onClose={onClose}
       origin="https://exemple.test"
       basePath="/"
@@ -97,7 +105,7 @@ describe('boîte « Exporter » de l’atelier (U16, U22)', () => {
       'Ce niveau ne peut pas encore être exporté',
     );
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Le nombre minimal connu ne peut pas dépasser la quantité totale de l’inventaire.',
+      'La solution pose plus d’objets « inventory-short-beam » que l’inventaire n’en contient.',
     );
     expect(screen.queryByRole('button', { name: 'Télécharger le fichier' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Copier le lien de partage' })).toBeNull();
@@ -110,14 +118,14 @@ describe('boîte « Exporter » de l’atelier (U16, U22)', () => {
 
     expect(downloadFile).toHaveBeenCalledTimes(1);
     const [fileName, mimeType, fileText] = downloadFile.mock.calls[0] ?? [];
-    expect(fileName).toBe('level-1-prolonger-la-pente.json');
+    expect(fileName).toBe('campaign-01-la-bille-de-service.json');
     expect(mimeType).toBe('application/json');
     expect(decodeLevelFile(String(fileText))).toEqual({
       status: 'ok',
       document: levelOnePuzzle(),
     });
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Fichier level-1-prolonger-la-pente.json téléchargé.',
+      'Fichier campaign-01-la-bille-de-service.json téléchargé.',
     );
   });
 
@@ -166,7 +174,7 @@ describe('boîte « Exporter » de l’atelier (U16, U22)', () => {
     // Le niveau 2 est verrouillé sans progression (U5b) ; `unlockAllLevels`
     // ouvre son mode joueur directement pour ce test, qui ne porte pas sur le
     // déblocage mais sur la présence d’« Exporter » selon le mode.
-    window.history.replaceState(null, '', '/levels/level-2-le-pont/play');
+    window.history.replaceState(null, '', '/levels/campaign-02-par-dessus-le-mur/play');
     const { unmount } = render(<App unlockAllLevels />);
     expect(screen.queryByRole('button', { name: 'Exporter le niveau' })).toBeNull();
     unmount();

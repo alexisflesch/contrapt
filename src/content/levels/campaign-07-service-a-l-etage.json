@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 2,
+  "id": "campaign-07-service-a-l-etage",
+  "metadata": {
+    "title": "Service à l’étage",
+    "description": "Esquisse non calibrée. La bleue garde le bouton pendant que le vent monte la rouge."
+  },
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 8, "y": 5.5 } },
+  "objects": [
+    {
+      "id": "ball-red",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 3.5, "y": 3.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 1, "y": 1.2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "fan",
+      "type": "fan",
+      "props": { "state": "on" },
+      "transform": { "position": { "x": 3.5, "y": 5 }, "rotation": -1.570796 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "button",
+      "type": "button",
+      "props": {},
+      "transform": { "position": { "x": 6.5, "y": 4.9 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "blue-ramp",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "transform": { "position": { "x": 2, "y": 2 }, "rotation": 0.261799 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "balcony",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "transform": { "position": { "x": 5.5, "y": 2.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-goal",
+      "type": "basket",
+      "props": {},
+      "transform": { "position": { "x": 5.5, "y": 2.6 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-short-beam",
+      "type": "beam",
+      "props": { "size": "short" },
+      "quantity": 2,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-springboard",
+      "type": "springboard",
+      "props": {},
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-red", "basketId": "basket-goal" },
+  "buildZones": [{ "min": { "x": 0.3, "y": 0.3 }, "max": { "x": 7.7, "y": 5.2 } }],
+  "wires": [{ "id": "wire-button-fan", "sourceId": "button", "targetId": "fan" }],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 6.5, "y": 4.4 }, "rotation": 1.570796 }
+      },
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 4.5, "y": 3.6 }, "rotation": -0.261799 }
+      }
+    ]
+  }
+}

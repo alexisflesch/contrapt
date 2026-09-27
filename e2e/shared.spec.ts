@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-import sharedLevel from '../src/content/levels/level-2-le-pont.json' with { type: 'json' };
+import sharedLevel from '../src/content/levels/campaign-02-par-dessus-le-mur.json' with { type: 'json' };
 import { decodeLevelFile } from '../src/infrastructure/level-file/level-file-codec';
 import { encodeShareFragment } from '../src/infrastructure/level-share/level-share-codec';
 
@@ -16,7 +16,7 @@ test('ouvre un lien partagé fabriqué par le codec sur mobile', async ({ page }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/shared${fragment}`);
 
-  await expect(page.getByText('Partage · Le pont')).toBeVisible();
+  await expect(page.getByText('Partage · Par-dessus le mur')).toBeVisible();
   await expect(page.getByText('Mode joueur')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
 

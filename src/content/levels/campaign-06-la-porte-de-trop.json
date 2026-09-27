@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 2,
+  "id": "campaign-06-la-porte-de-trop",
+  "metadata": {
+    "title": "La porte de trop",
+    "description": "Esquisse non calibrée. Une commande ouvre deux trappes, mais la bleue doit être rangée."
+  },
+  "scene": { "min": { "x": 0, "y": 0 }, "max": { "x": 8, "y": 5.5 } },
+  "objects": [
+    {
+      "id": "ball-red",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 4, "y": 1 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue-a",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 1.5, "y": 1.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "ball-blue-b",
+      "type": "ball",
+      "props": {},
+      "transform": { "position": { "x": 5, "y": 1 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "lever",
+      "type": "lever",
+      "props": { "position": "center" },
+      "transform": { "position": { "x": 1.5, "y": 2.2 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "barrier-red",
+      "type": "barrier",
+      "props": { "state": "closed" },
+      "transform": { "position": { "x": 4, "y": 1.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "barrier-blue",
+      "type": "barrier",
+      "props": { "state": "closed" },
+      "transform": { "position": { "x": 5, "y": 1.5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "springboard-fixed",
+      "type": "springboard",
+      "props": {},
+      "transform": { "position": { "x": 5, "y": 5 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "pocket",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "transform": { "position": { "x": 6.5, "y": 5 }, "rotation": 1.570796 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    },
+    {
+      "id": "basket-goal",
+      "type": "basket",
+      "props": {},
+      "transform": { "position": { "x": 7.2, "y": 3.8 }, "rotation": 0 },
+      "permissions": { "move": false, "rotate": false, "remove": false }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory-short-beam",
+      "type": "beam",
+      "props": { "size": "short" },
+      "quantity": 2,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-medium-beam",
+      "type": "beam",
+      "props": { "size": "medium" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": true, "remove": true }
+    },
+    {
+      "id": "inventory-mass",
+      "type": "mass",
+      "props": { "weight": "10kg" },
+      "quantity": 1,
+      "permissions": { "move": true, "rotate": false, "remove": true }
+    }
+  ],
+  "goal": { "type": "basket", "ballId": "ball-red", "basketId": "basket-goal" },
+  "buildZones": [{ "min": { "x": 0.3, "y": 0.3 }, "max": { "x": 7.7, "y": 5.2 } }],
+  "wires": [
+    { "id": "wire-lever-red", "sourceId": "lever", "targetId": "barrier-red" },
+    { "id": "wire-lever-blue", "sourceId": "lever", "targetId": "barrier-blue" }
+  ],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "inventory-short-beam",
+        "transform": { "position": { "x": 5.6, "y": 3 }, "rotation": 0.5 }
+      },
+      {
+        "inventoryId": "inventory-medium-beam",
+        "transform": { "position": { "x": 5.1, "y": 3.3 }, "rotation": 0.785398 }
+      }
+    ]
+  }
+}
