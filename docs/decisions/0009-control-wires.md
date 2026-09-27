@@ -121,6 +121,21 @@ le seul indice), en petite pastille aussi translucide que le fil. La section
 « Routage indépendant, ponts en post-traitement » ci-dessus est caduque ; la
 chaîne devient objets et fils → ports → segment → dessin.
 
+## Amendement du 27 septembre 2026 — équerre horizontale/verticale (U14b)
+
+Le segment droit diagonal de U14 restait jugé peu lisible. Demande de
+l'auteur : le tracé reste un calcul pur et direct, sans contournement ni pont,
+mais n'est plus jamais diagonal — horizontal ou vertical seulement, avec au
+plus un coude (`src/presentation/control-wires.ts`). L'orientation du coude
+est déterministe : le fil part dans l'axe du port de la source (le port
+sortant surtout à l'horizontale ou surtout à la verticale de son objet), tourne
+une fois vers la cible. Si les deux ports sont déjà alignés sur un axe, un
+segment unique suffit, sans coude. Le reste de U14 est inchangé (dessin sous
+les objets, translucidité, quasi-effacement en simulation, lettre aux deux
+bouts). La chaîne devient objets et fils → ports → équerre → dessin ; le
+paragraphe « chaîne devient objets et fils → ports → segment → dessin » de U14
+ci-dessus est caduc.
+
 ## Amendement du 27 septembre 2026 — fil dans l'inventaire du joueur (U21)
 
 Décision de l'auteur : **un fil est un objet d'inventaire comme les autres** ;

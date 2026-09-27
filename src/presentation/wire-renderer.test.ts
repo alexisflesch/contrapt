@@ -90,6 +90,88 @@ const circuitColours = (): readonly string[] => {
   return [...new Set(colours)];
 };
 
+describe('tracé en équerre', () => {
+  const points: Array<{ x: number; y: number }> = [];
+  const centres: Array<{ x: number; y: number }> = [];
+
+  const canvas: WireCanvas = {
+    globalAlpha: 1,
+    strokeStyle: '',
+    fillStyle: '',
+    lineWidth: 1,
+    lineCap: 'butt',
+    font: '',
+    textAlign: 'start',
+    textBaseline: 'alphabetic',
+    save: () => undefined,
+    restore: () => undefined,
+    beginPath: () => undefined,
+    moveTo: (x, y) => points.push({ x, y }),
+    lineTo: (x, y) => points.push({ x, y }),
+    arc: (x, y) => centres.push({ x, y }),
+    stroke: () => undefined,
+    fill: () => undefined,
+    fillText: () => undefined,
+  };
+
+  const bent: ProjectedWire = {
+    id: 'wire-1',
+    sourceId: 'lever-1',
+    targetId: 'conveyor-1',
+    circuitIndex: 0,
+    label: 'A',
+    from: { x: 0, y: 0 },
+    to: { x: 3, y: 2 },
+    bend: { x: 3, y: 0 },
+  };
+
+  it('passe par le coude plutôt que par la diagonale quand `bend` existe', () => {
+    points.length = 0;
+    drawWires(canvas, [bent], (point) => point, { dimmed: false, focusId: undefined });
+
+    // One moveTo + two lineTo per stroke pass (casing, then core).
+    expect(points).toEqual([
+      { x: 0, y: 0 },
+      { x: 3, y: 0 },
+      { x: 3, y: 2 },
+      { x: 0, y: 0 },
+      { x: 3, y: 0 },
+      { x: 3, y: 2 },
+    ]);
+  });
+
+  it('trace un seul segment quand `bend` est absent', () => {
+    points.length = 0;
+    const straight: ProjectedWire = {
+      id: bent.id,
+      sourceId: bent.sourceId,
+      targetId: bent.targetId,
+      circuitIndex: bent.circuitIndex,
+      label: bent.label,
+      from: bent.from,
+      to: { x: 3, y: 0 },
+    };
+    drawWires(canvas, [straight], (point) => point, { dimmed: false, focusId: undefined });
+
+    expect(points).toEqual([
+      { x: 0, y: 0 },
+      { x: 3, y: 0 },
+      { x: 0, y: 0 },
+      { x: 3, y: 0 },
+    ]);
+  });
+
+  it('pose chaque pastille sur son propre segment de l’équerre, pas sur la diagonale', () => {
+    centres.length = 0;
+    drawWireLabels(canvas, [bent], (point) => point, { dimmed: false, focusId: undefined });
+
+    // Near `from`, inset along the first (horizontal) leg: y stays 0.
+    expect(centres[0]).toEqual({ x: 1.5, y: 0 });
+    // Near `to`, inset along the second (vertical) leg: x stays 3.
+    expect(centres[1]).toEqual({ x: 3, y: 1 });
+  });
+});
+
 describe('couleurs des circuits de fils', () => {
   const palette = circuitColours().map((hex) => [hex, parseHex(hex)] as const);
 

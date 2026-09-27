@@ -1048,25 +1048,29 @@ describe('renderer Canvas 2D du plateau', () => {
     ]);
   });
 
-  it('dessine chaque fil comme un segment droit sous les objets, avec sa lettre aux deux bouts', async () => {
+  it('dessine chaque fil en équerre horizontale/verticale sous les objets, avec sa lettre aux deux bouts', async () => {
     const { operations } = await renderWired();
 
     const firstSprite = operations.findIndex((operation) => operation.kind === 'drawImage');
     const underSprites = operations.slice(0, firstSprite);
     const start = worldToPixels({ x: 2.4, y: 4.05 }, viewport);
+    // The lever's port faces sideways: the wire leaves horizontally first,
+    // then turns once down to the conveyor's port (U14b).
+    const bend = worldToPixels({ x: 5.5, y: 4.05 }, viewport);
     const end = worldToPixels({ x: 5.5, y: 5 }, viewport);
     expect(underSprites.filter((operation) => operation.kind === 'stroke').length).toBeGreaterThan(
       0,
     );
-    // Every stroke under the sprites is the same straight segment: no bend, no bridge.
+    // Every stroke under the sprites is the same L-shaped route: no bridge.
     const pathOperations = underSprites.filter(
       (operation) =>
         operation.kind === 'moveTo' || operation.kind === 'lineTo' || operation.kind === 'arc',
     );
     expect(pathOperations.length).toBeGreaterThan(0);
-    for (let index = 0; index < pathOperations.length; index += 2) {
+    for (let index = 0; index < pathOperations.length; index += 3) {
       expect(pathOperations[index]).toEqual({ kind: 'moveTo', values: [start.x, start.y] });
-      expect(pathOperations[index + 1]).toEqual({ kind: 'lineTo', values: [end.x, end.y] });
+      expect(pathOperations[index + 1]).toEqual({ kind: 'lineTo', values: [bend.x, bend.y] });
+      expect(pathOperations[index + 2]).toEqual({ kind: 'lineTo', values: [end.x, end.y] });
     }
     expect(
       operations

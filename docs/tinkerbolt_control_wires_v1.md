@@ -1,9 +1,9 @@
 # TinkerBolt — Fils de commande
 
 Statut : spécification fonctionnelle de la v1, conforme à l'implémentation du
-26 septembre 2026 (bouton, ventilateur, barrière ajoutés). Les décisions et leurs raisons sont dans
-[l'ADR 0009](decisions/0009-control-wires.md) ; le code et les tests priment sur
-ce texte.
+27 septembre 2026 (tracé en équerre, U14b). Les décisions et leurs raisons sont
+dans [l'ADR 0009](decisions/0009-control-wires.md) ; le code et les tests
+priment sur ce texte.
 
 Cette note remplace une première version produite en amont. Ce qui a changé, et
 pourquoi, est résumé à la fin.
@@ -131,9 +131,11 @@ bouts de chaque fil.
 
 - Ancrages : aux deux extrémités du socle du levier et du bouton, aux deux
   bouts du convoyeur, au pied du ventilateur et du poteau de la barrière. Chaque fil part du côté qui regarde l'autre objet.
-- Un seul segment droit, d'un ancrage à l'autre, sans virage : il ne contourne
-  pas les objets et passe sous eux. Un croisement de fils ne signifie rien et
-  n'est pas marqué.
+- D'un ancrage à l'autre, uniquement horizontal ou vertical, avec au plus un
+  coude (U14b) : il ne contourne pas les objets et passe sous eux. Le fil part
+  dans l'axe du port de la source, puis tourne une fois vers la cible ; si les
+  deux ports sont déjà alignés sur un axe, un seul segment suffit. Un
+  croisement de fils ne signifie rien et n'est pas marqué.
 
 ## Affichage
 
@@ -150,7 +152,7 @@ bouts de chaque fil.
 | Rendu SVG                                         | Canvas 2D, même renderer que le plateau                      | ADR 0006 ; un calque SVG devrait suivre caméra, zoom et DPR séparément               |
 | `label` et `color` stockés sur chaque fil         | Dérivés, un circuit par levier                               | Rien à valider ni à désynchroniser ; la note montrait déjà un bouton A → 3 appareils |
 | `sourceAnchor` / `targetAnchor` dans le niveau    | Ancrages définis par la famille                              | Donnée visuelle, pas donnée de niveau                                                |
-| Routage tenant compte des autres fils             | Segment droit, sans routage ni pont (U14)                    | Les tracés orthogonaux étaient trop voyants                                          |
+| Routage tenant compte des autres fils             | Équerre horizontale/verticale, sans routage ni pont (U14, U14b) | Les tracés orthogonaux, puis le segment droit diagonal, étaient trop voyants       |
 | « Éviter les zones de gameplay importantes »      | Abandonné                                                    | Non défini                                                                           |
 | Plusieurs contrôleurs possibles sur un dispositif | Un seul contrôleur par dispositif                            | Deux contrôleurs opposés rendraient l'état ambigu                                    |
 | Le joueur peut actionner le levier en simulation  | Jamais ; seuls les objets le font changer de cran            | Principe « construire, puis regarder »                                               |

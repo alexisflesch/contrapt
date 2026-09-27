@@ -33,15 +33,45 @@ const wiredDocument = (conveyorX: number) =>
     wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
   });
 
+/** Lever and conveyor with ports level with each other: no bend needed. */
+const alignedDocument = () =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'wires-aligned',
+    metadata: { title: 'Fils alignés' },
+    objects: [
+      placement('ball-1', 'ball', 1, 1, {}),
+      placement('basket-1', 'basket', 1, 9, {}),
+      placement('lever-1', 'lever', 5, 4, { position: 'center' }),
+      placement('conveyor-1', 'conveyor', 11, 4.05, { direction: 'stopped' }),
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: 0, y: 0 }, max: { x: 14, y: 10 } },
+    wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
+  });
+
 describe('tracé des fils', () => {
-  it('relie la source à la cible par un seul segment droit, sans contourner les objets', () => {
+  it('relie la source à la cible par un segment unique quand les ports sont alignés', () => {
+    const [wire] = projectWires(alignedDocument());
+
+    expect(wire?.from).toEqual({ x: 5.4, y: 4.05 });
+    expect(wire?.to).toEqual({ x: 9.5, y: 4.05 });
+    expect(wire).not.toHaveProperty('bend');
+    expect(wire).not.toHaveProperty('points');
+    expect(wire).not.toHaveProperty('bridges');
+  });
+
+  it('sinon part dans l’axe du port de la source puis tourne une fois vers la cible (équerre)', () => {
     const [wire] = projectWires(wiredDocument(11));
 
-    // Right port of the lever's base, left end of the conveyor's frame;
-    // the beam between them does not bend the wire.
+    // Right port of the lever's base, left end of the conveyor's frame; the
+    // wire leaves the lever horizontally (its port's axis), then turns once
+    // down to the conveyor. The beam between them does not bend the route.
     expect(wire?.from).toEqual({ x: 5.4, y: 4.05 });
     expect(wire?.to).toEqual({ x: 9.5, y: 5 });
-    expect(wire).not.toHaveProperty('points');
+    expect(wire?.bend).toEqual({ x: 9.5, y: 4.05 });
     expect(wire).not.toHaveProperty('bridges');
   });
 
@@ -50,5 +80,6 @@ describe('tracé des fils', () => {
 
     expect(wire?.from).toEqual({ x: 4.6, y: 4.05 });
     expect(wire?.to).toEqual({ x: 3, y: 5 });
+    expect(wire?.bend).toEqual({ x: 3, y: 4.05 });
   });
 });
