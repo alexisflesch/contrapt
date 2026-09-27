@@ -116,7 +116,12 @@ pendant le travail.
   « 🔒 Verrouillé » et un bouton « Lancer » désactivé ; un niveau résolu affiche
   son palier (✅ / ⭐ / 🏆, `data-level-tier`) recalculé depuis le meilleur
   résultat. « Éditer le niveau » (U17) reste disponible pour tous les niveaux ;
-  l’URL directe d’un niveau verrouillé reste jouable (comportement L21 inchangé).
+  l’URL directe d’un niveau verrouillé affiche « Ce niveau est encore
+  verrouillé. » (U5b) ; sous `pnpm dev`, `unlockAllLevels` débloque tout.
+- **U4b — modale de victoire** (campagne) : « Bravo ! », paliers allumés ou
+  estompés (✅ seul sans défi), « Niveau suivant », « Recommencer », « Voir la
+  scène » ; bandeau réduit sous le plateau pour rouvrir le résultat.
+- **U14b — fils en équerre** : horizontal/vertical, un coude au plus.
 - **U22 — atelier créateur de puzzles** (ADR 0013) : réglage « Fixe / À
   placer » dans l’inspecteur de l’atelier (annulable, jamais sur la balle ni le
   panier de l’objectif, champ `toPlace` du document) ; contour pointillé violet
@@ -341,9 +346,6 @@ pendant le travail.
   téléphone l’en-tête de l’éditeur (quatre boutons) ne laisse presque plus de
   place au titre ; le brouillon du niveau 1 (inventaire vide) n’affiche pas le
   catalogue auteur (préexistant, `hasInventory` de `BoardShell`).
-- **Gate et worktrees** : `pnpm lint` (`eslint .`) lit aussi les worktrees
-  d’autres agents sous `.claude/worktrees/` et échoue sur leurs `dist/` ; la
-  gate U22 a été passée avec `eslint . --ignore-pattern '.claude/**'`.
 - **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
   brouillon créé, ni de lister ou supprimer les brouillons dans l’interface.
 - `format:check` ne couvre pas le Markdown.

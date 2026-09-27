@@ -108,6 +108,7 @@ export default defineConfig(
   {
     ignores: [
       'dist/**',
+      '.claude/**',
       'coverage/**',
       'playwright-report/**',
       'test-results/**',

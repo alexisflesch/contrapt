@@ -2376,3 +2376,21 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : captures `test-results/u22/{390x844,844x390,1440x900}-{1..6}-*.png`
   (atelier, refus d’export, inspecteur, pointillé, export vérifié, test joueur) ;
   en-tête téléphone très chargé (titre réduit à « É… M… »).
+
+### U14b, U4b, U5b — Fils en équerre, modale de victoire, niveaux verrouillés — fait — fusions `14ec545`, `25d7964`, `5905126`
+
+- Trois agents en worktree, fusionnés par l’orchestrateur ; conflits résolus
+  dans `BoardShell.tsx`, `LevelResult.tsx`, `PlayLevelPage.tsx` et
+  `LevelExportDialog.test.tsx` en gardant les deux côtés (U22 et U4b/U5b).
+- U14b : tests `control-wires.test.ts`, `wire-renderer.test.ts` ; test
+  `board-renderer.test.ts` « segment droit » réécrit pour l’équerre ; ADR 0009
+  amendé.
+- U4b : `CampaignVictoryDialog` (10 tests), tests U4 déplacés vers la modale
+  sans perte d’assertion ; « Retour aux niveaux » retiré du résultat de
+  campagne (décision auteur).
+- U5b : test L21 « niveau verrouillé jouable par URL » réécrit (décision
+  auteur) ; E2E des niveaux 2 à 12 amorcent la progression du niveau précédent.
+- ESLint ignore `.claude/**` (worktrees d’agents).
+- Pour l’auteur : ✅ seul dans la modale d’un niveau sans défi (ADR 0010) ;
+  bandeau réduit « Voir le résultat / Recommencer » conservé sous le plateau.
+

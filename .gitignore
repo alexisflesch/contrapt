@@ -9,3 +9,6 @@ test-results/
 
 # Métadonnées Windows copiées depuis WSL
 *:Zone.Identifier
+
+.pnpm-store/
+.claude/worktrees/
