@@ -1,0 +1,273 @@
+import { describe, expect, it } from 'vitest';
+
+import { levelDocumentSchema, type LevelDocument } from '../../domain/level-document';
+import {
+  puzzleFromWorkshop,
+  verifyPuzzle,
+  workshopFromPuzzle,
+  type PuzzleRunOutcome,
+} from './puzzle-workshop';
+
+const locked = { move: false, rotate: false, remove: false } as const;
+
+const workshop = (overrides: Partial<LevelDocument> = {}): LevelDocument => ({
+  schemaVersion: 2,
+  id: 'atelier-u22',
+  metadata: { title: 'Atelier U22' },
+  objects: [
+    {
+      id: 'ball-1',
+      type: 'ball',
+      props: {},
+      transform: { position: { x: 2, y: 1 }, rotation: 0 },
+      permissions: locked,
+    },
+    {
+      id: 'slope',
+      type: 'beam',
+      props: { size: 'medium' },
+      transform: { position: { x: 2, y: 2 }, rotation: 0.2 },
+      permissions: locked,
+    },
+    {
+      id: 'basket-1',
+      type: 'basket',
+      props: {},
+      transform: { position: { x: 7, y: 5 }, rotation: 0 },
+      permissions: locked,
+    },
+    {
+      id: 'placement-1',
+      type: 'beam',
+      props: { size: 'short' },
+      transform: { position: { x: 5, y: 2.15 }, rotation: 0 },
+      permissions: locked,
+      toPlace: true,
+    },
+    {
+      id: 'placement-2',
+      type: 'mass',
+      props: { weight: '10kg' },
+      transform: { position: { x: 4, y: 4 }, rotation: 0 },
+      permissions: locked,
+      toPlace: true,
+    },
+    {
+      id: 'placement-3',
+      type: 'fan',
+      props: { state: 'on' },
+      transform: { position: { x: 1, y: 4 }, rotation: Math.PI / 2 },
+      permissions: locked,
+      toPlace: true,
+    },
+    {
+      id: 'placement-4',
+      type: 'mass',
+      props: { weight: '10kg' },
+      transform: { position: { x: 6, y: 4 }, rotation: 0 },
+      permissions: locked,
+      toPlace: true,
+    },
+  ],
+  // The workshop's stock is the author's, never shown: the puzzle drops it.
+  inventory: [
+    {
+      id: 'inventory-beam',
+      type: 'beam',
+      props: { size: 'medium' },
+      quantity: 99,
+      permissions: { move: true, rotate: true, remove: true },
+    },
+  ],
+  goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+  buildZones: [],
+  scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+  wires: [],
+  ...overrides,
+});
+
+const expectedPuzzle: LevelDocument = {
+  schemaVersion: 2,
+  id: 'atelier-u22',
+  metadata: { title: 'Atelier U22' },
+  objects: workshop().objects.slice(0, 3),
+  inventory: [
+    {
+      id: 'beam-a-placer',
+      type: 'beam',
+      props: { size: 'short' },
+      quantity: 1,
+      permissions: { move: true, rotate: true, remove: true },
+    },
+    {
+      id: 'mass-a-placer',
+      type: 'mass',
+      props: { weight: '10kg' },
+      quantity: 2,
+      permissions: { move: true, rotate: false, remove: true },
+    },
+    {
+      id: 'fan-a-placer',
+      type: 'fan',
+      props: { state: 'on' },
+      quantity: 1,
+      permissions: { move: true, rotate: true, remove: true },
+    },
+  ],
+  goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+  buildZones: [{ min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } }],
+  scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+  wires: [],
+  challenge: { elegantObjectCount: 4, minimalObjectCount: 4 },
+  solution: {
+    placements: [
+      {
+        inventoryId: 'beam-a-placer',
+        transform: { position: { x: 5, y: 2.15 }, rotation: 0 },
+      },
+      { inventoryId: 'mass-a-placer', transform: { position: { x: 4, y: 4 }, rotation: 0 } },
+      {
+        inventoryId: 'fan-a-placer',
+        transform: { position: { x: 1, y: 4 }, rotation: Math.PI / 2 },
+      },
+      { inventoryId: 'mass-a-placer', transform: { position: { x: 6, y: 4 }, rotation: 0 } },
+    ],
+  },
+};
+
+const lever = {
+  id: 'lever-1',
+  type: 'lever',
+  props: { position: 'center' },
+  transform: { position: { x: 3, y: 4 }, rotation: 0 },
+  permissions: locked,
+} as const;
+const conveyor = {
+  id: 'conveyor-1',
+  type: 'conveyor',
+  props: { direction: 'stopped' },
+  transform: { position: { x: 5, y: 4 }, rotation: 0 },
+  permissions: locked,
+} as const;
+
+describe('passage de l’atelier au puzzle (U22, ADR 0013)', () => {
+  it('garde le décor fixe, met les objets à placer dans l’inventaire et leur pose dans la solution', () => {
+    const result = puzzleFromWorkshop(workshop());
+
+    expect(result).toEqual({ status: 'ok', puzzle: expectedPuzzle });
+    expect(levelDocumentSchema.safeParse(expectedPuzzle).success).toBe(true);
+  });
+
+  it('conserve les zones de construction existantes et les fils du décor', () => {
+    const zone = { min: { x: 0, y: 1 }, max: { x: 8, y: 5 } };
+    const wire = { id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' };
+    const document = workshop({
+      objects: [...workshop().objects, lever, conveyor],
+      buildZones: [zone],
+      wires: [wire],
+    });
+
+    const result = puzzleFromWorkshop(document);
+
+    expect(result.status === 'ok' && result.puzzle.buildZones).toEqual([zone]);
+    expect(result.status === 'ok' && result.puzzle.wires).toEqual([wire]);
+    expect(result.status === 'ok' && result.puzzle.objects.map(({ id }) => id)).toEqual([
+      'ball-1',
+      'slope',
+      'basket-1',
+      'lever-1',
+      'conveyor-1',
+    ]);
+  });
+
+  it('refuse un atelier sans objet à placer', () => {
+    const document = workshop({ objects: workshop().objects.slice(0, 3) });
+
+    expect(puzzleFromWorkshop(document)).toEqual({
+      status: 'refused',
+      reason: 'no-object-to-place',
+    });
+  });
+
+  it('refuse un objet à placer relié par un fil', () => {
+    const document = workshop({
+      objects: [...workshop().objects, { ...lever, toPlace: true }, conveyor],
+      wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
+    });
+
+    expect(puzzleFromWorkshop(document)).toEqual({
+      status: 'refused',
+      reason: 'wired-object-to-place',
+    });
+  });
+
+  it('rouvre un puzzle dans l’atelier, objets à placer remis en place, puis le reproduit', () => {
+    const reopened = workshopFromPuzzle(expectedPuzzle);
+
+    expect(levelDocumentSchema.safeParse(reopened).success).toBe(true);
+    expect(reopened.solution).toBeUndefined();
+    expect(reopened.inventory).toEqual(expectedPuzzle.inventory);
+    expect(reopened.objects.filter(({ toPlace }) => toPlace === true)).toEqual(
+      workshop()
+        .objects.slice(3)
+        .map((object) => ({ ...object, id: expect.any(String) as string })),
+    );
+    expect(puzzleFromWorkshop(reopened)).toEqual({ status: 'ok', puzzle: expectedPuzzle });
+  });
+
+  it('laisse intact un document sans solution', () => {
+    const document = workshop();
+
+    expect(workshopFromPuzzle(document)).toBe(document);
+  });
+});
+
+describe('vérification d’un puzzle avant export (U22)', () => {
+  const winsWithFan = (document: LevelDocument): PuzzleRunOutcome =>
+    document.objects.some(({ type }) => type === 'fan') ? 'won' : 'lost';
+
+  it('accepte un puzzle que la solution fait gagner et qui perd sans le joueur', () => {
+    const runs: LevelDocument[] = [];
+
+    const result = verifyPuzzle(workshop(), (document) => {
+      runs.push(document);
+      return winsWithFan(document);
+    });
+
+    expect(result).toEqual({ status: 'verified', puzzle: expectedPuzzle });
+    expect(runs.map(({ objects }) => objects.length)).toEqual([7, 3]);
+  });
+
+  it('refuse la machine complète qui ne gagne pas', () => {
+    expect(verifyPuzzle(workshop(), () => 'lost')).toEqual({
+      status: 'refused',
+      reason: 'solution-does-not-win',
+    });
+  });
+
+  it('refuse un puzzle qui gagne sans les objets à placer', () => {
+    expect(verifyPuzzle(workshop(), () => 'won')).toEqual({
+      status: 'refused',
+      reason: 'wins-without-player',
+    });
+  });
+
+  it('refuse une solution que le joueur ne peut pas poser', () => {
+    const document = workshop({ buildZones: [{ min: { x: 0, y: 3 }, max: { x: 8, y: 5.5 } }] });
+
+    expect(verifyPuzzle(document, winsWithFan)).toEqual({
+      status: 'refused',
+      reason: 'solution-not-playable',
+    });
+  });
+
+  it('refuse sans simuler un atelier sans objet à placer', () => {
+    const document = workshop({ objects: workshop().objects.slice(0, 3) });
+
+    expect(
+      verifyPuzzle(document, () => {
+        throw new Error('La simulation ne doit pas être lancée.');
+      }),
+    ).toEqual({ status: 'refused', reason: 'no-object-to-place' });
+  });
+});

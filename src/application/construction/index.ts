@@ -8,6 +8,7 @@ export {
   removeLevelChallenge,
   resizeBuildZone,
   setLevelChallenge,
+  setPlacementToPlace,
   updateInventoryPermissions,
   updateInventoryProperties,
   updateInventoryQuantity,

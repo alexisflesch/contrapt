@@ -84,6 +84,13 @@ interface UpdatePlacementPermissionsInput {
   readonly permissions: Placement['permissions'];
 }
 
+interface SetPlacementToPlaceInput {
+  readonly context: ConstructionContext;
+  readonly placementId: string;
+  /** `true`: the player will place it (U22); `false`: it stays in the decor. */
+  readonly toPlace: boolean;
+}
+
 interface UpdateLevelGoalInput {
   readonly context: ConstructionContext;
   readonly ballId: string;
@@ -372,6 +379,34 @@ export const updatePlacementPermissions = (
           candidate.id === input.placementId
             ? { ...candidate, permissions: input.permissions }
             : candidate,
+        ),
+      },
+    };
+  });
+
+/**
+ * U22 (ADR 0013): the « Fixe / À placer » setting. A fixed object carries no
+ * marking at all, so there is a single way to write it; the goal's ball and
+ * basket always stay fixed.
+ */
+export const setPlacementToPlace = (input: SetPlacementToPlaceInput): AuthoringCommand =>
+  createAuthoringCommand(input.context, (state) => {
+    const placement = placementAt(state.document, input.placementId);
+    if (placement === undefined) return { status: 'rejected', reason: 'placement-not-found' };
+    const { goal } = state.document;
+    if (placement.id === goal.ballId || placement.id === goal.basketId) {
+      return { status: 'rejected', reason: 'goal-object-protected' };
+    }
+    const { toPlace, ...fixed } = placement;
+    if ((toPlace === true) === input.toPlace) return { status: 'unchanged' };
+
+    const next = input.toPlace ? { ...fixed, toPlace: true } : fixed;
+    return {
+      status: 'candidate',
+      document: {
+        ...state.document,
+        objects: state.document.objects.map((candidate) =>
+          candidate.id === input.placementId ? next : candidate,
         ),
       },
     };

@@ -19,6 +19,7 @@ import {
   updateLevelDescription,
   updateLevelGoal,
   updateLevelTitle,
+  setPlacementToPlace,
   updatePlacementPermissions,
   updateScene,
 } from './index';
@@ -406,6 +407,43 @@ describe('commandes d’auteur', () => {
         addAuthoredPlacement({ ...addedMass, props: { size: 'medium' } }).execute(state),
       ).toEqual({ status: 'rejected', reason: 'invalid-level-document' });
       expect(state.document).toEqual(createLevel());
+    });
+  });
+
+  describe('réglage « Fixe / À placer » (U22)', () => {
+    const run = (command: Command<ConstructionAttempt>, document = createLevel()) =>
+      command.execute({ document, provenance: {} });
+
+    it('marque un objet à placer, le remet fixe, et s’annule par l’historique', () => {
+      const history = executeCommand(
+        createHistory<ConstructionAttempt>({ document: createLevel(), provenance: {} }),
+        setPlacementToPlace({ context: 'author', placementId: 'beam-1', toPlace: true }),
+      );
+      if (history.status !== 'accepted') throw new Error('refusé');
+      const marked = history.history.state.document.objects.find(({ id }) => id === 'beam-1');
+
+      expect(marked?.toPlace).toBe(true);
+      const fixedAgain = run(
+        setPlacementToPlace({ context: 'author', placementId: 'beam-1', toPlace: false }),
+        history.history.state.document,
+      );
+      expect(
+        fixedAgain.status === 'accepted' &&
+          fixedAgain.state.document.objects.find(({ id }) => id === 'beam-1'),
+      ).toEqual(createLevel().objects.find(({ id }) => id === 'beam-1'));
+      expect(undo(history.history).history.state.document).toEqual(createLevel());
+    });
+
+    it('ne marque ni l’objectif, ni un objet absent, ni hors du mode auteur', () => {
+      expect(
+        run(setPlacementToPlace({ context: 'author', placementId: 'ball-1', toPlace: true })),
+      ).toEqual({ status: 'rejected', reason: 'goal-object-protected' });
+      expect(
+        run(setPlacementToPlace({ context: 'author', placementId: 'missing', toPlace: true })),
+      ).toEqual({ status: 'rejected', reason: 'placement-not-found' });
+      expect(
+        run(setPlacementToPlace({ context: 'player', placementId: 'beam-1', toPlace: true })),
+      ).toEqual({ status: 'rejected', reason: 'authoring-only' });
     });
   });
 });
