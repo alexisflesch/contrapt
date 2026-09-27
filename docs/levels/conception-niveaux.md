@@ -103,6 +103,10 @@ prototypes et ne servent pas de modèle.
 - Le ventilateur est le seul objet qui peut faire monter la balle plus haut que
   son point de départ. Dans un souffle vertical, une balle lévite à environ
   1,5 unité au-dessus de la bouche.
+- Le vent est arrêté par les solides : un objet n'est poussé que si rien de
+  solide (poutre, masse, autre balle…) ne coupe le segment qui va de la bouche
+  du ventilateur à son centre. Un solide placé devant abrite ce qui est
+  derrière ; les capteurs (panier, bouton) ne font pas écran.
 - La masse de 10 kg écrase tout ce qu'elle touche. Elle sert à faire basculer
   ou à maintenir un bouton enfoncé, pas à pousser délicatement.
 - Le convoyeur est une horloge : il fixe un délai sans que le joueur le règle.
@@ -113,9 +117,6 @@ prototypes et ne servent pas de modèle.
 
 Ne pas les utiliser dans un niveau avant qu'elles existent dans le code.
 
-- **Le vent sera arrêté par les solides.** Aujourd'hui, le souffle traverse
-  les poutres (le calcul ignore les obstacles). Ce sera corrigé : un solide
-  placé entre le ventilateur et un objet l'abritera.
 - **Balle bleue.** Toute balle qui n'est pas celle de l'objectif sera dessinée
   en bleu (le dessin existe déjà dans `art/assets/second-ball/`). Le format de
   niveau ne change pas.

@@ -1728,6 +1728,53 @@ describe('port physique candidat-neutre', () => {
     });
   });
 
+  describe('le souffle est arrêté par les solides', () => {
+    // Ventilateur soufflant vers la droite, en l'air : la bouche est à y ≈ −0,08.
+    const MOUTH_Y = -0.0765;
+    const STEPS = 10;
+    const wall = (x: number) =>
+      placed('wall', 'beam', { x, y: MOUTH_Y }, { size: 'short' }, Math.PI / 2);
+    const velocitiesX = (objects: readonly unknown[]): Record<string, number> => {
+      const result: Record<string, number> = {};
+      withSession(createDeviceLevelDocument([fan(0, 'on'), ...objects]), (session) => {
+        session.advanceFixedSteps(STEPS);
+        const state = session.readState();
+        for (const id of ['ball-1', 'ball-2']) {
+          if (state.bodies.some(({ placementId }) => placementId === id)) {
+            result[id] = body(state, id, 'primary').linearVelocity.x;
+          }
+        }
+      });
+      return result;
+    };
+
+    it('pousse une balle à découvert, pas une balle abritée derrière une poutre', () => {
+      const target = ball({ x: 2, y: MOUTH_Y });
+
+      expect(velocitiesX([target])['ball-1']).toBeGreaterThan(0.5);
+      expectCloseTo(velocitiesX([target, wall(1.2)])['ball-1'] ?? Number.NaN, 0, 1e-6);
+    });
+
+    it('ignore une poutre qui ne coupe pas le trajet de l’air', () => {
+      const target = ball({ x: 2, y: MOUTH_Y });
+      const aside = placed('aside', 'beam', { x: 1.2, y: -1.5 }, { size: 'short' });
+
+      expectCloseTo(
+        velocitiesX([target, aside])['ball-1'] ?? Number.NaN,
+        velocitiesX([target])['ball-1'] ?? Number.NaN,
+        1e-9,
+      );
+    });
+
+    it('laisse une balle placée devant en abriter une autre', () => {
+      const front = placed('ball-2', 'ball', { x: 1, y: MOUTH_Y });
+      const velocities = velocitiesX([ball({ x: 2, y: MOUTH_Y }), front]);
+
+      expect(velocities['ball-2']).toBeGreaterThan(0.5);
+      expectCloseTo(velocities['ball-1'] ?? Number.NaN, 0, 1e-6);
+    });
+  });
+
   it('retient la balle sur la barre fermée, et la laisse tomber quand elle est ouverte', () => {
     const ballAfter = (state: string): SimulationBodyState => {
       let result: SimulationBodyState | undefined;

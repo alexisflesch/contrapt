@@ -1893,3 +1893,15 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : U13 reste différé. Mettre en évidence sur le plateau les zones
   où la pose est autorisée devrait rendre compréhensibles les refus de placement
   signalés pendant les essais des niveaux.
+
+### P1 — Le vent est arrêté par les solides — fait — `feat(simulation): arrête le souffle du ventilateur derrière les solides (P1)`
+
+- Comportement : un corps dans le cône n'est poussé que si aucune fixture non
+  capteur d'un autre corps (statique ou dynamique) ne coupe le segment entre la
+  bouche et son centre (`world.rayCast`). Le rayon part du point de la bouche
+  aligné latéralement avec le centre du corps, borné à la largeur de la bouche.
+  Force, atténuation et cône inchangés.
+- Tests : trois cas dans `src/simulation/physics-port.test.ts` (balle abritée
+  par une poutre, poutre hors du trajet, balle qui en abrite une autre).
+- Niveaux : aucun niveau numéroté n'utilise de ventilateur ; aucune issue ne
+  change.

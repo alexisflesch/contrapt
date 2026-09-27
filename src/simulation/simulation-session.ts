@@ -218,6 +218,7 @@ interface ButtonRecord {
 
 interface FanRecord {
   readonly placementId: string;
+  readonly body: Body;
   /** Centre of the ring's mouth, in world units. */
   readonly mouth: SimulationVector;
   /** Unit vector the air flows along. */
@@ -1136,6 +1137,7 @@ class PlanckSimulationSession implements SimulationSession {
     const axis = body.getWorldVector(new Vec2(flip, 0));
     this.#fans.push({
       placementId,
+      body,
       mouth: { x: mouth.x, y: mouth.y },
       // Quarter turns only: rounding drops the 1e-17 residues of cos(π/2).
       axis: { x: Math.round(axis.x), y: Math.round(axis.y) },
@@ -1277,11 +1279,37 @@ class PlanckSimulationSession implements SimulationSession {
         if (distance < 0 || distance > FAN_RANGE) continue;
         const across = Math.abs(offset.x * fan.axis.y - offset.y * fan.axis.x);
         if (across > fanGeometry.mouth.halfWidth + distance * FAN_SPREAD) continue;
+        if (this.#airBlocked(fan, body)) continue;
 
         const push = FAN_PRESSURE * this.#exposedWidth(body, fan.axis) * (1 - distance / FAN_RANGE);
         body.applyForceToCenter(new Vec2(fan.axis.x * push, fan.axis.y * push), true);
       }
     }
+  }
+
+  /**
+   * Whether a solid of another body cuts the air between the fan and `target`.
+   * The ray starts on the mouth, at the point level with the target's centre
+   * across the axis (clamped to the mouth's width), and ends at that centre.
+   */
+  #airBlocked(fan: FanRecord, target: Body): boolean {
+    const center = target.getWorldCenter();
+    const offset = { x: center.x - fan.mouth.x, y: center.y - fan.mouth.y };
+    const halfWidth = fanGeometry.mouth.halfWidth;
+    const lateral = Math.max(
+      -halfWidth,
+      Math.min(halfWidth, offset.x * -fan.axis.y + offset.y * fan.axis.x),
+    );
+    const start = new Vec2(fan.mouth.x - fan.axis.y * lateral, fan.mouth.y + fan.axis.x * lateral);
+    if (start.x === center.x && start.y === center.y) return false;
+    let blocked = false;
+    this.#requireWorld().rayCast(start, center, (fixture) => {
+      const owner = fixture.getBody();
+      if (fixture.isSensor() || owner === fan.body || owner === target) return -1;
+      blocked = true;
+      return 0;
+    });
+    return blocked;
   }
 
   /** Width of a body seen along `axis`, from its bounding box (fans blow along x or y). */
