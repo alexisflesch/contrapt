@@ -469,6 +469,39 @@ select:focus-visible {
   max-width: 560px;
 }
 
+/* U5 : la campagne, chapitre par chapitre. */
+.level-chapters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.level-chapter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.level-chapter-title {
+  color: var(--on-night);
+  font-size: var(--text-l);
+  letter-spacing: 0.02em;
+}
+
+.level-card-status {
+  font-size: var(--text-m);
+  font-weight: 700;
+}
+
+.level-card-status-locked {
+  color: var(--muted-ink);
+  font-weight: 600;
+}
+
+.level-card-locked .panel-header {
+  opacity: 0.7;
+}
+
 .level-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));

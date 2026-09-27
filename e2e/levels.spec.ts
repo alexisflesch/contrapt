@@ -643,6 +643,63 @@ test('U4 — affiche le palier puis ouvre le niveau suivant au tactile', async (
   await expect(page.getByRole('region', { name: 'Résultat du niveau' })).toHaveCount(0);
 });
 
+test('U5 — liste les niveaux par chapitres, verrous et paliers au tactile', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'La liste est validée au tactile sur mobile.');
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'tinkerbolt:progress',
+      JSON.stringify({
+        kind: 'progress',
+        version: 1,
+        data: {
+          'level-1-prolonger-la-pente': { resolved: true, bestObjectCount: 1 },
+          'level-2-le-pont': { resolved: true, bestObjectCount: 1 },
+          'level-3-incliner': { resolved: true, bestObjectCount: 1 },
+          'level-4-moins-c-est-mieux': { resolved: true, bestObjectCount: 2 },
+          'level-5-le-detour': { resolved: true, bestObjectCount: 2 },
+        },
+      }),
+    );
+  });
+  await page.goto('/levels');
+
+  const list = page.getByRole('region', { name: 'Liste des niveaux' });
+  await expect(
+    list.getByRole('heading', { name: 'Chapitre 1 · Poutres et bascule' }),
+  ).toBeVisible();
+  await expect(list.getByRole('heading', { name: 'Chapitre 2 · Mécanismes' })).toBeAttached();
+  await expect(list.getByRole('region', { name: 'Niveau 4' })).toHaveAttribute(
+    'data-level-tier',
+    'elegant',
+  );
+  await expect(list.getByRole('region', { name: 'Niveau 5' })).toHaveAttribute(
+    'data-level-tier',
+    'minimal',
+  );
+  await expect(list.getByRole('button', { name: 'Lancer le niveau 7' })).toBeDisabled();
+
+  for (const { width, height } of [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize({ width, height });
+    await expect(list).toBeVisible();
+    await page.screenshot({
+      path: `test-results/u5/liste-${String(width)}x${String(height)}.png`,
+      fullPage: true,
+    });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const launchSix = list.getByRole('button', { name: 'Lancer le niveau 6' });
+  await launchSix.scrollIntoViewIfNeeded();
+  await launchSix.tap();
+  await expect(page).toHaveURL(/\/levels\/level-6-la-bascule\/play$/);
+});
+
 test('niveau 1 : échouer sans poutre puis résoudre par toucher', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
   await page.goto(levelOnePath);

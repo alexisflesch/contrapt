@@ -110,6 +110,13 @@ pendant le travail.
   sous le minimum connu). « Niveau suivant » ouvre le niveau suivant de la
   campagne s’il existe et est débloqué ; une seule commande « Recommencer ».
   L’atelier, la démonstration et les niveaux partagés gardent le bandeau simple.
+- **U5 — liste des niveaux par chapitres** : `/levels` regroupe les niveaux par
+  chapitre du catalogue L6 (« Chapitre 1 · Poutres et bascule », « Chapitre 2 ·
+  Mécanismes »), numérotation continue. Un niveau verrouillé reste visible avec
+  « 🔒 Verrouillé » et un bouton « Lancer » désactivé ; un niveau résolu affiche
+  son palier (✅ / ⭐ / 🏆, `data-level-tier`) recalculé depuis le meilleur
+  résultat. « Éditer le niveau » (U17) reste disponible pour tous les niveaux ;
+  l’URL directe d’un niveau verrouillé reste jouable (comportement L21 inchangé).
 - Panneau « Propriétés » (rail droit en grand format, tiroir compact sur petit
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
   rotation libre des poutres, limitée à ±135° pour les leviers, et par quarts
@@ -327,6 +334,10 @@ pendant le travail.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U5 (27 septembre 2026) : passe d’une traite — typecheck,
+lint, formatage, Knip, contenu, 741 tests Vitest (62 fichiers), build et 55
+tests Playwright `mobile` (54 réussis, 1 ignoré).
 
 `pnpm check` après U4 (27 septembre 2026) : passe d’une traite — typecheck,
 lint, formatage, Knip, contenu, 740 tests Vitest (62 fichiers), build et 54

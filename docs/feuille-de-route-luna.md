@@ -4,7 +4,7 @@ Vue d’ensemble en une page ; le détail reste dans § 5, § 6 et le journal (�
 
 **Fait.** Toute la logique L1 à L28 (fondations, progression, fichiers et
 partage, commandes d’auteur, brouillons, CI, PWA) ; niveaux 1 à 12 ; P1 ; côté
-interface U4, U6, U13 à U21.
+interface U4 à U6, U13 à U21 (U4 et U5 en attente de validation visuelle).
 
 **Partiel ou bloqué.**
 
@@ -15,8 +15,6 @@ interface U4, U6, U13 à U21.
 
 **Reste à faire — interface (§ 6, captures et validation de l’auteur).**
 
-- U5 liste des niveaux par chapitres : manque pour le critère 2 de § 4
-  (U4 livré, en attente de validation visuelle de l’auteur).
 - U9 interface du mode auteur (scène, zones, inventaire, objectif, défi,
   brouillons, import) : manque pour le critère 3 de § 4.
 - U1 fantôme de placement, U2 fond qui suit la caméra, U3 ombre portée, U7
@@ -2284,3 +2282,32 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   dans la bande réservée de 104 px, « Retour aux niveaux » sur trois lignes ;
   à valider, ou retirer « Retour aux niveaux » du bandeau de victoire (le menu
   y mène déjà) si l’auteur le préfère.
+
+### U5 — Liste des niveaux — fait — `feat(ui): regroupe la liste des niveaux par chapitres (U5)`
+
+- Tests ajoutés : `src/app/App.test.tsx` › « ouvre depuis le menu la liste des
+  niveaux, regroupée par chapitres (U5) » et « affiche le palier obtenu et ouvre
+  le niveau qui suit un niveau résolu (U5) » ; `e2e/levels.spec.ts` › « U5 —
+  liste les niveaux par chapitres, verrous et paliers au tactile » (progression
+  injectée dans `tinkerbolt:progress`).
+- Échec initial constaté : régions « Chapitre 1 · Poutres et bascule »
+  introuvables ; `data-level-tier` absent des cartes.
+- Tests existants réécrits : « ouvre depuis le menu la liste des niveaux
+  embarqués et leurs lancements » — il attendait les douze boutons « Lancer »
+  actifs sans progression, ce que U5 contredit (ADR 0010 : seul le premier
+  niveau est ouvert) ; remplacé par le premier test ci-dessus.
+- Fichiers touchés : `src/app/LevelsPage.tsx`, `src/ui/styles.css`, tests
+  ci-dessus. Aucun changement du domaine ni de l’application.
+- Écarts avec la tâche : aucun.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune. Deux choix au plus simple, à confirmer
+  par l’auteur : « Éditer le niveau » (U17, outil d’auteur) reste actif sur les
+  niveaux verrouillés, les tests U17 éditent le niveau 2 sans progression ;
+  l’URL directe d’un niveau verrouillé reste jouable (L21 et son test
+  inchangés).
+- Vérification finale : `pnpm check` passe d’une traite — 741 tests Vitest,
+  build et 55 tests Playwright `mobile` (54 réussis, 1 ignoré).
+- Pour l’auteur : captures pleine page `test-results/u5/liste-390x844.png`,
+  `test-results/u5/liste-844x390.png`, `test-results/u5/liste-1440x900.png`
+  (niveaux 1 à 3 ✅, 4 ⭐, 5 🏆, 6 ouvert, 7 à 12 verrouillés). Faut-il masquer
+  « Éditer » pour le joueur, ou bloquer l’URL d’un niveau verrouillé ?

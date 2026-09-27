@@ -662,7 +662,7 @@ describe('coque TinkerBolt', () => {
     expect(canvas).toHaveAttribute('data-simulation-step', '5');
   });
 
-  it('ouvre depuis le menu la liste des niveaux embarqués et leurs lancements', () => {
+  it('ouvre depuis le menu la liste des niveaux, regroupée par chapitres (U5)', () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
@@ -670,31 +670,68 @@ describe('coque TinkerBolt', () => {
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
-    expect(within(levelList).getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 2 · Le pont')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 2' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 3 · Incliner')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 3' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 4 · Moins, c’est mieux')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 4' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 5 · Le détour')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 5' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 6 · La bascule')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 6' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 7 · Placer la bascule')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 7' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 8 · Poutre et bascule')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 8' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 9 · Le tapis')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 9' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 10 · Le butoir')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 10' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 11 · L’interrupteur')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 11' })).toBeEnabled();
-    expect(within(levelList).getByText('Niveau 12 · Le bon ordre')).toBeVisible();
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 12' })).toBeEnabled();
+    const firstChapter = within(levelList).getByRole('region', {
+      name: 'Chapitre 1 · Poutres et bascule',
+    });
+    const secondChapter = within(levelList).getByRole('region', {
+      name: 'Chapitre 2 · Mécanismes',
+    });
+    const titles = [
+      'Prolonger la pente',
+      'Le pont',
+      'Incliner',
+      'Moins, c’est mieux',
+      'Le détour',
+      'La bascule',
+      'Placer la bascule',
+      'Poutre et bascule',
+      'Le tapis',
+      'Le butoir',
+      'L’interrupteur',
+      'Le bon ordre',
+    ];
+    titles.forEach((title, index) => {
+      const chapter = index < 8 ? firstChapter : secondChapter;
+      expect(within(chapter).getByText(`Niveau ${String(index + 1)} · ${title}`)).toBeVisible();
+    });
+
+    // Sans progression, seul le premier niveau s’ouvre (ADR 0010).
+    expect(within(firstChapter).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
+    for (let level = 2; level <= titles.length; level += 1) {
+      const launch = within(levelList).getByRole('button', {
+        name: `Lancer le niveau ${String(level)}`,
+      });
+      expect(launch).toBeDisabled();
+    }
+    expect(within(levelList).getAllByText('🔒 Verrouillé')).toHaveLength(titles.length - 1);
   });
+
+  it('affiche le palier obtenu et ouvre le niveau qui suit un niveau résolu (U5)', () => {
+    const { repository } = createProgressRepository({
+      'level-1-prolonger-la-pente': { resolved: true, bestObjectCount: 1 },
+      'level-2-le-pont': { resolved: true, bestObjectCount: 1 },
+      'level-3-incliner': { resolved: true, bestObjectCount: 1 },
+      'level-4-moins-c-est-mieux': { resolved: true, bestObjectCount: 2 },
+    });
+    window.history.replaceState(null, '', '/levels');
+    render(<App progressRepository={repository} />);
+
+    const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
+    const cardOf = (level: number): HTMLElement =>
+      within(levelList).getByRole('region', { name: `Niveau ${String(level)}` });
+
+    expect(cardOf(1)).toHaveAttribute('data-level-tier', 'resolved');
+    expect(within(cardOf(1)).getByText('✅ Résolu')).toBeVisible();
+    expect(cardOf(4)).toHaveAttribute('data-level-tier', 'elegant');
+    expect(within(cardOf(4)).getByText('⭐ Élégant')).toBeVisible();
+    expect(within(cardOf(5)).queryByText(/Résolu|Élégant|Minimal/)).toBeNull();
+    expect(within(cardOf(5)).getByRole('button', { name: 'Lancer le niveau 5' })).toBeEnabled();
+    expect(within(cardOf(6)).getByRole('button', { name: 'Lancer le niveau 6' })).toBeDisabled();
+
+    fireEvent.click(within(cardOf(5)).getByRole('button', { name: 'Lancer le niveau 5' }));
+    expect(window.location.pathname).toBe('/levels/level-5-le-detour/play');
+  });
+
   it('place le Ràz atelier avant Tester et demande confirmation avant d’effacer', () => {
     render(<App />);
     openEmbeddedWorkshop();
