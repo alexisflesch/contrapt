@@ -1701,7 +1701,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L23 n’ajoute aucune interface visible.
 
-### L24 — Route `/shared` — fait — commit dédié L24
+### L24 — Route `/shared` — fait — `5041273 feat(app): ouvre les niveaux partagés (L24)`
 
 - Tests ajoutés : deux cas App pour le partage valide (résolution jusqu’à la
   victoire sans sauvegarde de progression ni brouillon) et invalide (message,
