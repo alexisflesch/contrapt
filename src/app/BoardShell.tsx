@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { createConstructionAttempt } from '../application/construction/construction-attempt';
@@ -33,6 +33,8 @@ interface BoardShellProps {
   readonly subtitle: string;
   readonly onSimulationLaunched?: (attempt: ConstructionAttempt) => void;
   readonly onSimulationCompleted?: (outcome: AttemptOutcome) => void;
+  /** Called with each newly committed author document (U17 draft autosave). */
+  readonly onDocumentCommitted?: (document: LevelDocument) => void;
 }
 
 /**
@@ -49,6 +51,7 @@ export function BoardShell({
   subtitle,
   onSimulationLaunched,
   onSimulationCompleted,
+  onDocumentCommitted,
 }: BoardShellProps) {
   const navigate = useNavigate();
   const {
@@ -101,6 +104,20 @@ export function BoardShell({
   const hasInventory = currentEditorAttempt(session).document.inventory.length > 0;
 
   const hasSelection = session.selectedPlacementId !== null && session.phase === 'construction';
+
+  // Only committed history states are reported: gesture previews and the
+  // simulation snapshot never reach the draft.
+  const committedDocument = session.history.state.document;
+  const reportedDocumentRef = useRef(committedDocument);
+  const onDocumentCommittedRef = useRef(onDocumentCommitted);
+  useEffect(() => {
+    onDocumentCommittedRef.current = onDocumentCommitted;
+  });
+  useEffect(() => {
+    if (reportedDocumentRef.current === committedDocument) return;
+    reportedDocumentRef.current = committedDocument;
+    onDocumentCommittedRef.current?.(committedDocument);
+  }, [committedDocument]);
 
   useEffect(() => {
     if (hasSelection) setIsInspectorOpen(true);

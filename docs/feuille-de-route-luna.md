@@ -1966,3 +1966,37 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   copié, repli du lien ; 390 × 844, 844 × 390, 1440 × 900).
 - Pour l’auteur : exporter l’atelier libre exporte aussi son inventaire de 99
   par famille ; l’édition de l’inventaire relève de U9.
+
+### U17 — Éditer un niveau de la campagne — fait — `feat(editor): ouvre un niveau de la campagne en brouillon (U17)`
+
+- Comportement : « Éditer le niveau N » sur chaque carte de `/levels` (choisi
+  plutôt que l’écran de jeu : la liste montre déjà une action par niveau, reste
+  hors du plateau et n’encombre pas l’en-tête du téléphone). La commande ouvre
+  `/editor?draft=<id>-brouillon`, copie titrée « <titre> (brouillon) », enregistrée
+  par le dépôt L26 ; un brouillon existant est rouvert sans être écrasé. Chaque
+  état engagé de l’historique est enregistré (pas d’aperçu de geste ni de
+  simulation). L’export U16 s’applique au brouillon.
+- Permissions : vérifié, sans modifier le document — le contexte auteur déplace
+  un objet `move: false` que le contexte joueur refuse, et l’inspecteur du
+  brouillon propose le déplacement et la rotation de la rampe verrouillée.
+- Tests ajoutés : `src/application/drafts/campaign-draft.test.ts` (5),
+  `src/app/CampaignDraftEditing.test.tsx` (4 : ouverture depuis la liste,
+  enregistrement d’un déplacement, réouverture, brouillon introuvable),
+  `e2e/campaign-draft.spec.ts` (mobile : édition au toucher, rechargement,
+  lien exporté ouvert, niveau et progression intacts).
+- Échec initial constaté : « Unable to find … button "Éditer le niveau 2" » et
+  absence d’alerte sur `/editor?draft=inconnu`.
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : ADR 0008 (amendement `?draft=`).
+- Écarts : le tiroir de l’atelier ne peut pas poser d’objet dans un brouillon
+  de campagne (entrées d’inventaire propres à l’atelier) ; pas de retour au
+  niveau d’origine ni de gestion des brouillons (voir `etat.md`).
+- Vérification : `pnpm check` — tout passe sauf le test Vitest lourd du niveau
+  12 (délai de 5 s dépassé sous charge, trois gates de suite), qui passe seul ;
+  build et 48 E2E mobiles (47 réussis, 1 ignoré) passent. Le parcours tactile du
+  niveau 5 a expiré une fois puis passé seul et dans la relance.
+- Captures : hors dépôt, `…/scratchpad/captures/u17/` (liste, brouillon ouvert,
+  objet verrouillé sélectionné ; 390 × 844, 844 × 390, 1440 × 900).
+- Pour l’auteur : valider l’emplacement dans la liste, la réouverture du
+  brouillon existant (sans « repartir de l’original ») et l’enregistrement à
+  chaque commande plutôt que par `decideDraftAutosave`.

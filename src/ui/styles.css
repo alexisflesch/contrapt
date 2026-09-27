@@ -496,6 +496,10 @@ select:focus-visible {
   margin-top: auto;
 }
 
+.level-card-edit {
+  width: 100%;
+}
+
 /* 6. Écran plateau -------------------------------------------------------------- */
 
 .app-shell-board .app-main {

@@ -102,6 +102,14 @@ bibliothèque.
   `404.html` copié d'`index.html` comme repli des routes profondes. Cela tranche
   le repli 404 laissé ouvert ci-dessous.
 
+## Amendement du 27 septembre 2026 (U17)
+
+- `/editor?draft=<id>` ouvre dans l’atelier le brouillon L26 d’identifiant
+  `<id>` (ADR 0011). Le paramètre est non fiable : le dépôt de brouillons
+  valide l’identifiant et décode le document par le codec de fichier ; un
+  brouillon absent ou illisible affiche une erreur avec un lien vers la liste.
+  Sans paramètre, `/editor` reste l’atelier libre.
+
 ## Ce qui reste non décidé
 
 - Le contenu réel de `/settings` : cette ADR pose seulement la route et une

@@ -109,6 +109,13 @@ pendant le travail.
   retour « Lien copié ». Sans presse-papiers, le lien s’affiche dans un champ
   sélectionnable. Un document que le schéma refuse n’est pas exporté : la boîte
   en donne les raisons (`src/app/level-export.ts`, `LevelExportDialog.tsx`).
+- Brouillon d’un niveau de campagne U17 : chaque carte de `/levels` porte
+  « Éditer le niveau N », qui ouvre `/editor?draft=<id>-brouillon` sur une copie
+  titrée « <titre> (brouillon) » (`src/application/drafts/campaign-draft.ts`).
+  Un brouillon existant est rouvert tel quel ; sinon la copie est enregistrée.
+  Chaque état engagé de l’historique est enregistré dans le brouillon. Le
+  contexte auteur ignore les permissions joueur : les objets de départ se
+  déplacent et tournent. Le niveau embarqué et la progression ne changent pas.
 
 ### Déploiement et mesure
 
@@ -273,6 +280,12 @@ pendant le travail.
   quel : l’atelier libre exporte donc son inventaire de 99 par famille, et les
   objets posés depuis l’inventaire deviennent des objets du niveau (le stock
   restant devient l’inventaire exporté).
+- **Catalogue d’un brouillon U17** : en mode auteur, le tiroir propose les onze
+  familles de l’atelier, dont les entrées d’inventaire (`inventory-beam`, …)
+  n’existent pas dans un niveau de campagne : poser un nouvel objet y est
+  refusé. On ajuste les objets existants ; ajouter des objets relève de U9.
+  Aucun moyen de repartir du niveau d’origine une fois le brouillon créé, ni
+  de lister ou supprimer les brouillons dans l’interface.
 - `format:check` ne couvre pas le Markdown.
 - Le workflow `.github/workflows/check.yml` exécute la gate sur push et pull
   request avec Node 24, cache pnpm et Chromium Playwright. Son premier passage
@@ -284,6 +297,14 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
+`pnpm check` après U17 (27 septembre 2026) : typecheck, lint, formatage, Knip,
+contenu et 666 des 667 tests Vitest (58 fichiers) passent ; le test lourd du
+niveau 12 (« produit croisé complet ») dépasse son délai de 5 s sous charge et
+passe seul. Build et 48 tests Playwright `mobile` (47 réussis, 1 ignoré) passent
+ensuite ; le parcours tactile du niveau 5 avait expiré une fois et passe seul.
+U16 avait obtenu une gate complète verte (658 tests Vitest, 46 E2E réussis).
+
+Exécution précédente, après L28 :
 `pnpm check` passe le 27 septembre 2026 après L28 : typecheck, lint,
 formatage, Knip, contenu (14 niveaux embarqués), 637 tests Vitest (54 fichiers),
 build avec manifeste et service worker PWA, puis 45 tests Playwright `mobile` (44
