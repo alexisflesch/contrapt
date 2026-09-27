@@ -133,6 +133,13 @@ pendant le travail.
   résultat. « Éditer le niveau » (U17) reste disponible pour tous les niveaux ;
   l’URL directe d’un niveau verrouillé affiche « Ce niveau est encore
   verrouillé. » (U5b) ; sous `pnpm dev`, `unlockAllLevels` débloque tout.
+- **Retouche visuelle de `/levels`** : un bandeau de campagne donne les
+  dimensions du parcours, les chapitres sont séparés par des plaques numérotées
+  et chaque carte porte son numéro, son état et son titre dans une hiérarchie
+  plus nette. Le chrome bleu nuit, les panneaux crème, les accents jaunes et les
+  boutons par intention reprennent la direction de l’artwork de référence sans
+  dégradé ni faux relief. Les états verrouillés et les paliers restent explicites
+  par le texte et l’icône, indépendamment de la couleur.
 - **U4b — modale de victoire** (campagne) : « Bravo ! », paliers allumés ou
   estompés (le palier Résolu seul sans défi), « Niveau suivant », « Recommencer », « Voir la
   scène » ; bandeau réduit sous le plateau pour rouvrir le résultat.
@@ -324,6 +331,15 @@ pendant le travail.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après la retouche visuelle de `/levels` (27 septembre 2026) :
+typecheck, lint, formatage, Knip et validation des 19 documents passent ; 705
+tests Vitest sur 706 passent. Le seul échec est le timeout préexistant de
+`src/app/BenchPage.test.tsx` à 5 s sous charge, laissé inchangé à la demande de
+l’auteur ; ses 3 tests passent en isolation. Le build Vite/PWA passe séparément,
+les 72 tests `App.test.tsx` passent et les 2 parcours Playwright mobiles de
+`e2e/levels.spec.ts` passent. Captures de production :
+`test-results/levels-page/levels-{390x844,844x390,1440x900}.png`.
 
 `pnpm check` après N1 (27 septembre 2026) : passe — typecheck, lint, formatage, Knip, contenu (19 documents), 706 tests Vitest (55 fichiers), build Vite/PWA et 41 tests Playwright `mobile` réussis (1 test desktop ignoré par ce projet).
 

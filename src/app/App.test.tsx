@@ -675,6 +675,9 @@ describe('coque TinkerBolt', () => {
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
+    expect(
+      within(levelList).getByRole('heading', { name: 'Choisis ton prochain défi' }),
+    ).toBeVisible();
     for (const chapter of [
       'Chapitre 1 · Les billes de service',
       'Chapitre 2 · Commandes à distance',
@@ -703,7 +706,7 @@ describe('coque TinkerBolt', () => {
       'Deux souffles',
       'La grande machine',
     ]) {
-      expect(within(levelList).getByText(new RegExp('· ' + title + '$', 'u'))).toBeVisible();
+      expect(within(levelList).getByRole('heading', { name: title })).toBeVisible();
     }
 
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
@@ -993,9 +996,16 @@ describe('coque TinkerBolt', () => {
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
-    expect(within(levelList).getByText('Niveau 1 · La bille de service')).toBeVisible();
-    expect(within(levelList).getByText('Niveau 2 · Par-dessus le mur')).toBeVisible();
-    expect(within(levelList).getByText('Niveau 3 · La balançoire')).toBeVisible();
+    for (const [number, title] of [
+      [1, 'La bille de service'],
+      [2, 'Par-dessus le mur'],
+      [3, 'La balançoire'],
+    ] as const) {
+      const levelCard = within(levelList).getByRole('region', {
+        name: `Niveau ${String(number)}`,
+      });
+      expect(within(levelCard).getByRole('heading', { name: title })).toBeVisible();
+    }
   });
 
   it('permet de recommencer la simulation sans dialogue bloquant', () => {

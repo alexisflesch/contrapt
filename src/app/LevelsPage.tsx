@@ -7,6 +7,7 @@ import {
   Play,
   Star,
   Trophy,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -32,8 +33,22 @@ type Tier = keyof typeof tierLabels;
 function TierStatus({ tier }: { readonly tier: Tier }) {
   const { icon: Icon, label } = tierLabels[tier];
   return (
-    <p className="level-card-status">
+    <p className={`level-card-status level-card-status-${tier}`}>
       <Icon size={18} aria-hidden="true" /> {label}
+    </p>
+  );
+}
+
+function LevelDescription({ description }: { readonly description: string }) {
+  const sketchNote = 'Esquisse non calibrée.';
+  if (!description.startsWith(sketchNote)) {
+    return <p className="level-card-description">{description}</p>;
+  }
+
+  return (
+    <p className="level-card-description">
+      <span className="level-card-sketch-note">{sketchNote}</span>
+      {description.slice(sketchNote.length).trim()}
     </p>
   );
 }
@@ -57,6 +72,11 @@ const numberedChapters = campaignChapters.reduce<
   ];
 }, []);
 
+const totalLevelCount = numberedChapters.reduce(
+  (count, chapter) => count + chapter.levels.length,
+  0,
+);
+
 /**
  * `/levels` (ADR 0008): the campaign, chapter by chapter (U5). A locked level
  * stays visible but cannot be launched; a resolved one shows its tier
@@ -70,18 +90,49 @@ export function LevelsPage() {
 
   return (
     <AppFrame title="Campagne" subtitle="Sélection du niveau" variant="page">
-      <div className="page-content">
+      <div className="page-content page-content-levels">
         {unlockAllLevels && (
           <p className="panel-note dev-mode-note" role="status">
             Mode développement : niveaux débloqués
           </p>
         )}
         <section className="level-chapters" aria-label="Liste des niveaux">
+          <header className="campaign-hero">
+            <span className="campaign-hero-icon" aria-hidden="true">
+              <Wrench size={30} strokeWidth={2.5} />
+            </span>
+            <div className="campaign-hero-copy">
+              <p className="campaign-hero-kicker">Le carnet de l’atelier</p>
+              <h2>Choisis ton prochain défi</h2>
+              <p>Observe la machine, trouve l’astuce et remets chaque invention en mouvement.</p>
+            </div>
+            <dl className="campaign-stats" aria-label="Contenu de la campagne">
+              <div>
+                <dt>Niveaux</dt>
+                <dd>{totalLevelCount}</dd>
+              </div>
+              <div>
+                <dt>Chapitres</dt>
+                <dd>{numberedChapters.length}</dd>
+              </div>
+            </dl>
+          </header>
           {numberedChapters.map((chapter, chapterIndex) => {
             const chapterName = `Chapitre ${String(chapterIndex + 1)} · ${chapter.title}`;
             return (
               <section key={chapter.id} className="level-chapter" aria-label={chapterName}>
-                <h2 className="level-chapter-title">{chapterName}</h2>
+                <div className="level-chapter-heading">
+                  <span className="level-chapter-index" aria-hidden="true">
+                    {String(chapterIndex + 1).padStart(2, '0')}
+                  </span>
+                  <div className="level-chapter-copy">
+                    <p>Chapitre {chapterIndex + 1}</p>
+                    <h2 className="level-chapter-title">{chapter.title}</h2>
+                  </div>
+                  <p className="level-chapter-count">
+                    {chapter.levels.length} niveau{chapter.levels.length > 1 ? 'x' : ''}
+                  </p>
+                </div>
                 <div className="level-list">
                   {chapter.levels.map(({ level, number }) => {
                     const progress = levelProgress[level.id];
@@ -90,10 +141,13 @@ export function LevelsPage() {
                     return (
                       <Panel
                         key={level.id}
-                        className={`level-card${unlocked ? '' : ' level-card-locked'}`}
+                        className={`level-card ${unlocked ? 'level-card-unlocked' : 'level-card-locked'}`}
                         label={`Niveau ${String(number)}`}
-                        title={`Niveau ${String(number)} · ${level.metadata.title}`}
-                        {...(tier === null ? {} : { dataAttributes: { 'data-level-tier': tier } })}
+                        title={level.metadata.title}
+                        dataAttributes={{
+                          'data-level-number': String(number).padStart(2, '0'),
+                          ...(tier === null ? {} : { 'data-level-tier': tier }),
+                        }}
                       >
                         {tier !== null && <TierStatus tier={tier} />}
                         {!unlocked && (
@@ -102,7 +156,7 @@ export function LevelsPage() {
                           </p>
                         )}
                         {level.metadata.description !== undefined && (
-                          <p className="level-card-description">{level.metadata.description}</p>
+                          <LevelDescription description={level.metadata.description} />
                         )}
                         <Button
                           tone="go"

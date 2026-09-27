@@ -2551,3 +2551,32 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   706) malgré sa réussite en isolation.
 - Captures dédiées produites pour la revue visuelle :
   `test-results/u28/calibration-{390x844,844x390,1440x900}.png`.
+
+### Retouche visuelle de `/levels` — fait — non commité
+
+- Demande auteur : embellir la liste des niveaux en restant cohérent avec
+  l’artwork de référence et le design de l’application.
+- Test rouge : le test U5 attend d’abord le nouveau titre de campagne « Choisis
+  ton prochain défi » et les titres de niveaux devenus des titres autonomes ;
+  l’échec initial ne trouvait pas le titre de campagne.
+- Production : bandeau de campagne, statistiques, plaques de chapitres et de
+  niveaux, cartes et états redessinés avec les jetons existants. Aucun asset,
+  aucune route et aucune règle de progression ne changent.
+- Tests existants réécrits : U5 et le retour à la liste associent désormais
+  chaque titre à sa carte accessible `Niveau N`, au lieu d’exiger la chaîne
+  visuelle historique « Niveau N · titre » ; la couverture des 17 niveaux, des
+  chapitres et des états reste intacte.
+- Fichiers touchés hors périmètre : `docs/etat.md` et ce journal, obligatoires.
+- Écarts avec la demande : aucun.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Vérifications : les 72 tests de `App.test.tsx`, le build Vite/PWA et les 2
+  parcours mobiles de `e2e/levels.spec.ts` passent. `pnpm check` passe
+  typecheck, lint, formatage, Knip et contenu, puis échoue uniquement sur le
+  timeout préexistant de `BenchPage.test.tsx` (705 tests Vitest sur 706) ;
+  l’auteur demande de laisser sa stabilisation à une tâche Luna ultérieure.
+- Pour l’auteur : captures de production inspectées aux trois formats :
+  `test-results/levels-page/levels-390x844.png`,
+  `test-results/levels-page/levels-844x390.png` et
+  `test-results/levels-page/levels-1440x900.png`. Le contrôle supplémentaire
+  320 × 568 ne montre aucun débordement.
