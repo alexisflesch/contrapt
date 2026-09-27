@@ -55,6 +55,14 @@ constantes physiques.
 
 Chaque niveau a aussi un parcours Playwright `mobile` qui le résout au tactile.
 
+**Suivi UX U13 — différé.** Dans les niveaux 1 à 3, puis 5, 7, 8 et 9, une
+famille présente dans l’inventaire peut avoir moins de positions légales que le
+plateau ne le laisse deviner : l’empreinte complète de l’objet doit tenir dans
+une zone autorisée. Le jeu devra mettre en évidence sur le plateau, pour l’objet
+choisi, la ou les régions où sa pose est permise, y compris lorsque plusieurs
+zones existent. Demande de l’auteur du 27 septembre 2026 ; réalisation reportée
+à une session ultérieure.
+
 ---
 
 ## Chapitre 1 — Poutres et bascule

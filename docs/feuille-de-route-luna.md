@@ -792,12 +792,13 @@ commencer de ta propre initiative.
   trois sprites, une fois le dessin validé par l’auteur. La mascotte de
   `art/assets/bolt/` n’a pas encore d’usage décidé.
 - **U13 — Zones de construction** : en mode joueur, mettre visuellement en
-  évidence la ou les régions où l’empreinte complète de l’objet peut être posée,
-  y compris lorsque plusieurs zones existent. Le besoin est apparu en jouant les
-  niveaux 1 à 3, puis a été confirmé sur les niveaux 5, 7, 8 et 9 : un objet
-  de l’inventaire peut être refusé selon son emplacement. Follow-up demandé par
-  l’auteur le 26 septembre 2026 ; différé à une session ultérieure. Captures pour
-  validation dans les trois formats indiqués au début de cette section.
+  évidence, sur le plateau, la ou les régions où l’empreinte complète de l’objet
+  peut être posée, y compris lorsque plusieurs zones existent. Le besoin est
+  apparu en jouant les niveaux 1 à 3, puis a été confirmé sur les niveaux 5, 7, 8
+  et 9 : un objet de l’inventaire peut être refusé selon son emplacement sans que
+  la contrainte soit visible. Follow-up demandé par l’auteur les 26 et 27
+  septembre 2026 ; différé à une session ultérieure. Captures pour validation
+  dans les trois formats indiqués au début de cette section.
 
 ## 7. En attente de l’auteur — ne pas commencer
 
@@ -1824,3 +1825,41 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Captures : sans objet, L27 ne change pas l’interface.
 - Pour l’auteur : vérifier le premier passage distant à la prochaine poussée ;
   aucune question bloquante pour L28.
+
+### L28 — PWA — fait — `2f32315 feat(pwa): ajoute le fonctionnement hors ligne (L28)`
+
+- Tests ajoutés : `pwa-update-state.test.ts` couvre l’autorisation de proposer une
+  mise à jour en construction et après résultat, et son report pendant une
+  simulation ou manipulation. `PwaUpdateProvider.test.tsx` couvre le hook sans
+  mise à jour en attente. `e2e/pwa.spec.ts` vérifie le premier chargement, le
+  service worker activé, puis le niveau 1 après passage hors ligne et rechargement.
+- Échec initial constaté : le parcours E2E attendait l’activation du service
+  worker et expirait avant sa configuration dans Vite.
+- Tests existants modifiés : aucun scénario applicatif ; Playwright bloque par
+  défaut les service workers pour éviter d’installer le précache dans chaque
+  contexte, et le test PWA les autorise explicitement. Vitest remplace le module
+  virtuel de `vite-plugin-pwa` par un faux déterministe.
+- Fichiers touchés : `vite.config.ts`, les providers et hooks PWA sous
+  `src/app/`, `public/icons/`, `e2e/pwa.spec.ts`, `playwright.config.ts`,
+  `vitest.config.ts`, les déclarations Vite, `package.json`, `pnpm-lock.yaml`,
+  ADR 0003, `docs/etat.md`, `docs/levels/initial-progression.md` et ce journal.
+- Écarts avec la tâche : aucun. Le hook expose uniquement l’état disponible et
+  le masque pendant une simulation ou un geste. L’invitation visible
+  d’installation ou de mise à jour est U10 et reste différée. Les icônes
+  provisoires sont dérivées de `art/icons-splash_screen/pwa-icon.png`.
+- Mesures qui ne se reproduisent pas : une gate complète a d’abord expiré sur
+  l’inspecteur mobile du niveau 9 ; le scénario isolé puis la gate complète
+  relancée passent sans modification de cet E2E.
+- Contradictions rencontrées : la section « ce qui reste non décidé » de l’ADR
+  0003 listait encore la stratégie PWA, désormais décidée par l’ADR 0012 ; elle
+  a été mise à jour. `pnpm peers check` signale aussi le décalage préexistant
+  entre TypeScript 6.0.3 et `typescript-eslint` 8.42.0, hors du périmètre L28.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 637
+  tests Vitest (54 fichiers), build avec manifeste et service worker (55 entrées
+  précachées, environ 10 Mio), et 45 parcours Playwright mobiles (44 réussis,
+  1 ignoré car C3 est spécifique au projet desktop). Le test hors ligne et le
+  niveau 3 tactile passent dans cette gate.
+- Captures : sans objet, aucune interface visible n’est ajoutée.
+- Pour l’auteur : U13 reste différé. Mettre en évidence sur le plateau les zones
+  où la pose est autorisée devrait rendre compréhensibles les refus de placement
+  signalés pendant les essais des niveaux.

@@ -82,6 +82,10 @@ pendant le travail.
 - Tiroir du mode joueur limité aux familles présentes dans l’inventaire du
   niveau ; il affiche la quantité restante et la taille de poutre. Une entrée à
   quantité zéro reste visible et désactivée. L’atelier garde les onze familles.
+- PWA L28 : le build génère un manifeste installable et un service worker qui
+  précache l’application et ses assets ; les routes de jeu et d’atelier ont un
+  repli hors ligne. Le hook `usePwaUpdateStatus(phase)` expose une mise à jour en
+  attente seulement pendant une phase sûre, hors simulation et manipulation.
 - Panneau « Propriétés » (rail droit en grand format, tiroir compact sur petit
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
   rotation libre des poutres, limitée à ±135° pour les leviers, et par quarts
@@ -191,8 +195,9 @@ pendant le travail.
 
 - **Zones de pose peu visibles** : le joueur ne voit pas clairement où
   l’empreinte complète d’un objet peut être posée, surtout quand plusieurs zones
-  existent. Leur mise en évidence en mode joueur est différée (U13) à une session
-  ultérieure.
+  existent. Leur mise en évidence des régions autorisées est différée (U13) à une
+  session ultérieure ; ce suivi répond aux refus de pose déroutants signalés par
+  l’auteur le 27 septembre 2026.
 - **Aperçu de placement en CSS.** L’overlay DOM `.placement-preview`
   (`src/ui/BoardView.tsx`) n’a ni la forme, ni la taille, ni la rotation de
   l’objet ; le fantôme dessiné par le renderer (C1) reste à faire.
@@ -217,7 +222,7 @@ pendant le travail.
   `useCampaignProgress()` sans ajout visuel. La demande de stockage persistant est
   faite une seule fois après la première victoire. Le codec L23 et la route
   `/shared` L24 sont livrés ; les niveaux partagés restent hors campagne et ne
-  créent ni progression ni brouillon. La PWA reste à faire (ADR 0012). Les
+  créent ni progression ni brouillon. La PWA L28 est livrée selon l’ADR 0012. Les
   métadonnées de défi v2 sont
   utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité du niveau 8 reste
   à compléter avec les coordonnées de sa grille « bascule seule ».
@@ -233,6 +238,11 @@ pendant le travail.
   d’enregistrement à une fois par seconde pendant l’édition et autorise un
   enregistrement immédiat au lancement d’un test ; elle n’est pas encore reliée
   à une interface.
+- **PWA L28** : `vite-plugin-pwa` 1.3.0 et Workbox 7.4.1 produisent le manifeste,
+  les icônes provisoires, le précache (environ 10 Mio) et le service worker de
+  production. Le test E2E confirme l’ouverture du niveau 1 après rechargement hors
+  ligne. La proposition visible d’installation et de mise à jour (U10) reste un
+  travail d’interface.
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
 - **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
@@ -256,14 +266,17 @@ pendant le travail.
   request avec Node 24, cache pnpm et Chromium Playwright. Son premier passage
   distant reste à vérifier au prochain push ; aucune matrice de téléphones
   physiques n’est définie.
+- Un avertissement peer préexistant reste présent : `typescript-eslint@8.42.0`
+  déclare TypeScript `<6`, alors que le dépôt utilise TypeScript 6.0.3. Il n’est
+  pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après L27 : typecheck, lint,
-formatage, Knip, contenu (14 niveaux embarqués), 632 tests Vitest (52 fichiers),
-build et 44 tests Playwright `mobile` (43 réussis, 1 ignoré car C3 est
-spécifique au projet desktop). Une première exécution a eu un timeout intermittent
-sur le tiroir de propriétés du niveau 9 ; le test passe seul et la gate complète
+`pnpm check` passe le 27 septembre 2026 après L28 : typecheck, lint,
+formatage, Knip, contenu (14 niveaux embarqués), 637 tests Vitest (54 fichiers),
+build avec manifeste et service worker PWA, puis 45 tests Playwright `mobile` (44
+réussis, 1 ignoré car C3 est spécifique au projet desktop).
+Une première exécution a eu un timeout intermittent sur le tiroir de propriétés du niveau 9 ; le test passe seul et la gate complète
 relancée passe. Le parcours mobile L17b ouvre maintenant
 l’inspecteur compact avant de
 vérifier les propriétés du levier sélectionné. Les captures au repos sont

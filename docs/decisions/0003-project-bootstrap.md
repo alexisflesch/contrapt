@@ -62,8 +62,9 @@ framework ne remette pas en cause le domaine ou le format des niveaux.
 Le mécanisme de service worker n'est pas activé par un preset opaque pendant ce
 bootstrap. Le manifeste web peut être posé tôt, mais la stratégie de précache,
 d'activation d'une nouvelle version et de restauration des brouillons doit être
-décidée et testée avant l'enregistrement du service worker. `vite-plugin-pwa` et
-Workbox restent des candidats, pas des dépendances acceptées par cette ADR.
+décidée et testée avant l'enregistrement du service worker. Cette décision a
+depuis été prise par l'[ADR 0012](0012-pwa-service-worker.md), qui accepte
+`vite-plugin-pwa` et Workbox pour le build PWA.
 
 ### Un seul package, plusieurs frontières
 
@@ -262,9 +263,6 @@ projection visuelle avant le choix physique, sans inventer une fausse simulation
   des erreurs actionnables avant le navigateur.
 - Faire tourner un E2E tactile dans `check` impose l'installation d'un navigateur,
   mais garantit que la promesse mobile-first n'est pas réservée à la CI distante.
-- Différer le service worker retarde momentanément l'installabilité hors ligne, mais
-  évite d'inscrire trop tôt une politique de mise à jour susceptible de perdre un
-  brouillon.
 - L'épingle exacte rend les mises à jour plus explicites et moins automatiques ;
   c'est intentionnel pour les premiers schémas persistants et la simulation.
 
@@ -272,7 +270,6 @@ projection visuelle avant le choix physique, sans inventer une fausse simulation
 
 - PixiJS ou un autre renderer du plateau ;
 - Planck.js ou Rapier 2D, conformément à l'ADR 0002 ;
-- bibliothèque et stratégie exactes de service worker/PWA ;
 - wrapper IndexedDB ;
 - gestionnaire d'état ou bibliothèque de composants, si un besoin apparaît
   (le routeur est tranché par [l'ADR 0008](0008-client-side-routing.md)) ;
@@ -280,7 +277,7 @@ projection visuelle avant le choix physique, sans inventer une fausse simulation
 - emplacement interne définitif des modules d'objets ;
 - navigateurs, téléphones et budgets chiffrés de bundle/performance ;
 - seuils de couverture par couche ;
-- fournisseur CI et outil d'automatisation des mises à jour.
+- outil d'automatisation des mises à jour de dépendances.
 
 Ces points ne bloquent pas le bootstrap de la chaîne TypeScript, React, Vite et des
 gates de qualité. Chacun doit être tranché au plus tard dans le changement qui en a
