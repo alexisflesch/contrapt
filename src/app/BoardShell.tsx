@@ -16,6 +16,7 @@ import { BoardView } from '../ui/BoardView';
 import { ContextPanel } from '../ui/ContextPanel';
 import { LevelResult } from '../ui/LevelResult';
 import { InspectorDrawer } from '../ui/InspectorDrawer';
+import { Button } from '../ui/Button';
 import { ObjectDrawer } from '../ui/ObjectDrawer';
 import { Dialog } from '../ui/Dialog';
 import { SimulationControls } from '../ui/SimulationControls';
@@ -106,6 +107,8 @@ export function BoardShell({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const resetDialogCancelRef = useRef<HTMLButtonElement>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
 
   // B1 (plan-remise-en-jeu.md § 4, `initial-progression.md` § Niveau 1):
@@ -144,6 +147,10 @@ export function BoardShell({
     pointers.clearPlacementTool();
     pointers.clearPlacementPreview();
     simulation.clearAttemptOutcome();
+    setIsDrawerOpen(false);
+    setIsInspectorOpen(false);
+    setIsResetDialogOpen(false);
+    setFeedback(null);
     boardCamera.fitCameraToCurrentScene();
   };
 
@@ -238,6 +245,7 @@ export function BoardShell({
         aria-label="Espace de construction"
       >
         <SimulationControls
+          isCreation={mode === 'creation'}
           session={session}
           feedback={feedback}
           activePlacementKind={pointers.placementTool?.kind ?? null}
@@ -253,6 +261,9 @@ export function BoardShell({
           onPause={simulation.pauseCurrentSimulation}
           onResume={simulation.resumeCurrentSimulation}
           onRestoreConstruction={simulation.restoreConstruction}
+          onResetWorkshop={() => {
+            setIsResetDialogOpen(true);
+          }}
         />
         <BoardView
           session={session}
@@ -315,6 +326,35 @@ export function BoardShell({
           }}
         >
           <p className="dialog-text">Faire entrer la balle dans le panier</p>
+        </Dialog>
+      )}
+      {isResetDialogOpen && mode === 'creation' && (
+        <Dialog
+          label="Remise à zéro de l’atelier"
+          title="Remettre l’atelier à zéro ?"
+          closeLabel="Fermer la remise à zéro"
+          initialFocusRef={resetDialogCancelRef}
+          onClose={() => {
+            setIsResetDialogOpen(false);
+          }}
+        >
+          <p className="dialog-text">
+            Cette action efface tous les objets ajoutés, leurs positions, leurs réglages et leurs
+            fils. L’atelier reviendra à son document de départ.
+          </p>
+          <div className="level-result-actions">
+            <Button
+              ref={resetDialogCancelRef}
+              onClick={() => {
+                setIsResetDialogOpen(false);
+              }}
+            >
+              Annuler
+            </Button>
+            <Button tone="reset" onClick={resetToInitialAttempt}>
+              Remettre l’atelier à zéro
+            </Button>
+          </div>
         </Dialog>
       )}
       {isExportOpen && (

@@ -256,6 +256,68 @@ test('L17b — tourne le levier de 90° dans chaque sens au tactile', async ({ p
   await waitForCanvasToMatch(canvas, initial);
 });
 
+test('U6 — remet l’atelier à zéro après confirmation au tactile', async ({ page }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'mobile' && testInfo.project.name !== 'desktop',
+    'Le parcours U6 est capturé sur mobile et Chromium desktop.',
+  );
+
+  await page.setViewportSize(
+    testInfo.project.name === 'mobile' ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+  );
+  await openWorkshop(page);
+
+  const reset = page.getByRole('button', { name: 'Remettre l’atelier à zéro' });
+  const tester = page.getByRole('button', { name: 'Tester' });
+  await expect(reset).toBeVisible();
+  await expect(tester).toBeVisible();
+
+  const resetBounds = await reset.boundingBox();
+  const testerBounds = await tester.boundingBox();
+  expect(resetBounds).not.toBeNull();
+  expect(testerBounds).not.toBeNull();
+  if (resetBounds === null || testerBounds === null) {
+    throw new Error('Les commandes U6 doivent être mesurables.');
+  }
+  expect(resetBounds.x + resetBounds.width).toBeLessThanOrEqual(testerBounds.x + 1);
+
+  const activate = async (control: Locator): Promise<void> => {
+    if (testInfo.project.name === 'mobile') {
+      await control.tap();
+    } else {
+      await control.click();
+    }
+  };
+
+  if (testInfo.project.name === 'mobile') {
+    await page.screenshot({ path: 'test-results/u6/390x844.png', fullPage: true });
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(reset).toBeVisible();
+    await page.screenshot({ path: 'test-results/u6/844x390.png', fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+  } else {
+    await page.screenshot({ path: 'test-results/u6/1440x900.png', fullPage: true });
+  }
+
+  await activate(reset);
+  const dialog = page.getByRole('dialog', { name: 'Remise à zéro de l’atelier' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('efface tous les objets ajoutés');
+  const cancel = dialog.getByRole('button', { name: 'Annuler' });
+  await expect(cancel).toBeFocused();
+  await activate(cancel);
+  await expect(dialog).toHaveCount(0);
+
+  await chooseMediumBeam(page);
+  await placeBeamAtBoardCenter(page);
+  await expect(page.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
+
+  await activate(reset);
+  await activate(dialog.getByRole('button', { name: 'Remettre l’atelier à zéro' }));
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Propriétés de Poutre' })).toHaveCount(0);
+});
+
 test('U15 — relie un levier à un convoyeur par la carte Fil, au tactile', async ({
   page,
 }, testInfo) => {

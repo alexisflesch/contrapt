@@ -1,18 +1,19 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, Ref } from 'react';
 
 /**
  * The visual intent of a button, shared by every page (design tokens in
  * `styles.css` § Boutons):
  *
- * - `go` — launches or moves the player forward (Tester, Reprendre, Lancer, Rejouer);
+ * - `go` — launches or moves the player forward (Tester, Reprendre, Lancer, Recommencer);
  * - `pause` — suspends without losing anything (Mettre en pause);
- * - `reset` — returns to the construction state (Réinitialiser);
+ * - `reset` — returns to construction or opens a destructive reset (Recommencer, Ràz atelier);
  * - `neutral` — every other action (navigation, undo/redo, properties).
  */
 type ButtonTone = 'go' | 'pause' | 'reset' | 'neutral';
 
 interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
   readonly tone?: ButtonTone;
+  readonly ref?: Ref<HTMLButtonElement>;
 }
 
 /**
@@ -22,12 +23,13 @@ interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'typ
  * appended, so a component can keep a behaviour-specific hook class
  * (e.g. `placement-cancel`) alongside the shared look.
  */
-export function Button({ tone = 'neutral', className, ...buttonProps }: ButtonProps) {
+export function Button({ tone = 'neutral', className, ref, ...buttonProps }: ButtonProps) {
   return (
     <button
       type="button"
       className={`btn btn-${tone}${className === undefined ? '' : ` ${className}`}`}
       {...buttonProps}
+      ref={ref}
     />
   );
 }

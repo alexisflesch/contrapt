@@ -94,6 +94,12 @@ pendant le travail.
   précache l’application et ses assets ; les routes de jeu et d’atelier ont un
   repli hors ligne. Le hook `usePwaUpdateStatus(phase)` expose une mise à jour en
   attente seulement pendant une phase sûre, hors simulation et manipulation.
+- **U6 — recommencer et remise à zéro de l’atelier** : pendant la simulation,
+  une seule commande « Recommencer » est visible ; dans l’atelier, « Ràz atelier »
+  est placé à gauche de « Tester » et ouvre une confirmation qui décrit la perte,
+  avec « Annuler » ciblé par défaut. La remise à zéro restaure le document de
+  départ et ferme les tiroirs et sélections ; après une victoire d’atelier, le
+  résultat conserve uniquement « Retour à l’édition ».
 - Panneau « Propriétés » (rail droit en grand format, tiroir compact sur petit
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
   rotation libre des poutres, limitée à ±135° pour les leviers, et par quarts
@@ -290,12 +296,6 @@ pendant le travail.
 - **E2E instable** : `e2e/levels.spec.ts` « niveau 9 : poser le convoyeur… »
   échoue par intermittence (« Fermer les propriétés » introuvable), y compris
   sur le commit précédent U21.
-- **Deux boutons « Réinitialiser »** (libellé à remplacer par « Recommencer », voir
-  `mobile-editor-interactions.md`) actifs simultanément après une simulation
-  terminée (barre d’actions et bandeau de résultat).
-- **Victoire dans l’éditeur** : après « Tester », une victoire affiche désormais
-  « Retour à l’édition », qui restaure la construction d’avant lancement et
-  masque les actions joueur « Rejouer le niveau » et « Retour aux niveaux ».
 - **Retest du Xiaomi après L2c** : le vieux téléphone avait exigé un rechargement
   de `/bench/play`. Le chargeur retente maintenant un asset en échec lors des
   rendus suivants, au plus trois fois ; le comportement doit encore être vérifié
@@ -328,8 +328,8 @@ essai — typecheck, lint, formatage, Knip, contenu, 727 tests Vitest (61
 fichiers), build et 51 tests Playwright `mobile` (50 réussis, 1 ignoré). Le
 premier essai avait échoué sur l’E2E instable du niveau 9 (voir les dettes).
 
-`pnpm check` après U6 (27 septembre 2026) : passe — 728 tests Vitest, build et
-51 tests Playwright `mobile` (50 réussis, 1 ignoré).
+`pnpm check` après U6 (27 septembre 2026) : passe — 729 tests Vitest, build et
+52 tests Playwright `mobile` (51 réussis, 1 ignoré).
 
 Exécution précédente :
 `pnpm check` après U15 (27 septembre 2026) : passe d’une traite — typecheck,

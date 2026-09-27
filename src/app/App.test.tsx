@@ -526,13 +526,13 @@ describe('coque Contrapt!', () => {
     fireEvent.click(testButton);
 
     expect(screen.getByText('Simulation en cours')).toBeVisible();
-    const resetButton = screen.getByRole('button', { name: 'Réinitialiser' });
+    const resetButton = screen.getByRole('button', { name: 'Recommencer' });
     expect(resetButton).toBeVisible();
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     expect(
       within(board).queryByRole('button', { name: 'Mettre en pause' }),
     ).not.toBeInTheDocument();
-    expect(within(board).queryByRole('button', { name: 'Réinitialiser' })).not.toBeInTheDocument();
+    expect(within(board).queryByRole('button', { name: 'Recommencer' })).not.toBeInTheDocument();
 
     fireEvent.click(resetButton);
 
@@ -575,7 +575,7 @@ describe('coque Contrapt!', () => {
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
     expect(within(result).getByText('Victoire')).toBeVisible();
     expect(within(result).getByRole('button', { name: 'Retour à l’édition' })).toBeVisible();
-    expect(within(result).queryByRole('button', { name: 'Rejouer le niveau' })).toBeNull();
+    expect(within(result).queryByRole('button', { name: 'Recommencer' })).toBeNull();
     expect(within(result).queryByRole('button', { name: 'Retour aux niveaux' })).toBeNull();
 
     fireEvent.click(within(result).getByRole('button', { name: 'Retour à l’édition' }));
@@ -695,6 +695,43 @@ describe('coque Contrapt!', () => {
     expect(within(levelList).getByText('Niveau 12 · Le bon ordre')).toBeVisible();
     expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 12' })).toBeEnabled();
   });
+  it('place le Ràz atelier avant Tester et demande confirmation avant d’effacer', () => {
+    render(<App />);
+    openEmbeddedWorkshop();
+
+    const resetButton = screen.getByRole('button', { name: 'Remettre l’atelier à zéro' });
+    const testButton = screen.getByRole('button', { name: 'Tester' });
+    expect(
+      resetButton.compareDocumentPosition(testButton) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Poutre moyenne' }));
+    tapWorldPoint(5.0, 2.15);
+    expect(screen.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
+
+    fireEvent.click(resetButton);
+
+    const dialog = screen.getByRole('dialog', { name: 'Remise à zéro de l’atelier' });
+    expect(dialog).toHaveTextContent('efface');
+    const cancelButton = within(dialog).getByRole('button', { name: 'Annuler' });
+    expect(document.activeElement).toBe(cancelButton);
+
+    fireEvent.click(cancelButton);
+    expect(screen.queryByRole('dialog', { name: 'Remise à zéro de l’atelier' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remettre l’atelier à zéro' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'Remise à zéro de l’atelier' })).getByRole(
+        'button',
+        { name: 'Remettre l’atelier à zéro' },
+      ),
+    );
+
+    expect(screen.queryByRole('dialog', { name: 'Remise à zéro de l’atelier' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).toBeNull();
+  });
 
   it('navigue vers une page de réglages dédiée depuis le menu (ADR 0008)', () => {
     render(<App />);
@@ -751,7 +788,7 @@ describe('coque Contrapt!', () => {
 
     fireEvent.click(
       within(screen.getByRole('region', { name: 'Résultat du niveau' })).getByRole('button', {
-        name: 'Réinitialiser',
+        name: 'Recommencer',
       }),
     );
     placeCampaignBeam(5.0, 2.15);
@@ -810,7 +847,7 @@ describe('coque Contrapt!', () => {
     const failedResult = screen.getByRole('region', { name: 'Résultat du niveau' });
     expect(within(failedResult).getByText('Échec')).toBeVisible();
     expect(within(failedResult).queryByText('Victoire')).not.toBeInTheDocument();
-    fireEvent.click(within(failedResult).getByRole('button', { name: 'Réinitialiser' }));
+    fireEvent.click(within(failedResult).getByRole('button', { name: 'Recommencer' }));
 
     placeCampaignBeam(5.0, 2.15);
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
@@ -818,7 +855,7 @@ describe('coque Contrapt!', () => {
 
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
     expect(within(result).getByText('Victoire')).toBeVisible();
-    expect(within(result).getByRole('button', { name: 'Rejouer le niveau' })).toBeVisible();
+    expect(within(result).getByRole('button', { name: 'Recommencer' })).toBeVisible();
     expect(within(result).getByRole('button', { name: 'Retour aux niveaux' })).toBeVisible();
   });
 
@@ -858,12 +895,12 @@ describe('coque Contrapt!', () => {
     expect(within(result).getByText('Échec')).toBeVisible();
     expect(within(result).queryByText('Victoire')).not.toBeInTheDocument();
     expect(within(result).getByText(/temps écoulé/i)).toBeVisible();
-    expect(within(result).getByRole('button', { name: 'Réinitialiser' })).toBeVisible();
+    expect(within(result).getByRole('button', { name: 'Recommencer' })).toBeVisible();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(board.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('réinitialise depuis le bandeau d’échec et restitue le document d’avant lancement', () => {
+  it('recommence depuis le bandeau d’échec et restitue le document d’avant lancement', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
 
@@ -879,7 +916,7 @@ describe('coque Contrapt!', () => {
     expect(canvas.getAttribute('data-simulation-ball-position')).not.toBe(ballPositionAtLaunch);
 
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
-    fireEvent.click(within(result).getByRole('button', { name: 'Réinitialiser' }));
+    fireEvent.click(within(result).getByRole('button', { name: 'Recommencer' }));
 
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
     expect(canvas).not.toHaveAttribute('data-simulation-step');
@@ -907,7 +944,7 @@ describe('coque Contrapt!', () => {
     expect(within(levelList).getByText('Niveau 3 · Incliner')).toBeVisible();
   });
 
-  it('permet de rejouer ou de réinitialiser la simulation sans dialogue bloquant', () => {
+  it('permet de recommencer la simulation sans dialogue bloquant', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
 
@@ -915,7 +952,7 @@ describe('coque Contrapt!', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
     expect(screen.getByText('Simulation en cours')).toBeVisible();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('Mode joueur')).toBeVisible();
@@ -926,12 +963,12 @@ describe('coque Contrapt!', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
     expect(screen.getByText('Simulation en cours')).toBeVisible();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
     expect(screen.getByText('Simulation en cours')).toBeVisible();
 
     advanceSimulationToResult(animationFrames, 320);
-    fireEvent.click(screen.getByRole('button', { name: 'Rejouer le niveau' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
@@ -1444,7 +1481,7 @@ describe('coque Contrapt!', () => {
     // Disparition: replaying returns to construction. The slot stays
     // mounted (same node) with its content cleared, and the camera — fit to
     // the same scene and the same canvas size throughout — never changed.
-    fireEvent.click(within(result).getByRole('button', { name: 'Rejouer le niveau' }));
+    fireEvent.click(within(result).getByRole('button', { name: 'Recommencer' }));
 
     expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();

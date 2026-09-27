@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 
 import { Panel } from './Panel';
 
@@ -10,6 +10,8 @@ interface DialogProps {
   readonly closeLabel: string;
   readonly onClose: () => void;
   readonly children: ReactNode;
+  /** Optional first focus target; the close control remains the fallback. */
+  readonly initialFocusRef?: RefObject<HTMLButtonElement | null>;
 }
 
 const focusableSelector =
@@ -21,12 +23,20 @@ const focusableSelector =
  *
  * Tap-first (`AGENTS.md` § Mobile-first): an explicit close control in the
  * title bar and a tap on the backdrop both close it; Escape does too for
- * keyboards. On open, focus moves to the close control and Tab stays inside
- * the dialog; on close, focus returns to whatever opened it. The backdrop is
+ * keyboards. On open, focus moves to the requested initial control, or the
+ * close control when none is supplied; Tab stays inside the dialog. On close,
+ * focus returns to whatever opened it. The backdrop is
  * hidden from assistive technology and out of the tab order — the close
  * control is the accessible way out, so it is not announced twice.
  */
-export function Dialog({ label, title, closeLabel, onClose, children }: DialogProps) {
+export function Dialog({
+  label,
+  title,
+  closeLabel,
+  onClose,
+  initialFocusRef,
+  children,
+}: DialogProps) {
   const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -37,7 +47,8 @@ export function Dialog({ label, title, closeLabel, onClose, children }: DialogPr
 
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    closeRef.current?.focus();
+    const initialFocus = initialFocusRef?.current ?? closeRef.current;
+    initialFocus?.focus();
 
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
@@ -67,7 +78,7 @@ export function Dialog({ label, title, closeLabel, onClose, children }: DialogPr
       document.removeEventListener('keydown', onKeyDown);
       opener?.focus();
     };
-  }, []);
+  }, [initialFocusRef]);
 
   return (
     <>

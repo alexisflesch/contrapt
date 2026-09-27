@@ -635,7 +635,7 @@ test('niveau 1 : échouer sans poutre puis résoudre par toucher', async ({ page
   await expect(failedResult.getByText('Échec')).toBeVisible();
   await expect(failedResult.getByText(/Hors de la scène|Temps écoulé/)).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await failedResult.getByRole('button', { name: 'Réinitialiser' }).tap();
+  await failedResult.getByRole('button', { name: 'Recommencer' }).tap();
 
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
   await page.getByRole('button', { name: 'Poutre courte' }).tap();
@@ -654,6 +654,6 @@ test('niveau 1 : échouer sans poutre puis résoudre par toucher', async ({ page
   if (boardBounds !== null && resultBounds !== null) {
     expect(resultBounds.y).toBeGreaterThanOrEqual(boardBounds.y + boardBounds.height - 1);
   }
-  await expect(victoryResult.getByRole('button', { name: 'Rejouer le niveau' })).toBeVisible();
+  await expect(victoryResult.getByRole('button', { name: 'Recommencer' })).toBeVisible();
   await expect(victoryResult.getByRole('button', { name: 'Retour aux niveaux' })).toBeVisible();
 });

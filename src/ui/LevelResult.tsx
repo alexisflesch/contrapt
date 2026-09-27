@@ -44,7 +44,7 @@ export function LevelResult({
         <div className="level-result-actions">
           <Button tone="reset" onClick={onReset}>
             <span aria-hidden="true">↺</span>
-            Réinitialiser
+            Recommencer
           </Button>
           <Button onClick={onReturnToLevels}>Retour aux niveaux</Button>
         </div>
@@ -78,7 +78,7 @@ export function LevelResult({
       <div className="level-result-actions">
         <Button tone="go" onClick={onReplay}>
           <span aria-hidden="true">↺</span>
-          Rejouer le niveau
+          Recommencer
         </Button>
         <Button onClick={onReturnToLevels}>Retour aux niveaux</Button>
       </div>

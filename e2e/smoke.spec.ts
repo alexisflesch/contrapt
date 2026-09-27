@@ -98,7 +98,7 @@ test.describe('coque sur le petit viewport supporté', () => {
       expect(resultBounds.y).toBeGreaterThanOrEqual(boardBounds.y + boardBounds.height - 1);
     }
 
-    await expect(page.getByRole('button', { name: 'Rejouer le niveau' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Recommencer' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Retour aux niveaux' })).toBeVisible();
   });
 

@@ -2190,20 +2190,27 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : captures hors dépôt, `…/scratchpad/captures/u21/` ; valider
   la fin du geste au dernier fil et `remove` comme permission de délier.
 
-### U6 — « Recommencer » et « Remettre à zéro » — fait — non commité
+### U6 — « Recommencer » et « Remettre à zéro » — fait — `feat(ui): termine les actions recommencer de l’atelier (U6)`
 
-- Tests ajoutés : src/app/App.test.tsx › conserve la construction après une victoire obtenue dans l’éditeur.
+- Tests ajoutés : `src/app/App.test.tsx` couvre le bouton « Ràz atelier », l’ordre
+  avec « Tester », la confirmation, son annulation par défaut et l’effacement
+  confirmé ; `e2e/editor-interactions.spec.ts` couvre le même parcours au mobile
+  (390 × 844, puis 844 × 390) et sur Chromium desktop (1440 × 900).
 - Échec initial constaté : le test attendait « Retour à l’édition », mais le
   bandeau exposait « Rejouer le niveau » et « Retour aux niveaux ».
-- Tests existants réécrits : aucun.
-- Fichiers touchés : src/app/BoardShell.tsx, src/ui/LevelResult.tsx,
-  src/app/App.test.tsx.
-- Écarts avec la tâche : le changement est limité à la victoire en mode éditeur ;
-  les actions de défaite et le vocabulaire global « Réinitialiser » restent à
-  traiter séparément.
+- Tests existants réécrits : les attentes de simulation et de résultat utilisent
+  désormais « Recommencer » ; les scénarios E2E joueur ont été alignés.
+- Fichiers touchés : `src/app/BoardShell.tsx`, `src/ui/LevelResult.tsx`,
+  `src/ui/SimulationControls.tsx`, `src/ui/Dialog.tsx`, `src/ui/Button.tsx`,
+  `src/ui/styles.css`, `src/app/App.test.tsx` et les scénarios E2E concernés.
+- Écarts avec la tâche : aucun comportement U6 restant ; la capture visuelle est
+  produite dans `test-results/u6/` et reste hors dépôt.
 - Mesures qui ne se reproduisent pas : aucune.
 - Contradictions rencontrées : aucune.
-- Vérification : le test ciblé, pnpm check:fast et la gate complète passent.
-- Captures : à valider par l’auteur dans les trois formats de l’interface U6.
-- Pour l’auteur : vérifier /editor après une victoire ; « Retour à l’édition »
-  conserve le panier déplacé et ne propose plus de rejouer ni de revenir aux niveaux.
+- Vérification : le test ciblé (70 tests), le parcours Playwright U6 (2 tests)
+  et `pnpm check` passent ; la gate complète compte 729 tests Vitest et 52
+  tests Playwright `mobile` (51 réussis, 1 ignoré).
+- Captures : `test-results/u6/390x844.png`, `test-results/u6/844x390.png` et
+  `test-results/u6/1440x900.png`.
+- Pour l’auteur : vérifier les trois captures ; « Ràz atelier » doit rester à
+  gauche de « Tester » et « Annuler » doit recevoir le focus à l’ouverture.

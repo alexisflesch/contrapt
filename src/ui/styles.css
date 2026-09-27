@@ -649,6 +649,13 @@ select:focus-visible {
   .toolbar-primary {
     padding: 0 var(--space-4);
   }
+
+  .toolbar-reset {
+    min-width: var(--touch-target);
+    padding: 0 var(--space-2);
+    font-size: 12px;
+    white-space: normal;
+  }
 }
 
 @container toolbar (max-width: 339px) {

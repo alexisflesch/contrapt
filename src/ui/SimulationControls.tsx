@@ -7,6 +7,7 @@ import { Button } from './Button';
 
 interface SimulationControlsProps {
   readonly session: EditorSession;
+  readonly isCreation: boolean;
   readonly feedback: string | null;
   readonly activePlacementKind: ObjectKind | null;
   /** The "Fil" card's guidance (U15), or `null` when no wire is being made. */
@@ -19,12 +20,14 @@ interface SimulationControlsProps {
   readonly onPause: () => void;
   readonly onResume: () => void;
   readonly onRestoreConstruction: () => void;
+  readonly onResetWorkshop: () => void;
 }
 
 /** The "tester / pause / reset" bar: construction commands while building, playback controls while simulating. */
 export function SimulationControls({
   session,
   feedback,
+  isCreation,
   activePlacementKind,
   wiringGuide,
   onExitWiring,
@@ -35,6 +38,7 @@ export function SimulationControls({
   onPause,
   onResume,
   onRestoreConstruction,
+  onResetWorkshop,
 }: SimulationControlsProps) {
   // A session with no inventory (level 1: `initial-progression.md` § Niveau 1,
   // "Aucune action d'édition") has nothing a command could ever undo or redo:
@@ -83,6 +87,18 @@ export function SimulationControls({
               </Button>
             </div>
           )}
+          {isCreation && (
+            <Button
+              tone="reset"
+              className="toolbar-reset"
+              aria-label="Remettre l’atelier à zéro"
+              aria-haspopup="dialog"
+              onClick={onResetWorkshop}
+            >
+              <span aria-hidden="true">↺</span>
+              Ràz atelier
+            </Button>
+          )}
           <Button tone="go" className="toolbar-primary" onClick={onLaunchSimulation}>
             <span aria-hidden="true">▶</span>
             Tester
@@ -111,10 +127,12 @@ export function SimulationControls({
               Reprendre
             </Button>
           )}
-          <Button tone="reset" onClick={onRestoreConstruction}>
-            <span aria-hidden="true">↺</span>
-            Réinitialiser
-          </Button>
+          {session.phase !== 'result' && (
+            <Button tone="reset" onClick={onRestoreConstruction}>
+              <span aria-hidden="true">↺</span>
+              Recommencer
+            </Button>
+          )}
         </div>
       )}
 
