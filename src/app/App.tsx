@@ -14,6 +14,7 @@ import { PlayLevelPage } from './PlayLevelPage';
 import { SettingsPage } from './SettingsPage';
 import { SharedLevelPage } from './SharedLevelPage';
 import { CampaignProgressProvider } from './CampaignProgressProvider';
+import { PwaUpdateProvider } from './PwaUpdateProvider';
 
 /**
  * B1 (plan-remise-en-jeu.md § 4): the app opens directly on the first
@@ -53,29 +54,31 @@ export function App({ progressRepository }: AppProps = {}) {
   const repository = progressRepository ?? browserProgressRepository;
 
   return (
-    <CampaignProgressProvider repository={repository}>
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <Navigate
-                to={defaultLevelId === null ? '/levels' : `/levels/${defaultLevelId}/play`}
-                replace
-              />
-            }
-          />
-          <Route path="/levels" element={<LevelsPage />} />
-          <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
-          <Route path="/editor" element={<EditorPage />} />
-          <Route path="/demo" element={<DemoPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/shared" element={<SharedLevelPage />} />
-          <Route path="/bench" element={<BenchPage />} />
-          <Route path="/bench/play" element={<BenchPlayPage />} />
-          <Route path="*" element={<Navigate to="/levels" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </CampaignProgressProvider>
+    <PwaUpdateProvider>
+      <CampaignProgressProvider repository={repository}>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Navigate
+                  to={defaultLevelId === null ? '/levels' : `/levels/${defaultLevelId}/play`}
+                  replace
+                />
+              }
+            />
+            <Route path="/levels" element={<LevelsPage />} />
+            <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
+            <Route path="/editor" element={<EditorPage />} />
+            <Route path="/demo" element={<DemoPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/shared" element={<SharedLevelPage />} />
+            <Route path="/bench" element={<BenchPage />} />
+            <Route path="/bench/play" element={<BenchPlayPage />} />
+            <Route path="*" element={<Navigate to="/levels" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </CampaignProgressProvider>
+    </PwaUpdateProvider>
   );
 }
