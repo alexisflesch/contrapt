@@ -15,9 +15,15 @@ export interface ProjectedWire {
   readonly label: string;
   /** Index of the circuit, mapped to a colour by the renderer. */
   readonly circuitIndex: number;
-  /** Straight segment in world units, from the controller's port to the device's. */
+  /** Route in world units, from the controller's port to the device's. */
   readonly from: WorldPoint;
   readonly to: WorldPoint;
+  /**
+   * The route's single corner (U14b), absent when `from` and `to` already
+   * share an axis: a wire is drawn horizontal/vertical only, never
+   * diagonal, so it reads as one L-shaped bend at most.
+   */
+  readonly bend?: WorldPoint;
 }
 
 type Placement = LevelDocument['objects'][number];
@@ -70,9 +76,30 @@ const portFacing = (placement: Placement, towardsX: number): WorldPoint | undefi
 };
 
 /**
- * Draws every wire of the document as one straight segment between the
- * ports of its two objects, drawn behind the objects: it never goes around
- * them, and crossings mean nothing.
+ * Whether a port sticks out of its object mostly sideways or mostly up/down,
+ * from the port's offset to the object's own origin (not the rotated local
+ * offset, so it holds for any rotation, not only quarter turns).
+ */
+const portAxis = (placement: Placement, port: WorldPoint): 'horizontal' | 'vertical' => {
+  const { position } = placement.transform;
+  return Math.abs(port.x - position.x) >= Math.abs(port.y - position.y) ? 'horizontal' : 'vertical';
+};
+
+/**
+ * U14b: the wire leaves the source in its port's own axis, then turns once
+ * towards the target — a deterministic, simple choice ("part dans l'axe du
+ * port de la source"), never a diagonal. When `from` and `to` already share
+ * an axis, the corner would sit on one of them: no bend is needed.
+ */
+const bendOf = (source: Placement, from: WorldPoint, to: WorldPoint): WorldPoint | undefined => {
+  if (from.x === to.x || from.y === to.y) return undefined;
+  return portAxis(source, from) === 'horizontal' ? { x: to.x, y: from.y } : { x: from.x, y: to.y };
+};
+
+/**
+ * Draws every wire of the document as a horizontal/vertical route between
+ * the ports of its two objects, drawn behind the objects: it never goes
+ * around them, and crossings mean nothing.
  */
 export const projectWires = (document: LevelDocument): readonly ProjectedWire[] => {
   const placementsById = new Map(document.objects.map((placement) => [placement.id, placement]));
@@ -90,6 +117,8 @@ export const projectWires = (document: LevelDocument): readonly ProjectedWire[] 
     const to = portFacing(target, source.transform.position.x);
     if (from === undefined || to === undefined) return [];
 
+    const bend = bendOf(source, from, to);
+
     return [
       {
         id: wire.id,
@@ -99,6 +128,7 @@ export const projectWires = (document: LevelDocument): readonly ProjectedWire[] 
         circuitIndex: circuit.index,
         from,
         to,
+        ...(bend !== undefined ? { bend } : {}),
       },
     ];
   });

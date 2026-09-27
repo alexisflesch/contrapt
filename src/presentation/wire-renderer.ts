@@ -73,8 +73,10 @@ const emphasisOf = (
 };
 
 /**
- * Draws every wire as a straight dark casing under a coloured core. When a
- * wired object is selected, the other wires fade further.
+ * Draws every wire as a horizontal/vertical dark casing under a coloured
+ * core, with at most one corner (U14b): through `bend` when it exists,
+ * straight from `from` to `to` otherwise. When a wired object is selected,
+ * the other wires fade further.
  */
 export const drawWires = (
   context: WireCanvas,
@@ -85,6 +87,7 @@ export const drawWires = (
   for (const wire of wires) {
     const from = toScreen(wire.from);
     const to = toScreen(wire.to);
+    const bend = wire.bend === undefined ? undefined : toScreen(wire.bend);
     context.save();
     context.globalAlpha = WIRE_ALPHA[emphasisOf(wire, options.dimmed, options.focusId)];
     context.lineCap = 'round';
@@ -94,6 +97,7 @@ export const drawWires = (
     ] as const) {
       context.beginPath();
       context.moveTo(from.x, from.y);
+      if (bend !== undefined) context.lineTo(bend.x, bend.y);
       context.lineTo(to.x, to.y);
       context.strokeStyle = colour;
       context.lineWidth = width;
@@ -114,7 +118,11 @@ const insetAlong = (end: ScreenPoint, towards: ScreenPoint): ScreenPoint => {
   };
 };
 
-/** The circuit letter on both ends of each wire, over the objects, fading with the wire. */
+/**
+ * The circuit letter on both ends of each wire, over the objects, fading
+ * with the wire. Each badge sits `LABEL_INSET` along its own leg of the
+ * equerre — towards `bend` when there is one — never on the diagonal.
+ */
 export const drawWireLabels = (
   context: WireCanvas,
   wires: readonly ProjectedWire[],
@@ -124,12 +132,13 @@ export const drawWireLabels = (
   for (const wire of wires) {
     const from = toScreen(wire.from);
     const to = toScreen(wire.to);
+    const bend = wire.bend === undefined ? undefined : toScreen(wire.bend);
     context.save();
     context.globalAlpha = LABEL_ALPHA[emphasisOf(wire, options.dimmed, options.focusId)];
     context.font = LABEL_FONT;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    for (const centre of [insetAlong(from, to), insetAlong(to, from)]) {
+    for (const centre of [insetAlong(from, bend ?? to), insetAlong(to, bend ?? from)]) {
       context.beginPath();
       context.arc(centre.x, centre.y, LABEL_RADIUS, 0, 2 * Math.PI);
       context.fillStyle = circuitColour(wire.circuitIndex);
