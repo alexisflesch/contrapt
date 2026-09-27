@@ -1765,3 +1765,39 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   tests Vitest (50 fichiers), build et 44 parcours Playwright mobiles (43
   réussis, 1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L25 n’ajoute aucune interface visible.
+
+### L26 — Brouillons — fait — `4f8007c feat(storage): persiste les brouillons locaux (L26)`
+
+- Tests ajoutés : 17 cas pour l’adaptateur de brouillons et 4 pour la décision
+  pure de sauvegarde automatique. Ils couvrent l’aller-retour via le codec L22,
+  les index et enveloppes, les données invalides et leur sauvegarde de secours,
+  les erreurs de quota/stockage, les suppressions et restaurations, ainsi que la
+  cadence d’une seconde et l’enregistrement immédiat au lancement d’un test.
+- Échec initial constaté : les tests ciblés ne pouvaient pas charger les modules
+  encore absents ; le premier `check:fast` a ensuite révélé que le test
+  d’infrastructure importait depuis la couche application. Le test a été déplacé
+  dans `src/infrastructure/storage/`, où les dépendances respectent les
+  frontières.
+- Tests existants modifiés : aucun.
+- Fichiers touchés : port et fonction pure sous `src/application/drafts/`,
+  adaptateur et tests sous `src/infrastructure/storage/`, `docs/etat.md` et ce
+  journal.
+- Écarts avec la tâche : aucun. La clé reprend l’identifiant du document pour
+  éviter un second identifiant persistant ; le document est encodé par le codec
+  de fichier L22. Les sauvegardes de secours échouées empêchent le remplacement,
+  et les mutations d’index qui échouent tentent de restaurer le document.
+  L’autosauvegarde est une décision pure et n’est pas encore branchée à l’éditeur.
+- Mesures qui ne se reproduisent pas : le premier `check:fast` a dépassé le délai
+  de 5 s dans un test du niveau 12, qui passe seul. Une première gate complète a
+  signalé le formatage puis deux exports inutilisés ; après correction, le test
+  Playwright du niveau 9 a eu un timeout isolé en attendant la fermeture de son
+  tiroir. Le scénario passe seul et la gate `pnpm check` relancée passe.
+- Contradictions rencontrées : aucune. Les enveloppes de brouillon et d’index
+  sont strictes, versionnées et revalidées à la lecture ; les valeurs illisibles
+  sont copiées avant remplacement ou suppression.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 632
+  tests Vitest (52 fichiers), build et 44 parcours Playwright mobiles (43 réussis,
+  1 ignoré car C3 est spécifique au projet desktop).
+- Captures : sans objet, L26 n’ajoute aucune interface visible.
+- Pour l’auteur : U13 (mise en évidence des zones de pose) reste différé ; aucune
+  question bloquante pour les tâches suivantes.

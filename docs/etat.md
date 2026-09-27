@@ -225,6 +225,14 @@ pendant le travail.
   et migration ; L23 sérialise les fragments URL avec CRC-32 et décompression
   bornée ; L24 valide `location.hash`, puis ouvre le document en mode joueur ou
   affiche une erreur avec un lien vers la liste.
+- **Brouillons L26** : `DraftRepository` et son adaptateur `localStorage` stockent
+  un document par identifiant sous `contrapt:draft:<id>`, avec l’index
+  `contrapt:drafts`. Les enveloppes versionnées sont validées, les documents
+  passent par le codec de fichier L22, et les valeurs corrompues sont sauvegardées
+  avant remplacement. La fonction pure `decideDraftAutosave` limite les essais
+  d’enregistrement à une fois par seconde pendant l’édition et autorise un
+  enregistrement immédiat au lancement d’un test ; elle n’est pas encore reliée
+  à une interface.
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
 - **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
@@ -248,10 +256,12 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après L25 : typecheck, lint,
-formatage, Knip, contenu (14 niveaux embarqués), 611 tests Vitest (50 fichiers),
+`pnpm check` passe le 27 septembre 2026 après L26 : typecheck, lint,
+formatage, Knip, contenu (14 niveaux embarqués), 632 tests Vitest (52 fichiers),
 build et 44 tests Playwright `mobile` (43 réussis, 1 ignoré car C3 est
-spécifique au projet desktop). Le parcours mobile L17b ouvre maintenant
+spécifique au projet desktop). Une première exécution a eu un timeout intermittent
+sur le tiroir de propriétés du niveau 9 ; le test passe seul et la gate complète
+relancée passe. Le parcours mobile L17b ouvre maintenant
 l’inspecteur compact avant de
 vérifier les propriétés du levier sélectionné. Les captures au repos sont
 conservées sous `test-results/levels/` pour les niveaux 1 à 12, en portrait et
