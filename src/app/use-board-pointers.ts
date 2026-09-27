@@ -175,9 +175,12 @@ interface UseBoardPointersOptions {
   readonly updateCamera: (next: Camera) => void;
   readonly readCanvasRect: () => DOMRect | null;
   readonly readCanvasSizeInCss: () => CanvasSizeInCss | null;
-  /** While a lever waits for its conveyor, a tap names a target instead of selecting. */
-  readonly wiringSourceRef: RefObject<string | null>;
-  readonly onWiringTap: (placementId: string | null) => void;
+  /**
+   * While the "Fil" card is active (U15), touching a placement names a wire's
+   * source or target instead of selecting it; the empty board still pans.
+   */
+  readonly isWiringRef: RefObject<boolean>;
+  readonly onWiringTap: (placementId: string) => void;
 }
 
 interface BoardPointersController {
@@ -214,7 +217,7 @@ export function useBoardPointers({
   updateCamera,
   readCanvasRect,
   readCanvasSizeInCss,
-  wiringSourceRef,
+  isWiringRef,
   onWiringTap,
 }: UseBoardPointersOptions): BoardPointersController {
   const [placementTool, setPlacementTool] = useState<PlacementTool | null>(null);
@@ -771,9 +774,13 @@ export function useBoardPointers({
               )
             : projection.objects;
         const localPoint = { x: point.x - boardRect.left, y: point.y - boardRect.top };
-        if (wiringSourceRef.current !== null) {
-          onWiringTap(hitTestBoard(localPoint, objects, viewport));
-          return;
+        // A finger added to a pan or pinch stays a camera gesture.
+        if (isWiringRef.current && boardGesturePointers.current.size === 0) {
+          const wiringTarget = hitTestBoard(localPoint, objects, viewport);
+          if (wiringTarget !== null) {
+            onWiringTap(wiringTarget);
+            return;
+          }
         }
         const rotationTarget = objects.find(
           (object) =>

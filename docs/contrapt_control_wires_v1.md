@@ -88,16 +88,22 @@ Deux dispositifs à deux états.
 
 ## Créer et défaire une liaison
 
-En mode éditeur uniquement, sans survol ni clic droit :
+En mode éditeur uniquement (atelier et brouillons), sans survol ni clic droit
+(U15, gestes détaillés dans
+[`mobile-editor-interactions.md`](mobile-editor-interactions.md) § Fil de
+commande) :
 
-1. toucher un levier ou un bouton pour le sélectionner ;
-2. dans « Propriétés », toucher **Relier à un appareil** ;
-3. toucher le dispositif.
+1. toucher la carte **Fil** du tiroir ;
+2. toucher un levier ou un bouton (« Touchez un levier ou un bouton ») ;
+3. toucher le dispositif (« Touchez l'appareil à commander »).
 
-Toucher le plateau vide annule ; toucher un objet que ce contrôleur ne peut pas
-commander redemande un dispositif. Un dispositif déjà commandé est refusé avec
-un message. La liaison entre dans
-l'historique : annuler et rétablir la défont et la refont.
+Le geste reste sur la même source pour relier d'autres dispositifs d'affilée,
+jusqu'à **Terminer les fils** (**Annuler le fil** avant le premier). Un objet
+qui ne peut pas être la source, un convoyeur touché pour un bouton ou un
+dispositif déjà commandé est refusé avec la règle du domaine
+(`controlWireSourceIssue`, `controlWireTargetIssue`, `wire-already-connected`),
+et le geste attend un autre toucher. Chaque liaison entre dans l'historique :
+annuler et rétablir la défont et la refont.
 
 Le panneau d'un contrôleur ou d'un dispositif relié affiche son circuit (« Circuit A »)
 et un bouton **Délier**. Supprimer l'un des deux objets supprime ses fils.
@@ -149,4 +155,4 @@ bouts de chaque fil.
 | Plusieurs contrôleurs possibles sur un dispositif | Un seul contrôleur par dispositif                            | Deux contrôleurs opposés rendraient l'état ambigu                                    |
 | Le joueur peut actionner le levier en simulation  | Jamais ; seuls les objets le font changer de cran            | Principe « construire, puis regarder »                                               |
 | Bouton, ventilateur, porte, moteur, électroaimant | Bouton, ventilateur, barrière le 26 septembre ; le reste non | Ajoutés avec leurs assets ; moteur et électroaimant n'en ont pas                     |
-| Outil « Wire » dans la boîte à outils, deux clics | « Relier à un appareil » dans le panneau, puis un tap        | Réutilise la sélection existante, adapté au tactile                                  |
+| Outil « Wire » dans la boîte à outils, deux clics | Carte « Fil » du tiroir, puis source et cible au toucher (U15) | Se pose comme les autres objets ; « Relier à un appareil » du panneau a été retiré   |

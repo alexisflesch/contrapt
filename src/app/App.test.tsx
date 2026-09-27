@@ -141,6 +141,13 @@ const placeFromCatalogue = (catalogueCard: string, clientX = 400, clientY = 225)
   return board;
 };
 
+/** Picks the author's "Fil" card (U15). */
+const selectWireCard = (): void => {
+  const toggle = screen.queryByRole('button', { name: 'Ouvrir le catalogue' });
+  if (toggle !== null) fireEvent.click(toggle);
+  fireEvent.click(screen.getByRole('button', { name: 'Fil de commande' }));
+};
+
 const placeWorkshopObject = (catalogueCard: string): HTMLElement => {
   openEmbeddedWorkshop();
   return placeFromCatalogue(catalogueCard);
@@ -1609,47 +1616,103 @@ describe('coque Contrapt!', () => {
     expect(within(panel).queryByRole('button', { name: /Rotation/ })).not.toBeInTheDocument();
   });
 
-  it('relie un levier à un convoyeur au toucher, puis délie le circuit', () => {
+  it('pose un fil levier → convoyeur depuis la carte Fil, l’annule, le rétablit et le délie (U15)', () => {
     render(<App />);
     openEmbeddedWorkshop();
     // Atelier 16 × 9 ajusté au canvas 800 × 450 : 50 px par unité monde.
     const board = placeFromCatalogue('Convoyeur', 600, 225);
     placeFromCatalogue('Levier', 200, 225);
-
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
     const leverPanel = screen.getByRole('region', { name: 'Propriétés de Levier' });
-    fireEvent.click(within(leverPanel).getByRole('button', { name: 'Relier à un appareil' }));
-    expect(within(leverPanel).getByRole('button', { name: 'Supprimer le levier' })).toBeVisible();
-    expect(
-      within(leverPanel).getByText(/Touchez le convoyeur, le ventilateur ou la barrière/),
-    ).toBeVisible();
+    // Le fil ne se pose plus depuis le panneau : la carte Fil le remplace.
+    expect(within(leverPanel).queryByRole('button', { name: /Relier/ })).toBeNull();
+    expect(canvas).toHaveAttribute('data-wires', '');
+
+    selectWireCard();
+    expect(screen.getByText('Touchez un levier ou un bouton')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Annuler le fil' })).toBeVisible();
+    // La carte ne pose rien et ferme le panneau : le plateau reste dégagé.
+    expect(screen.queryByRole('region', { name: 'Propriétés de Levier' })).toBeNull();
 
     tapBoard(board, 600, 225);
+    expect(screen.getByText('Un fil doit partir d’un levier ou d’un bouton placé.')).toBeVisible();
+    expect(screen.getByText('Touchez un levier ou un bouton')).toBeVisible();
 
+    // Toucher le vide ne sort pas du geste : il reste libre pour déplacer la vue.
+    tapBoard(board, 100, 50);
+    expect(screen.getByText('Touchez un levier ou un bouton')).toBeVisible();
+
+    tapBoard(board, 200, 225);
+    expect(screen.getByText('Touchez l’appareil à commander')).toBeVisible();
+    // La source choisie est sélectionnée : le plateau la montre.
+    expect(screen.getByRole('region', { name: 'Propriétés de Levier' })).toBeInTheDocument();
+    tapBoard(board, 600, 225);
+
+    const [wired] = (canvas.getAttribute('data-wires') ?? '').split(' ');
+    expect(wired).toMatch(/^placement-\d+>placement-\d+$/u);
+    expect(screen.getByText('Fil posé. Touchez un autre appareil à commander')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Terminer les fils' }));
+    expect(screen.queryByRole('group', { name: 'Pose d’un fil' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(canvas).toHaveAttribute('data-wires', '');
+    fireEvent.click(screen.getByRole('button', { name: 'Rétablir' }));
+    expect(canvas).toHaveAttribute('data-wires', wired);
+
+    tapBoard(board, 200, 225);
     const wiredPanel = screen.getByRole('region', { name: 'Propriétés de Levier' });
     expect(within(wiredPanel).getByText('Circuit A')).toBeVisible();
     fireEvent.click(within(wiredPanel).getByRole('button', { name: 'Délier le circuit A' }));
-    expect(within(wiredPanel).queryByText('Circuit A')).not.toBeInTheDocument();
+    expect(canvas).toHaveAttribute('data-wires', '');
   });
 
-  it('relie un bouton à un ventilateur, jamais à un convoyeur', () => {
+  it('enchaîne les fils d’un bouton, jamais vers un convoyeur, et un seul contrôleur par appareil (U15)', () => {
     render(<App />);
     openEmbeddedWorkshop();
     const board = placeFromCatalogue('Ventilateur', 600, 225);
     placeFromCatalogue('Convoyeur', 400, 100);
+    placeFromCatalogue('Barrière', 600, 350);
     placeFromCatalogue('Bouton', 200, 225);
+    placeFromCatalogue('Levier', 200, 350);
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+    const wires = (): string[] =>
+      (canvas.getAttribute('data-wires') ?? '').split(' ').filter((wire) => wire !== '');
 
-    const buttonPanel = screen.getByRole('region', { name: 'Propriétés de Bouton' });
-    fireEvent.click(within(buttonPanel).getByRole('button', { name: 'Relier à un appareil' }));
-    expect(within(buttonPanel).getByText(/Touchez le ventilateur ou la barrière/)).toBeVisible();
-
+    selectWireCard();
+    tapBoard(board, 200, 225);
     tapBoard(board, 400, 100);
     expect(
-      screen.getByText('Touchez un ventilateur ou une barrière pour le relier au bouton.'),
+      screen.getByText('Un bouton ne commande pas de convoyeur : seul un levier en donne le sens.'),
     ).toBeVisible();
+    expect(screen.getByText('Touchez l’appareil à commander')).toBeVisible();
+    expect(wires()).toHaveLength(0);
 
+    // Une source commande plusieurs appareils : le geste reste sur elle.
+    tapBoard(board, 600, 225);
+    tapBoard(board, 600, 350);
+    expect(wires()).toHaveLength(2);
+    const [first, second] = wires();
+    expect(first?.split('>')[0]).toBe(second?.split('>')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Terminer les fils' }));
+
+    selectWireCard();
+    tapBoard(board, 200, 350);
     tapBoard(board, 600, 225);
     expect(
-      within(screen.getByRole('region', { name: 'Propriétés de Bouton' })).getByText('Circuit A'),
+      screen.getByText(
+        'Cet appareil a déjà un contrôleur : il n’obéit qu’à un seul levier ou bouton.',
+      ),
+    ).toBeVisible();
+    expect(wires()).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler le fil' }));
+    expect(screen.queryByRole('group', { name: 'Pose d’un fil' })).toBeNull();
+    expect(wires()).toHaveLength(2);
+    tapBoard(board, 600, 225);
+    expect(
+      within(screen.getByRole('region', { name: 'Propriétés de Ventilateur' })).getByText(
+        'Circuit A',
+      ),
     ).toBeVisible();
   });
 

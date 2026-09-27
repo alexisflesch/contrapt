@@ -100,6 +100,55 @@ interface ObjectDrawerProps {
   readonly onToggleDrawer: () => void;
   readonly onCloseDrawer: () => void;
   readonly onSelectKind: (kind: ObjectKind, source: PlacementSource) => void;
+  /** Whether the author's "Fil" tool is active (U15). */
+  readonly isWiringActive: boolean;
+  readonly onSelectWire: () => void;
+}
+
+/**
+ * Stand-in thumbnail for the "Fil" card until the author draws one: two
+ * terminals joined by a wire in the first circuit's colours (dark casing,
+ * blue core, as `wire-renderer.ts` draws them).
+ */
+function WireThumbnail() {
+  return (
+    <svg viewBox="0 0 56 40" width="56" height="40" focusable="false">
+      <path
+        d="M10 30 C 22 30, 22 10, 34 10 L 46 10"
+        fill="none"
+        stroke="#1d1f24"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M10 30 C 22 30, 22 10, 34 10 L 46 10"
+        fill="none"
+        stroke="#1e88e5"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <rect
+        x="3"
+        y="25"
+        width="10"
+        height="10"
+        rx="2"
+        fill="#6b7280"
+        stroke="#1d1f24"
+        strokeWidth="2"
+      />
+      <rect
+        x="43"
+        y="5"
+        width="10"
+        height="10"
+        rx="2"
+        fill="#6b7280"
+        stroke="#1d1f24"
+        strokeWidth="2"
+      />
+    </svg>
+  );
 }
 
 /**
@@ -117,6 +166,8 @@ export function ObjectDrawer({
   onToggleDrawer,
   onCloseDrawer,
   onSelectKind,
+  isWiringActive,
+  onSelectWire,
 }: ObjectDrawerProps) {
   const drawerIsExpanded = isDrawerOpen || isSideLayout;
   const inventory =
@@ -202,6 +253,30 @@ export function ObjectDrawer({
                 </button>
               );
             })}
+            {inventory === null && (
+              // The player never wires anything (ADR 0009): the card is the author's.
+              <button
+                className={`object-card object-card-wire${
+                  isWiringActive ? ' object-card-selected' : ''
+                }`}
+                type="button"
+                disabled={session.phase !== 'construction'}
+                aria-label="Fil de commande"
+                aria-pressed={isWiringActive}
+                onClick={onSelectWire}
+              >
+                <span className="object-thumb" aria-hidden="true">
+                  <WireThumbnail />
+                </span>
+                <span className="object-card-copy">
+                  <strong>Fil</strong>
+                  <span>Relie un levier ou un bouton à un appareil</span>
+                </span>
+                <span className="object-card-action" aria-hidden="true">
+                  {isWiringActive ? '✓' : '+'}
+                </span>
+              </button>
+            )}
           </div>
 
           <p className="drawer-hint" aria-live="polite" hidden={!drawerIsExpanded}>

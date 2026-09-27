@@ -97,8 +97,19 @@ pendant le travail.
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
   rotation libre des poutres, limitée à ±135° pour les leviers, et par quarts
   de tour du ventilateur, de la barrière et du tremplin (boutons et poignée),
-  états de départ du ventilateur et de la barrière, câblage levier/bouton →
-  appareil au toucher, suppression.
+  états de départ du ventilateur et de la barrière, circuits du fil et
+  **Délier**, suppression.
+- Carte « Fil » du catalogue auteur (U15, atelier et brouillons, jamais en mode
+  joueur) : toucher la carte, puis un levier ou un bouton, puis chaque appareil
+  à commander (la source est sélectionnée, l’inspecteur compact reste fermé) ;
+  le geste reste sur la source jusqu’à « Terminer les fils »
+  (« Annuler le fil » avant le premier). Guidage et refus dans une carte
+  au-dessus du plateau ; les refus viennent du domaine
+  (`controlWireSourceIssue`, `controlWireTargetIssue`) et de la commande
+  (`wire-already-connected`). Chaque fil passe par `connectControlWire`
+  (annuler/rétablir). Le canevas expose `data-wires` (`source>cible`).
+  L’ancien bouton « Relier à un appareil » du panneau est retiré. Vignette
+  provisoire en SVG, en attendant un dessin de l’auteur.
 - Fils de commande droits, sous les objets, translucides (presque effacés en
   simulation), lettres de circuit (`src/presentation/control-wires.ts`,
   `wire-renderer.ts`). Le rouge est réservé à la balle de l’objectif (U19) : la
@@ -298,6 +309,11 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
+`pnpm check` après U15 (27 septembre 2026) : passe d’une traite — typecheck,
+lint, formatage, Knip, contenu, 704 tests Vitest (61 fichiers), build et 50
+tests Playwright `mobile` (49 réussis, 1 ignoré).
+
+Exécution précédente :
 `pnpm check` après U19, U20 et le délai des recherches du niveau 12
 (27 septembre 2026) : passe d’une traite — typecheck, lint, formatage, Knip,
 contenu, 693 tests Vitest (60 fichiers), build et 48 tests Playwright `mobile`

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  controlWireSourceIssue,
+  controlWireTargetIssue,
   levelDocumentSchema,
   levelDocumentV1Schema,
   migrateLevelDocumentV1ToV2,
@@ -939,4 +941,33 @@ describe('migrateLevelDocumentV1ToV2', () => {
       }
     },
   );
+});
+
+describe('règles d’un fil de commande, expliquées une à une', () => {
+  it('une source est un levier ou un bouton', () => {
+    expect(controlWireSourceIssue('lever')).toBeNull();
+    expect(controlWireSourceIssue('button')).toBeNull();
+    for (const type of ['conveyor', 'fan', 'barrier', 'ball', 'beam'] as const) {
+      expect(controlWireSourceIssue(type)).toBe(
+        'Un fil doit partir d’un levier ou d’un bouton placé.',
+      );
+    }
+  });
+
+  it('une cible est un convoyeur, un ventilateur ou une barrière', () => {
+    expect(controlWireTargetIssue('lever', 'conveyor')).toBeNull();
+    expect(controlWireTargetIssue('lever', 'fan')).toBeNull();
+    expect(controlWireTargetIssue('button', 'barrier')).toBeNull();
+    for (const type of ['lever', 'button', 'ball', 'mass'] as const) {
+      expect(controlWireTargetIssue('lever', type)).toBe(
+        'Un fil doit arriver sur un convoyeur, un ventilateur ou une barrière placés.',
+      );
+    }
+  });
+
+  it('un bouton ne commande pas de convoyeur', () => {
+    expect(controlWireTargetIssue('button', 'conveyor')).toBe(
+      'Un bouton ne commande pas de convoyeur : seul un levier en donne le sens.',
+    );
+  });
 });

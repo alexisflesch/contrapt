@@ -5,6 +5,7 @@ import { createConstructionAttempt } from '../application/construction/construct
 import {
   createEditorSession,
   currentEditorAttempt,
+  selectEditorPlacement,
 } from '../application/editor-session/editor-session';
 import type { EditorSession } from '../application/editor-session/editor-session';
 import type { LevelDocument } from '../domain/level-document';
@@ -21,7 +22,7 @@ import { SimulationControls } from '../ui/SimulationControls';
 import { useBoardCamera } from './use-board-camera';
 import { placementSourceKey, useBoardPointers } from './use-board-pointers';
 import { LevelExportDialog } from './LevelExportDialog';
-import { useWiringTool } from './use-wiring-tool';
+import { useWiringTool, wiringGuide } from './use-wiring-tool';
 import { useEditorSession } from './use-editor-session';
 import { useIsSideLayout } from './use-side-layout';
 import { useSimulationRunner } from './use-simulation-runner';
@@ -65,9 +66,15 @@ export function BoardShell({
     undo,
     redo,
     executeCommand,
+    selectPlacement,
   } = useEditorSession(() => createEditorSession(mode, createConstructionAttempt(initialDocument)));
   const boardCamera = useBoardCamera(currentScene);
-  const wiring = useWiringTool({ sessionRef, executeCommand, setFeedback });
+  const wiring = useWiringTool({
+    sessionRef,
+    executeCommand,
+    setFeedback,
+    onSourceChosen: selectPlacement,
+  });
   const pointers = useBoardPointers({
     sessionRef,
     updateSession,
@@ -78,8 +85,8 @@ export function BoardShell({
     updateCamera: boardCamera.updateCamera,
     readCanvasRect: boardCamera.readCanvasRect,
     readCanvasSizeInCss: boardCamera.readCanvasSizeInCss,
-    wiringSourceRef: wiring.wiringSourceRef,
-    onWiringTap: wiring.completeWiring,
+    isWiringRef: wiring.isWiringRef,
+    onWiringTap: wiring.handleWiringTap,
   });
   const simulation = useSimulationRunner({
     sessionRef,
@@ -119,11 +126,14 @@ export function BoardShell({
     onDocumentCommittedRef.current?.(committedDocument);
   }, [committedDocument]);
 
+  // While wiring, the selection only marks the chosen source: the compact
+  // inspector stays shut so the devices remain reachable (U15).
   useEffect(() => {
-    if (hasSelection) setIsInspectorOpen(true);
-  }, [hasSelection]);
+    if (hasSelection && !wiring.isWiringRef.current) setIsInspectorOpen(true);
+  }, [hasSelection, wiring.isWiringRef]);
 
   const resetToInitialAttempt = (): void => {
+    wiring.cancelWiring();
     simulation.disposeSimulationSession();
     updateSession(createEditorSession(mode, createConstructionAttempt(initialDocument)));
     pointers.clearPlacementTool();
@@ -203,7 +213,17 @@ export function BoardShell({
             setIsDrawerOpen(false);
           }}
           onSelectKind={(kind, source) => {
+            wiring.cancelWiring();
             pointers.activatePlacement(kind, source);
+            setIsDrawerOpen(false);
+          }}
+          isWiringActive={wiring.wiringStep !== null}
+          onSelectWire={() => {
+            // U15: the wire card is a tool like a placement card. It drops
+            // the selection so the compact inspector leaves the board clear.
+            if (pointers.placementTool !== null) pointers.cancelPlacement();
+            updateSession(selectEditorPlacement(sessionRef.current, null));
+            wiring.startWiring();
             setIsDrawerOpen(false);
           }}
         />
@@ -216,10 +236,15 @@ export function BoardShell({
           session={session}
           feedback={feedback}
           activePlacementKind={pointers.placementTool?.kind ?? null}
+          wiringGuide={wiring.wiringStep === null ? null : wiringGuide(wiring.wiringStep)}
+          onExitWiring={wiring.cancelWiring}
           onUndo={undo}
           onRedo={redo}
           onCancelPlacement={pointers.cancelPlacement}
-          onLaunchSimulation={simulation.launchSimulation}
+          onLaunchSimulation={() => {
+            wiring.cancelWiring();
+            simulation.launchSimulation();
+          }}
           onPause={simulation.pauseCurrentSimulation}
           onResume={simulation.resumeCurrentSimulation}
           onRestoreConstruction={simulation.restoreConstruction}
@@ -253,9 +278,6 @@ export function BoardShell({
                 <ContextPanel
                   session={session}
                   onExecuteCommand={executeCommand}
-                  wiringSourceId={wiring.wiringSourceId}
-                  onStartWiring={wiring.startWiring}
-                  onCancelWiring={wiring.cancelWiring}
                   {...(!isSideLayout
                     ? {
                         onClose: () => {

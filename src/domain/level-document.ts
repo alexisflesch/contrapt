@@ -437,7 +437,7 @@ type PlacementType = ObjectPlacement['type'];
  * command; conveyors, fans and barriers obey. A button has two states and a
  * conveyor three: a button never commands a conveyor.
  */
-export const canCommand = (source: PlacementType, target: PlacementType): boolean => {
+const canCommand = (source: PlacementType, target: PlacementType): boolean => {
   if (source === 'lever') return target === 'conveyor' || target === 'fan' || target === 'barrier';
   if (source === 'button') return target === 'fan' || target === 'barrier';
   return false;
@@ -445,6 +445,30 @@ export const canCommand = (source: PlacementType, target: PlacementType): boolea
 
 const controlSources: ReadonlySet<PlacementType> = new Set(['lever', 'button']);
 const controlTargets: ReadonlySet<PlacementType> = new Set(['conveyor', 'fan', 'barrier']);
+
+/** Why `type` cannot start a wire, or `null` when it can (ADR 0009). */
+export const controlWireSourceIssue = (type: PlacementType | undefined): string | null =>
+  type !== undefined && controlSources.has(type)
+    ? null
+    : 'Un fil doit partir d’un levier ou d’un bouton placé.';
+
+/**
+ * Why a wire from a `source` controller cannot reach `target`, or `null` when
+ * it can. The one-controller rule depends on the other wires: validation and
+ * the `connectControlWire` command check it (`wire-already-connected`).
+ */
+export const controlWireTargetIssue = (
+  source: PlacementType | undefined,
+  target: PlacementType | undefined,
+): string | null => {
+  if (target === undefined || !controlTargets.has(target)) {
+    return 'Un fil doit arriver sur un convoyeur, un ventilateur ou une barrière placés.';
+  }
+  if (source !== undefined && controlSources.has(source) && !canCommand(source, target)) {
+    return 'Un bouton ne commande pas de convoyeur : seul un levier en donne le sens.';
+  }
+  return null;
+};
 
 /**
  * ADR 0009: a wire goes from a placed controller (lever, button) to a placed
@@ -471,26 +495,13 @@ const addControlWireIssues = (
 
     const source = placementsById.get(wire.sourceId);
     const target = placementsById.get(wire.targetId);
-    if (source === undefined || !controlSources.has(source.type)) {
-      issues.push({
-        path: ['wires', index, 'sourceId'],
-        message: 'Un fil doit partir d’un levier ou d’un bouton placé.',
-      });
+    const sourceIssue = controlWireSourceIssue(source?.type);
+    if (sourceIssue !== null) {
+      issues.push({ path: ['wires', index, 'sourceId'], message: sourceIssue });
     }
-    if (target === undefined || !controlTargets.has(target.type)) {
-      issues.push({
-        path: ['wires', index, 'targetId'],
-        message: 'Un fil doit arriver sur un convoyeur, un ventilateur ou une barrière placés.',
-      });
-    } else if (
-      source !== undefined &&
-      controlSources.has(source.type) &&
-      !canCommand(source.type, target.type)
-    ) {
-      issues.push({
-        path: ['wires', index, 'targetId'],
-        message: 'Un bouton ne commande pas de convoyeur : seul un levier en donne le sens.',
-      });
+    const targetIssue = controlWireTargetIssue(source?.type, target?.type);
+    if (targetIssue !== null) {
+      issues.push({ path: ['wires', index, 'targetId'], message: targetIssue });
     } else if (commandedTargets.has(wire.targetId)) {
       issues.push({
         path: ['wires', index, 'targetId'],

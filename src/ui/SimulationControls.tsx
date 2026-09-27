@@ -9,6 +9,9 @@ interface SimulationControlsProps {
   readonly session: EditorSession;
   readonly feedback: string | null;
   readonly activePlacementKind: ObjectKind | null;
+  /** The "Fil" card's guidance (U15), or `null` when no wire is being made. */
+  readonly wiringGuide: { readonly prompt: string; readonly exitLabel: string } | null;
+  readonly onExitWiring: () => void;
   readonly onUndo: () => void;
   readonly onRedo: () => void;
   readonly onCancelPlacement: () => void;
@@ -23,6 +26,8 @@ export function SimulationControls({
   session,
   feedback,
   activePlacementKind,
+  wiringGuide,
+  onExitWiring,
   onUndo,
   onRedo,
   onCancelPlacement,
@@ -113,10 +118,30 @@ export function SimulationControls({
         </div>
       )}
 
-      {feedback !== null && (
-        <p className="toolbar-feedback" aria-live="assertive">
-          {feedback}
-        </p>
+      {session.phase === 'construction' && wiringGuide !== null ? (
+        // U15: the step and its refusal share one card over the board, so a
+        // narrow toolbar never hides the guidance.
+        <div className="wiring-guide" role="group" aria-label="Pose d’un fil">
+          <div className="wiring-guide-copy">
+            <p className="wiring-guide-prompt" aria-live="polite">
+              {wiringGuide.prompt}
+            </p>
+            {feedback !== null && (
+              <p className="wiring-guide-refusal" aria-live="assertive">
+                {feedback}
+              </p>
+            )}
+          </div>
+          <Button className="wiring-guide-exit" onClick={onExitWiring}>
+            {wiringGuide.exitLabel}
+          </Button>
+        </div>
+      ) : (
+        feedback !== null && (
+          <p className="toolbar-feedback" aria-live="assertive">
+            {feedback}
+          </p>
+        )
       )}
     </div>
   );

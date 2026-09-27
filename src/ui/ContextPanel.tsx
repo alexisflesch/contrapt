@@ -20,10 +20,6 @@ interface ContextPanelProps {
   readonly session: EditorSession;
   readonly onExecuteCommand: (command: Parameters<typeof executeEditorCommand>[1]) => void;
   readonly onClose?: () => void;
-  /** The controller waiting for a device tap, if a link is being made (ADR 0009). */
-  readonly wiringSourceId?: string | null;
-  readonly onStartWiring?: (sourceId: string) => void;
-  readonly onCancelWiring?: () => void;
 }
 
 const POSITION_STEP_IN_WORLD_UNITS = 0.25;
@@ -51,12 +47,6 @@ const fanStateFromValue = (value: string): 'on' | 'off' | null =>
 const barrierStateFromValue = (value: string): 'closed' | 'open' | null =>
   value === 'closed' || value === 'open' ? value : null;
 
-/** What each controller may be wired to, as the tap prompt names it. */
-const wiringPrompts = {
-  lever: 'Touchez le convoyeur, le ventilateur ou la barrière à relier à ce levier.',
-  button: 'Touchez le ventilateur ou la barrière à relier à ce bouton.',
-} as const;
-
 /**
  * The panel for the currently selected placement: move; rotate beams freely,
  * levers within their supported range, and fans, barriers or springboards by
@@ -68,14 +58,7 @@ const wiringPrompts = {
  * avoids reserving two independent blocks of dead space for content that can
  * never appear at the same time.
  */
-export function ContextPanel({
-  session,
-  onExecuteCommand,
-  onClose,
-  wiringSourceId = null,
-  onStartWiring,
-  onCancelWiring,
-}: ContextPanelProps) {
+export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPanelProps) {
   const displayedAttempt = currentEditorAttempt(session);
   const selectedPlacement = displayedAttempt.document.objects.find(
     (object) => object.id === session.selectedPlacementId,
@@ -335,23 +318,6 @@ export function ContextPanel({
           })}
         </ul>
       )}
-      {(selectedPlacement.type === 'lever' || selectedPlacement.type === 'button') &&
-        canEdit &&
-        onStartWiring !== undefined &&
-        (wiringSourceId === selectedPlacement.id ? (
-          <div className="context-wiring" role="status">
-            <p>{wiringPrompts[selectedPlacement.type]}</p>
-            <Button onClick={onCancelWiring}>Annuler la liaison</Button>
-          </div>
-        ) : (
-          <Button
-            onClick={() => {
-              onStartWiring(selectedPlacement.id);
-            }}
-          >
-            Relier à un appareil
-          </Button>
-        ))}
       {canRemove && (
         <Button
           className="context-delete"

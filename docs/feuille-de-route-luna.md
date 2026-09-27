@@ -812,8 +812,7 @@ commencer de ta propre initiative.
   effacés pendant la simulation.
 - **U15 — Le fil comme un objet du tiroir.** Dans l’éditeur, un fil se pose
   comme les autres objets (carte dans le tiroir, puis source et cible désignées
-  au doigt) plutôt que par un mode à part. Interprétation à confirmer par
-  l’auteur avant toute implémentation.
+  au doigt) plutôt que par un mode à part. Fait (voir le journal, U15).
 - **U16 — Exporter depuis l’éditeur**, en priorité dans U9 : un bêta-testeur
   doit pouvoir envoyer un niveau qu’il a construit (fichier L22 ou lien L23).
   C’est ce qui permet d’enrichir le catalogue avec des niveaux de joueurs.
@@ -2085,3 +2084,43 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   produit croisé dans les gates U17 ; non reproduit ici, 4,6 s mesurées.
 - Vérification : `pnpm check` passe d’une traite (693 tests Vitest ; 47 E2E
   mobiles réussis, 1 ignoré).
+
+### U15 — Le fil comme un objet du tiroir — fait — `feat(editor): pose les fils de commande depuis le catalogue (U15)`
+
+- Parcours : carte « Fil de commande » en mode auteur seulement ; « Touchez un
+  levier ou un bouton », puis « Touchez l’appareil à commander ». Le geste
+  reste sur la source après un fil (« Fil posé. Touchez un autre appareil à
+  commander », bouton « Terminer les fils ») : une source commande souvent
+  plusieurs appareils, et reprendre carte + source coûterait deux touchers par
+  fil. « Annuler le fil » avant le premier. Toucher le vide ne quitte pas le
+  geste (la vue reste déplaçable). Autre carte ou « Tester » : le geste
+  s’arrête. La source choisie est sélectionnée (le plateau la montre) sans
+  ouvrir l’inspecteur compact, qui cacherait les appareils.
+- Règles : `controlWireSourceIssue` et `controlWireTargetIssue` (domaine)
+  portent désormais les messages de la validation, qui les utilise ;
+  l’interface les affiche sans les recopier. Un seul contrôleur par appareil :
+  refus `wire-already-connected` de la commande, message généralisé (« Cet
+  appareil a déjà un contrôleur… », au lieu de « Ce convoyeur… par un
+  levier »). `canCommand` n’est plus exporté.
+- Retiré : « Relier à un appareil » / « Annuler la liaison » du panneau et
+  leur code. « Délier » reste dans le panneau de la source et de l’appareil.
+- État exposé : `data-wires` sur le canevas (`source>cible`, séparés par un
+  espace).
+- Tests ajoutés : `level-document.test.ts` (3, règles expliquées),
+  `wiring-tool.test.ts` (6, étapes et guidage), `ObjectDrawer.test.tsx` (2,
+  carte auteur, absente au joueur), `e2e/editor-interactions.spec.ts › U15`
+  (mobile 390 × 844 : levier et convoyeur, refus, fil via `data-wires`,
+  annuler/rétablir, sortie du geste). Remplacés dans `App.test.tsx` : les deux
+  parcours « Relier à un appareil » deviennent deux parcours par la carte Fil,
+  avec les mêmes règles (bouton → convoyeur refusé, un seul contrôleur) plus
+  l’enchaînement et l’historique.
+- Échec initial : `controlWireSourceIssue is not a function`, `wiringTap is not
+  a function`, « Unable to find … "Fil de commande" », bouton « Relier à un
+  appareil » encore présent.
+- Vérification : `pnpm check` passe d’une traite (704 tests Vitest ; 49 E2E
+  mobiles réussis, 1 ignoré).
+- Captures : hors dépôt, `…/scratchpad/captures/u15/` (carte Fil, étape
+  source, étape cible, fil posé, refus ; 390 × 844, 844 × 390, 1440 × 900).
+- Pour l’auteur : vignette provisoire en SVG (deux bornes et un fil bleu),
+  à remplacer par un dessin ; valider le maintien du geste sur la source après
+  un fil.

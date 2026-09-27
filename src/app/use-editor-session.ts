@@ -19,7 +19,7 @@ const refusalMessage = (reason: string): string =>
       : reason === 'remove-not-permitted' || reason === 'goal-object-protected'
         ? 'Suppression indisponible pour cet objet.'
         : reason === 'wire-already-connected'
-          ? 'Ce convoyeur est déjà commandé par un levier.'
+          ? 'Cet appareil a déjà un contrôleur : il n’obéit qu’à un seul levier ou bouton.'
           : 'Cette action est indisponible.';
 
 interface EditorSessionController {
@@ -35,7 +35,10 @@ interface EditorSessionController {
   readonly undo: () => void;
   readonly redo: () => void;
   readonly selectPlacement: (placementId: string) => void;
-  readonly executeCommand: (command: Parameters<typeof executeEditorCommand>[1]) => void;
+  /** Runs `command`, reports a refusal, and returns the result. */
+  readonly executeCommand: (
+    command: Parameters<typeof executeEditorCommand>[1],
+  ) => ReturnType<typeof executeEditorCommand>;
 }
 
 /**
@@ -98,10 +101,13 @@ export function useEditorSession(
   );
 
   const executeCommand = useCallback(
-    (command: Parameters<typeof executeEditorCommand>[1]): void => {
+    (
+      command: Parameters<typeof executeEditorCommand>[1],
+    ): ReturnType<typeof executeEditorCommand> => {
       const result = executeEditorCommand(sessionRef.current, command);
       updateSession(result.session);
       if (result.status === 'rejected') reportRefusal(result.reason);
+      return result;
     },
     [updateSession, reportRefusal],
   );

@@ -390,6 +390,9 @@ export function BoardView({
             }
             data-red-balls={ballColourIds('ball-base')}
             data-blue-balls={ballColourIds('second-ball-base')}
+            data-wires={currentEditorAttempt(session)
+              .document.wires.map(({ sourceId, targetId }) => `${sourceId}>${targetId}`)
+              .join(' ')}
             data-camera-zoom={String(camera.pixelsPerWorldUnit)}
             data-camera-origin={`${String(camera.origin.x)},${String(camera.origin.y)}`}
           />

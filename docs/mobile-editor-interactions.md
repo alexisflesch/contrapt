@@ -229,6 +229,29 @@ visuellement comparables :
   propriété énumérée par une commande atomique ;
 - aucune poignée de redimensionnement continu n'est affichée.
 
+### Fil de commande
+
+En création seulement, le tiroir porte une carte **Fil** (jamais en
+résolution : le joueur ne câble rien). Le geste suit le placement, sans survol,
+clic droit ni clavier :
+
+1. toucher la carte **Fil** replie le tiroir et désélectionne l'objet courant ;
+   un guidage au-dessus du plateau dit « Touchez un levier ou un bouton » ;
+2. toucher la source, qui est sélectionnée sans ouvrir l'inspecteur compact ;
+   le guidage devient « Touchez l'appareil à commander » ;
+3. toucher un convoyeur, un ventilateur ou une barrière crée le fil par une
+   commande annulable ;
+4. le geste reste sur la même source, pour qu'elle commande d'autres appareils
+   d'affilée, jusqu'à **Terminer les fils** ; avant le premier fil, la même
+   commande s'appelle **Annuler le fil**.
+
+Un refus (source qui ne commande rien, bouton vers un convoyeur, appareil déjà
+commandé) s'affiche dans le guidage, avec la règle du domaine, et le geste
+reste à la même étape. Toucher le plateau vide ne quitte pas le geste : un
+doigt déplace la vue, deux doigts zooment. Choisir une autre carte ou lancer le
+test quitte le geste. Un fil se délie depuis le panneau « Propriétés » de sa
+source ou de son appareil (**Délier**).
+
 ## Objets verrouillés et permissions
 
 Chaque placement et chaque entrée d'inventaire persistante déclare les trois

@@ -255,3 +255,61 @@ test('L17b — tourne le levier de 90° dans chaque sens au tactile', async ({ p
   await undo.click();
   await waitForCanvasToMatch(canvas, initial);
 });
+
+test('U15 — relie un levier à un convoyeur par la carte Fil, au tactile', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Le câblage tactile est validé sur mobile.');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openWorkshop(page);
+  const board = page.getByRole('region', { name: 'Plateau de jeu' });
+  const canvas = board.getByRole('img', { name: 'Rendu du plateau' });
+  const openCatalogue = page.getByRole('button', { name: 'Ouvrir le catalogue' });
+  const pick = async (card: string): Promise<void> => {
+    if (await openCatalogue.isVisible()) await openCatalogue.tap();
+    await page.getByRole('button', { name: card, exact: true }).tap();
+  };
+  const tapWorld = async (x: number, y: number): Promise<void> => {
+    const point = await screenPointForWorld(canvas, { x, y });
+    await page.touchscreen.tap(point.x, point.y);
+  };
+
+  await pick('Levier');
+  await tapWorld(4, 4.5);
+  await closeCompactProperties(page);
+  await pick('Convoyeur');
+  await tapWorld(11, 4.5);
+  await closeCompactProperties(page);
+  await expect(canvas).toHaveAttribute('data-wires', '');
+
+  await pick('Fil de commande');
+  const guide = page.getByRole('group', { name: 'Pose d’un fil' });
+  await expect(guide).toContainText('Touchez un levier ou un bouton');
+
+  // Refus : un convoyeur ne commande rien.
+  await tapWorld(11, 4.5);
+  await expect(guide).toContainText('Un fil doit partir d’un levier ou d’un bouton placé.');
+  await expect(canvas).toHaveAttribute('data-wires', '');
+
+  await tapWorld(4, 4.5);
+  await expect(guide).toContainText('Touchez l’appareil à commander');
+  // La source est sélectionnée sans ouvrir l’inspecteur compact sur le plateau.
+  await expect(page.getByRole('button', { name: 'Fermer les propriétés' })).toBeHidden();
+  await tapWorld(11, 4.5);
+  await expect(canvas).toHaveAttribute('data-wires', /^placement-\d+>placement-\d+$/u);
+  const wired = await canvas.getAttribute('data-wires');
+  await expect(guide).toContainText('Fil posé');
+  await guide.getByRole('button', { name: 'Terminer les fils' }).tap();
+  await expect(guide).toBeHidden();
+
+  await page.getByRole('button', { name: 'Annuler', exact: true }).tap();
+  await expect(canvas).toHaveAttribute('data-wires', '');
+  await page.getByRole('button', { name: 'Rétablir', exact: true }).tap();
+  await expect(canvas).toHaveAttribute('data-wires', wired ?? '');
+
+  // Annuler le geste ne pose rien.
+  await pick('Fil de commande');
+  await guide.getByRole('button', { name: 'Annuler le fil' }).tap();
+  await expect(guide).toBeHidden();
+  await expect(canvas).toHaveAttribute('data-wires', wired ?? '');
+});
