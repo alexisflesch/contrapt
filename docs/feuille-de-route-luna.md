@@ -6,7 +6,7 @@ dans l’ordre. Ces tâches d’interface sont **autorisées par l’auteur** (l
 de § 6 ne s’y applique pas) ; captures aux trois formats dans le journal, mais
 l’auteur valide plus tard, sans bloquer l’avancée.
 
-**Fait.** Toute la logique L1 à L28 ; P1 ; interface U4 à U6, U13 à U22, U4b
+**Fait.** Toute la logique L1 à L28 ; P1 ; interface U4 à U6, U13 à U23, U4b
 (modale de victoire), U5b (niveaux verrouillés, déblocage sous `pnpm dev`),
 U14b (fils en équerre). Rendus visuels acceptés en l’état par l’auteur.
 
@@ -17,27 +17,24 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
 
 ## Prochaines tâches, dans l’ordre
 
-1. **U23 — Retirer le titre de l’en-tête de l’atelier.** « Éditeur de
-   niveaux » / « Éditeur · <titre> » (`src/app/EditorPage.tsx`) ne tient pas sur
-   téléphone avec quatre boutons : le supprimer de l’en-tête.
-2. **U24 — Pas de palier pour les puzzles exportés.** Un puzzle produit par
+1. **U24 — Pas de palier pour les puzzles exportés.** Un puzzle produit par
    l’atelier (U22) n’a ni `challenge` ni ⭐/🏆 : retirer les seuils calculés à
    l’export (`src/application/puzzle/puzzle-workshop.ts`), tests d’abord.
-3. **U25 — Fils « à placer ».** Le fil est un objet d’inventaire comme les
+2. **U25 — Fils « à placer ».** Le fil est un objet d’inventaire comme les
    autres (U15, U21). Aujourd’hui l’export refuse un objet à placer relié par un
    fil : lever ce refus. Un fil peut être marqué « à placer » ; il passe dans
    l’inventaire (`wire`) et dans la solution de référence ; un objet à placer
    relié garde son fil dans la solution. Amender ADR 0013 si le format bouge.
-4. **U26 — Catalogue auteur dans un brouillon de campagne.** L’agent U22 a
+3. **U26 — Catalogue auteur dans un brouillon de campagne.** L’agent U22 a
    signalé que le brouillon du niveau 1 n’affiche pas le catalogue auteur
    (`hasInventory`, `src/app/BoardShell.tsx`) ; l’auteur n’a pas reproduit
    (le niveau 1 a bien une poutre en inventaire). Reproduire d’abord ; si faux,
    le noter au journal et passer.
-5. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
+4. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
    caractères Unicode (↺, ↩, →, ☰, ?, 🔒, etc.) par des icônes `lucide-react`.
    Dépendance structurante : ADR court d’abord. Garder des libellés
    accessibles. Les paliers ✅ ⭐ 🏆 peuvent devenir des icônes aussi.
-6. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
+5. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
    `docs/levels/nouveaux-niveaux.md`, générer un JSON « à peu près » (pas de
    calibrage fin) au format U22 : décor, objets à placer en inventaire,
    solution de référence approximative. Les enregistrer dans la campagne à la
@@ -51,7 +48,7 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
    exigée : ancienne campagne jamais publiée). Questions ouvertes du document
    (§ 2 de `nouveaux-niveaux.md`, fin) : appliquer les réponses de l’auteur
    si elles y figurent, sinon choisir l’option la plus simple et la noter.
-7. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
+6. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
    U1, U7, U8, U10, U11, U2, U3 ; minuteur animé (`art/assets/timer/`).
 
 **Dettes notées, non prioritaires.** Durée de la vérification d’export (deux
@@ -2270,6 +2267,10 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   mobiles réussis, 1 ignoré) ; le premier a échoué sur l’E2E du niveau 9.
 - Non vérifié : E2E « niveau 9 : poser le convoyeur » instable, aussi sur le
   commit précédent (échecs intermittents à « Fermer les propriétés »).
+- Correctif de reprise : après fermeture du catalogue, le test attend désormais
+  la disparition du bouton « Fermer le catalogue » avant de toucher le plateau,
+  ce qui supprime la course qui faisait rater la sélection du bouton. Répété
+  dix fois : 10 réussites.
 - Pour l’auteur : captures hors dépôt, `…/scratchpad/captures/u21/` ; valider
   la fin du geste au dernier fil et `remove` comme permission de délier.
 
@@ -2426,4 +2427,21 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - ESLint ignore `.claude/**` (worktrees d’agents).
 - Pour l’auteur : ✅ seul dans la modale d’un niveau sans défi (ADR 0010) ;
   bandeau réduit « Voir le résultat / Recommencer » conservé sous le plateau.
+
+### U23 — Retirer le titre de l’en-tête de l’atelier — fait — `feat(ui): retire le titre de l’atelier (U23)`
+
+- Tests ajoutés : assertions applicatives dans `App.test.tsx` et
+  `CampaignDraftEditing.test.tsx` ; le smoke E2E vérifie l’absence du titre et
+  produit les captures aux trois formats.
+- Échec initial constaté : `pnpm check` échouait d’abord sur U21 ; le test a
+  été stabilisé dans le commit précédent.
+- Tests existants réécrits : les attentes de « Éditeur de niveaux » et
+  « Éditeur · <titre> » vérifient désormais leur absence ; « Mode éditeur »
+  reste visible.
+- Fichiers touchés hors périmètre : aucun.
+- Écarts avec la tâche : aucun.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Non vérifié : validation visuelle par l’auteur.
+- Pour l’auteur : captures `test-results/u23/atelier-{390x844,844x390,1440x900}.png`.
 

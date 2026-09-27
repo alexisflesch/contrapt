@@ -73,6 +73,10 @@ pendant le travail.
 - Chargeur des sprites : une requête en cours est partagée, un sprite prêt est
   conservé, et un échec est retenté au rendu suivant, jusqu’à trois tentatives par
   asset.
+- En-tête de l’atelier (U23) : les titres « Éditeur de niveaux » et « Éditeur ·
+  <titre> » ne sont plus rendus sur le plateau ; « Mode éditeur » et les actions
+  restent accessibles. Le parcours E2E produit des captures en 390 × 844,
+  844 × 390 et 1440 × 900.
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
   cadrage, recadrage sur vrai redimensionnement seulement.
@@ -342,10 +346,9 @@ pendant le travail.
   l’inventaire de l’atelier par les objets à placer.
 - **Atelier U22** : un objet à placer relié par un fil n’est pas exportable
   (refus avec message) ; revenir de « Jouer le puzzle » remonte l’atelier sur
-  son dernier document, l’historique annuler/rétablir repart de là ; sur
-  téléphone l’en-tête de l’éditeur (quatre boutons) ne laisse presque plus de
-  place au titre ; le brouillon du niveau 1 (inventaire vide) n’affiche pas le
-  catalogue auteur (préexistant, `hasInventory` de `BoardShell`).
+  son dernier document, l’historique annuler/rétablir repart de là ; le brouillon
+  du niveau 1 (inventaire vide) n’affiche pas le catalogue auteur (préexistant,
+  `hasInventory` de `BoardShell`).
 - **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
   brouillon créé, ni de lister ou supprimer les brouillons dans l’interface.
 - `format:check` ne couvre pas le Markdown.
@@ -359,9 +362,9 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` après U22 (27 septembre 2026), lint limité hors `.claude/` (voir
-Dettes) : typecheck, lint, formatage, Knip, contenu, 776 tests Vitest (65
-fichiers), build et 56 tests Playwright `mobile` (55 réussis, 1 ignoré).
+`pnpm check` après le correctif U21 et U23 (27 septembre 2026) : typecheck,
+lint, formatage, Knip, contenu, 788 tests Vitest (66 fichiers), build et 56
+tests Playwright `mobile` (55 réussis, 1 ignoré).
 
 `pnpm check` après U5 (27 septembre 2026) : passe d’une traite — typecheck,
 lint, formatage, Knip, contenu, 741 tests Vitest (62 fichiers), build et 55

@@ -18,7 +18,7 @@ export function EditorPage() {
   const draftId = searchParams.get('draft');
 
   if (draftId === null) {
-    return <Workshop initialDocument={embeddedWorkshopDocument} title="Éditeur de niveaux" />;
+    return <Workshop initialDocument={embeddedWorkshopDocument} title="" />;
   }
 
   return <DraftEditor key={draftId} draftId={draftId} />;
@@ -101,7 +101,7 @@ function DraftEditor({ draftId }: { readonly draftId: string }) {
   return (
     <Workshop
       initialDocument={draft}
-      title={`Éditeur · ${draft.metadata.title}`}
+      title=""
       onDocumentCommitted={(document) => {
         // Best effort, like progress (ADR 0011): a failed save never blocks editing.
         drafts.save(document);

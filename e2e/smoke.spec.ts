@@ -39,9 +39,20 @@ test('ouvre l’atelier depuis le menu et expose les familles du catalogue', asy
   await page.goto('/');
   await openWorkshopFromMenu(page);
 
-  await expect(page.getByText('Éditeur de niveaux')).toBeVisible();
+  await expect(page.getByText('Éditeur de niveaux')).toHaveCount(0);
   await expect(page.getByText('Mode éditeur')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.screenshot({
+      path: `test-results/u23/atelier-${String(viewport.width)}x${String(viewport.height)}.png`,
+      fullPage: true,
+    });
+  }
 
   const openCatalogueButton = page.getByRole('button', { name: 'Ouvrir le catalogue' });
   if ((await openCatalogueButton.count()) > 0) {

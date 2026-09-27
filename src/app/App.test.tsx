@@ -333,7 +333,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
     openEmbeddedWorkshop();
 
-    expect(screen.getByText('Éditeur de niveaux')).toBeVisible();
+    expect(screen.queryByText('Éditeur de niveaux')).not.toBeInTheDocument();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
     expect(screen.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
@@ -823,7 +823,7 @@ describe('coque TinkerBolt', () => {
     window.history.replaceState(null, '', '/editor');
     render(<App />);
 
-    expect(screen.getByText('Éditeur de niveaux')).toBeVisible();
+    expect(screen.queryByText('Éditeur de niveaux')).not.toBeInTheDocument();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
   });
 
@@ -1190,7 +1190,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
     openEmbeddedWorkshop();
 
-    expect(screen.getByText('Éditeur de niveaux')).toBeVisible();
+    expect(screen.queryByText('Éditeur de niveaux')).not.toBeInTheDocument();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
   });
 

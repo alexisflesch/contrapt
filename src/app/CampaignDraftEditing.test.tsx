@@ -85,7 +85,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
     expect(new URLSearchParams(window.location.search).get('draft')).toBe(
       'level-2-le-pont-brouillon',
     );
-    expect(screen.getByText('Éditeur · Le pont (brouillon)')).toBeVisible();
+    expect(screen.queryByText('Éditeur · Le pont (brouillon)')).not.toBeInTheDocument();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Exporter le niveau' })).toBeVisible();
 
@@ -131,7 +131,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
 
-    expect(screen.getByText('Éditeur · Mon pont')).toBeVisible();
+    expect(screen.queryByText('Éditeur · Mon pont')).not.toBeInTheDocument();
   });
 
   it('explique qu’un brouillon introuvable ne peut pas être ouvert', () => {
