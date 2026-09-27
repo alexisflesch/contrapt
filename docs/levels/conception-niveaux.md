@@ -57,7 +57,8 @@ prototypes et ne servent pas de modèle.
 - **Balles rouges et bleues.** La balle **rouge** est celle de l'objectif, et
   elle seule va dans le panier. Les balles **bleues** sont des pièces de la
   machine : elles appuient sur des boutons, basculent des leviers, chargent des
-  bascules.
+  bascules. C'est déjà le cas : toute balle autre que `goal.ballId` est
+  dessinée en bleu, avec la même physique ; le format de niveau ne change pas.
 
 ## 3. Repères
 
@@ -117,9 +118,6 @@ prototypes et ne servent pas de modèle.
 
 Ne pas les utiliser dans un niveau avant qu'elles existent dans le code.
 
-- **Balle bleue.** Toute balle qui n'est pas celle de l'objectif sera dessinée
-  en bleu (le dessin existe déjà dans `art/assets/second-ball/`). Le format de
-  niveau ne change pas.
 - **Plusieurs objectifs.** Plusieurs balles rouges pour plusieurs paniers,
   puis, plus tard, d'autres types d'objectifs. Cela exige une version 3 du
   format de niveau, avec migration.

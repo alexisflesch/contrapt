@@ -36,6 +36,14 @@ const everyFamily = levelDocumentSchema.parse({
       permissions,
     },
     {
+      // Not the goal's ball: drawn blue.
+      id: 'ball-2',
+      type: 'ball',
+      transform: { position: { x: 1, y: 3 }, rotation: 0 },
+      props: {},
+      permissions,
+    },
+    {
       id: 'basket-1',
       type: 'basket',
       transform: { position: { x: 3, y: 1 }, rotation: 0 },

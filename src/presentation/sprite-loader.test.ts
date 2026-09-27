@@ -149,7 +149,15 @@ describe('sprite loader contract', () => {
   });
 
   it('splits the ball and the seesaw into layers drawn back to front', () => {
-    expect(spriteAssetsForFamily('ball')).toEqual(['ball-base', 'ball-spin', 'ball-highlight']);
+    // Red layers for the goal's ball, then blue ones for any other ball.
+    expect(spriteAssetsForFamily('ball')).toEqual([
+      'ball-base',
+      'ball-spin',
+      'ball-highlight',
+      'second-ball-base',
+      'second-ball-spin',
+      'second-ball-highlight',
+    ]);
     expect(spriteAssetsForFamily('seesaw')).toEqual(['seesaw-fulcrum', 'seesaw-beam']);
     expect(spriteThumbnailPath('seesaw')).toBe('/assets/sprites/thumbs/seesaw.png');
   });

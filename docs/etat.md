@@ -65,7 +65,7 @@ pendant le travail.
 ### Présentation et interface
 
 - Renderer Canvas 2D (ADR 0006) avec DPR, sprites en calques (balle à motif
-  tournant, panier avant/arrière, bascule pied + planche, levier, convoyeur à
+  tournant, rouge pour celle de l’objectif et bleue pour les autres, panier avant/arrière, bascule pied + planche, levier, convoyeur à
   tapis défilant, bouton à capuchon qui s’enfonce, ventilateur à pales tournantes
   écrasées en perspective et orientable, barrière dont seule la partie sortie du
   poteau est dessinée, tremplin à ressort tassé à l’impact), ordre de dessin déterministe (la balle après le panier).
@@ -246,8 +246,9 @@ pendant le travail.
   travail d’interface.
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
-- **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
-  plusieurs balles sont sur le plateau.
+- **Vignette de balle toujours rouge** dans le catalogue : une balle posée
+  depuis l’inventaire n’est pas celle de l’objectif et apparaît bleue sur le
+  plateau.
 - **Deux boutons « Réinitialiser »** (libellé à remplacer par « Recommencer », voir
   `mobile-editor-interactions.md`) actifs simultanément après une simulation
   terminée (barre d’actions et bandeau de résultat).

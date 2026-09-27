@@ -1921,3 +1921,21 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Documentation : amendement de l'ADR 0009, note des fils, `docs/etat.md`.
 - Captures : `test-results/u14/` (niveaux 11 et 12, construction et simulation,
   trois formats).
+
+### U18 — Balle bleue — fait — `feat(presentation): dessine en bleu les balles hors objectif (U18)`
+
+- Comportement : `projectLevel` choisit les calques de la balle d'après
+  `goal.ballId` ; la balle de l'objectif garde `ball-*`, toute autre prend
+  `second-ball-*` (même empreinte, motif qui tourne avec le corps, ombrage et
+  reflet fixes). Format de niveau et physique inchangés.
+- Assets : `art/build-sprites.py` exporte les deux jeux de calques sur le même
+  cadre ; la famille `ball` charge les six calques (comme les deux bandes du
+  convoyeur). La vignette du catalogue reste la balle rouge.
+- Tests : calques rouges pour la balle de l'objectif, bleus pour une autre,
+  géométrie et rotation du motif identiques ; les sprites bleus passent le
+  contrôle de dimensions et de budget. La liste des calques de la famille dans
+  `sprite-loader.test.ts` est étendue.
+- Documentation : `docs/levels/conception-niveaux.md` (§ 2, § 5),
+  `docs/etat.md`.
+- Captures : `test-results/u18/` (niveau partagé avec une balle rouge et une
+  bleue, construction et simulation, trois formats).

@@ -311,6 +311,9 @@ const createPendingSpriteLoader = (): {
     'ball-base': { width: 64, height: 32 },
     'ball-spin': { width: 64, height: 32 },
     'ball-highlight': { width: 64, height: 32 },
+    'second-ball-base': { width: 64, height: 32 },
+    'second-ball-spin': { width: 64, height: 32 },
+    'second-ball-highlight': { width: 64, height: 32 },
     'basket-back': { width: 64, height: 32 },
     'basket-front': { width: 64, height: 32 },
     beam: { width: 64, height: 32 },
@@ -419,6 +422,41 @@ const createDeviceDocument = (
   });
 
 const lockedPermissions = { move: false, rotate: false, remove: false } as const;
+
+/** The goal's ball, a second ball and the basket. */
+const createTwoBallDocument = () =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'two-balls',
+    metadata: { title: 'Deux balles' },
+    objects: [
+      {
+        id: 'ball-1',
+        type: 'ball',
+        transform: { position: { x: 1, y: 1 }, rotation: 0 },
+        props: {},
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'ball-2',
+        type: 'ball',
+        transform: { position: { x: 4, y: 1 }, rotation: 0 },
+        props: {},
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'basket-1',
+        type: 'basket',
+        transform: { position: { x: 1, y: 7 }, rotation: 0 },
+        props: {},
+        permissions: lockedPermissions,
+      },
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: 0, y: 0 }, max: { x: 10, y: 8 } },
+  });
 
 /** A lever wired to a conveyor, with the goal pair out of the way. */
 const createWiredDocument = (
@@ -723,6 +761,38 @@ describe('projection du plateau', () => {
     expect(ballLayers.every((object) => object.layer.position.x === 13)).toBe(true);
     // Hit-test and selection keep reading the placement, not the moving body.
     expect(ballLayers.every((object) => object.position.x === 12)).toBe(true);
+  });
+
+  it('garde les calques rouges pour la balle de l’objectif et dessine les autres en bleu', () => {
+    const projection = projectLevel(createTwoBallDocument());
+    const assetsOf = (id: string) =>
+      projection.objects.filter((object) => object.id === id).map((object) => object.assetKey);
+
+    expect(assetsOf('ball-1')).toEqual(['ball-base', 'ball-spin', 'ball-highlight']);
+    expect(assetsOf('ball-2')).toEqual([
+      'second-ball-base',
+      'second-ball-spin',
+      'second-ball-highlight',
+    ]);
+  });
+
+  it('dessine la balle bleue comme la rouge : même empreinte, même rotation du motif', () => {
+    const pose = { position: { x: 5, y: 2 }, rotation: 1.5 };
+    const projection = projectLevel(createTwoBallDocument(), simulationView([['ball-2', pose]]));
+    const blueLayers = projection.objects.filter((object) => object.id === 'ball-2');
+    const redLayer = projection.objects.find((object) => object.id === 'ball-1');
+
+    expect(blueLayers.map((object) => [object.assetKey, object.layer.rotation])).toEqual([
+      ['second-ball-base', 0],
+      ['second-ball-spin', 1.5],
+      ['second-ball-highlight', 0],
+    ]);
+    for (const layer of blueLayers) {
+      expect(layer.family).toBe('ball');
+      expect(layer.destination).toEqual(redLayer?.destination);
+      expect(layer.layer.destination).toEqual(redLayer?.layer.destination);
+      expect(layer.layer.position).toEqual(pose.position);
+    }
   });
 
   it('convertit les positions monde avec une origine et une échelle uniques', () => {

@@ -5,7 +5,15 @@
  * ball's pattern spins under fixed shading and highlight.
  */
 const spriteAssetsByFamily = {
-  ball: ['ball-base', 'ball-spin', 'ball-highlight'],
+  // Both balls are loaded: the goal's ball is red, any other one blue.
+  ball: [
+    'ball-base',
+    'ball-spin',
+    'ball-highlight',
+    'second-ball-base',
+    'second-ball-spin',
+    'second-ball-highlight',
+  ],
   basket: ['basket-back', 'basket-front'],
   beam: ['beam'],
   seesaw: ['seesaw-fulcrum', 'seesaw-beam'],

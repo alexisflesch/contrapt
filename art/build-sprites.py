@@ -116,22 +116,27 @@ def composite(layers: list[tuple[Image.Image, tuple[int, int]]], size: tuple[int
 
 geometry: dict[str, object] = {}
 
-# Balle : trois calques sur le cadre carré du disque de base.
+# Balles : trois calques sur le cadre carré du disque de base. La balle rouge
+# est celle de l'objectif ; toute autre balle est dessinée en bleu, avec des
+# sources de même cadre.
 ball_frame = (41, 38, 1211, 1208)
-base = load("ball/ball-base.png")
-spin = load("ball/ball-spin-pattern.png")
-# Le motif tourne avec le corps : il est masqué au disque pour ne jamais en déborder.
-mask = Image.new("L", spin.size, 0)
 from PIL import ImageDraw  # noqa: E402
 
-ImageDraw.Draw(mask).ellipse(ball_frame, fill=255)
-spin.putalpha(Image.fromarray(np.minimum(np.array(spin)[:, :, 3], np.array(mask))))
-ball_layers = [
-    export(base, ball_frame, 0.6, 0.6, "ball-base"),
-    export(spin, ball_frame, 0.6, 0.6, "ball-spin"),
-    export(load("ball/ball-highlight.png"), ball_frame, 0.6, 0.6, "ball-highlight"),
-]
-save(composite([(layer, (0, 0)) for layer in ball_layers], ball_layers[0].size), THUMBS / "ball.png")
+for folder, prefix in (("ball", "ball"), ("second-ball", "second-ball")):
+    base = load(f"{folder}/{prefix}-base.png")
+    spin = load(f"{folder}/{prefix}-spin-pattern.png")
+    # Le motif tourne avec le corps : il est masqué au disque pour ne jamais en déborder.
+    mask = Image.new("L", spin.size, 0)
+    ImageDraw.Draw(mask).ellipse(ball_frame, fill=255)
+    spin.putalpha(Image.fromarray(np.minimum(np.array(spin)[:, :, 3], np.array(mask))))
+    ball_layers = [
+        export(base, ball_frame, 0.6, 0.6, f"{prefix}-base"),
+        export(spin, ball_frame, 0.6, 0.6, f"{prefix}-spin"),
+        export(load(f"{folder}/{prefix}-highlight.png"), ball_frame, 0.6, 0.6, f"{prefix}-highlight"),
+    ]
+    if prefix == "ball":
+        # La vignette du catalogue reste la balle rouge.
+        save(composite([(layer, (0, 0)) for layer in ball_layers], ball_layers[0].size), THUMBS / "ball.png")
 
 # Panier : arrière et lèvre avant sur le même cadre, empreinte figée 1,5 × 1,1.
 basket_frame = (106, 278, 1148, 1029)

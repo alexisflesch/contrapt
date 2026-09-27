@@ -213,6 +213,9 @@ const layerPoseSources: Record<SpriteAsset, LayerPoseSource> = {
   'ball-base': 'upright-body',
   'ball-spin': 'body',
   'ball-highlight': 'upright-body',
+  'second-ball-base': 'upright-body',
+  'second-ball-spin': 'body',
+  'second-ball-highlight': 'upright-body',
   'basket-back': 'body',
   'basket-front': 'body',
   beam: 'body',
@@ -269,11 +272,25 @@ const conveyorBeltAt = (
     facing: object.type === 'conveyor' && object.props.direction === 'left' ? -1 : 1,
   };
 
-/** The layers an object shows now: both belts are loaded, one is drawn. */
+const GOAL_BALL_LAYERS = ['ball-base', 'ball-spin', 'ball-highlight'] as const;
+const OTHER_BALL_LAYERS = [
+  'second-ball-base',
+  'second-ball-spin',
+  'second-ball-highlight',
+] as const;
+
+/**
+ * The layers an object shows now. Both belts are loaded, one is drawn; both
+ * balls are loaded, and only the goal's ball is red.
+ */
 const layerAssetsFor = (
   object: Placement,
+  goalBallId: string,
   view: BoardSimulationView | undefined,
 ): readonly SpriteAsset[] => {
+  if (object.type === 'ball') {
+    return object.id === goalBallId ? GOAL_BALL_LAYERS : OTHER_BALL_LAYERS;
+  }
   if (object.type !== 'conveyor') return spriteAssetsForFamily(object.type);
   const belt = conveyorBeltAt(object, view).facing === -1 ? 'conveyor-belt-left' : 'conveyor-belt';
   return [belt, 'conveyor-frame'];
@@ -496,6 +513,9 @@ const drawOrderByAsset: Record<SpriteAsset, number> = {
   'ball-base': 1,
   'ball-spin': 1,
   'ball-highlight': 1,
+  'second-ball-base': 1,
+  'second-ball-spin': 1,
+  'second-ball-highlight': 1,
   'basket-front': 2,
 };
 
@@ -529,7 +549,7 @@ export const projectLevel = (
 ): BoardProjection => {
   const objects = document.objects
     .flatMap((object, documentIndex) =>
-      layerAssetsFor(object, simulation).map((assetKey, layerIndex) => ({
+      layerAssetsFor(object, document.goal.ballId, simulation).map((assetKey, layerIndex) => ({
         documentIndex,
         layerIndex,
         projected: {
