@@ -91,6 +91,7 @@ test('U21 — le joueur relie avec le fil de son inventaire, puis le délie, au 
   await openCatalogue.tap();
   await expect(page.getByRole('button', { name: 'Fil de commande, quantité : 0' })).toBeDisabled();
   await page.getByRole('button', { name: 'Fermer le catalogue' }).tap();
+  await expect(page.getByRole('button', { name: 'Fermer le catalogue' })).toBeHidden();
 
   // Un fil du niveau ne se délie pas.
   await tapWorld(1.8, 1.6);
