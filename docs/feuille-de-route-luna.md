@@ -1700,3 +1700,38 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   tests Vitest (49 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
   1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L23 n’ajoute aucune interface visible.
+
+### L24 — Route `/shared` — fait — commit dédié L24
+
+- Tests ajoutés : deux cas App pour le partage valide (résolution jusqu’à la
+  victoire sans sauvegarde de progression ni brouillon) et invalide (message,
+  lien `/levels`, aucun plateau ni écriture) ; deux parcours Playwright mobiles,
+  dont un lien fabriqué par `encodeShareFragment`.
+- Échec initial constaté : avant l’ajout de la route, le chemin inconnu
+  redirigeait vers `/levels` ; les tests ne trouvaient ni le titre du niveau
+  partagé ni le message d’erreur.
+- Tests existants modifiés : ajout de deux tests à `App.test.tsx` ; aucun test
+  existant n’a été remplacé.
+- Fichiers touchés : `src/app/SharedLevelPage.tsx`, `src/app/App.tsx`,
+  `src/app/App.test.tsx`, `e2e/shared.spec.ts`, `docs/etat.md` et ce journal.
+- Écarts avec la tâche : aucun. Le décodage suit les changements du fragment
+  fournis par le routeur ; `BoardShell` est monté en résolution sans callback de
+  campagne. Le test gagne effectivement le niveau partagé et vérifie qu’aucune
+  progression ni donnée locale n’est écrite.
+- Mesures qui ne se reproduisent pas : un premier typecheck du test Playwright a
+  montré que le JSON v2 brut du niveau ne contient pas le champ normalisé
+  `wires` ; le test passe maintenant le fixture par `decodeLevelFile`. Le
+  premier lancement Playwright après changement utilisait le build précédent ;
+  après `pnpm build`, les deux tests ciblés passent.
+- Contradictions rencontrées : aucune. Aucun style ni dépendance n’a été ajouté ;
+  la route `/shared` était déjà réservée par les ADR 0008 et 0011.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 575
+  tests Vitest (49 fichiers), build et 44 parcours Playwright mobiles (43
+  réussis, 1 ignoré car C3 est spécifique au projet desktop).
+- Captures inspectées (non versionnées) :
+  `test-results/shared/shared-level-390x844.png`,
+  `test-results/shared/shared-level-844x390.png` et
+  `test-results/shared/shared-error-390x844.png`.
+- Pour l’auteur : l’ouverture `/shared` et le message invalide sont lisibles au
+  toucher ; le follow-up U13 sur la mise en évidence des zones de placement reste
+  différé comme demandé.

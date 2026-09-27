@@ -12,6 +12,7 @@ import { EditorPage } from './EditorPage';
 import { LevelsPage } from './LevelsPage';
 import { PlayLevelPage } from './PlayLevelPage';
 import { SettingsPage } from './SettingsPage';
+import { SharedLevelPage } from './SharedLevelPage';
 import { CampaignProgressProvider } from './CampaignProgressProvider';
 
 /**
@@ -69,6 +70,7 @@ export function App({ progressRepository }: AppProps = {}) {
           <Route path="/editor" element={<EditorPage />} />
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/shared" element={<SharedLevelPage />} />
           <Route path="/bench" element={<BenchPage />} />
           <Route path="/bench/play" element={<BenchPlayPage />} />
           <Route path="*" element={<Navigate to="/levels" replace />} />

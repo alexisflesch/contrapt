@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CampaignProgress } from '../application/progression';
 import type { ProgressRepository } from '../application/progression/progress-repository';
 import { embeddedLevels } from '../content/embedded-levels';
+import { encodeShareFragment } from '../infrastructure/level-share/level-share-codec';
 import { fitCameraToScene } from '../presentation/board-camera';
 import { ROTATION_HANDLE_DISTANCE_CSS_PIXELS } from '../presentation/rotation-handle-metrics';
 import styles from '../ui/styles.css?raw';
@@ -2013,6 +2014,48 @@ describe('coque Contrapt!', () => {
     fireEvent.click(undoButton);
     expect(screen.queryByRole('region', { name: 'Propriétés de Levier' })).not.toBeInTheDocument();
     expect(undoButton).toBeDisabled();
+  });
+
+  it('ouvre un niveau partagé validé comme niveau joueur éphémère', async () => {
+    const sharedLevel = embeddedLevels.find((level) => level.id === 'level-1-prolonger-la-pente');
+    if (sharedLevel === undefined) throw new Error('Le niveau partagé embarqué est indisponible.');
+    const fragment = await encodeShareFragment(sharedLevel);
+    window.history.replaceState(null, '', `/shared${fragment}`);
+    const { repository, save } = createProgressRepository();
+
+    render(<App progressRepository={repository} />);
+
+    expect(await screen.findByText('Partage · Prolonger la pente')).toBeVisible();
+    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+
+    const animationFrames = createAnimationFrameHarness();
+    placeCampaignBeam(5.0, 2.15);
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 360);
+    expect(screen.getByRole('region', { name: 'Résultat du niveau' })).toHaveTextContent(
+      'Victoire',
+    );
+    expect(save).not.toHaveBeenCalled();
+    expect(window.localStorage.length).toBe(0);
+  });
+
+  it('affiche une erreur de partage invalide sans modifier la progression', async () => {
+    window.history.replaceState(null, '', '/shared#level=bad');
+    const { repository, save } = createProgressRepository();
+
+    render(<App progressRepository={repository} />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Ce lien de partage est invalide ou ne peut plus être ouvert.',
+    );
+    expect(screen.getByRole('link', { name: 'Liste des niveaux' })).toHaveAttribute(
+      'href',
+      '/levels',
+    );
+    expect(screen.queryByRole('region', { name: 'Plateau de jeu' })).not.toBeInTheDocument();
+    expect(save).not.toHaveBeenCalled();
+    expect(window.localStorage.length).toBe(0);
   });
 
   it('déplace une poutre par sa poignée de rotation en une commande et annule la projection', () => {

@@ -92,7 +92,8 @@ pendant le travail.
   circuit (`src/presentation/control-wires.ts`, `wire-renderer.ts`).
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
   `/editor`, `/demo` (machine en chaîne qui se résout seule, testée),
-  `/settings` (vide). `/` ouvre le niveau 1 en mode joueur.
+  `/settings` (vide) et `/shared` (niveau éphémère décodé depuis le fragment URL).
+  `/` ouvre le niveau 1 en mode joueur.
 - Mise en page validée aux six formats du plan (D4) ; objectif dans une boîte de
   dialogue à la demande ; bandeau de résultat dans un emplacement réservé.
 - Atelier libre `src/content/levels/workshop.json` (scène 16 × 9, inventaire de
@@ -214,14 +215,16 @@ pendant le travail.
   déblocages ; L20 persiste les records dans une enveloppe locale validée ; L21
   enregistre les victoires depuis le snapshot du lancement et expose le hook
   `useCampaignProgress()` sans ajout visuel. La demande de stockage persistant est
-  faite une seule fois après la première victoire. Le codec de partage L23 est
-  livré ; la route `/shared` L24 et la PWA restent à faire (ADR 0011, 0012). Les
+  faite une seule fois après la première victoire. Le codec L23 et la route
+  `/shared` L24 sont livrés ; les niveaux partagés restent hors campagne et ne
+  créent ni progression ni brouillon. La PWA reste à faire (ADR 0012). Les
   métadonnées de défi v2 sont
   utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité du niveau 8 reste
   à compléter avec les coordonnées de sa grille « bascule seule ».
 - **Fichiers et partage** : L22 encode et décode les documents avec validation
   et migration ; L23 sérialise les fragments URL avec CRC-32 et décompression
-  bornée. La route `/shared` L24 reste à faire.
+  bornée ; L24 valide `location.hash`, puis ouvre le document en mode joueur ou
+  affiche une erreur avec un lien vers la liste.
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
 - **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
@@ -240,9 +243,9 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après L23 : typecheck, lint,
-formatage, Knip, contenu (14 niveaux embarqués), 573 tests Vitest (49 fichiers),
-build et 42 tests Playwright `mobile` (41 réussis, 1 ignoré car C3 est
+`pnpm check` passe le 27 septembre 2026 après L24 : typecheck, lint,
+formatage, Knip, contenu (14 niveaux embarqués), 575 tests Vitest (49 fichiers),
+build et 44 tests Playwright `mobile` (43 réussis, 1 ignoré car C3 est
 spécifique au projet desktop). Le parcours mobile L17b ouvre maintenant
 l’inspecteur compact avant de
 vérifier les propriétés du levier sélectionné. Les captures au repos sont
