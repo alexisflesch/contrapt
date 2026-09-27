@@ -1673,3 +1673,30 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   tests Vitest (48 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
   1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L22 n’ajoute aucune interface visible.
+
+
+### L23 — Codec de partage par URL — fait — commit dédié L23
+
+- Tests ajoutés : `level-share-codec.test.ts` — aller-retour du niveau 12,
+  CRC-32 IEEE de référence, longueur maximale, version 2, taille annoncée trop
+  grande, base64url invalide, taille menteuse, checksum faux, document rejeté par
+  le codec de fichier et bombe d’un mégaoctet interrompue au premier bloc qui
+  dépasse la taille annoncée.
+- Échec initial constaté : la suite ciblée ne pouvait pas charger
+  `level-share-codec`, absent avant l’implémentation.
+- Tests existants modifiés : aucun.
+- Fichiers touchés : `src/infrastructure/level-share/level-share-codec.ts`, son
+  test, `docs/etat.md` et ce journal.
+- Écarts avec la tâche : aucun. L’encodeur retourne le fragment prêt à affecter à
+  `location.hash` (`#level=...`) ; le décodeur accepte ce fragment complet.
+- Mesures qui ne se reproduisent pas : aucune ; les 10 tests ciblés passent. Un
+  premier `check:fast` a signalé les types DOM de `CompressionStream` et des
+  conversions numériques dans les gabarits ; ces erreurs statiques ont été
+  corrigées puis la gate rapide passe.
+- Contradictions rencontrées : aucune. CRC-32 IEEE, base64url sans remplissage,
+  plafond de charge et ordre des contrôles suivent l’ADR 0011 ; aucun paquet n’a
+  été ajouté.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 573
+  tests Vitest (49 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
+  1 ignoré car C3 est spécifique au projet desktop).
+- Captures : sans objet, L23 n’ajoute aucune interface visible.
