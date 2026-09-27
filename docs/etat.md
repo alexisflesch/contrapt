@@ -265,6 +265,8 @@ pendant le travail.
 - Parcours Playwright desktop C3 corrigé : le test resélectionne la poutre
   restaurée après l’annulation de sa suppression, puis vérifie le canvas au pixel
   près. Les 30 tests desktop passent.
+- **Campagne à refaire** (décision auteur du 27 septembre 2026) : les niveaux
+  ci-dessous seront remplacés, voir `levels/nouveaux-niveaux.md`.
 - **Douze niveaux de campagne**, « Prolonger la pente », « Le pont »,
   « Incliner », « Moins, c’est mieux », « Le détour », « La bascule »,
   « Placer la bascule », « Poutre et bascule », « Le tapis », « Le butoir »,

@@ -6,26 +6,27 @@ Vue d’ensemble en une page ; le détail reste dans § 5, § 6 et le journal (�
 partage, commandes d’auteur, brouillons, CI, PWA) ; niveaux 1 à 12 ; P1 ; côté
 interface U4 à U6, U13 à U21 (U4 et U5 en attente de validation visuelle).
 
-**Partiel ou bloqué.**
-
-- L2 (Markdown hors `format:check`) : bloqué.
-- L14, L16, L17 (niveaux 8, 10, 11) : jouables, preuves de robustesse
-  incomplètes.
-- L18b, L18c (niveaux 13 et 14) : bloqués, aucune géométrie assez robuste.
+**Campagne abandonnée (décision auteur du 27 septembre 2026).** Les niveaux
+actuels ne sont pas amusants (« placer une poutre quelque part ») : ils seront
+remplacés. Les tâches L14, L16, L17, L18b et L18c sont closes sans suite. La
+nouvelle campagne part des esquisses de `docs/levels/nouveaux-niveaux.md`,
+générées grossièrement puis ajustées par l’auteur dans l’atelier (U22).
 
 **Reste à faire — interface (§ 6, captures et validation de l’auteur).**
 
-- U9 interface du mode auteur (scène, zones, inventaire, objectif, défi,
-  brouillons, import) : manque pour le critère 3 de § 4.
+- U22 atelier créateur de puzzles (remplace U9) : prochaine grosse tâche.
+- U14b fils de commande en équerre : en cours.
+- U12 poutres en trois tailles et icônes de la PWA : les dessins sont dans
+  `art/` (`art/assets/beam/`, `art/icons-splash_screen/`), à exporter et câbler.
 - U1 fantôme de placement, U2 fond qui suit la caméra, U3 ombre portée, U7
-  balle suivie, U8 aide du niveau 1, U10 invitation PWA, U11 réglages, U12
-  poutres en trois tailles.
+  balle suivie, U8 aide du niveau 1, U10 invitation PWA, U11 réglages.
 - Minuteur animé (`art/assets/timer/README.md`) : pas encore de tâche.
 
-**En attente de l’auteur.** Icônes PWA, dessin des poutres (§ 7) ; tri des
+**En attente de l’auteur.** Validation visuelle de U4 et U5 ; tri des
 propositions déposées le 27 septembre (`docs/propositions-*.md`,
 `docs/proposition-evolutions-canary.md`, `docs/levels/idees-niveaux.md`,
-`docs/levels/propositions-evolution-astra.md`).
+`docs/levels/propositions-evolution-astra.md`) ; questions ouvertes de
+`docs/levels/nouveaux-niveaux.md`.
 
 # Feuille de route — reprise de l’implémentation
 
@@ -806,8 +807,33 @@ commencer de ta propre initiative.
 - **U7 — Balle suivie** : signaler quelle balle est la cible de l’objectif.
 - **U8 — Aide du niveau 1** : indication brève et non bloquante vers « Tester »
   puis vers le tiroir.
-- **U9 — Interface du mode auteur** : zones, inventaire, objectif, scène, défi,
-  brouillons, import/export, partage (s’appuie sur L22 à L26).
+- **U9 — Interface du mode auteur** : remplacée par U22.
+- **U22 — Atelier créateur de puzzles** (décisions auteur du 27 septembre
+  2026). L’atelier produit aujourd’hui une machine complète qui gagne seule ;
+  il doit produire un puzzle.
+  - Chaque objet posé porte un réglage « Fixe / À placer » dans l’inspecteur
+    (tactile, annulable) ; un objet « à placer » est dessiné distinctement
+    (contour pointillé) dans l’atelier.
+  - « Tester comme un joueur » : cache les objets « à placer », les met dans le
+    tiroir et laisse l’auteur résoudre le niveau en mode joueur.
+  - À l’export (fichier L22 ou lien L23), vérifications automatiques par
+    simulation déterministe, sans action de l’auteur : la machine complète
+    gagne ; sans les objets « à placer », elle ne gagne pas ; au moins un objet
+    est « à placer ». Un échec refuse l’export avec un message clair. Si aucun
+    objet n’est marqué, l’export invite à toucher ceux à retirer.
+  - Le document exporté contient : décor = objets fixes ; inventaire = objets
+    « à placer » avec leurs propriétés ; **solution de référence** (positions,
+    rotations et propriétés des objets retirés), visible dans l’export
+    (accepté par l’auteur). Ajout de champ au `LevelDocument` : ADR, codec,
+    tests ancien et nouveau document ; migration seulement si l’ajout n’est pas
+    compatible v2.
+  - Rotation : la règle de la famille s’applique ; aucune restriction propre au
+    puzzle. Zone de pose : toute la scène par défaut. ⭐ : au plus le nombre
+    d’objets retirés.
+  - La solution de référence sert aussi à générer la régression des niveaux de
+    campagne.
+  - Hors U22 et à suivre ensuite : édition de la scène, des zones, de
+    l’objectif et du défi, import de fichier, liste des brouillons (ex-U9).
 - **U10 — Invitation de mise à jour et installation** de la PWA (L28).
 - **U11 — Réglages** : réinitialiser la progression, préférences.
 - **U12 — Poutres en trois tailles** : sources dessinées dans `art/assets/beam/`
@@ -868,8 +894,7 @@ commencer de ta propre initiative.
 
 ## 7. En attente de l’auteur — ne pas commencer
 
-- Icônes de la PWA : l’auteur les dépose dans `art/` (L28 les exporte alors vers
-  `public/`) ; validation du dessin des poutres.
+- Validation visuelle des tâches d’interface livrées (U4, U5, U14b).
 - Tout ce que les tâches ci-dessus marquent « bloqué ».
 
 ## 8. Journal
