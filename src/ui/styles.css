@@ -634,7 +634,7 @@ select:focus-visible {
 /*
  * Barre étroite (téléphone, colonne entre deux rails, paysage) : Annuler et
  * Rétablir passent en icônes, le texte de statut est masqué visuellement, le
- * statut de placement devient « ✕ Famille » et les boutons de simulation
+ * statut de placement devient « Famille » avec son icône de fermeture et les boutons de simulation
  * peuvent replier leur libellé sur deux lignes. Les noms accessibles restent
  * entiers et le statut reste annoncé (`aria-live`).
  */
@@ -1738,11 +1738,6 @@ select:focus-visible {
     overflow: hidden;
     padding: 0;
     font-size: 0;
-  }
-
-  .camera-reset::after {
-    content: '⌖';
-    font-size: 20px;
   }
 
   .board-scene-row {

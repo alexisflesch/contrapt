@@ -3,6 +3,7 @@ import {
   type EditorSession,
 } from '../application/editor-session/editor-session';
 import type { ObjectKind } from '../app/object-catalog';
+import { Pause, Play, Redo2, RotateCcw, Undo2, X } from 'lucide-react';
 import { Button } from './Button';
 
 interface SimulationControlsProps {
@@ -62,7 +63,7 @@ export function SimulationControls({
                 disabled={session.history.past.length === 0}
                 onClick={onUndo}
               >
-                <span aria-hidden="true">↶</span>
+                <Undo2 size={18} aria-hidden="true" />
                 <span className="toolbar-button-label">Annuler</span>
               </Button>
               <Button
@@ -70,7 +71,7 @@ export function SimulationControls({
                 disabled={session.history.future.length === 0}
                 onClick={onRedo}
               >
-                <span aria-hidden="true">↷</span>
+                <Redo2 size={18} aria-hidden="true" />
                 <span className="toolbar-button-label">Rétablir</span>
               </Button>
             </div>
@@ -81,7 +82,8 @@ export function SimulationControls({
               <Button className="placement-cancel" onClick={onCancelPlacement}>
                 {/* Short visible form for narrow toolbars; the accessible name stays the full label. */}
                 <span className="placement-cancel-short" aria-hidden="true">
-                  ✕<span className="placement-cancel-kind"> {activePlacementKind}</span>
+                  <X size={18} aria-hidden="true" />
+                  <span className="placement-cancel-kind"> {activePlacementKind}</span>
                 </span>
                 <span className="placement-cancel-label">Annuler le placement</span>
               </Button>
@@ -94,11 +96,11 @@ export function SimulationControls({
             aria-haspopup="dialog"
             onClick={onResetDocument}
           >
-            <span aria-hidden="true">↺</span>
+            <RotateCcw size={18} aria-hidden="true" />
             {isCreation ? 'Ràz atelier' : 'Recommencer le niveau'}
           </Button>
           <Button tone="go" className="toolbar-primary" onClick={onLaunchSimulation}>
-            <span aria-hidden="true">▶</span>
+            <Play size={18} aria-hidden="true" />
             Tester
           </Button>
         </>
@@ -115,19 +117,19 @@ export function SimulationControls({
           </strong>
           {session.phase === 'running' && (
             <Button tone="pause" onClick={onPause}>
-              <span aria-hidden="true">❚❚</span>
+              <Pause size={18} aria-hidden="true" />
               Mettre en pause
             </Button>
           )}
           {session.phase === 'paused' && (
             <Button tone="go" onClick={onResume}>
-              <span aria-hidden="true">▶</span>
+              <Play size={18} aria-hidden="true" />
               Reprendre
             </Button>
           )}
           {session.phase !== 'result' && (
             <Button tone="reset" onClick={onRestoreConstruction}>
-              <span aria-hidden="true">↺</span>
+              <RotateCcw size={18} aria-hidden="true" />
               Recommencer
             </Button>
           )}

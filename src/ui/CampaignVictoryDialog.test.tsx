@@ -59,18 +59,20 @@ describe('CampaignVictoryDialog — victoire de campagne (U4b)', () => {
 
     expect(dialog).toHaveAttribute('data-level-tier', 'resolved');
     expectEarned(dialog, 'Résolu', true);
+    expect(tierItem(dialog, 'Résolu').querySelector('svg.lucide-circle-check')).toBeInTheDocument();
     expectEarned(dialog, 'Élégant', false);
     expectEarned(dialog, 'Minimal', false);
     expect(within(dialog).getByText('Résolu avec 1 objet.')).toBeVisible();
     expect(within(dialog).queryByText(/Tu penses/)).not.toBeInTheDocument();
   });
 
-  it('n’affiche que ✅ pour un niveau sans défi (ADR 0010)', () => {
+  it('n’affiche que le palier Résolu pour un niveau sans défi (ADR 0010)', () => {
     const dialog = renderDialog(victory({ hasChallenge: false }));
 
     const tiers = within(dialog).getByRole('list', { name: 'Paliers' });
     expect(within(tiers).getAllByRole('listitem')).toHaveLength(1);
     expectEarned(dialog, 'Résolu', true);
+    expect(tierItem(dialog, 'Résolu').querySelector('svg.lucide-circle-check')).toBeInTheDocument();
   });
 
   it('accorde le compte au pluriel et sans objet posé', () => {
@@ -82,7 +84,7 @@ describe('CampaignVictoryDialog — victoire de campagne (U4b)', () => {
     expect(screen.getByText('Résolu avec 7 objets.')).toBeVisible();
   });
 
-  it('propose la cible ⭐ après une réussite non élégante (ADR 0010)', () => {
+  it('propose la cible Élégant après une réussite non élégante (ADR 0010)', () => {
     const dialog = renderDialog(
       victory({ objectsUsed: 7, hint: { nextTier: 'elegant', objectCount: 5 } }),
     );
@@ -90,7 +92,7 @@ describe('CampaignVictoryDialog — victoire de campagne (U4b)', () => {
     expect(within(dialog).getByText('Tu penses pouvoir le faire avec 5 ?')).toBeVisible();
   });
 
-  it('révèle le record 🏆 après une réussite élégante', () => {
+  it('révèle le record Minimal après une réussite élégante', () => {
     const dialog = renderDialog(
       victory({
         tier: 'elegant',
@@ -101,12 +103,13 @@ describe('CampaignVictoryDialog — victoire de campagne (U4b)', () => {
 
     expect(dialog).toHaveAttribute('data-level-tier', 'elegant');
     expectEarned(dialog, 'Résolu', true);
+    expect(tierItem(dialog, 'Résolu').querySelector('svg.lucide-circle-check')).toBeInTheDocument();
     expectEarned(dialog, 'Élégant', true);
     expectEarned(dialog, 'Minimal', false);
-    expect(within(dialog).getByText('Record à battre : 🏆 avec 2 objets.')).toBeVisible();
+    expect(within(dialog).getByText('Record à battre : avec 2 objets.')).toBeVisible();
   });
 
-  it('ne demande rien de plus après 🏆, et signale un nouveau record', () => {
+  it('ne demande rien de plus après Minimal, et signale un nouveau record', () => {
     const minimal = renderDialog(victory({ tier: 'minimal', objectsUsed: 2 }));
     expect(minimal).toHaveAttribute('data-level-tier', 'minimal');
     expectEarned(minimal, 'Résolu', true);

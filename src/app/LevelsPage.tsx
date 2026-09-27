@@ -1,5 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  CircleCheck,
+  LockKeyhole,
+  Pencil,
+  Play,
+  Star,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { openCampaignDraft } from '../application/drafts/campaign-draft';
 import { campaignChapters } from '../content/embedded-levels';
@@ -10,11 +19,24 @@ import { Panel } from '../ui/Panel';
 import { useDraftRepository } from './draft-repository-context';
 import { useCampaignProgress } from './use-campaign-progress';
 
-const tierLabels = {
-  resolved: '✅ Résolu',
-  elegant: '⭐ Élégant',
-  minimal: '🏆 Minimal',
-} as const;
+const tierLabels: Readonly<
+  Record<'resolved' | 'elegant' | 'minimal', { readonly icon: LucideIcon; readonly label: string }>
+> = {
+  resolved: { icon: CircleCheck, label: 'Résolu' },
+  elegant: { icon: Star, label: 'Élégant' },
+  minimal: { icon: Trophy, label: 'Minimal' },
+};
+
+type Tier = keyof typeof tierLabels;
+
+function TierStatus({ tier }: { readonly tier: Tier }) {
+  const { icon: Icon, label } = tierLabels[tier];
+  return (
+    <p className="level-card-status">
+      <Icon size={18} aria-hidden="true" /> {label}
+    </p>
+  );
+}
 
 /** Campaign chapters with their levels' global, 1-based campaign number. */
 const numberedChapters = campaignChapters.reduce<
@@ -73,10 +95,10 @@ export function LevelsPage() {
                         title={`Niveau ${String(number)} · ${level.metadata.title}`}
                         {...(tier === null ? {} : { dataAttributes: { 'data-level-tier': tier } })}
                       >
-                        {tier !== null && <p className="level-card-status">{tierLabels[tier]}</p>}
+                        {tier !== null && <TierStatus tier={tier} />}
                         {!unlocked && (
                           <p className="level-card-status level-card-status-locked">
-                            🔒 Verrouillé
+                            <LockKeyhole size={18} aria-hidden="true" /> Verrouillé
                           </p>
                         )}
                         {level.metadata.description !== undefined && (
@@ -90,7 +112,7 @@ export function LevelsPage() {
                             void navigate(`/levels/${level.id}/play`);
                           }}
                         >
-                          <span aria-hidden="true">▶</span>
+                          <Play size={18} aria-hidden="true" />
                           Lancer le niveau {number}
                         </Button>
                         {/* U17: the author edits a draft copy; the embedded level and progress stay untouched. */}
@@ -105,7 +127,7 @@ export function LevelsPage() {
                             void navigate(`/editor?draft=${encodeURIComponent(result.draftId)}`);
                           }}
                         >
-                          <span aria-hidden="true">✎</span>
+                          <Pencil size={18} aria-hidden="true" />
                           Éditer le niveau {number}
                         </Button>
                         {draftErrorLevelId === level.id && (

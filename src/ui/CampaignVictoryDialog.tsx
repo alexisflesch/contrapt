@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
+import { ArrowRight, CircleCheck, RotateCcw, Star, Trophy, type LucideIcon } from 'lucide-react';
 
 import type { ChallengeHint } from '../application/progression';
 import { Button } from './Button';
@@ -12,7 +13,7 @@ export interface CampaignVictory {
   /** Tier earned by this attempt, from the objects counted at launch. */
   readonly tier: 'resolved' | 'elegant' | 'minimal';
   readonly objectsUsed: number;
-  /** Whether the level declares a challenge: without one, ✅ is the only tier. */
+  /** Whether the level declares a challenge: without one, the Resolved tier is the only tier. */
   readonly hasChallenge: boolean;
   /** Progressive revelation from the saved best result (ADR 0010). */
   readonly hint: ChallengeHint;
@@ -26,10 +27,10 @@ type Tier = CampaignVictory['tier'];
 
 const tierOrder: readonly Tier[] = ['resolved', 'elegant', 'minimal'];
 
-const tierBadges: Record<Tier, { readonly icon: string; readonly name: string }> = {
-  resolved: { icon: '✅', name: 'Résolu' },
-  elegant: { icon: '⭐', name: 'Élégant' },
-  minimal: { icon: '🏆', name: 'Minimal' },
+const tierBadges: Record<Tier, { readonly icon: LucideIcon; readonly name: string }> = {
+  resolved: { icon: CircleCheck, name: 'Résolu' },
+  elegant: { icon: Star, name: 'Élégant' },
+  minimal: { icon: Trophy, name: 'Minimal' },
 };
 
 const objectCountLabel = (objectsUsed: number): string => {
@@ -37,13 +38,13 @@ const objectCountLabel = (objectsUsed: number): string => {
   return `Résolu avec ${String(objectsUsed)} ${objectsUsed === 1 ? 'objet' : 'objets'}.`;
 };
 
-const challengeLabel = ({ hint, isNewRecord }: CampaignVictory): string | null => {
+const challengeLabel = ({ hint, isNewRecord }: CampaignVictory): ReactNode | null => {
   if (isNewRecord) return 'Nouveau record : moins que le minimum connu !';
   if (hint === null) return null;
   if (hint.nextTier === 'elegant') {
     return `Tu penses pouvoir le faire avec ${String(hint.objectCount)} ?`;
   }
-  return `Record à battre : 🏆 avec ${String(hint.objectCount)} ${
+  return `Record à battre : avec ${String(hint.objectCount)} ${
     hint.objectCount === 1 ? 'objet' : 'objets'
   }.`;
 };
@@ -60,11 +61,11 @@ function TierRow({ campaign }: { readonly campaign: CampaignVictory }) {
     <ul className="victory-tiers" aria-label="Paliers">
       {tiers.map((tier, rank) => {
         const isEarned = rank <= earnedRank;
-        const { icon, name } = tierBadges[tier];
+        const { icon: Icon, name } = tierBadges[tier];
         return (
           <li key={tier} className="victory-tier" data-earned={String(isEarned)}>
             <span className="victory-tier-icon" aria-hidden="true">
-              {icon}
+              <Icon size={30} aria-hidden="true" />
             </span>
             <span className="victory-tier-name">{name}</span>
             <span className="visually-hidden">{isEarned ? ' obtenu' : ' non obtenu'}</span>
@@ -112,7 +113,7 @@ export function CampaignVictoryDialog({ campaign, onReplay, onClose }: CampaignV
         {onNextLevel !== null && (
           <Button ref={primaryRef} tone="go" className="victory-next" onClick={onNextLevel}>
             Niveau suivant
-            <span aria-hidden="true">→</span>
+            <ArrowRight size={18} aria-hidden="true" />
           </Button>
         )}
         <Button
@@ -120,7 +121,7 @@ export function CampaignVictoryDialog({ campaign, onReplay, onClose }: CampaignV
           className="victory-replay"
           onClick={onReplay}
         >
-          <span aria-hidden="true">↺</span>
+          <RotateCcw size={18} aria-hidden="true" />
           Recommencer
         </Button>
         <button className="victory-see-scene" type="button" onClick={onClose}>

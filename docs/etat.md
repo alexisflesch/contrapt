@@ -78,7 +78,7 @@ pendant le travail.
   restent accessibles. Le parcours E2E produit des captures en 390 × 844,
   844 × 390 et 1440 × 900.
 - Export U24 : les puzzles produits par l’atelier ne portent aucun `challenge` ;
-  les seuils ⭐/🏆 sont réservés aux niveaux qui les définissent explicitement.
+  les seuils Élégant/Minimal sont réservés aux niveaux qui les définissent explicitement.
 - Export U25 : les fils fixes restent dans le décor ; les fils marqués « À
   placer », ainsi que ceux qui touchent un objet à placer, passent dans
   l’inventaire `wire` et la solution de référence. L’inspecteur auteur permet
@@ -107,6 +107,7 @@ pendant le travail.
   précache l’application et ses assets ; les routes de jeu et d’atelier ont un
   repli hors ligne. Le hook `usePwaUpdateStatus(phase)` expose une mise à jour en
   attente seulement pendant une phase sûre, hors simulation et manipulation.
+- **U27 — icônes d’interface** : les pictogrammes d’action, de navigation, de cadrage, de catalogue, d’export et de résultat utilisent `lucide-react` (ADR 0014). Les libellés accessibles restent inchangés.
 - **U6 — recommencer et remise à zéro de l’atelier** : pendant la simulation,
   une seule commande « Recommencer » est visible ; dans l’atelier, « Ràz atelier »
   est placé à gauche de « Tester » et ouvre une confirmation qui décrit la perte,
@@ -115,24 +116,24 @@ pendant le travail.
   Dans les deux modes, la remise à zéro ferme les tiroirs et sélections ; après
   une victoire d’atelier, le résultat conserve uniquement « Retour à l’édition ».
 - **U4 — bandeau de résultat de campagne** : après une victoire sur un niveau de
-  la campagne, le bandeau affiche le palier obtenu par la tentative (✅ Résolu,
-  ⭐ Élégant, 🏆 Minimal, `data-level-tier`), le nombre d’objets posés compté au
+  la campagne, le bandeau affiche le palier obtenu par la tentative (Résolu,
+  Élégant, Minimal, `data-level-tier`), le nombre d’objets posés compté au
   lancement, puis la révélation progressive de l’ADR 0010 calculée sur le
   meilleur résultat enregistré (« Tu penses pouvoir le faire avec N ? », puis
-  « Record à battre : 🏆 avec N objets. », rien après 🏆 ; « Nouveau record »
+  « Record à battre : avec N objets. », rien après le palier Minimal ; « Nouveau record »
   sous le minimum connu). « Niveau suivant » ouvre le niveau suivant de la
   campagne s’il existe et est débloqué ; une seule commande « Recommencer ».
   L’atelier, la démonstration et les niveaux partagés gardent le bandeau simple.
 - **U5 — liste des niveaux par chapitres** : `/levels` regroupe les niveaux par
   chapitre du catalogue L6 (« Chapitre 1 · Poutres et bascule », « Chapitre 2 ·
   Mécanismes »), numérotation continue. Un niveau verrouillé reste visible avec
-  « 🔒 Verrouillé » et un bouton « Lancer » désactivé ; un niveau résolu affiche
-  son palier (✅ / ⭐ / 🏆, `data-level-tier`) recalculé depuis le meilleur
+  « Verrouillé » et un bouton « Lancer » désactivé ; un niveau résolu affiche
+  son palier (icône et libellé, `data-level-tier`) recalculé depuis le meilleur
   résultat. « Éditer le niveau » (U17) reste disponible pour tous les niveaux ;
   l’URL directe d’un niveau verrouillé affiche « Ce niveau est encore
   verrouillé. » (U5b) ; sous `pnpm dev`, `unlockAllLevels` débloque tout.
 - **U4b — modale de victoire** (campagne) : « Bravo ! », paliers allumés ou
-  estompés (✅ seul sans défi), « Niveau suivant », « Recommencer », « Voir la
+  estompés (le palier Résolu seul sans défi), « Niveau suivant », « Recommencer », « Voir la
   scène » ; bandeau réduit sous le plateau pour rouvrir le résultat.
 - **U14b — fils en équerre** : horizontal/vertical, un coude au plus.
 - **U22/U25 — atelier créateur de puzzles** (ADR 0013) : réglage « Fixe / À
@@ -370,6 +371,8 @@ pendant le travail.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U27 (27 septembre 2026) : passe — typecheck, lint, formatage, Knip, contenu, 798 tests Vitest (67 fichiers), build Vite/PWA et 55 tests Playwright `mobile` réussis (1 test desktop ignoré par ce projet).
 
 `pnpm check` après U26 et la réparation E2E du catalogue (27 septembre 2026) :
 typecheck, lint, formatage, Knip, contenu, 797 tests Vitest (66 fichiers), build

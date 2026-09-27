@@ -2500,3 +2500,16 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Écarts : aucun ; la note obsolète sur un inventaire vide a été retirée de
   `docs/etat.md`.
 - Non vérifié : aucune capture spécifique, le comportement était déjà livré.
+
+### U27 — Icônes avec `lucide-react` — fait — `feat(ui): remplace les pictogrammes Unicode par Lucide (U27)`
+
+- Tests ajoutés : `src/ui/AppHeader.test.tsx` vérifie le bouton de menu SVG Lucide sans glyphe Unicode ; `CampaignVictoryDialog.test.tsx` vérifie l’icône du palier Résolu.
+- Échec initial constaté : le test U27 échouait sur `toBeInTheDocument()` car le bouton ne contenait pas encore `svg.lucide-menu`.
+- Production : ajout de `lucide-react` 1.48.0, remplacement des glyphes par des icônes explicites pour l’en-tête, le plateau, le cadrage, le catalogue, les propriétés, la simulation, l’export, les résultats et les paliers. Les noms accessibles et les libellés français sont conservés.
+- Tests existants réécrits : les attentes de paliers et de verrouillage ne dépendent plus du caractère Unicode affiché.
+- Fichiers touchés hors périmètre : aucun ; ajout de l’ADR 0014 et de sa ligne dans `docs/index.md`, nécessaires à la dépendance structurante.
+- Écarts avec la tâche : aucun.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Non vérifié : validation visuelle finale par l’auteur.
+- Pour l’auteur : captures `test-results/u27/atelier-{390x844,844x390,1440x900}.png` produites par le smoke E2E.

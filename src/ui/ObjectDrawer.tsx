@@ -1,3 +1,5 @@
+import { Check, ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
+
 import {
   currentEditorAttempt,
   type EditorSession,
@@ -130,7 +132,7 @@ function WireCard({ accessibleName, detail, isActive, isDisabled, onSelect }: Wi
         <span>{detail}</span>
       </span>
       <span className="object-card-action" aria-hidden="true">
-        {isActive ? '✓' : '+'}
+        {isActive ? <Check size={18} aria-hidden="true" /> : <Plus size={18} aria-hidden="true" />}
       </span>
     </button>
   );
@@ -244,7 +246,13 @@ export function ObjectDrawer({
             aria-label={drawerIsExpanded ? 'Replier le catalogue' : 'Ouvrir le catalogue'}
             onClick={onToggleDrawer}
           >
-            <span aria-hidden="true">{drawerIsExpanded ? '⌄' : '⌃'}</span>
+            <span aria-hidden="true">
+              {drawerIsExpanded ? (
+                <ChevronDown size={22} aria-hidden="true" />
+              ) : (
+                <ChevronUp size={22} aria-hidden="true" />
+              )}
+            </span>
           </button>
           {drawerIsExpanded && !isSideLayout && (
             <button
@@ -253,7 +261,7 @@ export function ObjectDrawer({
               aria-label="Fermer le catalogue"
               onClick={onCloseDrawer}
             >
-              <span aria-hidden="true">×</span>
+              <X size={22} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -283,7 +291,11 @@ export function ObjectDrawer({
                     <span>{card.detail}</span>
                   </span>
                   <span className="object-card-action" aria-hidden="true">
-                    {isSelected ? '✓' : '+'}
+                    {isSelected ? (
+                      <Check size={18} aria-hidden="true" />
+                    ) : (
+                      <Plus size={18} aria-hidden="true" />
+                    )}
                   </span>
                 </button>
               );

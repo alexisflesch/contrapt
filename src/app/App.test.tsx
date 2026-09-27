@@ -708,7 +708,7 @@ describe('coque TinkerBolt', () => {
       });
       expect(launch).toBeDisabled();
     }
-    expect(within(levelList).getAllByText('🔒 Verrouillé')).toHaveLength(titles.length - 1);
+    expect(within(levelList).getAllByText(/Verrouillé/)).toHaveLength(titles.length - 1);
   });
 
   it('affiche le palier obtenu et ouvre le niveau qui suit un niveau résolu (U5)', () => {
@@ -726,9 +726,9 @@ describe('coque TinkerBolt', () => {
       within(levelList).getByRole('region', { name: `Niveau ${String(level)}` });
 
     expect(cardOf(1)).toHaveAttribute('data-level-tier', 'resolved');
-    expect(within(cardOf(1)).getByText('✅ Résolu')).toBeVisible();
+    expect(within(cardOf(1)).getByText(/Résolu/)).toBeVisible();
     expect(cardOf(4)).toHaveAttribute('data-level-tier', 'elegant');
-    expect(within(cardOf(4)).getByText('⭐ Élégant')).toBeVisible();
+    expect(within(cardOf(4)).getByText(/Élégant/)).toBeVisible();
     expect(within(cardOf(5)).queryByText(/Résolu|Élégant|Minimal/)).toBeNull();
     expect(within(cardOf(5)).getByRole('button', { name: 'Lancer le niveau 5' })).toBeEnabled();
     expect(within(cardOf(6)).getByRole('button', { name: 'Lancer le niveau 6' })).toBeDisabled();

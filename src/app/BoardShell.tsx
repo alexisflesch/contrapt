@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, CircleQuestionMark, Play, Upload } from 'lucide-react';
 
 import { createConstructionAttempt } from '../application/construction/construction-attempt';
 import {
@@ -226,7 +227,7 @@ export function BoardShell({
               onClick={exit.onExit}
             >
               <span className="objective-button-glyph" aria-hidden="true">
-                ↩
+                <ArrowLeft size={18} />
               </span>
               <span className="objective-button-label" aria-hidden="true">
                 Atelier
@@ -243,7 +244,7 @@ export function BoardShell({
               onClick={playAsPlayer}
             >
               <span className="objective-button-glyph" aria-hidden="true">
-                ▶
+                <Play size={18} />
               </span>
               <span className="objective-button-label" aria-hidden="true">
                 Jouer
@@ -262,7 +263,7 @@ export function BoardShell({
               }}
             >
               <span className="objective-button-glyph" aria-hidden="true">
-                ⤴
+                <Upload size={18} />
               </span>
               <span className="objective-button-label" aria-hidden="true">
                 Exporter
@@ -282,7 +283,7 @@ export function BoardShell({
             }}
           >
             <span className="objective-button-glyph" aria-hidden="true">
-              ?
+              <CircleQuestionMark size={18} />
             </span>
             <span className="objective-button-label" aria-hidden="true">
               Objectif

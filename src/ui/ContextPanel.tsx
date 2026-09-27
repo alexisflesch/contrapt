@@ -9,6 +9,7 @@ import {
   setControlWireToPlace,
   setPlacementToPlace,
 } from '../application/construction/authoring-commands';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, RotateCw, X } from 'lucide-react';
 import { controlCircuits } from '../domain/control-circuits';
 import { MAX_LEVER_ROTATION_RADIANS, rotationMode } from '../domain/level-document';
 import {
@@ -102,10 +103,10 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
   };
 
   const moveSteps = [
-    ['gauche', '←', -POSITION_STEP_IN_WORLD_UNITS, 0],
-    ['droite', '→', POSITION_STEP_IN_WORLD_UNITS, 0],
-    ['haut', '↑', 0, -POSITION_STEP_IN_WORLD_UNITS],
-    ['bas', '↓', 0, POSITION_STEP_IN_WORLD_UNITS],
+    ['gauche', ArrowLeft, -POSITION_STEP_IN_WORLD_UNITS, 0],
+    ['droite', ArrowRight, POSITION_STEP_IN_WORLD_UNITS, 0],
+    ['haut', ArrowUp, 0, -POSITION_STEP_IN_WORLD_UNITS],
+    ['bas', ArrowDown, 0, POSITION_STEP_IN_WORLD_UNITS],
   ] as const;
 
   return (
@@ -121,7 +122,7 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
             aria-label="Fermer les propriétés"
             onClick={onClose}
           >
-            <span aria-hidden="true">×</span>
+            <X size={22} aria-hidden="true" />
           </button>
         )
       }
@@ -162,7 +163,7 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
       )}
       {canMove && (
         <div className="context-move-controls" aria-label="Déplacer par pas">
-          {moveSteps.map(([direction, glyph, horizontal, vertical]) => (
+          {moveSteps.map(([direction, Icon, horizontal, vertical]) => (
             <Button
               key={direction}
               aria-label={`Vers la ${direction}`}
@@ -179,7 +180,7 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
                 );
               }}
             >
-              <span aria-hidden="true">{glyph}</span>
+              <Icon size={20} aria-hidden="true" />
             </Button>
           ))}
         </div>
@@ -212,7 +213,11 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
                 );
               }}
             >
-              <span aria-hidden="true">{direction === 'positive' ? '↻' : '↺'}</span>
+              {direction === 'positive' ? (
+                <RotateCw size={20} aria-hidden="true" />
+              ) : (
+                <RotateCcw size={20} aria-hidden="true" />
+              )}
               {rotationStep.degrees}°
             </Button>
           ))}

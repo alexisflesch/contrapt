@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Download, Link2 } from 'lucide-react';
 
 import type { LevelDocument } from '../domain/level-document';
 import { Button } from '../ui/Button';
@@ -117,7 +118,7 @@ export function LevelExportDialog({
               setDownloadedFileName(preparation.fileName);
             }}
           >
-            <span aria-hidden="true">⤓</span>
+            <Download size={18} aria-hidden="true" />
             Télécharger le fichier
           </Button>
           <Button
@@ -127,7 +128,7 @@ export function LevelExportDialog({
               void copyShareLink(preparation.puzzle);
             }}
           >
-            <span aria-hidden="true">🔗</span>
+            <Link2 size={18} aria-hidden="true" />
             Copier le lien de partage
           </Button>
           <p className="export-status" role="status">

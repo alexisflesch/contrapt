@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
+import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 
 import {
   currentEditorAttempt,
@@ -430,13 +431,14 @@ export function BoardView({
           aria-label="Zoom arrière"
           onClick={onZoomOut}
         >
-          −
+          <ZoomOut size={20} aria-hidden="true" />
         </button>
         <button className="camera-button camera-reset" type="button" onClick={onFitToScene}>
+          <Maximize2 size={20} aria-hidden="true" />
           Ajuster à la scène
         </button>
         <button className="camera-button" type="button" aria-label="Zoom avant" onClick={onZoomIn}>
-          +
+          <ZoomIn size={20} aria-hidden="true" />
         </button>
       </div>
     </>

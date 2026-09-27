@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
+import { X } from 'lucide-react';
 
 import { Panel } from './Panel';
 
@@ -110,7 +111,7 @@ export function Dialog({
             aria-label={closeLabel}
             onClick={onClose}
           >
-            <span aria-hidden="true">×</span>
+            <X size={22} aria-hidden="true" />
           </button>
         }
       >

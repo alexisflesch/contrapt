@@ -1,4 +1,5 @@
 import type { AttemptFailureReason, AttemptOutcome } from '../domain/attempt-failure-evaluator';
+import { ArrowLeft, RotateCcw } from 'lucide-react';
 import type { CampaignVictory } from './CampaignVictoryDialog';
 import { Button } from './Button';
 import { Panel } from './Panel';
@@ -60,7 +61,7 @@ export function LevelResult({
         <p className="level-result-reason">{failureExplanations[outcome.reason]}</p>
         <div className="level-result-actions">
           <Button tone="reset" onClick={onReset}>
-            <span aria-hidden="true">↺</span>
+            <RotateCcw size={18} aria-hidden="true" />
             Recommencer
           </Button>
           <Button onClick={onReturnToLevels}>{returnLabel}</Button>
@@ -78,7 +79,7 @@ export function LevelResult({
       >
         <div className="level-result-actions">
           <Button tone="go" onClick={onReset}>
-            <span aria-hidden="true">↩</span>
+            <ArrowLeft size={18} aria-hidden="true" />
             Retour à l’édition
           </Button>
         </div>
@@ -97,7 +98,7 @@ export function LevelResult({
         <div className="level-result-actions">
           <Button onClick={campaign.onOpenResult}>Voir le résultat</Button>
           <Button tone="go" onClick={onReplay}>
-            <span aria-hidden="true">↺</span>
+            <RotateCcw size={18} aria-hidden="true" />
             Recommencer
           </Button>
         </div>
@@ -113,7 +114,7 @@ export function LevelResult({
     >
       <div className="level-result-actions">
         <Button tone="go" onClick={onReplay}>
-          <span aria-hidden="true">↺</span>
+          <RotateCcw size={18} aria-hidden="true" />
           Recommencer
         </Button>
         <Button onClick={onReturnToLevels}>{returnLabel}</Button>

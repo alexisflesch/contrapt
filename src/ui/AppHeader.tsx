@@ -1,17 +1,18 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Menu, Plus } from 'lucide-react';
 
 import { Button } from './Button';
 
 interface AppHeaderProps {
   readonly title: string;
   readonly subtitle: string;
-  /** Optional screen-specific control placed before the ☰ menu button. */
+  /** Optional screen-specific control placed before the menu button. */
   readonly action?: ReactNode;
 }
 
 /**
- * The app's brand lockup, current screen label, and the ☰ navigation menu.
+ * The app's brand lockup, current screen label, and the navigation menu.
  * Every destination is a real route (ADR 0008): selecting one navigates
  * away, which unmounts this component along with its own open/closed state
  * — no explicit "close the menu" step is needed after a selection.
@@ -24,7 +25,7 @@ export function AppHeader({ title, subtitle, action }: AppHeaderProps) {
     <header className="app-header">
       <div className="brand-lockup">
         <span className="brand-mark" aria-hidden="true">
-          +
+          <Plus size={22} strokeWidth={3} />
         </span>
         <h1 className="brand-name">TinkerBolt</h1>
       </div>
@@ -43,7 +44,7 @@ export function AppHeader({ title, subtitle, action }: AppHeaderProps) {
             setIsMenuOpen((open) => !open);
           }}
         >
-          <span aria-hidden="true">☰</span>
+          <Menu size={22} aria-hidden="true" />
         </button>
       </div>
       {isMenuOpen && (

@@ -45,6 +45,7 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/decisions/0011-local-storage-and-url-sharing.md`    | 98      | `localStorage`, codec de fichier, partage par URL (accepté)      |
 | `docs/decisions/0012-pwa-service-worker.md`               | 47      | PWA, service worker, mises à jour (accepté)                      |
 | `docs/decisions/0013-puzzle-workshop-solution.md`         | 95      | objets à placer, solution de référence, export vérifié (accepté) |
+| `docs/decisions/0014-icon-library.md`                    | —       | bibliothèque d’icônes de l’interface (accepté)                         |
 
 Sources de vérité exécutables, prioritaires sur toute prose :
 
