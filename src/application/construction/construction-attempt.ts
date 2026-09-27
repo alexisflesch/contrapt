@@ -217,15 +217,27 @@ const acceptCandidate = (
     ...entry,
     quantity: entry.quantity + (consumedByInventoryId.get(entry.id) ?? 0),
   }));
+  const solutionWireIds = new Set(attemptDocument.solution?.wires?.map(({ id }) => id) ?? []);
   const validation = levelDocumentSchema.safeParse({
     ...attemptDocument,
     inventory: inventoryForValidation,
+    // The exported solution describes a wire before the player lays it. During
+    // an attempt, its concrete wire instance is validated by the attempt
+    // schema above and must not collide with the solution metadata here.
+    wires: attemptDocument.wires.filter(({ id }) => !solutionWireIds.has(id)),
   });
   if (!validation.success) return reject('invalid-level-document');
 
   return {
     status: 'accepted',
-    state: freezeAttempt({ ...validation.data, inventory: attemptDocument.inventory }, provenance),
+    state: freezeAttempt(
+      {
+        ...validation.data,
+        inventory: attemptDocument.inventory,
+        wires: attemptDocument.wires,
+      },
+      provenance,
+    ),
   };
 };
 

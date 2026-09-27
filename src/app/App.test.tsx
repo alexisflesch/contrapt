@@ -1954,6 +1954,16 @@ describe('coque TinkerBolt', () => {
     tapBoard(board, 200, 225);
     const wiredPanel = screen.getByRole('region', { name: 'Propriétés de Levier' });
     expect(within(wiredPanel).getByText('Circuit A')).toBeVisible();
+    const wireRole = within(wiredPanel).getByRole('group', { name: /Pour le joueur · fil/ });
+    expect(within(wireRole).getByRole('button', { name: 'À placer' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    fireEvent.click(within(wireRole).getByRole('button', { name: 'À placer' }));
+    expect(within(wireRole).getByRole('button', { name: 'À placer' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     fireEvent.click(within(wiredPanel).getByRole('button', { name: 'Délier le circuit A' }));
     expect(canvas).toHaveAttribute('data-wires', '');
   });

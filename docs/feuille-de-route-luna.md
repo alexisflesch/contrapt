@@ -6,7 +6,7 @@ dans l’ordre. Ces tâches d’interface sont **autorisées par l’auteur** (l
 de § 6 ne s’y applique pas) ; captures aux trois formats dans le journal, mais
 l’auteur valide plus tard, sans bloquer l’avancée.
 
-**Fait.** Toute la logique L1 à L28 ; P1 ; interface U4 à U6, U13 à U24, U4b
+**Fait.** Toute la logique L1 à L28 ; P1 ; interface U4 à U6, U13 à U25, U4b
 (modale de victoire), U5b (niveaux verrouillés, déblocage sous `pnpm dev`),
 U14b (fils en équerre). Rendus visuels acceptés en l’état par l’auteur.
 
@@ -17,21 +17,16 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
 
 ## Prochaines tâches, dans l’ordre
 
-1. **U25 — Fils « à placer ».** Le fil est un objet d’inventaire comme les
-   autres (U15, U21). Aujourd’hui l’export refuse un objet à placer relié par un
-   fil : lever ce refus. Un fil peut être marqué « à placer » ; il passe dans
-   l’inventaire (`wire`) et dans la solution de référence ; un objet à placer
-   relié garde son fil dans la solution. Amender ADR 0013 si le format bouge.
-2. **U26 — Catalogue auteur dans un brouillon de campagne.** L’agent U22 a
+1. **U26 — Catalogue auteur dans un brouillon de campagne.** L’agent U22 a
    signalé que le brouillon du niveau 1 n’affiche pas le catalogue auteur
    (`hasInventory`, `src/app/BoardShell.tsx`) ; l’auteur n’a pas reproduit
    (le niveau 1 a bien une poutre en inventaire). Reproduire d’abord ; si faux,
    le noter au journal et passer.
-3. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
+2. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
    caractères Unicode (↺, ↩, →, ☰, ?, 🔒, etc.) par des icônes `lucide-react`.
    Dépendance structurante : ADR court d’abord. Garder des libellés
    accessibles. Les paliers ✅ ⭐ 🏆 peuvent devenir des icônes aussi.
-4. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
+3. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
    `docs/levels/nouveaux-niveaux.md`, générer un JSON « à peu près » (pas de
    calibrage fin) au format U22 : décor, objets à placer en inventaire,
    solution de référence approximative. Les enregistrer dans la campagne à la
@@ -45,7 +40,7 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
    exigée : ancienne campagne jamais publiée). Questions ouvertes du document
    (§ 2 de `nouveaux-niveaux.md`, fin) : appliquer les réponses de l’auteur
    si elles y figurent, sinon choisir l’option la plus simple et la noter.
-5. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
+4. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
    U1, U7, U8, U10, U11, U2, U3 ; minuteur animé (`art/assets/timer/`).
 
 **Dettes notées, non prioritaires.** Durée de la vérification d’export (deux
@@ -2458,3 +2453,26 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Contradictions rencontrées : aucune.
 - Non vérifié : aucun.
 - Pour l’auteur : aucun.
+
+
+### U25 — Fils « à placer » — fait — `feat(application): exporte les fils à placer (U25)`
+
+- Tests ajoutés : schéma v2 (marqueur `wires[i].toPlace`, solution avec `wires`),
+  conversion atelier↔puzzle, rejeu de la solution par `connectControlWire`,
+  commande auteur et panneau tactile.
+- Échec initial constaté : les cinq tests rouges confirmaient le refus U22 et
+  l’absence des champs U25 ; la gate rapide a ensuite trouvé une fermeture JSX
+  manquante et un matcher Vitest typé `any`, corrigés sans affaiblir les tests.
+- Production : les fils fixes restent dans le décor ; les fils marqués ou
+  touchant un objet à placer deviennent une entrée `wire`, une connexion de
+  solution et, si nécessaire, une référence `placementId` remappable.
+- Tests existants réécrits : l’ancien test « refuse un objet à placer relié par
+  un fil » vérifie désormais l’export et le round-trip dans l’atelier.
+- Fichiers touchés hors périmètre : aucun.
+- Écarts avec la tâche : aucun.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : l’ADR 0013 décrivait encore le refus U22 et les
+  seuils de défi exportés ; l’ADR a été amendée pour U25/U24.
+- Non vérifié : validation visuelle par l’auteur.
+- Pour l’auteur : les boutons « Fixe / À placer » apparaissent sous chaque fil
+  connecté dans l’inspecteur auteur.

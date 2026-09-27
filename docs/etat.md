@@ -79,6 +79,10 @@ pendant le travail.
   844 × 390 et 1440 × 900.
 - Export U24 : les puzzles produits par l’atelier ne portent aucun `challenge` ;
   les seuils ⭐/🏆 sont réservés aux niveaux qui les définissent explicitement.
+- Export U25 : les fils fixes restent dans le décor ; les fils marqués « À
+  placer », ainsi que ceux qui touchent un objet à placer, passent dans
+  l’inventaire `wire` et la solution de référence. L’inspecteur auteur permet
+  de choisir « Fixe / À placer » pour chaque fil connecté.
 
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
@@ -129,15 +133,16 @@ pendant le travail.
   estompés (✅ seul sans défi), « Niveau suivant », « Recommencer », « Voir la
   scène » ; bandeau réduit sous le plateau pour rouvrir le résultat.
 - **U14b — fils en équerre** : horizontal/vertical, un coude au plus.
-- **U22 — atelier créateur de puzzles** (ADR 0013) : réglage « Fixe / À
+- **U22/U25 — atelier créateur de puzzles** (ADR 0013) : réglage « Fixe / À
   placer » dans l’inspecteur de l’atelier (annulable, jamais sur la balle ni le
-  panier de l’objectif, champ `toPlace` du document) ; contour pointillé violet
-  autour des objets à placer pendant la construction ; bouton d’en-tête
-  « Jouer » (« Jouer le puzzle ») qui ouvre le puzzle en mode joueur sur une
-  copie, avec « Retour à l’atelier » ; l’export (fichier et lien) produit le
-  puzzle — décor fixe, inventaire des objets à placer regroupés, `solution` de
-  référence, zone = scène si l’atelier n’en a pas, défi ⭐ = 🏆 = nombre
-  d’objets à placer — après vérification par simulation à pas fixe (solution
+  panier de l’objectif, champ `toPlace` du document) ; le même réglage est
+  disponible pour chaque fil connecté ; contour pointillé violet autour des
+  objets à placer pendant la construction ; bouton d’en-tête « Jouer » (« Jouer
+  le puzzle ») qui ouvre le puzzle en mode joueur sur une copie, avec « Retour à
+  l’atelier » ; l’export (fichier et lien) produit le puzzle — décor fixe,
+  inventaire des objets à placer regroupés, fils à placer en `wire`, `solution`
+  de référence, zone = scène si l’atelier n’en a pas — après vérification par
+  simulation à pas fixe (solution
   posée par les commandes du joueur : gagne ; décor seul : ne gagne pas ; au
   moins un objet à placer), sinon un message dit pourquoi. Un brouillon de
   campagne d’un niveau à solution se rouvre sous forme d’atelier.
@@ -347,10 +352,10 @@ pendant le travail.
   ces commandes dans l’interface (scène, zones, inventaire, objectif,
   métadonnées), ni d’importer un fichier. Depuis U22, l’export remplace
   l’inventaire de l’atelier par les objets à placer.
-- **Atelier U22** : un objet à placer relié par un fil n’est pas exportable
-  (refus avec message) ; revenir de « Jouer le puzzle » remonte l’atelier sur
-  son dernier document, l’historique annuler/rétablir repart de là ; le brouillon
-  du niveau 1 (inventaire vide) n’affiche pas le catalogue auteur (préexistant,
+- **Atelier U22/U25** : revenir de « Jouer le puzzle » remonte l’atelier sur son
+  dernier document, l’historique annuler/rétablir repart de là ; les fils à
+  placer sont exportables et rouverts avec leur marquage ; le brouillon du
+  niveau 1 (inventaire vide) n’affiche pas le catalogue auteur (préexistant,
   `hasInventory` de `BoardShell`).
 - **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
   brouillon créé, ni de lister ou supprimer les brouillons dans l’interface.
@@ -365,9 +370,9 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` après le correctif U21, U23 et U24 (27 septembre 2026) : typecheck,
-lint, formatage, Knip, contenu, 789 tests Vitest (66 fichiers), build et 56
-tests Playwright `mobile` (55 réussis, 1 ignoré).
+`pnpm check` après les correctifs U21, U23, U24 et U25 (27 septembre 2026) :
+typecheck, lint, formatage, Knip, contenu, 796 tests Vitest (66 fichiers), build
+et 56 tests Playwright `mobile` (55 réussis, 1 ignoré).
 
 `pnpm check` après U5 (27 septembre 2026) : passe d’une traite — typecheck,
 lint, formatage, Knip, contenu, 741 tests Vitest (62 fichiers), build et 55

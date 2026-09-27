@@ -13,6 +13,7 @@ type Scene = LevelDocument['scene'];
 type InventoryEntry = LevelDocument['inventory'][number];
 type Permissions = InventoryEntry['permissions'];
 type Placement = LevelDocument['objects'][number];
+type ControlWire = LevelDocument['wires'][number];
 type Challenge = NonNullable<LevelDocument['challenge']>;
 type WorldPosition = Scene['min'];
 
@@ -88,6 +89,13 @@ interface SetPlacementToPlaceInput {
   readonly context: ConstructionContext;
   readonly placementId: string;
   /** `true`: the player will place it (U22); `false`: it stays in the decor. */
+  readonly toPlace: boolean;
+}
+
+interface SetControlWireToPlaceInput {
+  readonly context: ConstructionContext;
+  readonly wireId: string;
+  /** `true`: the player will lay the wire (U25); `false`: it stays fixed. */
   readonly toPlace: boolean;
 }
 
@@ -185,6 +193,9 @@ const inventoryEntryAt = (document: LevelDocument, entryId: string): InventoryEn
 
 const placementAt = (document: LevelDocument, placementId: string): Placement | undefined =>
   document.objects.find(({ id }) => id === placementId);
+
+const controlWireAt = (document: LevelDocument, wireId: string): ControlWire | undefined =>
+  document.wires.find(({ id }) => id === wireId);
 
 export const updateScene = (input: UpdateSceneInput): AuthoringCommand =>
   createAuthoringCommand(input.context, (state) => {
@@ -407,6 +418,27 @@ export const setPlacementToPlace = (input: SetPlacementToPlaceInput): AuthoringC
         ...state.document,
         objects: state.document.objects.map((candidate) =>
           candidate.id === input.placementId ? next : candidate,
+        ),
+      },
+    };
+  });
+
+/** U25: the author decides whether a connected wire belongs to the decor or the player's inventory. */
+export const setControlWireToPlace = (input: SetControlWireToPlaceInput): AuthoringCommand =>
+  createAuthoringCommand(input.context, (state) => {
+    const wire = controlWireAt(state.document, input.wireId);
+    if (wire === undefined) return { status: 'rejected', reason: 'wire-not-found' };
+    if ((wire.toPlace === true) === input.toPlace) return { status: 'unchanged' };
+
+    const nextWire: ControlWire = input.toPlace
+      ? { ...wire, toPlace: true }
+      : { id: wire.id, sourceId: wire.sourceId, targetId: wire.targetId };
+    return {
+      status: 'candidate',
+      document: {
+        ...state.document,
+        wires: state.document.wires.map((candidate) =>
+          candidate.id === input.wireId ? nextWire : candidate,
         ),
       },
     };

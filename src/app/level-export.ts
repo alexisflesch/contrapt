@@ -22,8 +22,6 @@ type LevelExportPreparation =
 const refusalMessages: Readonly<Record<PuzzleRefusalReason, string>> = {
   'no-object-to-place':
     'Aucun objet n’est à placer : touchez chaque objet que le joueur devra poser, puis choisissez « À placer » dans ses propriétés.',
-  'wired-object-to-place':
-    'Un objet à placer est relié par un fil : ce cas n’est pas encore exportable. Laissez-le fixe ou déliez-le.',
   'invalid-puzzle': 'Le puzzle obtenu depuis l’atelier n’est pas un niveau valide.',
   'solution-not-playable':
     'Le joueur ne pourrait pas poser tous les objets à placer là où ils sont : gardez-les dans une zone de construction.',

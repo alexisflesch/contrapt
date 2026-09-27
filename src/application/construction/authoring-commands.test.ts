@@ -13,6 +13,7 @@ import {
   removeLevelChallenge,
   resizeBuildZone,
   setLevelChallenge,
+  setControlWireToPlace,
   updateInventoryPermissions,
   updateInventoryProperties,
   updateInventoryQuantity,
@@ -103,6 +104,20 @@ const addedBall = {
   type: 'ball',
   props: {},
   transform: { position: { x: 4, y: 12 }, rotation: 0 },
+} as const;
+const wiredLever = {
+  id: 'lever-1',
+  type: 'lever',
+  props: { position: 'center' },
+  transform: { position: { x: 8, y: 8 }, rotation: 0 },
+  permissions: lockedPermissions,
+} as const;
+const wiredConveyor = {
+  id: 'conveyor-1',
+  type: 'conveyor',
+  props: { direction: 'stopped' },
+  transform: { position: { x: 12, y: 8 }, rotation: 0 },
+  permissions: lockedPermissions,
 } as const;
 
 const authoringCommands: readonly {
@@ -443,6 +458,46 @@ describe('commandes d’auteur', () => {
       ).toEqual({ status: 'rejected', reason: 'placement-not-found' });
       expect(
         run(setPlacementToPlace({ context: 'player', placementId: 'beam-1', toPlace: true })),
+      ).toEqual({ status: 'rejected', reason: 'authoring-only' });
+    });
+  });
+
+  describe('réglage « Fixe / À placer » d’un fil (U25)', () => {
+    const wiredLevel = createLevel({
+      objects: [...createLevel().objects, wiredLever, wiredConveyor],
+      wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
+    });
+    const run = (command: Command<ConstructionAttempt>, document = wiredLevel) =>
+      command.execute({ document, provenance: {} });
+
+    it('marque un fil à placer, le remet fixe, et conserve les extrémités', () => {
+      const marked = run(
+        setControlWireToPlace({ context: 'author', wireId: 'wire-1', toPlace: true }),
+      );
+      expect(
+        marked.status === 'accepted' &&
+          marked.state.document.wires.find(({ id }) => id === 'wire-1'),
+      ).toEqual({ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1', toPlace: true });
+
+      if (marked.status !== 'accepted') return;
+      const fixed = run(
+        setControlWireToPlace({ context: 'author', wireId: 'wire-1', toPlace: false }),
+        marked.state.document,
+      );
+      expect(
+        fixed.status === 'accepted' && fixed.state.document.wires.find(({ id }) => id === 'wire-1'),
+      ).toEqual(wiredLevel.wires[0]);
+    });
+
+    it('refuse un fil absent ou une modification côté joueur', () => {
+      expect(
+        run(setControlWireToPlace({ context: 'author', wireId: 'missing', toPlace: true })),
+      ).toEqual({ status: 'rejected', reason: 'wire-not-found' });
+      expect(
+        setControlWireToPlace({ context: 'player', wireId: 'wire-1', toPlace: true }).execute({
+          document: wiredLevel,
+          provenance: {},
+        }),
       ).toEqual({ status: 'rejected', reason: 'authoring-only' });
     });
   });

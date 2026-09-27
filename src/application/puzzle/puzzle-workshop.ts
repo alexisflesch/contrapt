@@ -1,14 +1,14 @@
 import { levelDocumentSchema, rotationMode, type LevelDocument } from '../../domain/level-document';
-import { createConstructionAttempt, placeFromInventory } from '../construction';
+import { connectControlWire, createConstructionAttempt, placeFromInventory } from '../construction';
 
 type Placement = LevelDocument['objects'][number];
 type InventoryEntry = LevelDocument['inventory'][number];
 type SolutionPlacement = NonNullable<LevelDocument['solution']>['placements'][number];
+type SolutionWire = Exclude<NonNullable<LevelDocument['solution']>['wires'], undefined>[number];
 
 /** Why a workshop cannot become a puzzle, or a puzzle cannot be exported (U22, ADR 0013). */
 export type PuzzleRefusalReason =
   | 'no-object-to-place'
-  | 'wired-object-to-place'
   | 'invalid-puzzle'
   | 'solution-not-playable'
   | 'solution-does-not-win'
@@ -53,35 +53,46 @@ const isToPlace = (placement: Placement): boolean => placement.toPlace === true;
 
 interface EntryDraft {
   readonly id: string;
-  readonly type: Placement['type'];
-  readonly props: Placement['props'];
+  readonly type: InventoryEntry['type'];
+  readonly props: InventoryEntry['props'];
   quantity: number;
   readonly permissions: InventoryEntry['permissions'];
 }
 
 /**
- * U22 (ADR 0013): the fixed objects stay as the decor; the objects to place
- * become the inventory, grouped by family and properties, and their poses the
- * reference solution. The workshop's own stock is the author's and is
- * dropped. Without a build zone, the player may place anywhere in the scene.
- * The result is validated like any document before it is returned.
+ * U22/U25 (ADR 0013): fixed objects and fixed wires stay as decor; objects and
+ * wires to place become inventory entries, and their poses/connections the
+ * reference solution. The workshop's own stock is the author's and is dropped.
+ * Without a build zone, the player may place anywhere in the scene. The result
+ * is validated like any document before it is returned.
  */
 export const puzzleFromWorkshop = (workshop: LevelDocument): PuzzleConversion => {
   const toPlace = workshop.objects.filter(isToPlace);
   if (toPlace.length === 0) return { status: 'refused', reason: 'no-object-to-place' };
 
   const toPlaceIds = new Set(toPlace.map(({ id }) => id));
-  if (
-    workshop.wires.some(
-      ({ sourceId, targetId }) => toPlaceIds.has(sourceId) || toPlaceIds.has(targetId),
-    )
-  ) {
-    return { status: 'refused', reason: 'wired-object-to-place' };
-  }
-
   const decor = workshop.objects.filter((placement) => !isToPlace(placement));
-  const usedIds = new Set(decor.map(({ id }) => id));
+  const wiresToPlace = workshop.wires.filter(
+    ({ sourceId, targetId, toPlace }) =>
+      toPlace === true || toPlaceIds.has(sourceId) || toPlaceIds.has(targetId),
+  );
+  const decorWires = workshop.wires.filter((wire) => !wiresToPlace.includes(wire));
+  const usedIds = new Set([...decor.map(({ id }) => id), ...workshop.wires.map(({ id }) => id)]);
   const inventory: EntryDraft[] = [];
+  const wireEntryId =
+    wiresToPlace.length > 0 ? uniqueIdentifier('wire-a-placer', usedIds) : undefined;
+  if (wireEntryId !== undefined) {
+    inventory.push({
+      id: wireEntryId,
+      type: 'wire',
+      props: {},
+      quantity: wiresToPlace.length,
+      permissions: { move: false, rotate: false, remove: true },
+    });
+  }
+  const wiredPlacementIds = new Set(
+    wiresToPlace.flatMap(({ sourceId, targetId }) => [sourceId, targetId]),
+  );
   const placements: SolutionPlacement[] = toPlace.map((placement) => {
     let entry = inventory.find(
       (candidate) =>
@@ -102,8 +113,22 @@ export const puzzleFromWorkshop = (workshop: LevelDocument): PuzzleConversion =>
       inventory.push(entry);
     }
     entry.quantity += 1;
-    return { inventoryId: entry.id, transform: placement.transform };
+    return {
+      inventoryId: entry.id,
+      ...(wiredPlacementIds.has(placement.id) ? { placementId: placement.id } : {}),
+      transform: placement.transform,
+    };
   });
+
+  const solutionWires: SolutionWire[] =
+    wireEntryId === undefined
+      ? []
+      : wiresToPlace.map((wire) => ({
+          id: wire.id,
+          inventoryId: wireEntryId,
+          sourceId: wire.sourceId,
+          targetId: wire.targetId,
+        }));
 
   const { challenge: ignoredChallenge, ...workshopWithoutChallenge } = workshop;
   void ignoredChallenge;
@@ -111,11 +136,15 @@ export const puzzleFromWorkshop = (workshop: LevelDocument): PuzzleConversion =>
     ...workshopWithoutChallenge,
     objects: decor,
     inventory,
+    wires: decorWires,
     buildZones:
       workshop.buildZones.length > 0
         ? workshop.buildZones
         : [{ min: workshop.scene.min, max: workshop.scene.max }],
-    solution: { placements },
+    solution: {
+      placements,
+      ...(solutionWires.length > 0 ? { wires: solutionWires } : {}),
+    },
   });
   return validation.success
     ? { status: 'ok', puzzle: validation.data }
@@ -137,13 +166,19 @@ export const workshopFromPuzzle = (puzzle: LevelDocument): LevelDocument => {
   const usedIds = new Set([
     ...puzzle.objects.map(({ id }) => id),
     ...puzzle.inventory.map(({ id }) => id),
+    ...puzzle.wires.map(({ id }) => id),
   ]);
+  const restoredIdsByReference = new Map<string, string>();
   const restored = solution.placements.flatMap((pose) => {
     const entry = puzzle.inventory.find(({ id }) => id === pose.inventoryId);
     if (entry === undefined || entry.type === 'wire') return [];
+    const restoredId = uniqueIdentifier(entry.id, usedIds);
+    if (pose.placementId !== undefined) {
+      restoredIdsByReference.set(pose.placementId, restoredId);
+    }
     return [
       {
-        id: uniqueIdentifier(entry.id, usedIds),
+        id: restoredId,
         type: entry.type,
         props: entry.props,
         transform: pose.transform,
@@ -152,24 +187,50 @@ export const workshopFromPuzzle = (puzzle: LevelDocument): LevelDocument => {
       },
     ];
   });
+  const restoredWires = (solution.wires ?? []).map((wire) => ({
+    id: wire.id,
+    sourceId: restoredIdsByReference.get(wire.sourceId) ?? wire.sourceId,
+    targetId: restoredIdsByReference.get(wire.targetId) ?? wire.targetId,
+    toPlace: true as const,
+  }));
 
   const validation = levelDocumentSchema.safeParse({
     ...workshop,
     objects: [...puzzle.objects, ...restored],
+    wires: [...puzzle.wires, ...restoredWires],
   });
   return validation.success ? validation.data : puzzle;
 };
 
 /** Poses the reference solution with the player's own command, build zones included. */
 const playSolution = (puzzle: LevelDocument): LevelDocument | null => {
-  const usedIds = new Set(puzzle.objects.map(({ id }) => id));
+  const usedIds = new Set([
+    ...puzzle.objects.map(({ id }) => id),
+    ...puzzle.wires.map(({ id }) => id),
+  ]);
+  const placementIdsByReference = new Map<string, string>();
   let attempt = createConstructionAttempt(puzzle);
   for (const pose of puzzle.solution?.placements ?? []) {
+    const placementId = uniqueIdentifier('solution', usedIds);
     const outcome = placeFromInventory({
       context: 'player',
       inventoryEntryId: pose.inventoryId,
-      placementId: uniqueIdentifier('solution', usedIds),
+      placementId,
       transform: pose.transform,
+    }).execute(attempt);
+    if (outcome.status === 'rejected') return null;
+    attempt = outcome.state;
+    if (pose.placementId !== undefined) {
+      placementIdsByReference.set(pose.placementId, placementId);
+    }
+  }
+  for (const wire of puzzle.solution?.wires ?? []) {
+    const outcome = connectControlWire({
+      context: 'player',
+      wireId: wire.id,
+      inventoryEntryId: wire.inventoryId,
+      sourceId: placementIdsByReference.get(wire.sourceId) ?? wire.sourceId,
+      targetId: placementIdsByReference.get(wire.targetId) ?? wire.targetId,
     }).execute(attempt);
     if (outcome.status === 'rejected') return null;
     attempt = outcome.state;

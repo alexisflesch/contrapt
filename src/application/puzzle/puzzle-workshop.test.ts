@@ -196,16 +196,81 @@ describe('passage de l’atelier au puzzle (U22, ADR 0013)', () => {
     });
   });
 
-  it('refuse un objet à placer relié par un fil', () => {
+  it('exporte dans la solution un fil dont une extrémité est à placer (U25)', () => {
     const document = workshop({
       objects: [...workshop().objects, { ...lever, toPlace: true }, conveyor],
       wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
     });
 
-    expect(puzzleFromWorkshop(document)).toEqual({
-      status: 'refused',
-      reason: 'wired-object-to-place',
+    const result = puzzleFromWorkshop(document);
+
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.puzzle.wires).toEqual([]);
+    expect(result.puzzle.inventory).toContainEqual({
+      id: 'wire-a-placer',
+      type: 'wire',
+      props: {},
+      quantity: 1,
+      permissions: { move: false, rotate: false, remove: true },
     });
+    expect(result.puzzle.solution?.placements).toContainEqual({
+      inventoryId: 'lever-a-placer',
+      placementId: 'lever-1',
+      transform: lever.transform,
+    });
+    expect(result.puzzle.solution?.wires).toEqual([
+      {
+        id: 'wire-1',
+        inventoryId: 'wire-a-placer',
+        sourceId: 'lever-1',
+        targetId: 'conveyor-1',
+      },
+    ]);
+    expect(levelDocumentSchema.safeParse(result.puzzle).success).toBe(true);
+  });
+
+  it('exporte dans la solution un fil fixe marqué « à placer » (U25)', () => {
+    const document = workshop({
+      objects: [...workshop().objects, lever, conveyor],
+      wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1', toPlace: true }],
+    });
+
+    const result = puzzleFromWorkshop(document);
+
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.puzzle.wires).toEqual([]);
+    expect(result.puzzle.solution?.wires).toEqual([
+      {
+        id: 'wire-1',
+        inventoryId: 'wire-a-placer',
+        sourceId: 'lever-1',
+        targetId: 'conveyor-1',
+      },
+    ]);
+  });
+
+  it('rouvre les fils de la solution comme fils à placer dans l’atelier (U25)', () => {
+    const source = workshop({
+      objects: [...workshop().objects, { ...lever, toPlace: true }, conveyor],
+      wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
+    });
+    const exported = puzzleFromWorkshop(source);
+    if (exported.status !== 'ok') throw new Error('export refusé');
+
+    const reopened = workshopFromPuzzle(exported.puzzle);
+
+    expect(reopened.solution).toBeUndefined();
+    expect(reopened.wires[0]).toMatchObject({
+      id: 'wire-1',
+      targetId: 'conveyor-1',
+      toPlace: true,
+    });
+    expect(reopened.wires[0]?.sourceId).toMatch(/^lever-a-placer/);
+    expect(reopened.objects.find(({ id }) => id === reopened.wires[0]?.sourceId)?.toPlace).toBe(
+      true,
+    );
   });
 
   it('rouvre un puzzle dans l’atelier, objets à placer remis en place, puis le reproduit', () => {
@@ -243,6 +308,21 @@ describe('vérification d’un puzzle avant export (U22)', () => {
 
     expect(result).toEqual({ status: 'verified', puzzle: expectedPuzzle });
     expect(runs.map(({ objects }) => objects.length)).toEqual([7, 3]);
+  });
+
+  it('rejoue les fils à placer avant de simuler la solution (U25)', () => {
+    const document = workshop({
+      objects: [...workshop().objects, { ...lever, toPlace: true }, conveyor],
+      wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
+    });
+
+    const result = verifyPuzzle(document, (candidate) =>
+      candidate.objects.some(({ type }) => type === 'lever') && candidate.wires.length === 1
+        ? 'won'
+        : 'lost',
+    );
+
+    expect(result.status).toBe('verified');
   });
 
   it('refuse la machine complète qui ne gagne pas', () => {

@@ -5,7 +5,10 @@ import {
   rotatePlacement,
   updatePlacementProperties,
 } from '../application/construction/construction-attempt';
-import { setPlacementToPlace } from '../application/construction/authoring-commands';
+import {
+  setControlWireToPlace,
+  setPlacementToPlace,
+} from '../application/construction/authoring-commands';
 import { controlCircuits } from '../domain/control-circuits';
 import { MAX_LEVER_ROTATION_RADIANS, rotationMode } from '../domain/level-document';
 import {
@@ -345,6 +348,35 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
               <li key={wire.id}>
                 <span>Circuit {label}</span>
                 {wire.targetId === selectedPlacement.id && <span> : commandé</span>}
+                {canEdit && (
+                  <div
+                    className="context-role"
+                    role="group"
+                    aria-label={`Pour le joueur · fil ${wire.id}`}
+                  >
+                    {(['Fixe', 'À placer'] as const).map((status) => {
+                      const toPlace = status === 'À placer';
+                      return (
+                        <Button
+                          key={status}
+                          className="context-role-option"
+                          aria-pressed={(wire.toPlace === true) === toPlace}
+                          onClick={() => {
+                            onExecuteCommand(
+                              setControlWireToPlace({
+                                context: 'author',
+                                wireId: wire.id,
+                                toPlace,
+                              }),
+                            );
+                          }}
+                        >
+                          {status}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                )}
                 {canUnlink(wire.id) && (
                   <Button
                     aria-label={name}

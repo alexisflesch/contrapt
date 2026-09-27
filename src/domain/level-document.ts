@@ -212,6 +212,8 @@ const controlWireSchema = z.strictObject({
   id: identifierSchema,
   sourceId: identifierSchema,
   targetId: identifierSchema,
+  /** Workshop-only marker; absent means that the authored wire stays fixed. */
+  toPlace: z.literal(true).optional(),
 });
 
 const basketGoalSchema = z.strictObject({
@@ -229,10 +231,20 @@ const challengeObjectCountSchema = z.int().min(1).max(MAX_CHALLENGE_OBJECT_COUNT
 const solutionPlacementSchema = z.strictObject({
   inventoryId: identifierSchema,
   transform: transformSchema,
+  /** Original workshop object id, only needed when a solution wire references this pose. */
+  placementId: identifierSchema.optional(),
+});
+
+const solutionWireSchema = z.strictObject({
+  id: identifierSchema,
+  inventoryId: identifierSchema,
+  sourceId: identifierSchema,
+  targetId: identifierSchema,
 });
 
 const solutionSchema = z.strictObject({
   placements: z.array(solutionPlacementSchema).max(MAX_OBJECTS),
+  wires: z.array(solutionWireSchema).max(MAX_WIRES).optional(),
 });
 
 const challengeSchema = z.strictObject({
@@ -604,6 +616,7 @@ interface PuzzleRelationsInput {
   readonly scene: { readonly min: WorldPosition; readonly max: WorldPosition };
   readonly objects: readonly ObjectPlacement[];
   readonly inventory: readonly InventoryEntry[];
+  readonly wires: readonly ControlWire[];
   readonly goal: { readonly ballId: string; readonly basketId: string };
   readonly solution?: Solution | undefined;
 }
@@ -622,6 +635,7 @@ const addPuzzleIssues = (
   document: PuzzleRelationsInput,
   issues: LevelDocumentValidationIssue[],
   checkQuantities: boolean,
+  allowSolutionWireInstances = false,
 ): void => {
   document.objects.forEach((placement, index) => {
     const isGoal = placement.id === document.goal.ballId || placement.id === document.goal.basketId;
@@ -636,6 +650,15 @@ const addPuzzleIssues = (
   const { solution } = document;
   if (solution === undefined) return;
 
+  document.wires.forEach((wire, index) => {
+    if (wire.toPlace === true) {
+      issues.push({
+        path: ['wires', index, 'toPlace'],
+        message: 'Un puzzle exporté ne conserve pas le marquage « à placer » des fils.',
+      });
+    }
+  });
+
   if (document.objects.some(({ toPlace }) => toPlace === true)) {
     issues.push({
       path: ['solution'],
@@ -644,6 +667,8 @@ const addPuzzleIssues = (
   }
 
   const usesByEntryId = new Map<string, number>();
+  const placementTypesByReference = new Map<string, PlacementType>();
+  const placementReferences = new Set<string>();
   solution.placements.forEach((pose, index) => {
     const path = ['solution', 'placements', index] as const;
     const entry = document.inventory.find(({ id }) => id === pose.inventoryId);
@@ -653,6 +678,17 @@ const addPuzzleIssues = (
         message: `La solution doit poser un objet de l’inventaire, pas « ${pose.inventoryId} ».`,
       });
       return;
+    }
+
+    if (pose.placementId !== undefined) {
+      if (placementReferences.has(pose.placementId)) {
+        issues.push({
+          path: [...path, 'placementId'],
+          message: `La référence de pose « ${pose.placementId} » est déjà utilisée.`,
+        });
+      }
+      placementReferences.add(pose.placementId);
+      placementTypesByReference.set(pose.placementId, entry.type);
     }
 
     const uses = (usesByEntryId.get(entry.id) ?? 0) + 1;
@@ -686,6 +722,67 @@ const addPuzzleIssues = (
         message: `La pose de la solution ne respecte pas la rotation de la famille « ${entry.type} ».`,
       });
     }
+  });
+
+  const fixedObjectsById = new Map(document.objects.map((placement) => [placement.id, placement]));
+  const solutionWireIds = new Set<string>();
+  const declaredSolutionWireIds = new Set((solution.wires ?? []).map(({ id }) => id));
+  const fixedWireIds = new Set(
+    document.wires
+      .filter(({ id }) => !allowSolutionWireInstances || !declaredSolutionWireIds.has(id))
+      .map(({ id }) => id),
+  );
+  const commandedTargets = new Set(
+    document.wires
+      .filter(({ id }) => checkQuantities || !declaredSolutionWireIds.has(id))
+      .map(({ targetId }) => targetId),
+  );
+  const usesByWireEntryId = new Map<string, number>();
+  (solution.wires ?? []).forEach((wire, index) => {
+    const path = ['solution', 'wires', index] as const;
+    const entry = document.inventory.find(({ id }) => id === wire.inventoryId);
+    if (entry === undefined || entry.type !== 'wire') {
+      issues.push({
+        path: [...path, 'inventoryId'],
+        message: `La solution doit utiliser une entrée de fil « ${wire.inventoryId} ».`,
+      });
+    } else {
+      const uses = (usesByWireEntryId.get(entry.id) ?? 0) + 1;
+      usesByWireEntryId.set(entry.id, uses);
+      if (checkQuantities && uses > entry.quantity) {
+        issues.push({
+          path: [...path, 'inventoryId'],
+          message: `La solution utilise plus de fils « ${entry.id} » que l’inventaire n’en contient.`,
+        });
+      }
+    }
+
+    if (fixedWireIds.has(wire.id) || solutionWireIds.has(wire.id)) {
+      issues.push({
+        path: [...path, 'id'],
+        message: `L’identifiant de fil « ${wire.id} » est déjà utilisé.`,
+      });
+    }
+    solutionWireIds.add(wire.id);
+
+    const source = fixedObjectsById.get(wire.sourceId);
+    const sourceType = source?.type ?? placementTypesByReference.get(wire.sourceId);
+    const target = fixedObjectsById.get(wire.targetId);
+    const targetType = target?.type ?? placementTypesByReference.get(wire.targetId);
+    const sourceIssue = controlWireSourceIssue(sourceType);
+    if (sourceIssue !== null) {
+      issues.push({ path: [...path, 'sourceId'], message: sourceIssue });
+    }
+    const targetIssue = controlWireTargetIssue(sourceType, targetType);
+    if (targetIssue !== null) {
+      issues.push({ path: [...path, 'targetId'], message: targetIssue });
+    } else if (commandedTargets.has(wire.targetId)) {
+      issues.push({
+        path: [...path, 'targetId'],
+        message: `L’appareil « ${wire.targetId} » est déjà commandé.`,
+      });
+    }
+    commandedTargets.add(wire.targetId);
   });
 };
 
@@ -787,7 +884,7 @@ export const levelDocumentAttemptSchema = levelDocumentV2StructureSchema.superRe
     const issues: LevelDocumentValidationIssue[] = [];
     addLevelDocumentRelationIssues(document, issues, false);
     addSceneContainmentIssues(document, issues);
-    addPuzzleIssues(document, issues, false);
+    addPuzzleIssues(document, issues, false, true);
     addLeverRotationIssues(document.objects, issues);
     addQuarterTurnIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);

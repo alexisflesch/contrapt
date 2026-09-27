@@ -1072,6 +1072,18 @@ describe('objets à placer et solution de référence (U22, ADR 0013)', () => {
     expect(parsed.success && parsed.data).toEqual(candidate);
   });
 
+  it('accepte un fil marqué à placer et le relit à l’identique (U25)', () => {
+    const candidate = {
+      ...validLevel,
+      objects: [...validLevel.objects, lever('lever-1'), conveyor('conveyor-1')],
+      wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1', toPlace: true }],
+    };
+
+    const parsed = levelDocumentSchema.safeParse(candidate);
+
+    expect(parsed.success && parsed.data).toEqual(candidate);
+  });
+
   it('n’a qu’une écriture pour un objet fixe et ne marque jamais l’objectif', () => {
     expect(
       issuePaths({
@@ -1098,6 +1110,46 @@ describe('objets à placer et solution de référence (U22, ADR 0013)', () => {
       ...validLevel,
       inventory: [...validLevel.inventory, fanEntry],
       solution: { placements: [pose('inventory-beam-medium'), pose('inventory-fan', 3, 6)] },
+    };
+
+    const parsed = levelDocumentSchema.safeParse(candidate);
+
+    expect(parsed.success && parsed.data).toEqual(candidate);
+  });
+
+  it('accepte une solution qui place un fil et relie une pose à un objet fixe (U25)', () => {
+    const candidate = {
+      ...validLevel,
+      objects: [...validLevel.objects, lever('lever-1'), conveyor('conveyor-1')],
+      wires: [],
+      inventory: [
+        ...validLevel.inventory,
+        {
+          id: 'inventory-lever',
+          type: 'lever',
+          props: { position: 'center' },
+          quantity: 1,
+          permissions: { move: true, rotate: true, remove: true },
+        },
+        {
+          id: 'inventory-wire',
+          type: 'wire',
+          props: {},
+          quantity: 1,
+          permissions: { move: false, rotate: false, remove: true },
+        },
+      ],
+      solution: {
+        placements: [{ ...pose('inventory-lever', 1, 8), placementId: 'lever-1' }],
+        wires: [
+          {
+            id: 'wire-1',
+            inventoryId: 'inventory-wire',
+            sourceId: 'lever-1',
+            targetId: 'conveyor-1',
+          },
+        ],
+      },
     };
 
     const parsed = levelDocumentSchema.safeParse(candidate);
