@@ -251,6 +251,17 @@ export function BoardView({
     (body) => body.placementId === simulationBallId && body.role === 'primary',
   );
 
+  // Which balls the board draws red (the goal's) and blue, exposed for tests
+  // and tools: the same projection the renderer draws.
+  const projectedLayers = projectLevel(
+    (session.simulationSnapshot ?? currentEditorAttempt(session)).document,
+  ).objects;
+  const ballColourIds = (assetKey: 'ball-base' | 'second-ball-base'): string =>
+    projectedLayers
+      .filter((object) => object.assetKey === assetKey)
+      .map(({ id }) => id)
+      .join(',');
+
   useEffect(() => {
     const canvas = boardCanvasRef.current;
     const decode = createCanvasSpriteDecoder();
@@ -377,6 +388,8 @@ export function BoardView({
                 ? undefined
                 : `${String(simulationBall.position.x)},${String(simulationBall.position.y)}`
             }
+            data-red-balls={ballColourIds('ball-base')}
+            data-blue-balls={ballColourIds('second-ball-base')}
             data-camera-zoom={String(camera.pixelsPerWorldUnit)}
             data-camera-origin={`${String(camera.origin.x)},${String(camera.origin.y)}`}
           />

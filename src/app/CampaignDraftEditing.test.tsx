@@ -142,4 +142,67 @@ describe('éditer un niveau de la campagne (U17)', () => {
     expect(screen.getByRole('link', { name: 'Liste des niveaux' })).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Plateau de jeu' })).toBeNull();
   });
+
+  const storedDraft = () => {
+    const stored = createLocalStorageDraftRepository(window.localStorage).load(
+      'level-2-le-pont-brouillon',
+    );
+    if (stored.status !== 'ok' || stored.document == null) {
+      throw new Error('Brouillon introuvable.');
+    }
+    return stored.document;
+  };
+
+  const ballColours = (): { readonly red: string | null; readonly blue: string | null } => {
+    const canvas = screen.getByRole('img', { name: 'Rendu du plateau' });
+    return {
+      red: canvas.getAttribute('data-red-balls'),
+      blue: canvas.getAttribute('data-blue-balls'),
+    };
+  };
+
+  const placeFromCatalogue = (card: string, x: number, y: number): void => {
+    const toggle = screen.queryByRole('button', { name: 'Ouvrir le catalogue' });
+    if (toggle !== null) fireEvent.click(toggle);
+    const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
+    fireEvent.click(within(drawer).getByRole('button', { name: card }));
+    tapWorldPoint(x, y);
+  };
+
+  it('ajoute au brouillon un objet absent de l’inventaire du niveau (U20)', () => {
+    window.history.replaceState(null, '', '/levels');
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
+    const before = storedDraft();
+
+    placeFromCatalogue('Masse', 6.5, 1.0);
+
+    const after = storedDraft();
+    expect(after.objects).toHaveLength(before.objects.length + 1);
+    expect(after.objects.at(-1)?.type).toBe('mass');
+    expect(after.inventory).toEqual(before.inventory);
+    expect(levelTwo).toEqual(pristineLevelTwo);
+  });
+
+  it('fait d’une balle rouge posée l’objectif, puis l’annulation rend l’ancien (U20)', () => {
+    window.history.replaceState(null, '', '/levels');
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
+    expect(ballColours()).toEqual({ red: 'ball-1', blue: '' });
+
+    placeFromCatalogue('Balle bleue', 3.0, 0.8);
+    const blueBallId = storedDraft().objects.at(-1)?.id ?? '';
+    expect(storedDraft().goal.ballId).toBe('ball-1');
+    expect(ballColours()).toEqual({ red: 'ball-1', blue: blueBallId });
+
+    placeFromCatalogue('Balle rouge (objectif)', 6.0, 0.8);
+    const redBallId = storedDraft().objects.at(-1)?.id ?? '';
+    expect(redBallId).not.toBe(blueBallId);
+    expect(storedDraft().goal.ballId).toBe(redBallId);
+    expect(ballColours()).toEqual({ red: redBallId, blue: `ball-1,${blueBallId}` });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(storedDraft().goal.ballId).toBe('ball-1');
+    expect(ballColours()).toEqual({ red: 'ball-1', blue: blueBallId });
+  });
 });

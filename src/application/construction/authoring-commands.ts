@@ -90,6 +90,23 @@ interface UpdateLevelGoalInput {
   readonly basketId: string;
 }
 
+/**
+ * An object the author places from the catalogue, outside the player's
+ * inventory. A red ball becomes the goal's ball; the former one stays, as a
+ * plain (blue) ball.
+ */
+interface AddAuthoredPlacementInput {
+  readonly context: ConstructionContext;
+  readonly placementId: string;
+  readonly type: Placement['type'];
+  readonly props: Placement['props'];
+  readonly transform: Placement['transform'];
+  readonly becomesGoalBall: boolean;
+}
+
+/** An object present at the start of a level is locked for the player. */
+const startingObjectPermissions = { move: false, rotate: false, remove: false } as const;
+
 interface UpdateLevelTitleInput {
   readonly context: ConstructionContext;
   readonly title: string;
@@ -357,6 +374,39 @@ export const updatePlacementPermissions = (
             ? { ...candidate, permissions: input.permissions }
             : candidate,
         ),
+      },
+    };
+  });
+
+export const addAuthoredPlacement = (input: AddAuthoredPlacementInput): AuthoringCommand =>
+  createAuthoringCommand(input.context, (state) => {
+    if (
+      placementAt(state.document, input.placementId) !== undefined ||
+      inventoryEntryAt(state.document, input.placementId) !== undefined
+    ) {
+      return { status: 'rejected', reason: 'identifier-already-used' };
+    }
+    if (input.becomesGoalBall && input.type !== 'ball') {
+      return { status: 'rejected', reason: 'goal-ball-not-found' };
+    }
+    const placement = {
+      id: input.placementId,
+      type: input.type,
+      props: { ...input.props },
+      transform: {
+        position: { ...input.transform.position },
+        rotation: input.transform.rotation,
+      },
+      permissions: startingObjectPermissions,
+    };
+    return {
+      status: 'candidate',
+      document: {
+        ...state.document,
+        objects: [...state.document.objects, placement],
+        goal: input.becomesGoalBall
+          ? { ...state.document.goal, ballId: input.placementId }
+          : state.document.goal,
       },
     };
   });

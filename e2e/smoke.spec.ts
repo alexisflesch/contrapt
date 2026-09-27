@@ -48,8 +48,9 @@ test('ouvre l’atelier depuis le menu et expose les familles du catalogue', asy
     await openCatalogueButton.click();
   }
 
+  await expect(page.getByRole('button', { name: 'Balle rouge (objectif)' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
   for (const objectName of [
-    'Balle',
     'Panier',
     'Poutre',
     'Bascule',
@@ -143,7 +144,7 @@ test.describe('coque sur le petit viewport supporté', () => {
 
     const openButton = page.getByRole('button', { name: 'Ouvrir le catalogue' });
     await expect(openButton).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.getByRole('button', { name: /Balle/ })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeHidden();
 
     const collapsedDrawerBounds = await drawer.boundingBox();
     expect(collapsedDrawerBounds).not.toBeNull();
@@ -162,7 +163,7 @@ test.describe('coque sur le petit viewport supporté', () => {
     await openButton.click();
     const collapseButton = page.getByRole('button', { name: 'Replier le catalogue' });
     await expect(collapseButton).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.getByRole('button', { name: /Balle/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Fermer le catalogue' })).toBeVisible();
 
     const openDrawerBounds = await drawer.boundingBox();
@@ -175,7 +176,7 @@ test.describe('coque sur le petit viewport supporté', () => {
 
     await collapseButton.click();
     await expect(page.getByRole('button', { name: 'Ouvrir le catalogue' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Balle/ })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeHidden();
 
     for (const actionName of [
       'Ouvrir le menu',
@@ -191,7 +192,7 @@ test.describe('coque sur le petit viewport supporté', () => {
 
     await openButton.click();
     await expect(page.getByRole('button', { name: 'Replier le catalogue' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Balle/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Fermer le catalogue' })).toBeVisible();
 
     const workspaceBoundsAfter = await workspace.boundingBox();
@@ -205,7 +206,7 @@ test.describe('coque sur le petit viewport supporté', () => {
 
     await page.locator('.drawer-scrim').click({ position: { x: 160, y: 80 } });
     await expect(page.getByRole('button', { name: 'Ouvrir le catalogue' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Balle/ })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeHidden();
     await expect(page.getByRole('button', { name: 'Fermer le catalogue' })).toBeHidden();
   });
 

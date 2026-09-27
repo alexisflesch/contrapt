@@ -12,7 +12,7 @@ const renderDrawer = (mode: 'resolution' | 'creation'): HTMLElement => {
     <ObjectDrawer
       session={createEditorSession(mode, createConstructionAttempt(embeddedWorkshopDocument))}
       selectedObject={undefined}
-      selectedInventoryEntryId={undefined}
+      selectedEntryKey={undefined}
       isDrawerOpen
       isSideLayout={false}
       isPlacementActive={false}
@@ -35,5 +35,16 @@ describe('ObjectDrawer', () => {
 
     const ball = within(drawer).getByRole('button', { name: /^Balle, quantité/ });
     expect(thumbnailOf(ball)).toMatch(/\/thumbs\/second-ball\.png$/);
+  });
+
+  it('propose à l’auteur une balle rouge pour l’objectif et une balle bleue', () => {
+    const drawer = renderDrawer('creation');
+
+    const red = within(drawer).getByRole('button', { name: 'Balle rouge (objectif)' });
+    const blue = within(drawer).getByRole('button', { name: 'Balle bleue' });
+    expect(thumbnailOf(red)).toMatch(/\/thumbs\/ball\.png$/);
+    expect(thumbnailOf(blue)).toMatch(/\/thumbs\/second-ball\.png$/);
+    expect(within(drawer).queryByRole('button', { name: 'Balle' })).toBeNull();
+    expect(within(drawer).getByText('12 objets')).toBeTruthy();
   });
 });

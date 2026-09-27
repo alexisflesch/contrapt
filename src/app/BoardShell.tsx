@@ -19,7 +19,7 @@ import { ObjectDrawer } from '../ui/ObjectDrawer';
 import { Dialog } from '../ui/Dialog';
 import { SimulationControls } from '../ui/SimulationControls';
 import { useBoardCamera } from './use-board-camera';
-import { useBoardPointers } from './use-board-pointers';
+import { placementSourceKey, useBoardPointers } from './use-board-pointers';
 import { LevelExportDialog } from './LevelExportDialog';
 import { useWiringTool } from './use-wiring-tool';
 import { useEditorSession } from './use-editor-session';
@@ -188,7 +188,11 @@ export function BoardShell({
         <ObjectDrawer
           session={session}
           selectedObject={pointers.placementTool?.kind}
-          selectedInventoryEntryId={pointers.placementTool?.inventoryEntryId}
+          selectedEntryKey={
+            pointers.placementTool === null
+              ? undefined
+              : placementSourceKey(pointers.placementTool.source)
+          }
           isDrawerOpen={isDrawerOpen}
           isSideLayout={isSideLayout}
           isPlacementActive={pointers.placementTool !== null}
@@ -198,8 +202,8 @@ export function BoardShell({
           onCloseDrawer={() => {
             setIsDrawerOpen(false);
           }}
-          onSelectKind={(kind, inventoryEntryId) => {
-            pointers.activatePlacement(kind, inventoryEntryId);
+          onSelectKind={(kind, source) => {
+            pointers.activatePlacement(kind, source);
             setIsDrawerOpen(false);
           }}
         />

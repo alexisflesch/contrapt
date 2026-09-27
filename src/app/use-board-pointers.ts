@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent, type RefObject } from 'react';
 
+import { addAuthoredPlacement } from '../application/construction/authoring-commands';
 import {
   movePlacement,
   placeFromInventory,
@@ -21,16 +22,56 @@ import type { Command } from '../application/history';
 import { rotationMode, type LevelDocument } from '../domain/level-document';
 import { hitTestBoard, hitTestRotationHandle } from '../presentation/board-hit-test';
 import { projectLevel, worldToPixels, type BoardViewport } from '../presentation/board-renderer';
-import { inventoryByObjectKind, type ObjectKind } from './object-catalog';
+import type { AuthorCatalogueEntry, ObjectKind } from './object-catalog';
 import { panCamera, zoomCameraAt, type Camera } from '../presentation/board-camera';
 import type { CanvasSizeInCss } from './use-board-camera';
 import { screenPointToWorld, type BoardOffset, type ScreenPoint } from './screen-point-to-world';
 
+/**
+ * Where a placed object comes from: the player's inventory, or the author's
+ * catalogue, which places any family without inventory (U20).
+ */
+export type PlacementSource =
+  | { readonly from: 'inventory'; readonly inventoryEntryId: string }
+  | { readonly from: 'catalogue'; readonly entry: AuthorCatalogueEntry };
+
 interface PlacementTool {
   readonly kind: ObjectKind;
-  readonly inventoryEntryId: string;
+  readonly source: PlacementSource;
   readonly placementId: string;
 }
+
+/** The drawer card a placement tool came from: its inventory entry or its catalogue entry. */
+export const placementSourceKey = (source: PlacementSource): string =>
+  source.from === 'inventory' ? source.inventoryEntryId : source.entry.key;
+
+const placementCommand = (
+  source: PlacementSource,
+  placementId: string,
+  transform: LevelDocument['objects'][number]['transform'],
+) =>
+  source.from === 'inventory'
+    ? (context: ConstructionContext): Command<ConstructionAttempt> =>
+        placeFromInventory({
+          context,
+          inventoryEntryId: source.inventoryEntryId,
+          placementId,
+          transform,
+        })
+    : (context: ConstructionContext): Command<ConstructionAttempt> =>
+        addAuthoredPlacement({
+          context,
+          placementId,
+          type: source.entry.type,
+          props: source.entry.props,
+          transform,
+          becomesGoalBall: source.entry.becomesGoalBall,
+        });
+
+/** Ids already taken in the document: a reopened draft may hold `placement-1` already. */
+const isIdentifierUsed = (document: LevelDocument, id: string): boolean =>
+  document.objects.some((placement) => placement.id === id) ||
+  document.inventory.some((entry) => entry.id === id);
 
 export interface PlacementPreview {
   readonly kind: ObjectKind;
@@ -142,7 +183,7 @@ interface UseBoardPointersOptions {
 interface BoardPointersController {
   readonly placementTool: PlacementTool | null;
   readonly placementPreview: PlacementPreview | null;
-  readonly activatePlacement: (kind: ObjectKind, inventoryEntryId?: string) => void;
+  readonly activatePlacement: (kind: ObjectKind, source: PlacementSource) => void;
   /** The toolbar's "Annuler le placement" button: cancels the projection and clears the active tool. */
   readonly cancelPlacement: () => void;
   readonly boardPointerHandlers: BoardPointerHandlers;
@@ -407,12 +448,14 @@ export function useBoardPointers({
     }
   };
 
-  const activatePlacement = (
-    kind: ObjectKind,
-    inventoryEntryId = inventoryByObjectKind[kind],
-  ): void => {
-    const placementId = `placement-${String(nextPlacementNumber.current)}`;
+  const activatePlacement = (kind: ObjectKind, source: PlacementSource): void => {
+    const { document } = currentEditorAttempt(sessionRef.current);
+    let placementId = `placement-${String(nextPlacementNumber.current)}`;
     nextPlacementNumber.current += 1;
+    while (isIdentifierUsed(document, placementId)) {
+      placementId = `placement-${String(nextPlacementNumber.current)}`;
+      nextPlacementNumber.current += 1;
+    }
     const result = beginEditorManipulation(sessionRef.current, { kind: 'placement', placementId });
     if (result.status === 'rejected') {
       reportRefusal(result.reason);
@@ -420,7 +463,7 @@ export function useBoardPointers({
     }
 
     updateSession(result.session);
-    updatePlacementTool({ kind, placementId, inventoryEntryId });
+    updatePlacementTool({ kind, placementId, source });
     setPlacementPreview(null);
     hasValidPlacementPreview.current = false;
     activePointer.current = null;
@@ -491,15 +534,11 @@ export function useBoardPointers({
       cameraRef.current.origin,
     );
 
-    const result = previewFollowingPointer(currentSession, (context) =>
-      placeFromInventory({
-        context,
-        inventoryEntryId: activeTool.inventoryEntryId,
-        placementId: activeTool.placementId,
-        transform: {
-          position: worldPosition,
-          rotation: 0,
-        },
+    const result = previewFollowingPointer(
+      currentSession,
+      placementCommand(activeTool.source, activeTool.placementId, {
+        position: worldPosition,
+        rotation: 0,
       }),
     );
     updateSession(result.session);

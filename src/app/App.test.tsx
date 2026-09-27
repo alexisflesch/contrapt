@@ -327,7 +327,8 @@ describe('coque Contrapt!', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
 
-    expect(screen.getByRole('button', { name: /Balle/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Balle rouge (objectif)' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
     expect(screen.getByRole('button', { name: /Panier/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Poutre/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Bascule/ })).toBeVisible();
@@ -434,20 +435,20 @@ describe('coque Contrapt!', () => {
 
     const openButton = screen.getByRole('button', { name: 'Ouvrir le catalogue' });
     expect(openButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('button', { name: /Balle/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Balle bleue' })).not.toBeInTheDocument();
 
     fireEvent.click(openButton);
 
     const collapseButton = screen.getByRole('button', { name: 'Replier le catalogue' });
     expect(collapseButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('button', { name: /Balle/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Fermer le catalogue' })).toBeVisible();
 
     fireEvent.click(collapseButton);
 
     const reopenedButton = screen.getByRole('button', { name: 'Ouvrir le catalogue' });
     expect(reopenedButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('button', { name: /Balle/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Balle bleue' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Fermer le catalogue' })).not.toBeInTheDocument();
 
     fireEvent.click(reopenedButton);
@@ -456,7 +457,7 @@ describe('coque Contrapt!', () => {
       'aria-expanded',
       'true',
     );
-    expect(screen.getByRole('button', { name: /Balle/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
   });
 
   it('ferme le tiroir lorsqu’on touche le scrim', () => {
@@ -914,7 +915,7 @@ describe('coque Contrapt!', () => {
     expect(screen.getByRole('region', { name: 'Objets disponibles' })).not.toHaveClass(
       'object-drawer-collapsed',
     );
-    expect(screen.getByRole('button', { name: /Balle/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Fermer le catalogue' })).not.toBeInTheDocument();
   });
 
@@ -943,7 +944,7 @@ describe('coque Contrapt!', () => {
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
 
-    const ballCard = within(drawer).getByRole('button', { name: /Balle/ });
+    const ballCard = within(drawer).getByRole('button', { name: 'Balle bleue' });
     fireEvent.click(ballCard);
 
     expect(board).toBeVisible();
@@ -963,7 +964,7 @@ describe('coque Contrapt!', () => {
     expect(redoButton).toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     firePointerEvent(board, 'pointerdown', {
@@ -996,7 +997,7 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1042,7 +1043,7 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     // Avec le canvas simulé 800 × 450 et la scène 16 × 9 de l'atelier, ce
@@ -1072,7 +1073,7 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
 
     const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
     expect(drawer).toBeVisible();
@@ -1081,7 +1082,7 @@ describe('coque Contrapt!', () => {
       'aria-expanded',
       'false',
     );
-    expect(screen.queryByRole('button', { name: /Balle/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Balle bleue' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Fermer le catalogue' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeVisible();
   });
@@ -1098,7 +1099,7 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1132,7 +1133,7 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1164,7 +1165,7 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1186,7 +1187,7 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1209,7 +1210,7 @@ describe('coque Contrapt!', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: /Balle/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
 
     const cancelButton = screen.getByRole('button', { name: 'Annuler le placement' });
     expect(cancelButton).toHaveClass('placement-cancel');

@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { createLocalStorageDraftRepository } from '../src/infrastructure/storage/local-storage-draft-repository';
+
 const tapWorldPoint = async (page: Page, x: number, y: number): Promise<void> => {
   const canvas = page.getByRole('img', { name: 'Rendu du plateau' });
   const bounds = await canvas.boundingBox();
@@ -60,4 +62,80 @@ test('édite une copie du niveau 2 au toucher, la conserve et l’exporte (U17)'
   await page.goto('/levels/level-2-le-pont/play');
   await expect(page.getByText('Niveau 2 · Le pont')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('contrapt:progress'))).toBeNull();
+});
+
+const draftKey = 'contrapt:draft:level-2-le-pont-brouillon';
+
+/** Reads the stored draft back through the draft repository, as the app does. */
+const storedDraft = async (page: Page) => {
+  const raw = await page.evaluate((key) => localStorage.getItem(key), draftKey);
+  const entries = new Map(raw === null ? [] : [[draftKey, raw]]);
+  const storage: Storage = {
+    get length() {
+      return entries.size;
+    },
+    clear: () => {
+      entries.clear();
+    },
+    getItem: (key) => entries.get(key) ?? null,
+    key: (index) => [...entries.keys()][index] ?? null,
+    removeItem: (key) => {
+      entries.delete(key);
+    },
+    setItem: (key, value) => {
+      entries.set(key, value);
+    },
+  };
+  const result = createLocalStorageDraftRepository(storage).load('level-2-le-pont-brouillon');
+  return result.status === 'ok' ? result.document : null;
+};
+
+const placeFromCatalogue = async (page: Page, card: string, x: number, y: number) => {
+  // The object just placed is selected: its properties sheet covers the catalogue.
+  const closeProperties = page.getByRole('button', { name: 'Fermer les propriétés' });
+  if (await closeProperties.isVisible()) await closeProperties.tap();
+  const openCatalogue = page.getByRole('button', { name: 'Ouvrir le catalogue' });
+  if (await openCatalogue.isVisible()) await openCatalogue.tap();
+  await page
+    .getByRole('region', { name: 'Objets disponibles' })
+    .getByRole('button', { name: card })
+    .tap();
+  await tapWorldPoint(page, x, y);
+};
+
+test('ajoute une poutre et une balle rouge au brouillon du niveau 2, puis annule (U20)', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Le parcours d’édition est validé sur mobile.');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/levels');
+  await page.getByRole('button', { name: 'Éditer le niveau 2' }).tap();
+  await expect(page).toHaveURL(/\/editor\?draft=level-2-le-pont-brouillon$/u);
+  const canvas = page.getByRole('img', { name: 'Rendu du plateau' });
+  await expect(canvas).toHaveAttribute('data-red-balls', 'ball-1');
+  await expect(canvas).toHaveAttribute('data-blue-balls', '');
+
+  // The author's catalogue neither needs nor consumes the player's inventory.
+  const inventoryBefore = (await storedDraft(page))?.inventory;
+  await placeFromCatalogue(page, 'Poutre moyenne', 4.5, 4.2);
+  await expect
+    .poll(async () =>
+      (await storedDraft(page))?.objects
+        .filter(({ type }) => type === 'beam')
+        .map(({ props }) => props),
+    )
+    .toEqual([{ size: 'short' }, { size: 'short' }, { size: 'medium' }]);
+  expect((await storedDraft(page))?.inventory).toEqual(inventoryBefore);
+
+  await placeFromCatalogue(page, 'Balle rouge (objectif)', 6.0, 0.8);
+  const redBall = await canvas.getAttribute('data-red-balls');
+  expect(redBall).toMatch(/^placement-\d+$/u);
+  await expect(canvas).toHaveAttribute('data-blue-balls', 'ball-1');
+  await expect.poll(async () => (await storedDraft(page))?.goal.ballId).toBe(redBall);
+
+  await page.getByRole('button', { name: 'Annuler' }).tap();
+  await expect(canvas).toHaveAttribute('data-red-balls', 'ball-1');
+  await expect(canvas).toHaveAttribute('data-blue-balls', '');
+  await expect.poll(async () => (await storedDraft(page))?.goal.ballId).toBe('ball-1');
 });

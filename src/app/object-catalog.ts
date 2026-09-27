@@ -1,3 +1,5 @@
+import type { LevelDocument } from '../domain/level-document';
+
 /** The placeable families (catalogue-initial.md), and their inventory wiring. */
 export type ObjectKind =
   | 'Balle'
@@ -45,16 +47,67 @@ export const inventoryTypeByObjectKind = {
   Tremplin: 'springboard',
 } as const satisfies Readonly<Record<ObjectKind, string>>;
 
-export const inventoryByObjectKind: Readonly<Record<ObjectKind, string>> = {
-  Balle: 'inventory-ball',
-  Panier: 'inventory-basket',
-  Poutre: 'inventory-beam',
-  Bascule: 'inventory-seesaw',
-  Masse: 'inventory-mass',
-  Levier: 'inventory-lever',
-  Convoyeur: 'inventory-conveyor',
-  Bouton: 'inventory-button',
-  Ventilateur: 'inventory-fan',
-  Barrière: 'inventory-barrier',
-  Tremplin: 'inventory-springboard',
+type Placement = LevelDocument['objects'][number];
+
+/**
+ * A card of the author's catalogue. It places an object straight into the
+ * level, outside the player's inventory, so it works on any level (U20).
+ */
+export interface AuthorCatalogueEntry {
+  readonly key: string;
+  readonly kind: ObjectKind;
+  readonly name: string;
+  /** Spoken name when it says more than the card title. */
+  readonly accessibleName: string;
+  readonly description: string;
+  readonly type: Placement['type'];
+  readonly props: Placement['props'];
+  /** Only the red ball: it becomes the goal's ball. */
+  readonly becomesGoalBall: boolean;
+}
+
+const authorEntry = (
+  kind: ObjectKind,
+  type: Placement['type'],
+  props: Placement['props'] = {},
+): AuthorCatalogueEntry => {
+  const { description } = objectKinds.find((entry) => entry.kind === kind) ?? { description: '' };
+  return {
+    key: type,
+    kind,
+    name: kind,
+    accessibleName: kind,
+    description,
+    type,
+    props,
+    becomesGoalBall: false,
+  };
 };
+
+/** Red is the goal's alone: the author picks a red or a blue ball. */
+export const authorCatalogue: readonly AuthorCatalogueEntry[] = [
+  {
+    ...authorEntry('Balle', 'ball'),
+    key: 'goal-ball',
+    name: 'Balle rouge (objectif)',
+    accessibleName: 'Balle rouge (objectif)',
+    description: 'La balle à mettre dans le panier',
+    becomesGoalBall: true,
+  },
+  {
+    ...authorEntry('Balle', 'ball'),
+    name: 'Balle bleue',
+    accessibleName: 'Balle bleue',
+    description: 'Une pièce de la machine',
+  },
+  authorEntry('Panier', 'basket'),
+  { ...authorEntry('Poutre', 'beam', { size: 'medium' }), accessibleName: 'Poutre moyenne' },
+  authorEntry('Bascule', 'seesaw'),
+  authorEntry('Masse', 'mass', { weight: '10kg' }),
+  authorEntry('Levier', 'lever', { position: 'center' }),
+  authorEntry('Convoyeur', 'conveyor', { direction: 'stopped' }),
+  authorEntry('Bouton', 'button'),
+  authorEntry('Ventilateur', 'fan', { state: 'on' }),
+  authorEntry('Barrière', 'barrier', { state: 'closed' }),
+  authorEntry('Tremplin', 'springboard'),
+];

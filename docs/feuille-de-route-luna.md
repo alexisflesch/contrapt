@@ -2028,3 +2028,45 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   1 ignoré).
 - Captures : hors dépôt, `…/scratchpad/captures/u19/` (niveau 12 avec levier et
   fil, tiroir joueur avec la balle bleue ; 390 × 844, 844 × 390, 1440 × 900).
+
+### U20 — Catalogue de l’atelier : deux balles, et ajout d’objets dans un brouillon — fait — `feat(editor): propose les balles rouge et bleue et ajoute des objets aux brouillons (U20)`
+
+- Comportement : en mode auteur (atelier libre et brouillon), le catalogue
+  propose « Balle rouge (objectif) », « Balle bleue » et les dix autres
+  familles. Une carte pose l’objet par la nouvelle commande d’auteur
+  `addAuthoredPlacement` (L25) : directement dans `objects`, sans exiger ni
+  consommer l’inventaire du joueur, hors zones de construction, permissions
+  verrouillées comme tout objet de départ. Une balle rouge devient
+  `goal.ballId` dans la même commande : l’ancienne balle d’objectif reste, en
+  bleu, et annuler rend l’ancien objectif. Le mode joueur est inchangé
+  (`placeFromInventory`).
+- Choix : une commande auteur plutôt qu’une entrée d’inventaire créée à la
+  volée — elle passe par la même revalidation et le même historique que L25,
+  ne laisse aucune trace dans l’inventaire exporté et vaut pour tout niveau.
+  L’identifiant `placement-N` saute les identifiants déjà présents (un
+  brouillon rouvert peut déjà contenir `placement-1`).
+- État exposé : le canevas porte `data-red-balls` et `data-blue-balls`, tirés
+  de la projection que dessine le renderer.
+- Tests ajoutés : `authoring-commands.test.ts` (aller-retour annuler/rétablir
+  pour un objet et pour la balle rouge, refus en contexte joueur, `ajout d’un
+  objet par l’auteur` : 6 tests), `ObjectDrawer.test.tsx › propose à l’auteur
+  une balle rouge…`, `CampaignDraftEditing.test.tsx` (2 : masse ajoutée au
+  brouillon, balle rouge puis annulation), `e2e/campaign-draft.spec.ts ›
+  ajoute une poutre et une balle rouge au brouillon du niveau 2, puis annule
+  (U20)` (mobile).
+- Échec initial constaté : `addAuthoredPlacement is not a function` ; « Unable
+  to find … "Balle rouge (objectif)" » ; brouillon du niveau 2 resté à 4 objets
+  après la pose d’une masse ; `data-red-balls` absent.
+- Tests existants réécrits : `App.test.tsx` et `e2e/smoke.spec.ts` visaient
+  `/Balle/`, qui désigne maintenant deux cartes : ils visent « Balle bleue »
+  (même rôle qu’avant, une balle hors objectif) et la liste de l’atelier
+  vérifie aussi « Balle rouge (objectif) ». Le compteur de l’atelier dit
+  « 12 objets » au lieu de « 11 familles ».
+- Vérification : `pnpm check` passe (693 tests Vitest ; 48 E2E mobiles réussis,
+  1 ignoré).
+- Captures : hors dépôt, `…/scratchpad/captures/u20/` (catalogue auteur avec les
+  deux balles, brouillon du niveau 2 avec une poutre et une balle rouge
+  ajoutées ; 390 × 844, 844 × 390, 1440 × 900).
+- Pour l’auteur : valider les permissions verrouillées des objets ajoutés et
+  l’absence de carte « Balle » générique. Les vignettes du bouton et de la
+  bascule contiennent encore du rouge (capuchon, planche).

@@ -2,7 +2,15 @@ import {
   currentEditorAttempt,
   type EditorSession,
 } from '../application/editor-session/editor-session';
-import { inventoryTypeByObjectKind, objectKinds, type ObjectKind } from '../app/object-catalog';
+import {
+  authorCatalogue,
+  inventoryTypeByObjectKind,
+  objectKinds,
+  type AuthorCatalogueEntry,
+  type ObjectKind,
+} from '../app/object-catalog';
+import type { PlacementSource } from '../app/use-board-pointers';
+import type { LevelDocument } from '../domain/level-document';
 import {
   spriteThumbnailPath,
   type SpriteFamily,
@@ -30,23 +38,79 @@ const spriteFamilyByKind: Readonly<Record<ObjectKind, SpriteFamily>> = {
 const playerThumbnail = (family: SpriteFamily): SpriteThumbnail =>
   family === 'ball' ? 'second-ball' : family;
 
+interface DrawerCard {
+  readonly key: string;
+  readonly kind: ObjectKind;
+  readonly name: string;
+  readonly accessibleName: string;
+  readonly detail: string;
+  readonly thumbnail: SpriteThumbnail;
+  readonly isDepleted: boolean;
+  readonly source: PlacementSource;
+}
+
+type InventoryEntry = LevelDocument['inventory'][number];
+
+const authorCard = (entry: AuthorCatalogueEntry): DrawerCard => ({
+  key: entry.key,
+  kind: entry.kind,
+  name: entry.name,
+  accessibleName: entry.accessibleName,
+  detail: entry.description,
+  // The red ball is the goal's; any other ball is blue.
+  thumbnail:
+    entry.type === 'ball' && !entry.becomesGoalBall
+      ? 'second-ball'
+      : spriteFamilyByKind[entry.kind],
+  isDepleted: false,
+  source: { from: 'catalogue', entry },
+});
+
+const inventoryCards = (inventoryEntry: InventoryEntry): DrawerCard[] => {
+  const catalogEntry = objectKinds.find(
+    ({ kind }) => inventoryTypeByObjectKind[kind] === inventoryEntry.type,
+  );
+  if (catalogEntry === undefined) return [];
+  const { kind } = catalogEntry;
+  const name =
+    inventoryEntry.type === 'beam' ? `Poutre ${beamSizeLabels[inventoryEntry.props.size]}` : kind;
+  const quantity = String(inventoryEntry.quantity);
+  return [
+    {
+      key: inventoryEntry.id,
+      kind,
+      name,
+      accessibleName: `${name}, quantité : ${quantity}`,
+      detail: `Quantité : ${quantity}`,
+      thumbnail: playerThumbnail(spriteFamilyByKind[kind]),
+      isDepleted: inventoryEntry.quantity === 0,
+      source: { from: 'inventory', inventoryEntryId: inventoryEntry.id },
+    },
+  ];
+};
+
 interface ObjectDrawerProps {
   readonly session: EditorSession;
   readonly selectedObject: ObjectKind | undefined;
-  readonly selectedInventoryEntryId: string | undefined;
+  /** Key of the card the active placement tool came from. */
+  readonly selectedEntryKey: string | undefined;
   readonly isDrawerOpen: boolean;
   readonly isSideLayout: boolean;
   readonly isPlacementActive: boolean;
   readonly onToggleDrawer: () => void;
   readonly onCloseDrawer: () => void;
-  readonly onSelectKind: (kind: ObjectKind, inventoryEntryId?: string) => void;
+  readonly onSelectKind: (kind: ObjectKind, source: PlacementSource) => void;
 }
 
-/** The catalogue of placeable object families: a collapsible drawer on phones, an open side panel in landscape/tablet. */
+/**
+ * The catalogue of placeable objects: a collapsible drawer on phones, an open
+ * side panel in landscape/tablet. The player sees the level's inventory; the
+ * author sees every family, and places it outside any inventory.
+ */
 export function ObjectDrawer({
   session,
   selectedObject,
-  selectedInventoryEntryId,
+  selectedEntryKey,
   isDrawerOpen,
   isSideLayout,
   isPlacementActive,
@@ -57,19 +121,12 @@ export function ObjectDrawer({
   const drawerIsExpanded = isDrawerOpen || isSideLayout;
   const inventory =
     session.mode === 'resolution' ? currentEditorAttempt(session).document.inventory : null;
-  const drawerEntries =
-    inventory === null
-      ? objectKinds.map((catalogEntry) => ({ ...catalogEntry, inventoryEntry: undefined }))
-      : inventory.flatMap((inventoryEntry) => {
-          const catalogEntry = objectKinds.find(
-            ({ kind }) => inventoryTypeByObjectKind[kind] === inventoryEntry.type,
-          );
-          return catalogEntry === undefined ? [] : [{ ...catalogEntry, inventoryEntry }];
-        });
+  const drawerCards =
+    inventory === null ? authorCatalogue.map(authorCard) : inventory.flatMap(inventoryCards);
   const objectCountLabel =
     inventory === null
-      ? `${String(drawerEntries.length)} familles`
-      : `${String(drawerEntries.length)} ${drawerEntries.length === 1 ? 'entrée' : 'entrées'}`;
+      ? `${String(drawerCards.length)} objets`
+      : `${String(drawerCards.length)} ${drawerCards.length === 1 ? 'entrée' : 'entrées'}`;
 
   return (
     <>
@@ -117,53 +174,27 @@ export function ObjectDrawer({
 
         <div className="drawer-content">
           <div className="object-list" id="object-list" hidden={!drawerIsExpanded}>
-            {drawerEntries.map(({ kind, description, inventoryEntry }) => {
-              const beamSizeLabel =
-                inventoryEntry?.type === 'beam'
-                  ? beamSizeLabels[inventoryEntry.props.size]
-                  : undefined;
-              const displayName =
-                kind === 'Poutre' && beamSizeLabel !== undefined ? `Poutre ${beamSizeLabel}` : kind;
-              const isSelected =
-                selectedObject === kind &&
-                (inventoryEntry === undefined || selectedInventoryEntryId === inventoryEntry.id);
+            {drawerCards.map((card) => {
+              const isSelected = selectedObject === card.kind && selectedEntryKey === card.key;
 
               return (
                 <button
                   className={`object-card${isSelected ? ' object-card-selected' : ''}`}
-                  key={inventoryEntry?.id ?? kind}
+                  key={card.key}
                   type="button"
-                  disabled={session.phase !== 'construction' || inventoryEntry?.quantity === 0}
-                  aria-label={
-                    inventoryEntry === undefined
-                      ? kind === 'Poutre'
-                        ? 'Poutre moyenne'
-                        : kind
-                      : `${displayName}, quantité : ${String(inventoryEntry.quantity)}`
-                  }
+                  disabled={session.phase !== 'construction' || card.isDepleted}
+                  aria-label={card.accessibleName}
                   aria-pressed={isSelected}
                   onClick={() => {
-                    onSelectKind(kind, inventoryEntry?.id);
+                    onSelectKind(card.kind, card.source);
                   }}
                 >
                   <span className="object-thumb" aria-hidden="true">
-                    <img
-                      src={spriteThumbnailPath(
-                        inventoryEntry === undefined
-                          ? spriteFamilyByKind[kind]
-                          : playerThumbnail(spriteFamilyByKind[kind]),
-                      )}
-                      alt=""
-                      draggable={false}
-                    />
+                    <img src={spriteThumbnailPath(card.thumbnail)} alt="" draggable={false} />
                   </span>
                   <span className="object-card-copy">
-                    <strong>{displayName}</strong>
-                    <span>
-                      {inventoryEntry === undefined
-                        ? description
-                        : `Quantité : ${String(inventoryEntry.quantity)}`}
-                    </span>
+                    <strong>{card.name}</strong>
+                    <span>{card.detail}</span>
                   </span>
                   <span className="object-card-action" aria-hidden="true">
                     {isSelected ? '✓' : '+'}

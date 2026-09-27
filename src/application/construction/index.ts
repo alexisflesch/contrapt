@@ -1,4 +1,5 @@
 export {
+  addAuthoredPlacement,
   addBuildZone,
   addInventoryEntry,
   moveBuildZone,

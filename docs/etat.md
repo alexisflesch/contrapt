@@ -81,7 +81,14 @@ pendant le travail.
   leviers en atelier, annulation atomique sur `pointercancel` ou second doigt.
 - Tiroir du mode joueur limité aux familles présentes dans l’inventaire du
   niveau ; il affiche la quantité restante et la taille de poutre. Une entrée à
-  quantité zéro reste visible et désactivée. L’atelier garde les onze familles.
+  quantité zéro reste visible et désactivée. En mode auteur (atelier libre et
+  brouillon), le catalogue propose les onze familles, dont « Balle rouge
+  (objectif) » et « Balle bleue » (U20) : il pose l’objet directement dans le
+  niveau (commande `addAuthoredPlacement`), sans exiger ni consommer
+  l’inventaire du joueur ; l’objet posé est verrouillé pour le joueur, comme
+  tout objet de départ. Une balle rouge posée devient `goal.ballId` et
+  l’ancienne balle d’objectif redevient une balle bleue ; l’annulation rend
+  l’ancien objectif. Le canevas expose `data-red-balls` et `data-blue-balls`.
 - PWA L28 : le build génère un manifeste installable et un service worker qui
   précache l’application et ses assets ; les routes de jeu et d’atelier ont un
   repli hors ligne. Le hook `usePwaUpdateStatus(phase)` expose une mise à jour en
@@ -270,21 +277,16 @@ pendant le travail.
   sur cet appareil.
 - **Commandes auteur L25** : `src/application/construction/authoring-commands.ts`
   fournit les commandes annulables pour la scène, les zones, l’inventaire, les
-  permissions, l’objectif, les métadonnées et le défi. Elles sont refusées en
-  contexte joueur et chaque document accepté est revalidé par le schéma. Aucune
-  interface auteur ne les expose encore.
+  permissions, l’objectif, les métadonnées, le défi et l’ajout d’un objet hors
+  inventaire. Elles sont refusées en contexte joueur et chaque document accepté
+  est revalidé par le schéma. Seul l’ajout d’objet est exposé (catalogue, U20).
 - **Mode auteur incomplet** : l’atelier ne permet pas encore de créer et gérer
   ces commandes dans l’interface (scène, zones, inventaire, objectif,
   métadonnées), ni d’importer un fichier. L’export U16 prend le document tel
-  quel : l’atelier libre exporte donc son inventaire de 99 par famille, et les
-  objets posés depuis l’inventaire deviennent des objets du niveau (le stock
-  restant devient l’inventaire exporté).
-- **Catalogue d’un brouillon U17** : en mode auteur, le tiroir propose les onze
-  familles de l’atelier, dont les entrées d’inventaire (`inventory-beam`, …)
-  n’existent pas dans un niveau de campagne : poser un nouvel objet y est
-  refusé. On ajuste les objets existants ; ajouter des objets relève de U9.
-  Aucun moyen de repartir du niveau d’origine une fois le brouillon créé, ni
-  de lister ou supprimer les brouillons dans l’interface.
+  quel : l’atelier libre exporte donc son inventaire de 99 par famille (le
+  catalogue auteur ne le consomme plus depuis U20).
+- **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
+  brouillon créé, ni de lister ou supprimer les brouillons dans l’interface.
 - `format:check` ne couvre pas le Markdown.
 - Le workflow `.github/workflows/check.yml` exécute la gate sur push et pull
   request avec Node 24, cache pnpm et Chromium Playwright. Son premier passage

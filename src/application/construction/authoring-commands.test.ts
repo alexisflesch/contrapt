@@ -4,6 +4,7 @@ import type { LevelDocument } from '../../domain/level-document';
 import { createHistory, executeCommand, redo, undo, type Command } from '../history';
 import type { ConstructionAttempt } from './construction-attempt';
 import {
+  addAuthoredPlacement,
   addBuildZone,
   addInventoryEntry,
   moveBuildZone,
@@ -88,6 +89,22 @@ const addedInventoryEntry = {
   permissions: { move: true, rotate: false, remove: true },
 } as const;
 const lockedPermissions = { move: false, rotate: false, remove: false } as const;
+const addedMass = {
+  context: 'author',
+  placementId: 'mass-1',
+  type: 'mass',
+  props: { weight: '10kg' },
+  transform: { position: { x: 8, y: 4 }, rotation: 0 },
+  becomesGoalBall: false,
+} as const;
+const addedRedBall = {
+  context: 'author',
+  placementId: 'ball-3',
+  type: 'ball',
+  props: {},
+  transform: { position: { x: 4, y: 12 }, rotation: 0 },
+  becomesGoalBall: true,
+} as const;
 
 const authoringCommands: readonly {
   readonly label: string;
@@ -115,6 +132,8 @@ const authoringCommands: readonly {
     }),
   },
   { label: 'supprime une zone', command: removeBuildZone({ context: 'author', index: 0 }) },
+  { label: 'ajoute un objet hors inventaire', command: addAuthoredPlacement(addedMass) },
+  { label: 'ajoute la balle de l’objectif', command: addAuthoredPlacement(addedRedBall) },
   {
     label: 'ajoute une entrée d’inventaire',
     command: addInventoryEntry({ context: 'author', entry: addedInventoryEntry }),
@@ -188,6 +207,7 @@ const playerCommands: readonly Command<ConstructionAttempt>[] = [
     zone: { min: { x: 1, y: 1 }, max: { x: 7, y: 7 } },
   }),
   removeBuildZone({ context: 'player', index: 0 }),
+  addAuthoredPlacement({ ...addedMass, context: 'player' }),
   addInventoryEntry({ context: 'player', entry: addedInventoryEntry }),
   updateInventoryQuantity({ context: 'player', entryId: 'beam-stock', quantity: 5 }),
   updateInventoryProperties({ context: 'player', entryId: 'beam-stock', props: { size: 'long' } }),
@@ -327,5 +347,100 @@ describe('commandes d’auteur', () => {
     );
 
     expect(unchanged).toEqual({ status: 'accepted', history, recorded: false });
+  });
+
+  describe('ajout d’un objet par l’auteur', () => {
+    const accepted = (
+      command: Command<ConstructionAttempt>,
+      document: LevelDocument = createLevel(),
+    ): ConstructionAttempt => {
+      const outcome = command.execute({ document, provenance: {} });
+      if (outcome.status !== 'accepted') throw new Error(`refusé : ${outcome.reason}`);
+      return outcome.state;
+    };
+
+    it('pose n’importe quelle famille sans exiger ni consommer l’inventaire', () => {
+      const levelWithoutStock = createLevel({ inventory: [] });
+      const state = accepted(addAuthoredPlacement(addedMass), levelWithoutStock);
+
+      expect(state.document.objects.at(-1)).toEqual({
+        id: 'mass-1',
+        type: 'mass',
+        props: { weight: '10kg' },
+        transform: { position: { x: 8, y: 4 }, rotation: 0 },
+        // An object present at the start of a level is locked for the player.
+        permissions: lockedPermissions,
+      });
+      expect(state.document.inventory).toEqual([]);
+      expect(state.provenance).toEqual({});
+      expect(state.document.goal.ballId).toBe('ball-1');
+    });
+
+    it('ignore les zones de construction : elles ne contraignent que le joueur', () => {
+      const state = accepted(
+        addAuthoredPlacement({
+          ...addedMass,
+          transform: { position: { x: 15, y: 15 }, rotation: 0 },
+        }),
+      );
+
+      expect(state.document.objects.some(({ id }) => id === 'mass-1')).toBe(true);
+    });
+
+    it('fait d’une balle rouge la balle de l’objectif ; l’ancienne redevient une simple balle', () => {
+      const state = accepted(addAuthoredPlacement(addedRedBall));
+
+      expect(state.document.goal).toEqual({
+        type: 'basket',
+        ballId: 'ball-3',
+        basketId: 'basket-1',
+      });
+      expect(state.document.objects.find(({ id }) => id === 'ball-1')?.type).toBe('ball');
+    });
+
+    it('ne fait jamais d’une balle bleue l’objectif', () => {
+      const state = accepted(addAuthoredPlacement({ ...addedRedBall, becomesGoalBall: false }));
+
+      expect(state.document.goal.ballId).toBe('ball-1');
+      expect(state.document.objects.some(({ id }) => id === 'ball-3')).toBe(true);
+    });
+
+    it('restaure l’ancien objectif à l’annulation et le rend au rétablissement', () => {
+      const history = createHistory<ConstructionAttempt>({
+        document: createLevel(),
+        provenance: {},
+      });
+      const applied = executeCommand(history, addAuthoredPlacement(addedRedBall));
+      if (applied.status !== 'accepted') throw new Error('la balle rouge doit être posée');
+
+      const undone = undo(applied.history);
+      if (undone.status !== 'accepted') throw new Error('la pose doit s’annuler');
+      expect(undone.history.state.document.goal.ballId).toBe('ball-1');
+      expect(undone.history.state.document.objects.some(({ id }) => id === 'ball-3')).toBe(false);
+
+      const redone = redo(undone.history);
+      if (redone.status !== 'accepted') throw new Error('la pose doit se rétablir');
+      expect(redone.history.state.document.goal.ballId).toBe('ball-3');
+    });
+
+    it('refuse un identifiant pris, une balle d’objectif qui n’est pas une balle et des propriétés invalides', () => {
+      const state = { document: createLevel(), provenance: {} };
+
+      expect(addAuthoredPlacement({ ...addedMass, placementId: 'beam-1' }).execute(state)).toEqual({
+        status: 'rejected',
+        reason: 'identifier-already-used',
+      });
+      expect(
+        addAuthoredPlacement({ ...addedMass, placementId: 'beam-stock' }).execute(state),
+      ).toEqual({ status: 'rejected', reason: 'identifier-already-used' });
+      expect(addAuthoredPlacement({ ...addedMass, becomesGoalBall: true }).execute(state)).toEqual({
+        status: 'rejected',
+        reason: 'goal-ball-not-found',
+      });
+      expect(
+        addAuthoredPlacement({ ...addedMass, props: { size: 'medium' } }).execute(state),
+      ).toEqual({ status: 'rejected', reason: 'invalid-level-document' });
+      expect(state.document).toEqual(createLevel());
+    });
   });
 });
