@@ -13,6 +13,12 @@ const tapWorldPoint = async (page: Page, x: number, y: number): Promise<void> =>
   await page.touchscreen.tap(bounds.x + (x - originX) * zoom, bounds.y + (y - originY) * zoom);
 };
 
+const closeCalibrationGuide = async (page: Page): Promise<void> => {
+  const guide = page.getByRole('dialog', { name: 'Fiche de calibrage' });
+  await expect(guide).toBeVisible();
+  await guide.getByRole('button', { name: 'Fermer la fiche de calibrage' }).tap();
+};
+
 const storedWallX = (page: Page): Promise<number | null> =>
   page.evaluate(() => {
     const raw = localStorage.getItem('tinkerbolt:draft:campaign-02-par-dessus-le-mur-brouillon');
@@ -36,6 +42,11 @@ test('édite une esquisse de campagne au toucher et conserve le brouillon', asyn
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/levels');
   await page.getByRole('button', { name: 'Éditer le niveau 2' }).tap();
+  await closeCalibrationGuide(page);
+  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  await page.getByRole('button', { name: 'Ouvrir la fiche de calibrage' }).tap();
+  await closeCalibrationGuide(page);
+  await page.getByRole('button', { name: 'Fermer le catalogue' }).tap();
 
   await expect(page).toHaveURL(/\/editor\?draft=campaign-02-par-dessus-le-mur-brouillon$/u);
   await expect(page.getByText('Mode éditeur')).toBeVisible();
@@ -48,6 +59,7 @@ test('édite une esquisse de campagne au toucher et conserve le brouillon', asyn
   await expect.poll(() => storedWallX(page)).toBeGreaterThan(5);
 
   await page.reload();
+  await closeCalibrationGuide(page);
   await expect(page.getByText('Mode éditeur')).toBeVisible();
   expect(await storedWallX(page)).toBeGreaterThan(5);
   await expect(page.getByRole('button', { name: 'Exporter le niveau' })).toBeVisible();

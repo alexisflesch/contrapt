@@ -23,6 +23,7 @@ import { Button } from '../ui/Button';
 import { ObjectDrawer } from '../ui/ObjectDrawer';
 import { Dialog } from '../ui/Dialog';
 import { SimulationControls } from '../ui/SimulationControls';
+import { CalibrationGuide } from '../ui/CalibrationGuide';
 import { useBoardCamera } from './use-board-camera';
 import { placementSourceKey, useBoardPointers } from './use-board-pointers';
 import { LevelExportDialog } from './LevelExportDialog';
@@ -50,6 +51,8 @@ interface BoardShellProps {
   readonly onPlayAsPlayer?: (puzzle: LevelDocument) => void;
   /** U22: replaces « Retour aux niveaux », in the header and the result banner. */
   readonly exit?: { readonly label: string; readonly onExit: () => void };
+  /** U28: the pristine campaign document used as the author calibration brief. */
+  readonly calibrationDocument?: LevelDocument;
 }
 
 /**
@@ -71,6 +74,7 @@ export function BoardShell({
   resetDocument = initialDocument,
   onPlayAsPlayer,
   exit,
+  calibrationDocument,
 }: BoardShellProps) {
   const navigate = useNavigate();
   const {
@@ -127,6 +131,7 @@ export function BoardShell({
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const resetDialogCancelRef = useRef<HTMLButtonElement>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isCalibrationOpen, setIsCalibrationOpen] = useState(calibrationDocument !== undefined);
   const shownCampaignVictory =
     simulation.attemptOutcome?.outcome === 'won' ? campaignVictory : null;
   const victoryDialog = useVictoryDialog(shownCampaignVictory !== null);
@@ -324,6 +329,13 @@ export function BoardShell({
             wiring.startWiring(inventoryEntryId);
             setIsDrawerOpen(false);
           }}
+          {...(calibrationDocument === undefined
+            ? {}
+            : {
+                onOpenCalibration: () => {
+                  setIsCalibrationOpen(true);
+                },
+              })}
         />
       )}
       <section
@@ -421,6 +433,19 @@ export function BoardShell({
           }}
         >
           <p className="dialog-text">Faire entrer la balle dans le panier</p>
+        </Dialog>
+      )}
+      {calibrationDocument !== undefined && isCalibrationOpen && (
+        <Dialog
+          label="Fiche de calibrage"
+          title={<>Calibrage · {calibrationDocument.metadata.title}</>}
+          closeLabel="Fermer la fiche de calibrage"
+          className="calibration-dialog"
+          onClose={() => {
+            setIsCalibrationOpen(false);
+          }}
+        >
+          <CalibrationGuide level={calibrationDocument} />
         </Dialog>
       )}
       {isResetDialogOpen && (

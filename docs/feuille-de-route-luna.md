@@ -17,17 +17,15 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
 
 ## Prochaines tâches, dans l’ordre
 
-1. **U28 — Outillage de calibrage et parcours d’édition.** Pour chaque niveau
-   de campagne, afficher dans l’éditeur au moins en mode développement une fiche
-   d’aide qui indique : l’intention de l’esquisse, ce que l’agent a essayé de
-   construire, à quoi la solution devrait ressembler, et la liste exacte des
-   objets autorisés (famille, quantité, objets fixes du décor et objets à placer).
-   Commencer par exploiter les données U22 et, si nécessaire, une note auteur
-   temporaire sans élargir tout de suite le format public du niveau ; décider
-   ensuite de la forme persistante. Revoir en même temps le parcours « Éditer » :
-   évaluer sa suppression de la liste publique des niveaux ou son déplacement
-   vers un accès auteur discret, par exemple après la fin d’un niveau ou dans un
-   contexte de développement, sans casser les brouillons ni l’URL directe.
+1. **U28 — Fiche de calibrage livrée ; parcours d’édition à réévaluer.** Pour
+   chaque brouillon de campagne, l’éditeur ouvre maintenant une fiche d’aide
+   temporaire fondée sur le document d’esquisse U22 : intention/essai, solution
+   approximative, objets autorisés avec quantités, objets fixes du décor et
+   objets à placer. La fiche peut être rouverte depuis le catalogue auteur ; le
+   catalogue reste complet pour l’expérimentation. Reste à décider si le bouton
+   « Éditer » doit quitter la liste publique des niveaux ou devenir un accès
+   auteur plus discret, sans casser les brouillons ni l’URL directe. Cette
+   réflexion est volontairement différée.
 2. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
    U1, U7, U8, U10, U11, U2, U3 ; minuteur animé (`art/assets/timer/`).
 
@@ -2532,3 +2530,24 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   la description.
 - Captures dédiées produites pour la revue visuelle :
   test-results/n1/campagne-{390x844,844x390,1440x900}.png.
+
+### U28 — Fiche de calibrage des esquisses — fait — `feat(editor): affiche la fiche de calibrage des esquisses (U28)`
+
+- Tests rouges : le parcours d’édition ne proposait aucune fiche ; les tests
+  vérifient désormais l’ouverture automatique, la réouverture depuis le catalogue
+  auteur, le contenu de l’inventaire et de la solution, ainsi que la conservation
+  du niveau source.
+- Production : les brouillons de campagne reprennent le document embarqué
+  d’origine comme fiche de calibrage. Elle affiche l’intention/essai, les objets
+  autorisés et quantités, les placements avec positions/rotations, les fils et le
+  décor fixe. Les ateliers libres et brouillons personnalisés restent inchangés.
+- Le catalogue auteur reste complet par choix : la liste de la fiche est la
+  contrainte joueur, pas une restriction de l’espace d’expérimentation.
+- Le bouton « Éditer » de la liste des niveaux n’a pas été déplacé ; cette
+  décision est explicitement reportée à une tâche ultérieure.
+- Vérifications ciblées : tests Vitest de l’édition, build Vite/PWA et parcours
+  Playwright mobile. La gate complète retombe de façon intermittente sur le test
+  préexistant `src/app/BenchPage.test.tsx` (timeout 5 s ; 705 tests passent sur
+  706) malgré sa réussite en isolation.
+- Captures dédiées produites pour la revue visuelle :
+  `test-results/u28/calibration-{390x844,844x390,1440x900}.png`.

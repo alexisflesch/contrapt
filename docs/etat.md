@@ -229,6 +229,13 @@ pendant le travail.
   parcours Playwright couvrent néanmoins leur chargement et leur navigation.
 - `pnpm content:check` valide les 19 documents embarqués : les 17 niveaux de
   campagne, la démonstration et l’atelier.
+- **Fiche de calibrage U28** : ouvrir un brouillon de campagne affiche la fiche
+  de l’esquisse source avec l’intention/essai décrit par l’auteur, l’inventaire
+  exact autorisé et ses quantités, la solution approximative (placements,
+  rotations et fils) et le décor fixe à préserver. Elle se referme puis se
+  rouvre depuis le catalogue auteur ; l’atelier libre et les brouillons
+  personnalisés ne sont pas concernés. Le catalogue auteur reste complet pour
+  permettre l’expérimentation, la fiche faisant foi pour l’inventaire joueur.
 
 ## Dettes et limites explicites
 
@@ -247,7 +254,11 @@ pendant le travail.
 - **Calibration des esquisses** (décision auteur du 27 septembre 2026) : les
   17 niveaux de campagne sont livrés comme points de départ. L’auteur doit les
   ouvrir avec « Éditer le niveau », ajuster la physique et exporter les
-  documents avant activation de régressions de solution.
+  documents avant activation de régressions de solution. La fiche U28 facilite
+  désormais cette reprise ; le calibrage physique final reste à faire.
+- **Parcours « Éditer »** : la position actuelle du bouton sur la liste des
+  niveaux est conservée provisoirement. Son éventuel déplacement vers un accès
+  auteur plus discret sera réévalué séparément.
 - **Progression de campagne** : L19 calcule les paliers, records, indices et
   déblocages ; L20 persiste les records dans une enveloppe locale validée ; L21
   enregistre les victoires depuis le snapshot du lancement et expose le hook

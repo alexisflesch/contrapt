@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
-import { embeddedWorkshopDocument } from '../content/embedded-levels';
+import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
 import { AppFrame } from '../ui/AppFrame';
 import { Panel } from '../ui/Panel';
@@ -28,6 +28,7 @@ interface WorkshopProps {
   readonly initialDocument: LevelDocument;
   readonly title: string;
   readonly onDocumentCommitted?: (document: LevelDocument) => void;
+  readonly calibrationDocument?: LevelDocument;
 }
 
 /**
@@ -35,7 +36,12 @@ interface WorkshopProps {
  * an ephemeral copy. Coming back remounts the workshop on its last committed
  * document; its undo history starts again from there.
  */
-function Workshop({ initialDocument, title, onDocumentCommitted }: WorkshopProps) {
+function Workshop({
+  initialDocument,
+  title,
+  onDocumentCommitted,
+  calibrationDocument,
+}: WorkshopProps) {
   const [workshopDocument, setWorkshopDocument] = useState(initialDocument);
   const [playtest, setPlaytest] = useState<LevelDocument | null>(null);
 
@@ -70,6 +76,7 @@ function Workshop({ initialDocument, title, onDocumentCommitted }: WorkshopProps
         onDocumentCommitted?.(document);
       }}
       onPlayAsPlayer={setPlaytest}
+      {...(calibrationDocument === undefined ? {} : { calibrationDocument })}
     />
   );
 }
@@ -98,10 +105,13 @@ function DraftEditor({ draftId }: { readonly draftId: string }) {
     );
   }
 
+  const calibrationDocument = embeddedLevels.find((level) => `${level.id}-brouillon` === draftId);
+
   return (
     <Workshop
       initialDocument={draft}
       title=""
+      {...(calibrationDocument === undefined ? {} : { calibrationDocument })}
       onDocumentCommitted={(document) => {
         // Best effort, like progress (ADR 0011): a failed save never blocks editing.
         drafts.save(document);

@@ -87,6 +87,21 @@ describe('éditer un niveau de la campagne (U17)', () => {
     );
     expect(screen.queryByText('Éditeur · Par-dessus le mur (brouillon)')).not.toBeInTheDocument();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
+    const calibration = screen.getByRole('dialog', { name: 'Fiche de calibrage' });
+    expect(calibration).toHaveTextContent('Le tremplin transforme la chute de la rouge en saut.');
+    expect(calibration).toHaveTextContent('Tremplin');
+    expect(calibration).toHaveTextContent('1 exemplaire');
+    expect(calibration).toHaveTextContent('Poutre courte');
+    expect(calibration).toHaveTextContent('Masse');
+    expect(calibration).toHaveTextContent('Solution approximative à viser');
+    fireEvent.click(
+      within(calibration).getByRole('button', { name: 'Fermer la fiche de calibrage' }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la fiche de calibrage' }));
+    expect(screen.getByRole('dialog', { name: 'Fiche de calibrage' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer la fiche de calibrage' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer le catalogue' }));
     expect(screen.getByRole('button', { name: 'Exporter le niveau' })).toBeVisible();
 
     const stored = createLocalStorageDraftRepository(window.localStorage).load(
