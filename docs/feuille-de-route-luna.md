@@ -2070,3 +2070,18 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : valider les permissions verrouillées des objets ajoutés et
   l’absence de carte « Balle » générique. Les vignettes du bouton et de la
   bascule contiennent encore du rouge (capuchon, planche).
+
+### T1 — Délai des recherches de solutions à leur mesure — fait — `test(content): donne aux recherches de solutions un délai à leur mesure`
+
+- Mesures (poste de développement, reporter verbeux) : niveau 12, produit
+  croisé 2,1 s seul, 4,3 à 4,6 s dans la suite (délai par défaut 5 s) ;
+  recherche à un objet 9,4 s seule, 11,3 à 12,0 s dans la suite (délai 20 s).
+  Toutes les autres régressions de niveau restent sous 1 s (niveau 2 : 0,9 s),
+  loin du délai par défaut : inchangées.
+- Changement : délais explicites nommés, 20 s et 60 s (environ cinq fois le
+  coût mesuré sous charge), avec la mesure en commentaire. Même grille, mêmes
+  assertions.
+- Tests ajoutés : aucun (délai seulement). Échec initial : expiration à 5 s du
+  produit croisé dans les gates U17 ; non reproduit ici, 4,6 s mesurées.
+- Vérification : `pnpm check` passe d’une traite (693 tests Vitest ; 47 E2E
+  mobiles réussis, 1 ignoré).

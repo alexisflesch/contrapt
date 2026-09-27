@@ -4,6 +4,15 @@ import { embeddedLevels } from '../embedded-levels';
 import { applyPlayerSteps, runLevel, searchSolutions, type PlayerStep } from '../level-regression';
 import type { LevelDocument } from '../../domain/level-document';
 
+/**
+ * Measured on the development PC (27 September 2026): the cross product takes
+ * 2.1 s alone and 4.3 s inside the full suite, the one-object search 9.4 s
+ * alone and 11.3 s inside it. Each limit leaves about five times the loaded
+ * cost, so a busy machine does not turn a slow run into a failure.
+ */
+const CROSS_PRODUCT_TIMEOUT_MS = 20_000;
+const ONE_OBJECT_SEARCH_TIMEOUT_MS = 60_000;
+
 const readLevel = (): LevelDocument => {
   const level = embeddedLevels.find(({ id }) => id === 'level-12-le-bon-ordre');
   if (level === undefined) throw new Error('Le niveau « Le bon ordre » est absent.');
@@ -119,15 +128,19 @@ describe('niveau 12 — Le bon ordre', () => {
     expect(level).toEqual(initialDocument);
   });
 
-  it('gagne sur le produit croisé complet des fenêtres de masse et de poutre', () => {
-    const masses = massWindow();
-    const beams = beamWindow();
-    const solutions = searchSolutions(readLevel(), [masses, beams]);
+  it(
+    'gagne sur le produit croisé complet des fenêtres de masse et de poutre',
+    () => {
+      const masses = massWindow();
+      const beams = beamWindow();
+      const solutions = searchSolutions(readLevel(), [masses, beams]);
 
-    expect(masses).toHaveLength(9);
-    expect(beams).toHaveLength(17);
-    expect(solutions).toHaveLength(153);
-  });
+      expect(masses).toHaveLength(9);
+      expect(beams).toHaveLength(17);
+      expect(solutions).toHaveLength(153);
+    },
+    CROSS_PRODUCT_TIMEOUT_MS,
+  );
 
   it('échoue avec la masse seule et avec la poutre seule', () => {
     const level = readLevel();
@@ -152,12 +165,16 @@ describe('niveau 12 — Le bon ordre', () => {
     expect(second.fixedSteps).toBe(first.fixedSteps);
   });
 
-  it('ne trouve aucune solution à un objet sur la grille légale de 936 poses', () => {
-    const candidates = oneObjectGrid();
+  it(
+    'ne trouve aucune solution à un objet sur la grille légale de 936 poses',
+    () => {
+      const candidates = oneObjectGrid();
 
-    expect(candidates).toHaveLength(936);
-    expect(searchSolutions(readLevel(), [candidates])).toEqual([]);
-  }, 20_000);
+      expect(candidates).toHaveLength(936);
+      expect(searchSolutions(readLevel(), [candidates])).toEqual([]);
+    },
+    ONE_OBJECT_SEARCH_TIMEOUT_MS,
+  );
 
   it('déclare le minimum deux et quatre objets d’inventaire', () => {
     const level = readLevel();

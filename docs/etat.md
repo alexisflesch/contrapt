@@ -298,12 +298,12 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` après U17 (27 septembre 2026) : typecheck, lint, formatage, Knip,
-contenu et 666 des 667 tests Vitest (58 fichiers) passent ; le test lourd du
-niveau 12 (« produit croisé complet ») dépasse son délai de 5 s sous charge et
-passe seul. Build et 48 tests Playwright `mobile` (47 réussis, 1 ignoré) passent
-ensuite ; le parcours tactile du niveau 5 avait expiré une fois et passe seul.
-U16 avait obtenu une gate complète verte (658 tests Vitest, 46 E2E réussis).
+`pnpm check` après U19, U20 et le délai des recherches du niveau 12
+(27 septembre 2026) : passe d’une traite — typecheck, lint, formatage, Knip,
+contenu, 693 tests Vitest (60 fichiers), build et 48 tests Playwright `mobile`
+(47 réussis, 1 ignoré). Dans la suite complète, le produit croisé du niveau 12
+a pris 4,6 s (délai 20 s) et la recherche à un objet 12,0 s (délai 60 s) ;
+seuls, 2,1 s et 9,4 s. Les autres régressions de niveau restent sous 1 s.
 
 Exécution précédente, après L28 :
 `pnpm check` passe le 27 septembre 2026 après L28 : typecheck, lint,
