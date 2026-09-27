@@ -988,6 +988,63 @@ describe('renderer Canvas 2D du plateau', () => {
     expect(alphas.some((alpha) => alpha !== undefined && alpha < 0.5)).toBe(true);
   });
 
+  it('dessine les zones de construction sous les objets, en unités monde', async () => {
+    const { context, operations } = createContext();
+    const spriteLoader = createPendingSpriteLoader();
+    spriteLoader.setReady();
+    const renderer = createBoardRenderer({
+      canvas: { width: 0, height: 0 },
+      context,
+      viewport,
+      spriteLoader: spriteLoader.loader,
+    });
+
+    await renderer.render({
+      ...projectLevel(levelDocument),
+      buildZones: [{ min: { x: 11, y: 6 }, max: { x: 14, y: 9 } }],
+    });
+
+    const zoneFill = operations.findIndex(
+      (operation) =>
+        operation.kind === 'fillRect' && operation.values.join(',') === [4, 4, 12, 12].join(','),
+    );
+    const firstSprite = operations.findIndex((operation) => operation.kind === 'drawImage');
+    expect(zoneFill).toBeGreaterThanOrEqual(0);
+    expect(zoneFill).toBeLessThan(firstSprite);
+  });
+
+  it('atténue l’objet dont la position est refusée, et lui seul', async () => {
+    const renderWith = async (invalidPlacementId?: string): Promise<readonly Operation[]> => {
+      const { context, operations } = createContext();
+      const spriteLoader = createPendingSpriteLoader();
+      spriteLoader.setReady();
+      const renderer = createBoardRenderer({
+        canvas: { width: 0, height: 0 },
+        context,
+        viewport,
+        spriteLoader: spriteLoader.loader,
+      });
+      const projection = projectLevel(levelDocument);
+      await renderer.render(
+        invalidPlacementId === undefined ? projection : { ...projection, invalidPlacementId },
+      );
+      return operations;
+    };
+    const translucentDraws = (operations: readonly Operation[]): number => {
+      let alpha = 1;
+      let count = 0;
+      for (const operation of operations) {
+        if (operation.kind === 'globalAlpha') alpha = operation.values[0] ?? 1;
+        if (operation.kind === 'restore') alpha = 1;
+        if (operation.kind === 'drawImage' && alpha < 1) count += 1;
+      }
+      return count;
+    };
+
+    expect(translucentDraws(await renderWith())).toBe(0);
+    expect(translucentDraws(await renderWith('beam-1'))).toBe(1);
+  });
+
   it('expose une API de rendu sans victoire ni sérialisation', () => {
     const { context } = createContext();
     const spriteLoader = createPendingSpriteLoader();

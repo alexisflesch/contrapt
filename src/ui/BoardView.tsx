@@ -198,6 +198,12 @@ const createCanvasContextAdapter = (context: CanvasRenderingContext2D): BoardCan
   strokeRect: (x, y, width, height) => {
     context.strokeRect(x, y, width, height);
   },
+  setLineDash: (segments) => {
+    context.setLineDash([...segments]);
+  },
+  fillRect: (x, y, width, height) => {
+    context.fillRect(x, y, width, height);
+  },
   get lineWidth() {
     return context.lineWidth;
   },
@@ -311,11 +317,21 @@ export function BoardView({
                   ),
                 }
               : projection;
-          await renderer.render(
-            currentSession.phase === 'construction' && selectedPlacementId !== null
-              ? { ...projectionWithEffectiveCapabilities, selectedPlacementId }
-              : projectionWithEffectiveCapabilities,
-          );
+          const { manipulation } = currentSession;
+          const constructionView =
+            currentSession.phase === 'construction'
+              ? {
+                  ...(selectedPlacementId !== null && { selectedPlacementId }),
+                  ...(currentSession.mode === 'resolution' && {
+                    buildZones: displayedDocument.buildZones,
+                  }),
+                  ...(manipulation !== null &&
+                    manipulation.invalidReason !== null && {
+                      invalidPlacementId: manipulation.placementId,
+                    }),
+                }
+              : {};
+          await renderer.render({ ...projectionWithEffectiveCapabilities, ...constructionView });
         })
         .catch(() => undefined);
     };

@@ -21,6 +21,8 @@ interface EditorManipulation {
   readonly kind: EditorManipulationKind;
   readonly placementId: string;
   readonly group: CommandGroup<ConstructionAttempt>;
+  /** Set while the projection follows the pointer to a position that cannot be committed. */
+  readonly invalidReason: string | null;
 }
 
 export interface EditorSession {
@@ -193,6 +195,7 @@ export const beginEditorManipulation = (
   const manipulation = Object.freeze({
     ...input,
     group: beginCommandGroup(baseSession.history),
+    invalidReason: null,
   });
   const selectedPlacementId = input.kind === 'placement' ? null : input.placementId;
 
@@ -217,8 +220,30 @@ export const previewEditorManipulation = (
   const preview = applyPreview(previewBase, command);
   if (preview.status === 'rejected') return rejectedAction(session, preview.reason);
 
-  const manipulation = Object.freeze({ ...session.manipulation, group: preview.group });
+  const manipulation = Object.freeze({
+    ...session.manipulation,
+    group: preview.group,
+    invalidReason: null,
+  });
   return acceptedAction(withSession(session, { manipulation }));
+};
+
+/**
+ * Shows a projection the player may not commit (for instance outside every
+ * build zone), so the object keeps following the pointer. `command` is the
+ * projection without the failed rule; commit stays refused with `reason`
+ * until a valid preview replaces it.
+ */
+export const previewInvalidEditorManipulation = (
+  session: EditorSession,
+  command: Command<ConstructionAttempt>,
+  reason: string,
+): EditorActionResult => {
+  const preview = previewEditorManipulation(session, command);
+  if (preview.status === 'rejected' || preview.session.manipulation === null) return preview;
+
+  const manipulation = Object.freeze({ ...preview.session.manipulation, invalidReason: reason });
+  return acceptedAction(withSession(preview.session, { manipulation }));
 };
 
 export const commitEditorManipulation = (session: EditorSession): EditorActionResult => {
@@ -230,6 +255,9 @@ export const commitEditorManipulation = (session: EditorSession): EditorActionRe
   }
 
   const { manipulation } = session;
+  if (manipulation.invalidReason !== null) {
+    return rejectedAction(session, manipulation.invalidReason);
+  }
   const commit = commitCommandGroup(manipulation.group, session.history);
   if (commit.status === 'rejected') return rejectedAction(session, commit.reason);
 

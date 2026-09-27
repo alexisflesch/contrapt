@@ -8,6 +8,7 @@ export {
   executeEditorCommand,
   pauseSimulation,
   previewEditorManipulation,
+  previewInvalidEditorManipulation,
   redoEditorCommand,
   resetSimulation,
   resumeSimulation,

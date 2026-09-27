@@ -71,6 +71,7 @@ const dragScreenPoints = async (
   page: Page,
   start: ScreenPoint,
   target: ScreenPoint,
+  whileHeld?: () => Promise<void>,
 ): Promise<void> => {
   // The mobile project uses Chromium: CDP dispatches touch input, so this
   // exercises the same pointer type the player uses instead of a mouse drag.
@@ -108,6 +109,7 @@ const dragScreenPoints = async (
         ],
       });
     }
+    await whileHeld?.();
   } finally {
     if (touchStarted) {
       await touchSession.send('Input.dispatchTouchEvent', {
@@ -182,6 +184,43 @@ test('niveau 3 : poser puis tourner la poutre de référence avec la poignée au
   const victoryResult = page.getByRole('region', { name: 'Résultat du niveau' });
   await expect(victoryResult).toBeVisible({ timeout: 15_000 });
   await expect(victoryResult.getByText('Victoire')).toBeVisible();
+});
+
+test('niveau 3 : l’objet suit le doigt hors zone puis revient au lâcher, avec un seul refus', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Le glisser tactile est testé sur mobile.');
+  await page.goto(levelThreePath);
+  const canvas = page.getByRole('img', { name: 'Rendu du plateau' });
+  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  await page.getByRole('button', { name: 'Poutre moyenne' }).tap();
+  await tapWorldPoint(page, { x: 3.2, y: 2.5 });
+  await page.getByRole('button', { name: 'Fermer les propriétés' }).tap();
+  await page.mouse.move(0, 0);
+  const placed = await canvas.screenshot();
+
+  const start = await screenPointForWorld(page, { x: 3.2, y: 2.5 });
+  const outside = await screenPointForWorld(page, { x: 6.8, y: 2.5 });
+  if (start === null || outside === null) throw new Error('Conversion monde → écran impossible.');
+  const refusal = page.getByText(/Action refusée/);
+  await dragScreenPoints(page, start, outside, async () => {
+    await expect
+      .poll(async () => !(await canvas.screenshot()).equals(placed), { timeout: 2_000 })
+      .toBe(true);
+    await expect(refusal).toHaveCount(0);
+    await mkdir('test-results/zones', { recursive: true });
+    await page.screenshot({ path: 'test-results/zones/hors-zone-390x844.png' });
+  });
+
+  await expect(refusal).toHaveCount(1);
+  await page.screenshot({ path: 'test-results/zones/relache-390x844.png' });
+  // The refusal banner overlaps the board; hide it to compare the board alone.
+  const hideFeedback = '.toolbar-feedback { visibility: hidden; }';
+  await expect
+    .poll(async () => (await canvas.screenshot({ style: hideFeedback })).equals(placed), {
+      timeout: 2_000,
+    })
+    .toBe(true);
 });
 
 test('niveau 4 : choisir la poutre longue et gagner au tactile', async ({ page }, testInfo) => {

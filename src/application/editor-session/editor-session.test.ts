@@ -12,6 +12,7 @@ import {
   executeEditorCommand,
   pauseSimulation,
   previewEditorManipulation,
+  previewInvalidEditorManipulation,
   redoEditorCommand,
   resetSimulation,
   resumeSimulation,
@@ -237,6 +238,36 @@ describe('EditorSession', () => {
     expect(rejected.session).toBe(valid.session);
     expect(beamPosition(rejected.session)).toEqual({ x: 6, y: 2 });
     expect(rejected.session.history.past).toHaveLength(0);
+  });
+
+  it('montre une projection invalide sous le doigt sans pouvoir la valider', () => {
+    const begun = beginEditorManipulation(createSession(), {
+      kind: 'move',
+      placementId: 'movable-beam',
+    });
+    if (begun.status !== 'accepted') throw new Error('manipulation should begin');
+    const valid = previewEditorManipulation(begun.session, moveBeamTo(6));
+    if (valid.status !== 'accepted') throw new Error('preview should be accepted');
+
+    const invalid = previewInvalidEditorManipulation(
+      valid.session,
+      movePlacement({ context: 'author', placementId: 'movable-beam', position: { x: 12, y: 2 } }),
+      'outside-build-zone',
+    );
+
+    expect(invalid.status).toBe('accepted');
+    expect(beamPosition(invalid.session)).toEqual({ x: 12, y: 2 });
+    expect(invalid.session.manipulation?.invalidReason).toBe('outside-build-zone');
+    const commit = commitEditorManipulation(invalid.session);
+    expect(commit).toMatchObject({ status: 'rejected', reason: 'outside-build-zone' });
+    expect(commit.session.history.past).toHaveLength(0);
+
+    const back = previewEditorManipulation(invalid.session, moveBeamTo(7));
+    if (back.status !== 'accepted') throw new Error('preview should be accepted');
+    expect(back.session.manipulation?.invalidReason).toBeNull();
+    const committed = commitEditorManipulation(back.session);
+    expect(committed.status).toBe('accepted');
+    expect(beamPosition(committed.session)).toEqual({ x: 7, y: 2 });
   });
 
   it('annule la projection précédente lorsqu’une autre manipulation commence', () => {

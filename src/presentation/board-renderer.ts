@@ -66,6 +66,13 @@ export type BoardCanvasContext = {
   readonly rotate: (radians: number) => void;
   readonly scale: (x: number, y: number) => void;
   lineWidth?: number;
+  readonly setLineDash?: (segments: readonly number[]) => void;
+  readonly fillRect?: (
+    destinationX: number,
+    destinationY: number,
+    destinationWidth: number,
+    destinationHeight: number,
+  ) => void;
   readonly strokeRect?: (
     destinationX: number,
     destinationY: number,
@@ -185,7 +192,13 @@ type BoardProjection = Readonly<{
   readonly wiresDimmed: boolean;
   /** Ephemeral selection state; it is never part of `LevelDocument`. */
   readonly selectedPlacementId?: string;
+  /** Build zones to highlight while the player constructs; view state, like the selection. */
+  readonly buildZones?: readonly BoardZone[];
+  /** Placement projected where it cannot be committed (outside every build zone). */
+  readonly invalidPlacementId?: string;
 }>;
+
+type BoardZone = Readonly<{ readonly min: BoardPoint; readonly max: BoardPoint }>;
 
 type Placement = LevelDocument['objects'][number];
 
@@ -594,6 +607,34 @@ const requiredFamilies = (projection: BoardProjection): readonly SpriteFamily[] 
 ];
 
 const SELECTION_LINE_WIDTH_CSS_PIXELS = 2;
+const ZONE_FILL = 'rgba(30, 136, 229, 0.1)';
+const ZONE_OUTLINE = 'rgba(30, 136, 229, 0.65)';
+const ZONE_DASH_CSS_PIXELS = [8, 6];
+const INVALID_OUTLINE = '#e53935';
+const INVALID_OBJECT_ALPHA = 0.5;
+
+const drawBuildZones = (
+  context: BoardCanvasContext,
+  zones: readonly BoardZone[],
+  viewport: BoardViewport,
+): void => {
+  if (context.fillRect === undefined) return;
+
+  context.save();
+  context.fillStyle = ZONE_FILL;
+  context.strokeStyle = ZONE_OUTLINE;
+  if (context.lineWidth !== undefined) context.lineWidth = SELECTION_LINE_WIDTH_CSS_PIXELS;
+  context.setLineDash?.(ZONE_DASH_CSS_PIXELS);
+  for (const zone of zones) {
+    const topLeft = worldToPixels(zone.min, viewport);
+    const bottomRight = worldToPixels(zone.max, viewport);
+    const width = bottomRight.x - topLeft.x;
+    const height = bottomRight.y - topLeft.y;
+    context.fillRect(topLeft.x, topLeft.y, width, height);
+    context.strokeRect?.(topLeft.x, topLeft.y, width, height);
+  }
+  context.restore();
+};
 
 export const rotationHandleBounds = (
   object: ProjectedBoardObject,
@@ -615,10 +656,11 @@ const selectedObject = (projection: BoardProjection): ProjectedBoardObject | und
   return projection.objects.find((object) => object.id === projection.selectedPlacementId);
 };
 
-const drawSelection = (
+const drawFootprintOutline = (
   context: BoardCanvasContext,
   object: ProjectedBoardObject,
   viewport: BoardViewport,
+  colour?: string,
 ): void => {
   if (context.strokeRect === undefined) return;
 
@@ -631,8 +673,19 @@ const drawSelection = (
   if (context.lineWidth !== undefined) {
     context.lineWidth = SELECTION_LINE_WIDTH_CSS_PIXELS;
   }
+  if (colour !== undefined) context.strokeStyle = colour;
   context.strokeRect(destination.x, destination.y, destination.width, destination.height);
   context.restore();
+};
+
+const drawSelection = (
+  context: BoardCanvasContext,
+  object: ProjectedBoardObject,
+  viewport: BoardViewport,
+): void => {
+  if (context.strokeRect === undefined) return;
+
+  drawFootprintOutline(context, object, viewport);
 
   if (!object.rotatable) return;
 
@@ -655,6 +708,10 @@ export const createBoardRenderer = ({
     canvas.height = Math.round(viewport.cssHeight * viewport.devicePixelRatio);
     context.setTransform(viewport.devicePixelRatio, 0, 0, viewport.devicePixelRatio, 0, 0);
 
+    if (projection.buildZones !== undefined) {
+      drawBuildZones(context, projection.buildZones, viewport);
+    }
+
     const wireContext = canDrawWires(context) ? context : undefined;
     const toScreen = (point: BoardPoint): BoardPoint => worldToPixels(point, viewport);
     const wireOptions = {
@@ -675,6 +732,7 @@ export const createBoardRenderer = ({
       const { x, y, width, height } = destinationToPixels(object.layer.destination, viewport);
 
       context.save();
+      if (object.id === projection.invalidPlacementId) context.globalAlpha = INVALID_OBJECT_ALPHA;
       context.translate(position.x, position.y);
       context.rotate(object.layer.rotation);
       if (object.layer.mirrored === true) context.scale(-1, 1);
@@ -711,5 +769,9 @@ export const createBoardRenderer = ({
     if (selection !== undefined) {
       drawSelection(context, selection, viewport);
     }
+
+    // Drawn last so the refused footprint stays red over the selection frame.
+    const invalid = projection.objects.find(({ id }) => id === projection.invalidPlacementId);
+    if (invalid !== undefined) drawFootprintOutline(context, invalid, viewport, INVALID_OUTLINE);
   },
 });

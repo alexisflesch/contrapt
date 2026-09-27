@@ -31,6 +31,7 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/contrapt_control_wires_v1.md`                       | 125     | spécification fonctionnelle des fils de commande                 |
 | `docs/mobile-editor-interactions.md`                      | 504     | gestes, états d'interface, scénarios d'acceptation tactiles      |
 | `docs/levels/initial-progression.md`                      | 439     | campagne : 14 niveaux, géométries mesurées                       |
+| `docs/levels/conception-niveaux.md`                       | 156     | concevoir un niveau : règles du jeu, objets, physique, méthode   |
 | `docs/decisions/0001-product-foundations.md`              | 33      | fondations produit (accepté)                                     |
 | `docs/decisions/0002-physics-engine-selection.md`         | 126     | choix du moteur physique, Planck.js (accepté)                    |
 | `docs/decisions/0003-project-bootstrap.md`                | 309     | outillage, scripts, gates, politique de dépendances (accepté)    |
@@ -75,6 +76,7 @@ Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans rai
 | Fils de commande, levier, convoyeur            | ADR 0009, `contrapt_control_wires_v1.md`, `catalogue-initial.md` § Levier, § Convoyeur                            | `src/domain/`, `src/presentation/`             |
 | Interface tactile, tiroir, gestes              | `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile                                     | `src/ui/`, `src/app/`                          |
 | Routage, navigation, schéma d'URL              | ADR 0008                                                                                                          | `src/app/`                                     |
+| Conception d'un nouveau niveau                 | `levels/conception-niveaux.md` (se suffit à lui-même)                                                             | `src/content/levels/`                          |
 | Contenu d'un niveau                            | `levels/initial-progression.md` (section du niveau), `feuille-de-route-luna.md` § 3, ADR 0007 § Scène d'un niveau | `src/content/levels/`                          |
 | Parcours end-to-end                            | `mobile-editor-interactions.md` § Scénarios d'acceptation, `qualite.md` § Tests end-to-end                        | `e2e/`                                         |
 | Stockage, import/export, codec URL             | ADR 0011, `architecture.md` § Stockage et partage                                                                 | `src/infrastructure/`, `src/application/`      |

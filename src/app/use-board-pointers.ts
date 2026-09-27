@@ -4,6 +4,8 @@ import {
   movePlacement,
   placeFromInventory,
   rotatePlacement,
+  type ConstructionAttempt,
+  type ConstructionContext,
 } from '../application/construction/construction-attempt';
 import {
   beginEditorManipulation,
@@ -11,9 +13,11 @@ import {
   commitEditorManipulation,
   currentEditorAttempt,
   previewEditorManipulation,
+  previewInvalidEditorManipulation,
   selectEditorPlacement,
   type EditorSession,
 } from '../application/editor-session/editor-session';
+import type { Command } from '../application/history';
 import { rotationMode, type LevelDocument } from '../domain/level-document';
 import { hitTestBoard, hitTestRotationHandle } from '../presentation/board-hit-test';
 import { projectLevel, worldToPixels, type BoardViewport } from '../presentation/board-renderer';
@@ -73,6 +77,32 @@ const placementPreviewFromPointer = (
     worldPosition: screenPointToWorld(point, boardRect, pixelsPerWorldUnit, origin),
     isValid,
   };
+};
+
+interface PointerPreview {
+  readonly session: EditorSession;
+  /** Refusal to report when the gesture ends; `null` when the projection can be committed. */
+  readonly refusal: string | null;
+}
+
+/**
+ * Previews a gesture so the object keeps following the pointer: outside every
+ * build zone the projection is still shown, flagged invalid, instead of
+ * freezing at its last valid position. Other refusals keep that position.
+ */
+const previewFollowingPointer = (
+  session: EditorSession,
+  command: (context: ConstructionContext) => Command<ConstructionAttempt>,
+): PointerPreview => {
+  const context = session.mode === 'resolution' ? 'player' : 'author';
+  const result = previewEditorManipulation(session, command(context));
+  if (result.status === 'accepted') return { session: result.session, refusal: null };
+  if (result.reason === 'outside-build-zone') {
+    // The author context applies every rule except the build zones.
+    const invalid = previewInvalidEditorManipulation(session, command('author'), result.reason);
+    if (invalid.status === 'accepted') return { session: invalid.session, refusal: result.reason };
+  }
+  return { session: result.session, refusal: result.reason };
 };
 
 const pointerIdFromEvent = (pointerId: unknown): number | null =>
@@ -164,8 +194,10 @@ export function useBoardPointers({
     readonly snap: number;
     readonly center: ScreenPoint;
     hasDragged: boolean;
-    isValid: boolean;
+    /** Refusal of the last preview, reported once when the finger lifts. */
+    refusal: string | null;
   } | null>(null);
+  const placementRefusal = useRef<string | null>(null);
   /** Pointers currently down on the empty board, tracked for pan/pinch (mobile-editor-interactions.md § Navigation). */
   const boardGesturePointers = useRef<Map<number, ScreenPoint>>(new Map());
   const panPointerId = useRef<number | null>(null);
@@ -459,10 +491,9 @@ export function useBoardPointers({
       cameraRef.current.origin,
     );
 
-    const result = previewEditorManipulation(
-      currentSession,
+    const result = previewFollowingPointer(currentSession, (context) =>
       placeFromInventory({
-        context: currentSession.mode === 'resolution' ? 'player' : 'author',
+        context,
         inventoryEntryId: activeTool.inventoryEntryId,
         placementId: activeTool.placementId,
         transform: {
@@ -472,10 +503,10 @@ export function useBoardPointers({
       }),
     );
     updateSession(result.session);
-    const isValid = result.status === 'accepted';
+    const isValid = result.refusal === null;
     setPlacementIndicator(activeTool.kind, point, boardRect, isValid);
     hasValidPlacementPreview.current = isValid;
-    if (!isValid) reportRefusal(result.reason);
+    placementRefusal.current = result.refusal;
   };
 
   const updatePlacementIndicator = (point: ScreenPoint, boardRect: BoardOffset): void => {
@@ -486,7 +517,18 @@ export function useBoardPointers({
   };
 
   const commitPlacement = (): void => {
-    if (placementToolRef.current === null || !hasValidPlacementPreview.current) return;
+    if (placementToolRef.current === null) return;
+    if (!hasValidPlacementPreview.current) {
+      // Lifting the finger on a refused position drops the projection; the
+      // tool stays active for another try.
+      const refusal = placementRefusal.current;
+      placementRefusal.current = null;
+      const cancelled = cancelEditorManipulation(sessionRef.current);
+      if (cancelled.status === 'accepted') updateSession(cancelled.session);
+      setPlacementPreview(null);
+      if (refusal !== null) reportRefusal(refusal);
+      return;
+    }
 
     const result = commitEditorManipulation(sessionRef.current);
     updateSession(result.session);
@@ -519,47 +561,36 @@ export function useBoardPointers({
       updateSession(started.session);
       activeMove.hasDragged = true;
     }
-    const context = sessionRef.current.mode === 'resolution' ? 'player' : 'author';
-    const result =
+    const result = previewFollowingPointer(sessionRef.current, (context) =>
       activeMove.kind === 'move'
-        ? previewEditorManipulation(
-            sessionRef.current,
-            movePlacement({
-              context,
-              placementId: activeMove.placementId,
-              position: screenPointToWorld(
-                point,
-                boardRect,
-                cameraRef.current.pixelsPerWorldUnit,
-                cameraRef.current.origin,
-              ),
-            }),
-          )
-        : previewEditorManipulation(
-            sessionRef.current,
-            rotatePlacement({
-              context,
-              placementId: activeMove.placementId,
-              rotation:
-                activeMove.startRotation +
-                Math.round(
-                  (Math.atan2(point.y - activeMove.center.y, point.x - activeMove.center.x) -
-                    Math.atan2(
-                      activeMove.startPoint.y - activeMove.center.y,
-                      activeMove.startPoint.x - activeMove.center.x,
-                    )) /
-                    activeMove.snap,
-                ) *
+        ? movePlacement({
+            context,
+            placementId: activeMove.placementId,
+            position: screenPointToWorld(
+              point,
+              boardRect,
+              cameraRef.current.pixelsPerWorldUnit,
+              cameraRef.current.origin,
+            ),
+          })
+        : rotatePlacement({
+            context,
+            placementId: activeMove.placementId,
+            rotation:
+              activeMove.startRotation +
+              Math.round(
+                (Math.atan2(point.y - activeMove.center.y, point.x - activeMove.center.x) -
+                  Math.atan2(
+                    activeMove.startPoint.y - activeMove.center.y,
+                    activeMove.startPoint.x - activeMove.center.x,
+                  )) /
                   activeMove.snap,
-            }),
-          );
+              ) *
+                activeMove.snap,
+          }),
+    );
     updateSession(result.session);
-    if (result.status === 'accepted') {
-      activeMove.isValid = true;
-    } else {
-      activeMove.isValid = false;
-      reportRefusal(result.reason);
-    }
+    activeMove.refusal = result.refusal;
   };
 
   const commitDirectMove = (pointerId: number | null): void => {
@@ -567,9 +598,10 @@ export function useBoardPointers({
     if (activeMove === null || (activeMove.id !== null && activeMove.id !== pointerId)) return;
     activeMovePointer.current = null;
     if (!activeMove.hasDragged) return;
-    if (!activeMove.isValid) {
+    if (activeMove.refusal !== null) {
       const cancelled = cancelEditorManipulation(sessionRef.current);
       if (cancelled.status === 'accepted') updateSession(cancelled.session);
+      reportRefusal(activeMove.refusal);
       return;
     }
     const result = commitEditorManipulation(sessionRef.current);
@@ -727,7 +759,7 @@ export function useBoardPointers({
               snap: rotationSnap(placement.type),
               center: { x: boardRect.left + centerInBoard.x, y: boardRect.top + centerInBoard.y },
               hasDragged: false,
-              isValid: true,
+              refusal: null,
             };
             if (pointerId !== null && typeof event.currentTarget.setPointerCapture === 'function') {
               try {
@@ -764,7 +796,7 @@ export function useBoardPointers({
               snap: rotationSnap(placement.type),
               center: { x: boardRect.left + centerInBoard.x, y: boardRect.top + centerInBoard.y },
               hasDragged: false,
-              isValid: true,
+              refusal: null,
             };
             if (pointerId !== null && typeof event.currentTarget.setPointerCapture === 'function') {
               try {

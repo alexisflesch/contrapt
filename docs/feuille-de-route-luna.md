@@ -799,6 +799,36 @@ commencer de ta propre initiative.
   la contrainte soit visible. Follow-up demandé par l’auteur les 26 et 27
   septembre 2026 ; différé à une session ultérieure. Captures pour validation
   dans les trois formats indiqués au début de cette section.
+  Décision auteur du 27 septembre 2026 : la fonctionnalité est **conservée**
+  (peu ou pas utilisée par la campagne, mais elle doit être propre). Outre le
+  dessin des zones : pendant un glisser, l’objet **suit le doigt partout**, avec
+  un fantôme signalé invalide hors zone, au lieu de rester figé à sa dernière
+  position valide puis de sauter (comportement actuel de `previewDirectMove`,
+  `use-board-pointers.ts`) ; l’annulation n’a lieu qu’au lâcher ; un seul
+  message de refus par geste, pas un par mouvement.
+- **U14 — Fils de commande discrets.** Tracé **droit**, de la source à la cible,
+  **derrière** les objets (plus de routage orthogonal qui contourne les objets
+  avec des dizaines de virages) ; plus transparents qu’aujourd’hui ; presque
+  effacés pendant la simulation.
+- **U15 — Le fil comme un objet du tiroir.** Dans l’éditeur, un fil se pose
+  comme les autres objets (carte dans le tiroir, puis source et cible désignées
+  au doigt) plutôt que par un mode à part. Interprétation à confirmer par
+  l’auteur avant toute implémentation.
+- **U16 — Exporter depuis l’éditeur**, en priorité dans U9 : un bêta-testeur
+  doit pouvoir envoyer un niveau qu’il a construit (fichier L22 ou lien L23).
+  C’est ce qui permet d’enrichir le catalogue avec des niveaux de joueurs.
+- **U18 — Balle bleue** : toute balle qui n'est pas `goal.ballId` est dessinée
+  avec les calques de `art/assets/second-ball/` (à exporter) ; la balle rouge
+  reste celle de l'objectif. Aucun changement de format. Plusieurs objectifs
+  (plusieurs balles rouges et paniers) exigeront un `LevelDocument` v3 et une
+  migration, voir `levels/conception-niveaux.md` § 5.
+- **P1 — Le vent est arrêté par les solides** (simulation, pas interface) : un
+  lancer de rayon depuis la bouche du ventilateur ; si un autre solide est
+  touché avant le corps, il n'est pas poussé. Test rouge d'abord, puis rejouer
+  les régressions des niveaux à ventilateur.
+- **U17 — Éditer un niveau de la campagne** : ouvrir un niveau embarqué dans le
+  mode auteur, sur une copie (brouillon L26), pour que l’auteur ajuste un niveau
+  existant puis l’exporte.
 
 ## 7. En attente de l’auteur — ne pas commencer
 
