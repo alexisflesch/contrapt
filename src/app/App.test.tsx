@@ -298,8 +298,12 @@ describe('coque TinkerBolt', () => {
   });
 
   it('limite le catalogue du mode joueur aux objets de l’inventaire du niveau', () => {
+    // Ce niveau est verrouillé sans progression (U5b) ; `unlockAllLevels`
+    // ouvre son URL directement, comme en mode développement, sans que le
+    // test ait à rejouer toute la campagne pour ce qui ne concerne que le
+    // catalogue.
     window.history.replaceState(null, '', '/levels/level-3-incliner/play');
-    render(<App />);
+    render(<App unlockAllLevels />);
 
     const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
     fireEvent.click(within(drawer).getByRole('button', { name: 'Ouvrir le catalogue' }));
@@ -990,14 +994,32 @@ describe('coque TinkerBolt', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('laisse un niveau verrouillé jouable quand son URL est ouverte directement', () => {
+  it('bloque l’accès direct à un niveau verrouillé et propose la liste des niveaux (U5b)', () => {
     const { repository } = createProgressRepository();
     window.history.replaceState(null, '', '/levels/level-12-le-bon-ordre/play');
     render(<App progressRepository={repository} />);
 
+    expect(screen.getByText('Ce niveau est encore verrouillé.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Tester' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Liste des niveaux' }));
+    expect(window.location.pathname).toBe('/levels');
+  });
+
+  it('en mode développement, débloque tous les niveaux dans la liste et par URL (U5b)', () => {
+    const { repository } = createProgressRepository();
+    window.history.replaceState(null, '', '/levels/level-12-le-bon-ordre/play');
+    render(<App progressRepository={repository} unlockAllLevels />);
+
     expect(screen.getByText('Niveau 12 · Le bon ordre')).toBeVisible();
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
+
+    expect(screen.getByText('Mode développement : niveaux débloqués')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Lancer le niveau 12' })).toBeEnabled();
   });
 
   it('ne persiste pas les victoires hors campagne', () => {

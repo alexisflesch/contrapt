@@ -43,12 +43,17 @@ const numberedChapters = campaignChapters.reduce<
 export function LevelsPage() {
   const navigate = useNavigate();
   const drafts = useDraftRepository();
-  const { levels: levelProgress } = useCampaignProgress();
+  const { levels: levelProgress, unlockAllLevels } = useCampaignProgress();
   const [draftErrorLevelId, setDraftErrorLevelId] = useState<string | null>(null);
 
   return (
     <AppFrame title="Campagne" subtitle="Sélection du niveau" variant="page">
       <div className="page-content">
+        {unlockAllLevels && (
+          <p className="panel-note dev-mode-note" role="status">
+            Mode développement : niveaux débloqués
+          </p>
+        )}
         <section className="level-chapters" aria-label="Liste des niveaux">
           {numberedChapters.map((chapter, chapterIndex) => {
             const chapterName = `Chapitre ${String(chapterIndex + 1)} · ${chapter.title}`;

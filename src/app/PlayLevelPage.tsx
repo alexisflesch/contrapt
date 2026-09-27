@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { countObjectsUsed, evaluateTier } from '../application/progression';
 
 import { embeddedLevels, nextCampaignLevel } from '../content/embedded-levels';
+import { AppFrame } from '../ui/AppFrame';
 import type { CampaignVictory } from '../ui/CampaignVictoryDialog';
+import { Panel } from '../ui/Panel';
 import { BoardShell } from './BoardShell';
 import { useCampaignProgress } from './use-campaign-progress';
 
@@ -24,6 +26,35 @@ export function PlayLevelPage() {
   const level = embeddedLevels[levelIndex];
 
   if (level === undefined) return <Navigate to="/levels" replace />;
+
+  /*
+   * U5b (decision, 27 Sept. 2026): a locked level's own URL used to stay
+   * playable (L21's original choice). Direct access is now blocked with a
+   * simple screen instead of the board — the list already disables
+   * "Lancer" for the same level, so the URL must not be a bypass. Editing a
+   * locked level (U17, from the list) is untouched by this check: it never
+   * reaches this page.
+   */
+  if (levelProgress[level.id]?.unlocked !== true) {
+    return (
+      <AppFrame
+        title={`Niveau ${String(levelIndex + 1)} · ${level.metadata.title}`}
+        subtitle="Niveau verrouillé"
+        variant="page"
+      >
+        <div className="page-content">
+          <Panel label="Niveau verrouillé" title="Niveau verrouillé">
+            <p className="panel-note" role="status">
+              Ce niveau est encore verrouillé.
+            </p>
+            <Link className="btn btn-neutral" to="/levels">
+              Liste des niveaux
+            </Link>
+          </Panel>
+        </div>
+      </AppFrame>
+    );
+  }
 
   const nextLevel = nextCampaignLevel(level.id);
   const campaignVictory: CampaignVictory | null =
