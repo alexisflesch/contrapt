@@ -10,8 +10,15 @@ if (rootElement === null) {
   throw new Error('Le point de montage de TinkerBolt est introuvable.');
 }
 
+/**
+ * U5b: only this entry point may read `import.meta.env.DEV` — the domain and
+ * `useCampaignProgress()` never do, since Vitest sets it to `true` and would
+ * break the lock tests. Under `pnpm dev` every level unlocks, in the list and
+ * by direct URL; a production build (and Playwright, which serves it) keeps
+ * the real campaign lock.
+ */
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <App unlockAllLevels={import.meta.env.DEV} />
   </StrictMode>,
 );

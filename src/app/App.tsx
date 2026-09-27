@@ -34,6 +34,13 @@ interface AppProps {
   readonly progressRepository?: ProgressRepository;
   /** Injectable local draft port (L26); defaults to `localStorage`. */
   readonly draftRepository?: DraftRepository;
+  /**
+   * Dev-mode override (U5b): `main.tsx` passes `import.meta.env.DEV` here so
+   * every level is unlocked under `pnpm dev`, in the list and by direct URL.
+   * Defaults to `false`, which is what a production build (and Playwright)
+   * always gets.
+   */
+  readonly unlockAllLevels?: boolean;
 }
 
 const unavailableProgressRepository: ProgressRepository = {
@@ -59,7 +66,11 @@ const createBrowserDraftRepository = (): DraftRepository => {
   }
 };
 
-export function App({ progressRepository, draftRepository }: AppProps = {}) {
+export function App({
+  progressRepository,
+  draftRepository,
+  unlockAllLevels = false,
+}: AppProps = {}) {
   const [browserDraftRepository] = useState(() =>
     draftRepository === undefined ? createBrowserDraftRepository() : unavailableDraftRepository,
   );
@@ -72,7 +83,7 @@ export function App({ progressRepository, draftRepository }: AppProps = {}) {
 
   return (
     <PwaUpdateProvider>
-      <CampaignProgressProvider repository={repository}>
+      <CampaignProgressProvider repository={repository} unlockAllLevels={unlockAllLevels}>
         <DraftRepositoryContext value={draftRepository ?? browserDraftRepository}>
           <BrowserRouter basename={import.meta.env.BASE_URL}>
             <Routes>

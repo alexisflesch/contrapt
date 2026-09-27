@@ -16,6 +16,26 @@ const levelTenPath = '/levels/level-10-le-butoir/play';
 const levelElevenPath = '/levels/level-11-l-interrupteur/play';
 const levelTwelvePath = '/levels/level-12-le-bon-ordre/play';
 
+/**
+ * U5b: a level's own URL no longer bypasses its lock, so a test that opens
+ * one directly must first mark the immediately preceding level resolved
+ * (`isLevelUnlocked` only checks that one, per ADR 0010) — the same
+ * `tinkerbolt:progress` envelope the "U5" test below seeds by hand. This
+ * mirrors real progress; it does not touch what each test still verifies.
+ */
+const unlockLevelAfter = async (page: Page, previousLevelId: string): Promise<void> => {
+  await page.addInitScript((resolvedLevelId: string) => {
+    window.localStorage.setItem(
+      'tinkerbolt:progress',
+      JSON.stringify({
+        kind: 'progress',
+        version: 1,
+        data: { [resolvedLevelId]: { resolved: true, bestObjectCount: 1 } },
+      }),
+    );
+  }, previousLevelId);
+};
+
 interface WorldPoint {
   readonly x: number;
   readonly y: number;
@@ -153,6 +173,7 @@ test('niveau 3 : poser puis tourner la poutre de référence avec la poignée au
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-2-le-pont');
   await page.goto(levelThreePath);
 
   await expect(page.getByText('Niveau 3 · Incliner')).toBeVisible();
@@ -205,6 +226,7 @@ test('niveau 3 : l’objet suit le doigt hors zone puis revient au lâcher, avec
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'Le glisser tactile est testé sur mobile.');
+  await unlockLevelAfter(page, 'level-2-le-pont');
   await page.goto(levelThreePath);
   const canvas = page.getByRole('img', { name: 'Rendu du plateau' });
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
@@ -240,6 +262,7 @@ test('niveau 3 : l’objet suit le doigt hors zone puis revient au lâcher, avec
 
 test('niveau 4 : choisir la poutre longue et gagner au tactile', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-3-incliner');
   await page.goto(levelFourPath);
 
   await expect(page.getByText('Niveau 4 · Moins, c’est mieux')).toBeVisible();
@@ -290,6 +313,7 @@ test('niveau 5 : détourner la balle avec deux poutres tournées au tactile', as
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-4-moins-c-est-mieux');
   await page.goto(levelFivePath);
 
   await expect(page.getByText('Niveau 5 · Le détour')).toBeVisible();
@@ -351,6 +375,7 @@ test('niveau 6 : lancer l’observation sans poser d’objet et voir la balle ga
     testInfo.project.name !== 'mobile',
     'La résolution sans action est vérifiée sur mobile.',
   );
+  await unlockLevelAfter(page, 'level-5-le-detour');
   await page.goto(levelSixPath);
 
   await expect(page.getByText('Niveau 6 · La bascule')).toBeVisible();
@@ -365,6 +390,7 @@ test('niveau 7 : poser la bascule au tactile et voir la balle gagner', async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-6-la-bascule');
   await page.goto(levelSevenPath);
 
   await expect(page.getByText('Niveau 7 · Placer la bascule')).toBeVisible();
@@ -390,6 +416,7 @@ test('niveau 7 : poser la bascule au tactile et voir la balle gagner', async ({
 
 test('niveau 8 : enchaîner poutre et bascule au tactile', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-7-placer-la-bascule');
   await page.goto(levelEightPath);
 
   await expect(page.getByText('Niveau 8 · Poutre et bascule')).toBeVisible();
@@ -440,6 +467,7 @@ test('niveau 9 : poser le convoyeur et entraîner la balle au tactile', async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-8-poutre-et-bascule');
   await page.goto(levelNinePath);
 
   await expect(page.getByText('Niveau 9 · Le tapis')).toBeVisible();
@@ -463,6 +491,7 @@ test('niveau 9 : poser le convoyeur et entraîner la balle au tactile', async ({
 
 test('niveau 10 : poser la masse pour arrêter la balle au tactile', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-9-le-tapis');
   await page.goto(levelTenPath);
 
   await expect(page.getByText('Niveau 10 · Le butoir')).toBeVisible();
@@ -488,6 +517,7 @@ test('niveau 11 : poser la masse à gauche du levier pour gagner au tactile', as
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-10-le-butoir');
   await page.goto(levelElevenPath);
 
   await expect(page.getByText('Niveau 11 · L’interrupteur')).toBeVisible();
@@ -514,6 +544,7 @@ test('niveau 12 : actionner le levier puis guider la balle au tactile', async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-11-l-interrupteur');
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(levelTwelvePath);
@@ -584,6 +615,7 @@ test('niveau 2 : poser puis glisser la poutre avant de gagner au tactile', async
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
+  await unlockLevelAfter(page, 'level-1-prolonger-la-pente');
   await page.goto(levelTwoPath);
 
   await expect(page.getByText('Niveau 2 · Le pont')).toBeVisible();

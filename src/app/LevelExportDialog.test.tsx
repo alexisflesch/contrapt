@@ -137,8 +137,11 @@ describe('boîte « Exporter » de l’atelier (U16)', () => {
   });
 
   it('offre « Exporter » dans l’atelier seulement, et exporte le document de l’auteur', () => {
+    // Le niveau 2 est verrouillé sans progression (U5b) ; `unlockAllLevels`
+    // ouvre son mode joueur directement pour ce test, qui ne porte pas sur le
+    // déblocage mais sur la présence d’« Exporter » selon le mode.
     window.history.replaceState(null, '', '/levels/level-2-le-pont/play');
-    const { unmount } = render(<App />);
+    const { unmount } = render(<App unlockAllLevels />);
     expect(screen.queryByRole('button', { name: 'Exporter le niveau' })).toBeNull();
     unmount();
 

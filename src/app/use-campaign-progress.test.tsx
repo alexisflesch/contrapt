@@ -17,7 +17,7 @@ const createRepository = (
 });
 
 function ProgressProbe() {
-  const { levels, recordCampaignSuccess } = useCampaignProgress();
+  const { levels, recordCampaignSuccess, unlockAllLevels } = useCampaignProgress();
   const first = levels['level-1-prolonger-la-pente'];
   const second = levels['level-2-le-pont'];
   const challenged = levels['level-4-moins-c-est-mieux'];
@@ -27,6 +27,7 @@ function ProgressProbe() {
       <output data-testid="first-level">{JSON.stringify(first)}</output>
       <output data-testid="second-level">{JSON.stringify(second)}</output>
       <output data-testid="challenged-level">{JSON.stringify(challenged)}</output>
+      <output data-testid="unlock-all-levels">{String(unlockAllLevels)}</output>
       <button
         type="button"
         onClick={() => {
@@ -58,6 +59,7 @@ describe('useCampaignProgress', () => {
       </CampaignProgressProvider>,
     );
 
+    expect(screen.getByTestId('unlock-all-levels')).toHaveTextContent('false');
     expect(JSON.parse(screen.getByTestId('first-level').textContent)).toMatchObject({
       unlocked: true,
       resolved: false,
@@ -95,5 +97,27 @@ describe('useCampaignProgress', () => {
     } else {
       Object.defineProperty(navigator, 'storage', originalStorageDescriptor);
     }
+  });
+
+  it('force le déblocage de tous les niveaux quand unlockAllLevels est vrai (mode développement)', () => {
+    const repository = createRepository();
+
+    const { unmount } = render(
+      <CampaignProgressProvider repository={repository} unlockAllLevels>
+        <ProgressProbe />
+      </CampaignProgressProvider>,
+    );
+
+    expect(screen.getByTestId('unlock-all-levels')).toHaveTextContent('true');
+    expect(JSON.parse(screen.getByTestId('second-level').textContent)).toMatchObject({
+      unlocked: true,
+      resolved: false,
+    });
+    expect(JSON.parse(screen.getByTestId('challenged-level').textContent)).toMatchObject({
+      unlocked: true,
+      resolved: false,
+    });
+
+    unmount();
   });
 });

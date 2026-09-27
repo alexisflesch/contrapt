@@ -16,10 +16,19 @@ import { CampaignProgressContext } from './campaign-progress-context';
 
 interface CampaignProgressProviderProps {
   readonly repository: ProgressRepository;
+  /**
+   * Dev-mode override, injected from `main.tsx` via `App` (`import.meta.env.DEV`).
+   * Defaults to `false` so tests and production builds keep the real lock.
+   */
+  readonly unlockAllLevels?: boolean;
   readonly children: ReactNode;
 }
 
-export function CampaignProgressProvider({ repository, children }: CampaignProgressProviderProps) {
+export function CampaignProgressProvider({
+  repository,
+  unlockAllLevels = false,
+  children,
+}: CampaignProgressProviderProps) {
   const [initialResult] = useState(() => repository.load());
   const [progress, setProgress] = useState<CampaignProgress>(() =>
     initialResult.status === 'ok' ? initialResult.progress : {},
@@ -68,7 +77,7 @@ export function CampaignProgressProvider({ repository, children }: CampaignProgr
         return [
           level.id,
           {
-            unlocked: isLevelUnlocked(campaignChapters, progress, level.id),
+            unlocked: unlockAllLevels || isLevelUnlocked(campaignChapters, progress, level.id),
             resolved,
             bestObjectCount,
             tier:
@@ -84,11 +93,18 @@ export function CampaignProgressProvider({ repository, children }: CampaignProgr
     );
 
     return Object.fromEntries(entries);
-  }, [progress]);
+  }, [progress, unlockAllLevels]);
 
   const value = useMemo(
-    () => ({ progress, levels, storageError, storageWarning, recordCampaignSuccess }),
-    [levels, progress, recordCampaignSuccess, storageError, storageWarning],
+    () => ({
+      progress,
+      levels,
+      storageError,
+      storageWarning,
+      recordCampaignSuccess,
+      unlockAllLevels,
+    }),
+    [levels, progress, recordCampaignSuccess, storageError, storageWarning, unlockAllLevels],
   );
 
   return (
