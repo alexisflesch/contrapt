@@ -833,6 +833,15 @@ commencer de ta propre initiative.
 - **U20 — Catalogue de l'atelier** : « Balle bleue » seulement (la balle
   rouge et le panier de l'objectif sont uniques et déjà posés) ; en mode auteur, le catalogue ajoute n'importe quelle famille à
   n'importe quel niveau, brouillons de campagne compris.
+- **U21 — Fil dans l'inventaire du joueur** (décision auteur du 27 septembre
+  2026, qui amende ADR 0009 « le câblage est un acte d'auteur ») : entrée
+  d'inventaire `wire` avec quantité (ajout compatible au `LevelDocument` v2,
+  sans migration ; tests ancien et nouveau document) ; commande joueur de
+  liaison qui consomme un fil, avec provenance, mêmes règles de domaine ; le
+  joueur retire ses fils (retour à l'inventaire), jamais ceux du niveau ; un
+  fil compte comme objet posé pour le défi ; la carte « Fil » (geste U15)
+  apparaît dans le tiroir joueur quand l'inventaire en contient ; amender
+  ADR 0009 et `levels/conception-niveaux.md`.
 
 ## 7. En attente de l’auteur — ne pas commencer
 

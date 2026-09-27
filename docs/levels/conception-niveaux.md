@@ -22,9 +22,11 @@ fois qu'il veut.
 - **Défi** (facultatif) : ✅ victoire ; ⭐ victoire avec au plus
   `elegantObjectCount` objets posés ; 🏆 avec au plus `minimalObjectCount`.
 - **Règle de campagne** : tout objet présent au départ est verrouillé (ses trois
-  permissions sont à `false`). Le joueur ne modifie aucune propriété et ne
-  câble aucun fil. Il ne décide que **où** il pose les objets de l'inventaire et
-  **quel angle** il leur donne (quand l'objet peut tourner).
+  permissions sont à `false`). Le joueur ne modifie aucune propriété. Il
+  décide **où** il pose les objets de l'inventaire, **quel angle** il leur
+  donne (quand l'objet peut tourner) et, quand l'inventaire contient des fils,
+  **quoi relier à quoi** (voir § 5 : le fil d'inventaire n'est pas encore
+  implémenté).
 - **Zones de construction** (`buildZones`) : l'objet entier doit tenir dans une
   zone. Elles sont dessinées sur le plateau. Elles sont rarement utiles : un
   bon niveau interdit les raccourcis par sa géométrie, pas par une zone.
@@ -120,6 +122,10 @@ prototypes et ne servent pas de modèle.
 
 Ne pas les utiliser dans un niveau avant qu'elles existent dans le code.
 
+- **Fil dans l'inventaire du joueur** (décision auteur du 27 septembre 2026,
+  tâche U21) : un fil est un objet d'inventaire comme les autres. Le joueur
+  relie une source à une cible en consommant un fil, peut retirer les fils
+  qu'il a posés, jamais ceux du niveau ; un fil compte pour le défi.
 - **Plusieurs objectifs.** Plusieurs balles rouges pour plusieurs paniers,
   puis, plus tard, d'autres types d'objectifs. Cela exige une version 3 du
   format de niveau, avec migration.
