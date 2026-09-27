@@ -67,11 +67,11 @@ export function LevelExportDialog({
   const [downloadedFileName, setDownloadedFileName] = useState<string | null>(null);
   const [share, setShare] = useState<ShareState>({ status: 'idle' });
 
-  const copyShareLink = async (): Promise<void> => {
+  const copyShareLink = async (puzzle: LevelDocument): Promise<void> => {
     setShare({ status: 'working' });
     let link: string;
     try {
-      link = await createShareLink(levelDocument, origin, basePath);
+      link = await createShareLink(puzzle, origin, basePath);
     } catch {
       setShare({ status: 'failed' });
       return;
@@ -108,7 +108,8 @@ export function LevelExportDialog({
       ) : (
         <>
           <p className="panel-note">
-            Envoyez le fichier ou le lien : il ouvre ce niveau tel qu’il est dans l’atelier.
+            Puzzle vérifié. Envoyez le fichier ou le lien : il ouvre le niveau avec les objets à
+            placer dans le tiroir du joueur.
           </p>
           <Button
             onClick={() => {
@@ -123,7 +124,7 @@ export function LevelExportDialog({
             tone="go"
             disabled={share.status === 'working'}
             onClick={() => {
-              void copyShareLink();
+              void copyShareLink(preparation.puzzle);
             }}
           >
             <span aria-hidden="true">🔗</span>

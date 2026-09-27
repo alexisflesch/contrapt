@@ -1,4 +1,5 @@
 import type { LevelDocument } from '../../domain/level-document';
+import { workshopFromPuzzle } from '../puzzle/puzzle-workshop';
 import type { DraftRepository, DraftRepositoryErrorCode } from './draft-repository';
 
 type OpenCampaignDraftResult =
@@ -8,9 +9,13 @@ type OpenCampaignDraftResult =
 /** U17: the draft of a campaign level never shares the embedded level's id. */
 export const campaignDraftId = (level: LevelDocument): string => `${level.id}-brouillon`;
 
-/** A copy of a campaign level with a distinct id and title; the original is not touched. */
+/**
+ * A copy of a campaign level with a distinct id and title; the original is
+ * not touched. A level with a reference solution reopens in its workshop
+ * form, its objects to place back on the board (U22).
+ */
 export const createCampaignDraft = (level: LevelDocument): LevelDocument => ({
-  ...structuredClone(level),
+  ...workshopFromPuzzle(structuredClone(level)),
   id: campaignDraftId(level),
   metadata: { ...level.metadata, title: `${level.metadata.title} (brouillon)` },
 });

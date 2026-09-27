@@ -38,7 +38,8 @@ type Operation =
   | { readonly kind: 'arc' }
   | { readonly kind: 'stroke' }
   | { readonly kind: 'globalAlpha'; readonly values: readonly number[] }
-  | { readonly kind: 'fillText'; readonly values: readonly unknown[] };
+  | { readonly kind: 'fillText'; readonly values: readonly unknown[] }
+  | { readonly kind: 'setLineDash'; readonly values: readonly number[] };
 
 type ProjectedObject = Readonly<{
   readonly family: SpriteFamily;
@@ -252,6 +253,9 @@ const createContext = (): {
     },
     strokeRect: (...values: [number, number, number, number]): void => {
       operations.push({ kind: 'strokeRect', values });
+    },
+    setLineDash: (values: readonly number[]): void => {
+      operations.push({ kind: 'setLineDash', values });
     },
     fillRect: (...values: [number, number, number, number]): void => {
       operations.push({ kind: 'fillRect', values });
@@ -1149,6 +1153,40 @@ describe('renderer Canvas 2D du plateau', () => {
 
     expect(translucentDraws(await renderWith())).toBe(0);
     expect(translucentDraws(await renderWith('beam-1'))).toBe(1);
+  });
+
+  it('entoure d’un pointillé chaque objet à placer de l’atelier, et lui seul (U22)', async () => {
+    const dashedOutlines = async (document: typeof levelDocument): Promise<number> => {
+      const { context, operations } = createContext();
+      const spriteLoader = createPendingSpriteLoader();
+      spriteLoader.setReady();
+      const renderer = createBoardRenderer({
+        canvas: { width: 0, height: 0 },
+        context,
+        viewport,
+        spriteLoader: spriteLoader.loader,
+      });
+      await renderer.render(projectLevel(document));
+      let dashed = false;
+      let count = 0;
+      for (const operation of operations) {
+        if (operation.kind === 'setLineDash') dashed = operation.values.length > 0;
+        if (operation.kind === 'restore') dashed = false;
+        if (operation.kind === 'strokeRect' && dashed) count += 1;
+      }
+      return count;
+    };
+    const marked = {
+      ...levelDocument,
+      objects: levelDocument.objects.map((object) =>
+        object.id === 'beam-1' ? { ...object, toPlace: true as const } : object,
+      ),
+    };
+
+    expect(projectLevel(marked).toPlaceIds).toEqual(['beam-1']);
+    expect(projectLevel(marked, simulationView([])).toPlaceIds).toEqual([]);
+    expect(await dashedOutlines(levelDocument)).toBe(0);
+    expect(await dashedOutlines(marked)).toBe(1);
   });
 
   it('expose une API de rendu sans victoire ni sérialisation', () => {

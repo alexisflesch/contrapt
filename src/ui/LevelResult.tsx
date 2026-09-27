@@ -26,6 +26,8 @@ interface LevelResultProps {
   readonly onReplay: () => void;
   readonly onReset: () => void;
   readonly onReturnToLevels: () => void;
+  /** U22: « Retour à l’atelier » while the author plays his puzzle. */
+  readonly returnLabel?: string;
   readonly campaign?: CampaignVictory;
 }
 
@@ -87,6 +89,7 @@ export function LevelResult({
   onReplay,
   onReset,
   onReturnToLevels,
+  returnLabel = 'Retour aux niveaux',
   campaign,
 }: LevelResultProps) {
   if (outcome === null) return null;
@@ -100,7 +103,7 @@ export function LevelResult({
             <span aria-hidden="true">↺</span>
             Recommencer
           </Button>
-          <Button onClick={onReturnToLevels}>Retour aux niveaux</Button>
+          <Button onClick={onReturnToLevels}>{returnLabel}</Button>
         </div>
       </Panel>
     );
@@ -150,7 +153,7 @@ export function LevelResult({
           <span aria-hidden="true">↺</span>
           Recommencer
         </Button>
-        <Button onClick={onReturnToLevels}>Retour aux niveaux</Button>
+        <Button onClick={onReturnToLevels}>{returnLabel}</Button>
       </div>
     </Panel>
   );

@@ -8,6 +8,7 @@ import {
   selectEditorPlacement,
 } from '../application/editor-session/editor-session';
 import type { EditorSession } from '../application/editor-session/editor-session';
+import { puzzleFromWorkshop } from '../application/puzzle/puzzle-workshop';
 import type { LevelDocument } from '../domain/level-document';
 import type { AttemptOutcome } from '../domain/attempt-failure-evaluator';
 import type { ConstructionAttempt } from '../application/construction';
@@ -23,6 +24,7 @@ import { SimulationControls } from '../ui/SimulationControls';
 import { useBoardCamera } from './use-board-camera';
 import { placementSourceKey, useBoardPointers } from './use-board-pointers';
 import { LevelExportDialog } from './LevelExportDialog';
+import { puzzleRefusalMessage } from './level-export';
 import { useWiringTool, wiringGuide } from './use-wiring-tool';
 import { useEditorSession } from './use-editor-session';
 import { useIsSideLayout } from './use-side-layout';
@@ -39,6 +41,12 @@ interface BoardShellProps {
   readonly onDocumentCommitted?: (document: LevelDocument) => void;
   /** U4: tier, object count and next level after a campaign victory. */
   readonly campaignVictory?: CampaignVictory | null;
+  /** « Remettre à zéro » goes back to it; `initialDocument` when absent. */
+  readonly resetDocument?: LevelDocument;
+  /** U22, workshop only: plays the puzzle the committed workshop gives. */
+  readonly onPlayAsPlayer?: (puzzle: LevelDocument) => void;
+  /** U22: replaces « Retour aux niveaux », in the header and the result banner. */
+  readonly exit?: { readonly label: string; readonly onExit: () => void };
 }
 
 /**
@@ -57,6 +65,9 @@ export function BoardShell({
   onSimulationCompleted,
   onDocumentCommitted,
   campaignVictory = null,
+  resetDocument = initialDocument,
+  onPlayAsPlayer,
+  exit,
 }: BoardShellProps) {
   const navigate = useNavigate();
   const {
@@ -165,7 +176,7 @@ export function BoardShell({
   const resetToInitialAttempt = (): void => {
     wiring.cancelWiring();
     simulation.disposeSimulationSession();
-    updateSession(createEditorSession(mode, createConstructionAttempt(initialDocument)));
+    updateSession(createEditorSession(mode, createConstructionAttempt(resetDocument)));
     pointers.clearPlacementTool();
     pointers.clearPlacementPreview();
     simulation.clearAttemptOutcome();
@@ -177,7 +188,22 @@ export function BoardShell({
   };
 
   const returnToLevels = (): void => {
+    if (exit !== undefined) {
+      exit.onExit();
+      return;
+    }
     void navigate('/levels');
+  };
+
+  const playAsPlayer = (): void => {
+    if (onPlayAsPlayer === undefined) return;
+    const conversion = puzzleFromWorkshop(session.history.state.document);
+    if (conversion.status === 'refused') {
+      setFeedback(puzzleRefusalMessage(conversion.reason));
+      return;
+    }
+    wiring.cancelWiring();
+    onPlayAsPlayer(conversion.puzzle);
   };
 
   return (
@@ -187,6 +213,38 @@ export function BoardShell({
       variant="board"
       headerAction={
         <>
+          {exit !== undefined && (
+            <button
+              className="icon-button objective-button"
+              type="button"
+              aria-label={exit.label}
+              onClick={exit.onExit}
+            >
+              <span className="objective-button-glyph" aria-hidden="true">
+                ↩
+              </span>
+              <span className="objective-button-label" aria-hidden="true">
+                Atelier
+              </span>
+            </button>
+          )}
+          {onPlayAsPlayer !== undefined && (
+            // U22: « Tester comme un joueur » — the author solves the puzzle as the player will. The
+            // accessible name avoids « Tester », the launch button's name.
+            <button
+              className="icon-button objective-button"
+              type="button"
+              aria-label="Jouer le puzzle"
+              onClick={playAsPlayer}
+            >
+              <span className="objective-button-glyph" aria-hidden="true">
+                ▶
+              </span>
+              <span className="objective-button-label" aria-hidden="true">
+                Jouer
+              </span>
+            </button>
+          )}
           {mode === 'creation' && (
             // U16: exporting is an author command, absent from player screens.
             <button
@@ -333,6 +391,7 @@ export function BoardShell({
                 onReplay={resetToInitialAttempt}
                 onReset={simulation.restoreConstruction}
                 onReturnToLevels={returnToLevels}
+                {...(exit === undefined ? {} : { returnLabel: exit.label })}
                 {...(campaignVictory === null ? {} : { campaign: campaignVictory })}
               />
             }

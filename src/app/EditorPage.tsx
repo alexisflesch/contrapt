@@ -18,17 +18,60 @@ export function EditorPage() {
   const draftId = searchParams.get('draft');
 
   if (draftId === null) {
+    return <Workshop initialDocument={embeddedWorkshopDocument} title="Éditeur de niveaux" />;
+  }
+
+  return <DraftEditor key={draftId} draftId={draftId} />;
+}
+
+interface WorkshopProps {
+  readonly initialDocument: LevelDocument;
+  readonly title: string;
+  readonly onDocumentCommitted?: (document: LevelDocument) => void;
+}
+
+/**
+ * U22: the workshop, and the author's puzzle played « comme un joueur » on
+ * an ephemeral copy. Coming back remounts the workshop on its last committed
+ * document; its undo history starts again from there.
+ */
+function Workshop({ initialDocument, title, onDocumentCommitted }: WorkshopProps) {
+  const [workshopDocument, setWorkshopDocument] = useState(initialDocument);
+  const [playtest, setPlaytest] = useState<LevelDocument | null>(null);
+
+  if (playtest !== null) {
     return (
       <BoardShell
-        initialDocument={embeddedWorkshopDocument}
-        mode="creation"
-        title="Éditeur de niveaux"
-        subtitle="Mode éditeur"
+        key="playtest"
+        initialDocument={playtest}
+        mode="resolution"
+        title={`Test joueur · ${playtest.metadata.title}`}
+        subtitle="Mode joueur"
+        exit={{
+          label: 'Retour à l’atelier',
+          onExit: () => {
+            setPlaytest(null);
+          },
+        }}
       />
     );
   }
 
-  return <DraftEditor key={draftId} draftId={draftId} />;
+  return (
+    <BoardShell
+      key="workshop"
+      initialDocument={workshopDocument}
+      resetDocument={initialDocument}
+      mode="creation"
+      title={title}
+      subtitle="Mode éditeur"
+      onDocumentCommitted={(document) => {
+        setWorkshopDocument(document);
+        onDocumentCommitted?.(document);
+      }}
+      onPlayAsPlayer={setPlaytest}
+    />
+  );
 }
 
 function DraftEditor({ draftId }: { readonly draftId: string }) {
@@ -56,11 +99,9 @@ function DraftEditor({ draftId }: { readonly draftId: string }) {
   }
 
   return (
-    <BoardShell
+    <Workshop
       initialDocument={draft}
-      mode="creation"
       title={`Éditeur · ${draft.metadata.title}`}
-      subtitle="Mode éditeur"
       onDocumentCommitted={(document) => {
         // Best effort, like progress (ADR 0011): a failed save never blocks editing.
         drafts.save(document);

@@ -1112,6 +1112,19 @@ select:focus-visible {
   gap: var(--space-2);
 }
 
+/* U22: « Fixe / À placer », two halves of one control, the chosen one filled. */
+.context-role {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.context-role-option[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--accent);
+  font-weight: 800;
+}
+
 .context-move-controls .btn {
   font-size: var(--text-l);
 }

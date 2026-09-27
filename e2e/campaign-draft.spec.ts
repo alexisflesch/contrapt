@@ -24,7 +24,7 @@ const storedRampX = (page: Page): Promise<number | null> =>
     return match?.[1] === undefined ? null : Number(match[1]);
   });
 
-test('édite une copie du niveau 2 au toucher, la conserve et l’exporte (U17)', async ({
+test('édite une copie du niveau 2 au toucher, la conserve, et l’export demande un objet à placer (U17, U22)', async ({
   page,
   context,
 }, testInfo) => {
@@ -50,14 +50,11 @@ test('édite une copie du niveau 2 au toucher, la conserve et l’exporte (U17)'
   await expect(page.getByRole('button', { name: 'Exporter le niveau' })).toBeVisible();
   expect(await storedRampX(page)).toBeGreaterThan(5);
 
+  // U22: nothing is marked to place yet, so the export asks for it.
   await page.getByRole('button', { name: 'Exporter le niveau' }).tap();
   const dialog = page.getByRole('dialog', { name: 'Exporter le niveau' });
-  await dialog.getByRole('button', { name: 'Copier le lien de partage' }).tap();
-  await expect(dialog.getByRole('status')).toHaveText('Lien copié');
-  const link = await page.evaluate(() => navigator.clipboard.readText());
-
-  await page.goto(link);
-  await expect(page.getByText('Partage · Le pont (brouillon)')).toBeVisible();
+  await expect(dialog.getByRole('alert')).toContainText('Aucun objet n’est à placer');
+  await expect(dialog.getByRole('button', { name: 'Copier le lien de partage' })).toHaveCount(0);
 
   await page.goto('/levels/level-2-le-pont/play');
   await expect(page.getByText('Niveau 2 · Le pont')).toBeVisible();

@@ -6,7 +6,7 @@ type InventoryEntry = LevelDocument['inventory'][number];
 type SolutionPlacement = NonNullable<LevelDocument['solution']>['placements'][number];
 
 /** Why a workshop cannot become a puzzle, or a puzzle cannot be exported (U22, ADR 0013). */
-type PuzzleRefusalReason =
+export type PuzzleRefusalReason =
   | 'no-object-to-place'
   | 'wired-object-to-place'
   | 'invalid-puzzle'
@@ -28,7 +28,7 @@ export type PuzzleRunOutcome = 'won' | 'lost';
  * Port to a deterministic, fixed-step simulation of a level with no player
  * action during the run: the application never depends on the engine.
  */
-type PuzzleRunner = (document: LevelDocument) => PuzzleRunOutcome;
+export type PuzzleRunner = (document: LevelDocument) => PuzzleRunOutcome;
 
 /** An object present in the workshop is locked, like any object of the decor. */
 const lockedPermissions = { move: false, rotate: false, remove: false } as const;

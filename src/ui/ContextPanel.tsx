@@ -5,6 +5,7 @@ import {
   rotatePlacement,
   updatePlacementProperties,
 } from '../application/construction/construction-attempt';
+import { setPlacementToPlace } from '../application/construction/authoring-commands';
 import { controlCircuits } from '../domain/control-circuits';
 import { MAX_LEVER_ROTATION_RADIANS, rotationMode } from '../domain/level-document';
 import {
@@ -67,6 +68,9 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
   if (selectedPlacement === undefined || session.phase !== 'construction') return null;
 
   const canEdit = session.mode === 'creation';
+  const { goal } = displayedAttempt.document;
+  const isGoalObject =
+    selectedPlacement.id === goal.ballId || selectedPlacement.id === goal.basketId;
   const canMove = canEdit || selectedPlacement.permissions.move;
   const canRotate = canEdit || selectedPlacement.permissions.rotate;
   const mode = rotationMode(selectedPlacement.type);
@@ -120,6 +124,34 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
       }
     >
       <p className="context-identity">{placementName(selectedPlacement)}</p>
+      {canEdit && !isGoalObject && (
+        // U22: the author says which objects the player will have to place.
+        <div className="context-role" role="group" aria-label="Pour le joueur">
+          {(
+            [
+              ['Fixe', false],
+              ['À placer', true],
+            ] as const
+          ).map(([label, toPlace]) => (
+            <Button
+              key={label}
+              className="context-role-option"
+              aria-pressed={(selectedPlacement.toPlace === true) === toPlace}
+              onClick={() => {
+                onExecuteCommand(
+                  setPlacementToPlace({
+                    context: 'author',
+                    placementId: selectedPlacement.id,
+                    toPlace,
+                  }),
+                );
+              }}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      )}
       {!canMove && !canRotate && !canRemove && (
         <p className="context-restriction">
           Cet objet est verrouillé : ses actions sont indisponibles.

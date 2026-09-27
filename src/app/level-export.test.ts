@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
+import type { LevelDocument } from '../domain/level-document';
 import { decodeLevelFile } from '../infrastructure/level-file/level-file-codec';
 import { decodeShareFragment } from '../infrastructure/level-share/level-share-codec';
 
@@ -8,18 +9,76 @@ import { buildShareUrl, createShareLink, prepareLevelExport } from './level-expo
 
 const levelFour = embeddedLevels.find(({ id }) => id === 'level-4-moins-c-est-mieux');
 if (levelFour === undefined) throw new Error('Niveau 4 embarqué introuvable.');
+const levelOne = embeddedLevels.find(({ id }) => id === 'level-1-prolonger-la-pente');
+if (levelOne === undefined) throw new Error('Niveau 1 embarqué introuvable.');
 
-describe('export d’un niveau (U16)', () => {
-  it('prépare un fichier JSON du codec L22 nommé d’après l’identifiant du niveau', () => {
-    const result = prepareLevelExport(embeddedWorkshopDocument);
+/** Level 1 as its author would build it: the reference beam in place, marked to place. */
+const levelOneWorkshop: LevelDocument = {
+  ...levelOne,
+  objects: [
+    ...levelOne.objects,
+    {
+      id: 'placement-1',
+      type: 'beam',
+      props: { size: 'short' },
+      transform: { position: { x: 5, y: 2.15 }, rotation: 0 },
+      permissions: { move: false, rotate: false, remove: false },
+      toPlace: true,
+    },
+  ],
+};
+
+describe('export d’un niveau (U16, U22)', () => {
+  it('exporte le puzzle vérifié : décor fixe, objets à placer en inventaire, solution de référence', () => {
+    const result = prepareLevelExport(levelOneWorkshop);
 
     expect(result.status).toBe('ready');
     if (result.status !== 'ready') return;
-    expect(result.fileName).toBe('free-workshop.json');
+    expect(result.fileName).toBe('level-1-prolonger-la-pente.json');
     expect(result.mimeType).toBe('application/json');
-    expect(decodeLevelFile(result.fileText)).toEqual({
-      status: 'ok',
-      document: embeddedWorkshopDocument,
+    const decoded = decodeLevelFile(result.fileText);
+    expect(decoded).toEqual({ status: 'ok', document: result.puzzle });
+    expect(result.puzzle.objects.map(({ id }) => id)).toEqual(['ball-1', 'slope', 'basket-1']);
+    expect(result.puzzle.inventory).toEqual([
+      {
+        id: 'beam-a-placer',
+        type: 'beam',
+        props: { size: 'short' },
+        quantity: 1,
+        permissions: { move: true, rotate: true, remove: true },
+      },
+    ]);
+    expect(result.puzzle.solution).toEqual({
+      placements: [
+        {
+          inventoryId: 'beam-a-placer',
+          transform: { position: { x: 5, y: 2.15 }, rotation: 0 },
+        },
+      ],
+    });
+  });
+
+  it('refuse un atelier sans objet à placer et invite à toucher ceux à retirer', () => {
+    expect(prepareLevelExport(embeddedWorkshopDocument)).toEqual({
+      status: 'invalid',
+      reasons: [
+        'Aucun objet n’est à placer : touchez chaque objet que le joueur devra poser, puis choisissez « À placer » dans ses propriétés.',
+      ],
+    });
+  });
+
+  it('refuse une machine complète qui ne gagne pas, ou un décor qui gagne seul', () => {
+    expect(prepareLevelExport(levelOneWorkshop, () => 'lost')).toEqual({
+      status: 'invalid',
+      reasons: [
+        'La machine complète ne gagne pas : avec tous les objets en place, la balle doit atteindre le panier.',
+      ],
+    });
+    expect(prepareLevelExport(levelOneWorkshop, () => 'won')).toEqual({
+      status: 'invalid',
+      reasons: [
+        'La balle atteint le panier sans les objets à placer : le joueur n’aurait rien à faire.',
+      ],
     });
   });
 

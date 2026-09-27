@@ -31,6 +31,26 @@ const createMemoryDraftRepository = (initial: readonly LevelDocument[] = []) => 
 };
 
 describe('brouillon d’un niveau de la campagne (U17)', () => {
+  it('rouvre dans l’atelier un niveau à solution, ses objets à placer remis en place (U22)', () => {
+    const puzzle: LevelDocument = {
+      ...levelTwo,
+      solution: {
+        placements: [
+          {
+            inventoryId: levelTwo.inventory[0]?.id ?? '',
+            transform: { position: { x: 4, y: 2 }, rotation: 0 },
+          },
+        ],
+      },
+    };
+
+    const draft = createCampaignDraft(puzzle);
+
+    expect(draft.solution).toBeUndefined();
+    expect(draft.objects.filter(({ toPlace }) => toPlace === true)).toHaveLength(1);
+    expect(draft.objects.at(-1)?.transform.position).toEqual({ x: 4, y: 2 });
+  });
+
   it('copie le niveau sous un identifiant et un titre distincts, sans toucher l’original', () => {
     const original = structuredClone(levelTwo);
 

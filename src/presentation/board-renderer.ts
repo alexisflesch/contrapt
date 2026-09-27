@@ -189,6 +189,8 @@ type BoardProjection = Readonly<{
   readonly wires: readonly ProjectedWire[];
   /** While a simulation runs, wires almost vanish so they do not clutter the machine. */
   readonly wiresDimmed: boolean;
+  /** U22: workshop objects the player will have to place, outlined with dashes while building. */
+  readonly toPlaceIds: readonly string[];
   /** Ephemeral selection state; it is never part of `LevelDocument`. */
   readonly selectedPlacementId?: string;
   /** Build zones to highlight while the player constructs; view state, like the selection. */
@@ -589,6 +591,11 @@ export const projectLevel = (
     objects,
     wires: projectWires(document),
     wiresDimmed: simulation !== undefined,
+    // The outline follows the placement pose: a running machine moves away from it.
+    toPlaceIds:
+      simulation === undefined
+        ? document.objects.filter(({ toPlace }) => toPlace === true).map(({ id }) => id)
+        : [],
   };
 };
 
@@ -630,6 +637,9 @@ const ZONE_FILL = 'rgba(30, 136, 229, 0.1)';
 const ZONE_OUTLINE = 'rgba(30, 136, 229, 0.65)';
 const ZONE_DASH_CSS_PIXELS = [8, 6];
 const INVALID_OUTLINE = '#e53935';
+/** Neither the goal's red nor the build zones' blue (U19, U13). */
+const TO_PLACE_OUTLINE = '#6a1b9a';
+const TO_PLACE_DASH_CSS_PIXELS = [6, 4];
 const INVALID_OBJECT_ALPHA = 0.5;
 
 const drawBuildZones = (
@@ -695,6 +705,23 @@ const drawFootprintOutline = (
   if (colour !== undefined) context.strokeStyle = colour;
   context.strokeRect(destination.x, destination.y, destination.width, destination.height);
   context.restore();
+};
+
+/** U22: a dashed footprint around each object the player will have to place. */
+const drawToPlaceOutlines = (
+  context: BoardCanvasContext,
+  projection: BoardProjection,
+  viewport: BoardViewport,
+): void => {
+  if (context.setLineDash === undefined) return;
+  for (const id of projection.toPlaceIds) {
+    const object = projection.objects.find((candidate) => candidate.id === id);
+    if (object === undefined) continue;
+    context.save();
+    context.setLineDash(TO_PLACE_DASH_CSS_PIXELS);
+    drawFootprintOutline(context, object, viewport, TO_PLACE_OUTLINE);
+    context.restore();
+  }
 };
 
 const drawSelection = (
@@ -783,6 +810,8 @@ export const createBoardRenderer = ({
     if (wireContext !== undefined) {
       drawWireLabels(wireContext, projection.wires, toScreen, wireOptions);
     }
+
+    drawToPlaceOutlines(context, projection, viewport);
 
     const selection = selectedObject(projection);
     if (selection !== undefined) {
