@@ -16,7 +16,7 @@ contrôleurs sont le **levier** et le **bouton** ; les dispositifs sont le
 jamais un convoyeur (deux états contre trois).
 
 Le joueur ne construit pas de réseau électrique et ne dessine pas le trajet : le
-tracé, les virages et les ponts sont calculés. Il n'existe ni jonction, ni
+tracé est calculé. Il n'existe ni jonction, ni
 dérivation, ni nœud, ni branchement fil-vers-fil, ni outil « pont ».
 
 - Un contrôleur peut commander plusieurs dispositifs : autant de fils
@@ -125,22 +125,17 @@ bouts de chaque fil.
 
 - Ancrages : aux deux extrémités du socle du levier et du bouton, aux deux
   bouts du convoyeur, au pied du ventilateur et du poteau de la barrière. Chaque fil part du côté qui regarde l'autre objet.
-- Segments horizontaux et verticaux uniquement, coins arrondis.
-- Préférences, dans l'ordre : ne traverser aucun objet, être court, tourner peu.
-  Si aucun tracé direct n'évite les objets, le fil les contourne par-dessus ou
-  par-dessous.
-- Chaque fil est tracé seul : ajouter un fil ne déplace jamais les autres.
-- Un croisement est dessiné comme un **pont** : le fil le plus récent enjambe
-  l'ancien par un petit demi-cercle.
+- Un seul segment droit, d'un ancrage à l'autre, sans virage : il ne contourne
+  pas les objets et passe sous eux. Un croisement de fils ne signifie rien et
+  n'est pas marqué.
 
 ## Affichage
 
-- Les fils sont dessinés sous les objets : câble sombre et âme de la couleur du
-  circuit. Les lettres, dans une pastille, sont posées sur le fil près de chaque
-  bout, par-dessus les objets.
-- Levier ou convoyeur sélectionné : ses fils restent vifs, les autres
-  s'estompent.
-- Pendant la simulation, tous les fils sont fortement atténués.
+- Les fils sont dessinés sous les objets, fins et translucides : câble sombre et
+  âme de la couleur du circuit. Les lettres, dans une petite pastille aussi
+  translucide que le fil, sont posées sur le fil près de chaque bout.
+- Contrôleur ou dispositif sélectionné : les autres fils s'estompent davantage.
+- Pendant la simulation, les fils sont presque effacés.
 
 ## Écarts avec la première version de cette note
 
@@ -149,7 +144,7 @@ bouts de chaque fil.
 | Rendu SVG                                         | Canvas 2D, même renderer que le plateau                      | ADR 0006 ; un calque SVG devrait suivre caméra, zoom et DPR séparément               |
 | `label` et `color` stockés sur chaque fil         | Dérivés, un circuit par levier                               | Rien à valider ni à désynchroniser ; la note montrait déjà un bouton A → 3 appareils |
 | `sourceAnchor` / `targetAnchor` dans le niveau    | Ancrages définis par la famille                              | Donnée visuelle, pas donnée de niveau                                                |
-| Routage tenant compte des autres fils             | Routage indépendant, ponts ensuite                           | Ajouter un fil ne doit pas redessiner les autres                                     |
+| Routage tenant compte des autres fils             | Segment droit, sans routage ni pont (U14)                    | Les tracés orthogonaux étaient trop voyants                                          |
 | « Éviter les zones de gameplay importantes »      | Abandonné                                                    | Non défini                                                                           |
 | Plusieurs contrôleurs possibles sur un dispositif | Un seul contrôleur par dispositif                            | Deux contrôleurs opposés rendraient l'état ambigu                                    |
 | Le joueur peut actionner le levier en simulation  | Jamais ; seuls les objets le font changer de cran            | Principe « construire, puis regarder »                                               |

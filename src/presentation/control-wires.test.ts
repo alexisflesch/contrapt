@@ -1,93 +1,54 @@
 import { describe, expect, it } from 'vitest';
 
-import type { WorldPoint, WorldRect } from '../domain/family-geometry';
-import { findWireBridges, routeWire, type WirePort } from './control-wires';
+import { levelDocumentSchema } from '../domain/level-document';
+import { projectWires } from './control-wires';
 
-const port = (x: number, y: number, side: -1 | 1): WirePort => ({ position: { x, y }, side });
+const lockedPermissions = { move: false, rotate: false, remove: false } as const;
 
-const isOrthogonal = (points: readonly WorldPoint[]): boolean =>
-  points.every((point, index) => {
-    const next = points[index + 1];
-    return next === undefined || point.x === next.x || point.y === next.y;
-  });
-
-const bends = (points: readonly WorldPoint[]): number => Math.max(0, points.length - 2);
-
-/** Does any segment of the route cross the inside of `rect`? */
-const crosses = (points: readonly WorldPoint[], rect: WorldRect): boolean =>
-  points.some((point, index) => {
-    const next = points[index + 1];
-    if (next === undefined) return false;
-    const minX = Math.min(point.x, next.x);
-    const maxX = Math.max(point.x, next.x);
-    const minY = Math.min(point.y, next.y);
-    const maxY = Math.max(point.y, next.y);
-    return (
-      maxX > rect.x && minX < rect.x + rect.width && maxY > rect.y && minY < rect.y + rect.height
-    );
-  });
-
-describe('routage des fils', () => {
-  it('relie deux ports face à face par des segments orthogonaux et peu de virages', () => {
-    const route = routeWire(port(0.4, 0, 1), port(3.5, 2, -1), []);
-
-    expect(route[0]).toEqual({ x: 0.4, y: 0 });
-    expect(route.at(-1)).toEqual({ x: 3.5, y: 2 });
-    expect(isOrthogonal(route)).toBe(true);
-    expect(bends(route)).toBeLessThanOrEqual(2);
-  });
-
-  it('reste droit quand les deux ports sont alignés', () => {
-    expect(routeWire(port(0, 1, 1), port(4, 1, -1), [])).toEqual([
-      { x: 0, y: 1 },
-      { x: 4, y: 1 },
-    ]);
-  });
-
-  it('déplace la descente verticale pour ne pas traverser un objet', () => {
-    const obstacle = { x: 1.6, y: -1, width: 0.8, height: 4 };
-    const route = routeWire(port(0.4, 0, 1), port(3.5, 2, -1), [obstacle]);
-
-    expect(isOrthogonal(route)).toBe(true);
-    expect(crosses(route, obstacle)).toBe(false);
-  });
-
-  it('contourne quand la cible est derrière le port de départ', () => {
-    const route = routeWire(port(0.4, 0, 1), port(-2, 3, 1), []);
-
-    expect(route[0]).toEqual({ x: 0.4, y: 0 });
-    expect(route.at(-1)).toEqual({ x: -2, y: 3 });
-    expect(isOrthogonal(route)).toBe(true);
-    // The route leaves each port on its own side before turning.
-    expect(route[1]?.x).toBeGreaterThan(0.4);
-    expect(route.at(-2)?.x).toBeGreaterThan(-2);
-  });
+const placement = (id: string, type: string, x: number, y: number, props: object) => ({
+  id,
+  type,
+  transform: { position: { x, y }, rotation: 0 },
+  props,
+  permissions: lockedPermissions,
 });
 
-describe('ponts entre fils', () => {
-  it('fait passer le fil le plus récent par-dessus, au point de croisement', () => {
-    const older = [
-      { x: 2, y: -2 },
-      { x: 2, y: 2 },
-    ];
-    const newer = [
-      { x: 0, y: 0 },
-      { x: 4, y: 0 },
-    ];
-
-    expect(findWireBridges([older, newer])).toEqual([[], [{ x: 2, y: 0 }]]);
+/** A lever wired to a conveyor, a long beam lying right between them. */
+const wiredDocument = (conveyorX: number) =>
+  levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'wires',
+    metadata: { title: 'Fils' },
+    objects: [
+      placement('ball-1', 'ball', 1, 1, {}),
+      placement('basket-1', 'basket', 1, 9, {}),
+      placement('lever-1', 'lever', 5, 4, { position: 'center' }),
+      placement('beam-1', 'beam', 7.5, 4.5, { size: 'long' }),
+      placement('conveyor-1', 'conveyor', conveyorX, 5, { direction: 'stopped' }),
+    ],
+    inventory: [],
+    goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+    buildZones: [],
+    scene: { min: { x: 0, y: 0 }, max: { x: 14, y: 10 } },
+    wires: [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' }],
   });
 
-  it('ne fait pas de pont entre deux fils qui se touchent sans se croiser', () => {
-    const first = [
-      { x: 0, y: 0 },
-      { x: 2, y: 0 },
-    ];
-    const second = [
-      { x: 2, y: 0 },
-      { x: 2, y: 2 },
-    ];
+describe('tracé des fils', () => {
+  it('relie la source à la cible par un seul segment droit, sans contourner les objets', () => {
+    const [wire] = projectWires(wiredDocument(11));
 
-    expect(findWireBridges([first, second])).toEqual([[], []]);
+    // Right port of the lever's base, left end of the conveyor's frame;
+    // the beam between them does not bend the wire.
+    expect(wire?.from).toEqual({ x: 5.4, y: 4.05 });
+    expect(wire?.to).toEqual({ x: 9.5, y: 5 });
+    expect(wire).not.toHaveProperty('points');
+    expect(wire).not.toHaveProperty('bridges');
+  });
+
+  it('prend sur chaque objet le port tourné vers l’autre', () => {
+    const [wire] = projectWires(wiredDocument(1.5));
+
+    expect(wire?.from).toEqual({ x: 4.6, y: 4.05 });
+    expect(wire?.to).toEqual({ x: 3, y: 5 });
   });
 });

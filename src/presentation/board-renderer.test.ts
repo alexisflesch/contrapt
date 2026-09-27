@@ -33,6 +33,9 @@ type Operation =
   | { readonly kind: 'fillRect'; readonly values: readonly number[] }
   | { readonly kind: 'drawImage'; readonly values: readonly unknown[] }
   | { readonly kind: 'beginPath' }
+  | { readonly kind: 'moveTo'; readonly values: readonly number[] }
+  | { readonly kind: 'lineTo'; readonly values: readonly number[] }
+  | { readonly kind: 'arc' }
   | { readonly kind: 'stroke' }
   | { readonly kind: 'globalAlpha'; readonly values: readonly number[] }
   | { readonly kind: 'fillText'; readonly values: readonly unknown[] };
@@ -269,17 +272,21 @@ const createContext = (): {
     strokeStyle: '',
     fillStyle: '',
     lineCap: 'butt',
-    lineJoin: 'miter',
     font: '',
     textAlign: 'start',
     textBaseline: 'alphabetic',
     beginPath: (): void => {
       operations.push({ kind: 'beginPath' });
     },
-    moveTo: (): void => undefined,
-    lineTo: (): void => undefined,
-    arcTo: (): void => undefined,
-    arc: (): void => undefined,
+    moveTo: (...values: [number, number]): void => {
+      operations.push({ kind: 'moveTo', values });
+    },
+    lineTo: (...values: [number, number]): void => {
+      operations.push({ kind: 'lineTo', values });
+    },
+    arc: (): void => {
+      operations.push({ kind: 'arc' });
+    },
     stroke: (): void => {
       operations.push({ kind: 'stroke' });
     },
@@ -465,6 +472,32 @@ const layerOf = (projection: ReturnType<typeof projectLevel>, asset: SpriteAsset
   return found.layer;
 };
 
+const renderWired = async (
+  simulation?: BoardSimulationView,
+): Promise<{ readonly operations: Operation[] }> => {
+  const { context, operations } = createContext();
+  const spriteLoader = createPendingSpriteLoader();
+  spriteLoader.setReady();
+  const renderer = createBoardRenderer({
+    canvas: { width: 0, height: 0 },
+    context,
+    viewport,
+    spriteLoader: spriteLoader.loader,
+  });
+  await renderer.render(projectLevel(createWiredDocument('center', 'stopped'), simulation));
+  return { operations };
+};
+
+/** Alpha of each wire drawn under the sprites, or of every wire and label when `all`. */
+const wireAlphas = (operations: readonly Operation[], all = false): readonly number[] => {
+  const firstSprite = operations.findIndex((operation) => operation.kind === 'drawImage');
+  return (all ? operations : operations.slice(0, firstSprite)).flatMap((operation) =>
+    operation.kind === 'globalAlpha' && operation.values[0] !== undefined
+      ? [operation.values[0]]
+      : [],
+  );
+};
+
 describe('projection du plateau', () => {
   it('pose la poignée du levier à sa position de départ, sur un socle immobile', () => {
     const projection = projectLevel(createWiredDocument('right', 'stopped'));
@@ -611,14 +644,18 @@ describe('projection du plateau', () => {
     expect(spring.y + spring.height).toBeCloseTo(restingSpring.y + restingSpring.height);
   });
 
-  it('route les fils avec leur lettre de circuit, hors du document', () => {
+  it('tire les fils droits avec leur lettre de circuit, hors du document', () => {
     const projection = projectLevel(createWiredDocument('center', 'stopped'));
 
     expect(projection.wires).toEqual([
-      expect.objectContaining({ id: 'wire-1', label: 'A', circuitIndex: 0 }),
+      expect.objectContaining({
+        id: 'wire-1',
+        label: 'A',
+        circuitIndex: 0,
+        from: { x: 2.4, y: 4.05 },
+        to: { x: 5.5, y: 5 },
+      }),
     ]);
-    expect(projection.wires[0]?.points[0]).toEqual({ x: 2.4, y: 4.05 });
-    expect(projection.wires[0]?.points.at(-1)).toEqual({ x: 5.5, y: 5 });
   });
 
   it('contient les quatre familles et porte les assets visuels hors du document', () => {
@@ -937,23 +974,26 @@ describe('renderer Canvas 2D du plateau', () => {
     ]);
   });
 
-  it('dessine les fils sous les objets, avec leur lettre aux deux bouts', async () => {
-    const { context, operations } = createContext();
-    const spriteLoader = createPendingSpriteLoader();
-    spriteLoader.setReady();
-    const renderer = createBoardRenderer({
-      canvas: { width: 0, height: 0 },
-      context,
-      viewport,
-      spriteLoader: spriteLoader.loader,
-    });
-
-    await renderer.render(projectLevel(createWiredDocument('center', 'stopped')));
+  it('dessine chaque fil comme un segment droit sous les objets, avec sa lettre aux deux bouts', async () => {
+    const { operations } = await renderWired();
 
     const firstSprite = operations.findIndex((operation) => operation.kind === 'drawImage');
-    const firstStroke = operations.findIndex((operation) => operation.kind === 'stroke');
-    expect(firstStroke).toBeGreaterThanOrEqual(0);
-    expect(firstStroke).toBeLessThan(firstSprite);
+    const underSprites = operations.slice(0, firstSprite);
+    const start = worldToPixels({ x: 2.4, y: 4.05 }, viewport);
+    const end = worldToPixels({ x: 5.5, y: 5 }, viewport);
+    expect(underSprites.filter((operation) => operation.kind === 'stroke').length).toBeGreaterThan(
+      0,
+    );
+    // Every stroke under the sprites is the same straight segment: no bend, no bridge.
+    const pathOperations = underSprites.filter(
+      (operation) =>
+        operation.kind === 'moveTo' || operation.kind === 'lineTo' || operation.kind === 'arc',
+    );
+    expect(pathOperations.length).toBeGreaterThan(0);
+    for (let index = 0; index < pathOperations.length; index += 2) {
+      expect(pathOperations[index]).toEqual({ kind: 'moveTo', values: [start.x, start.y] });
+      expect(pathOperations[index + 1]).toEqual({ kind: 'lineTo', values: [end.x, end.y] });
+    }
     expect(
       operations
         .filter(
@@ -964,28 +1004,24 @@ describe('renderer Canvas 2D du plateau', () => {
     ).toEqual(['A', 'A']);
   });
 
-  it('atténue les fils pendant la simulation', async () => {
-    const { context, operations } = createContext();
-    const spriteLoader = createPendingSpriteLoader();
-    spriteLoader.setReady();
-    const renderer = createBoardRenderer({
-      canvas: { width: 0, height: 0 },
-      context,
-      viewport,
-      spriteLoader: spriteLoader.loader,
-    });
+  it('dessine les fils translucides pendant la construction', async () => {
+    const alphas = wireAlphas((await renderWired()).operations);
 
-    await renderer.render(
-      projectLevel(createWiredDocument('center', 'stopped'), simulationView([])),
-    );
+    expect(alphas.length).toBeGreaterThan(0);
+    for (const alpha of alphas) {
+      expect(alpha).toBeGreaterThan(0.2);
+      expect(alpha).toBeLessThanOrEqual(0.6);
+    }
+  });
 
-    const alphas = operations
-      .filter(
-        (operation): operation is Extract<Operation, { readonly kind: 'globalAlpha' }> =>
-          operation.kind === 'globalAlpha',
-      )
-      .map((operation) => operation.values[0]);
-    expect(alphas.some((alpha) => alpha !== undefined && alpha < 0.5)).toBe(true);
+  it('efface presque les fils pendant la simulation', async () => {
+    const alphas = wireAlphas((await renderWired(simulationView([]))).operations, true);
+
+    expect(alphas.length).toBeGreaterThan(0);
+    for (const alpha of alphas) {
+      expect(alpha).toBeGreaterThan(0);
+      expect(alpha).toBeLessThanOrEqual(0.1);
+    }
   });
 
   it('dessine les zones de construction sous les objets, en unités monde', async () => {

@@ -1905,3 +1905,19 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   par une poutre, poutre hors du trajet, balle qui en abrite une autre).
 - Niveaux : aucun niveau numéroté n'utilise de ventilateur ; aucune issue ne
   change.
+
+### U14 — Fils de commande discrets — fait — `feat(presentation): trace les fils de commande droits et discrets (U14)`
+
+- Comportement : chaque fil est un segment droit entre le port de la source et
+  celui de la cible (côté tourné vers l'autre objet), dessiné sous les sprites,
+  sans contournement ni pont. Trait plus fin (4/2 px), alpha 0,45 en
+  construction (0,25 pour les fils étrangers à la sélection), 0,08 en
+  simulation. La lettre de circuit reste aux deux bouts, en pastille plus petite
+  (alpha 0,8, puis 0,1 en simulation).
+- Tests : les tests de routage orthogonal et de ponts sont remplacés (segment
+  droit malgré un objet entre les deux, port tourné vers l'autre objet ; segment
+  unique sous les sprites ; alpha de construction et de simulation).
+- Code retiré : routeur, ponts, `arcTo`/`lineJoin` du canvas des fils.
+- Documentation : amendement de l'ADR 0009, note des fils, `docs/etat.md`.
+- Captures : `test-results/u14/` (niveaux 11 et 12, construction et simulation,
+  trois formats).

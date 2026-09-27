@@ -132,11 +132,8 @@ const createCanvasContextAdapter = (context: CanvasRenderingContext2D): BoardCan
   lineTo: (x, y) => {
     context.lineTo(x, y);
   },
-  arcTo: (x1, y1, x2, y2, radius) => {
-    context.arcTo(x1, y1, x2, y2, radius);
-  },
-  arc: (x, y, radius, startAngle, endAngle, counterclockwise) => {
-    context.arc(x, y, radius, startAngle, endAngle, counterclockwise);
+  arc: (x, y, radius, startAngle, endAngle) => {
+    context.arc(x, y, radius, startAngle, endAngle);
   },
   stroke: () => {
     context.stroke();
@@ -170,12 +167,6 @@ const createCanvasContextAdapter = (context: CanvasRenderingContext2D): BoardCan
   },
   set lineCap(value: CanvasLineCap) {
     context.lineCap = value;
-  },
-  get lineJoin() {
-    return context.lineJoin;
-  },
-  set lineJoin(value: CanvasLineJoin) {
-    context.lineJoin = value;
   },
   get font() {
     return context.font;

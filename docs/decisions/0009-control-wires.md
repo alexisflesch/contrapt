@@ -109,12 +109,23 @@ La phrase « Le bouton momentané, le ventilateur et la porte de la note n'ont p
 d'assets et ne sont pas implémentés » ci-dessus est caduque pour le bouton et le
 ventilateur ; la porte est la barrière.
 
+## Amendement du 27 septembre 2026 — fils droits et discrets (U14)
+
+Le routage orthogonal et ses ponts produisaient des dizaines de virages et des
+fils trop voyants. Demande de l'auteur : chaque fil est désormais **un segment
+droit** entre le port de la source et celui de la cible (le port de chaque
+objet tourné vers l'autre), dessiné sous les objets, sans contournement ni pont.
+Les fils sont translucides en construction et presque effacés pendant la
+simulation. La lettre de circuit reste aux deux bouts (la couleur n'est jamais
+le seul indice), en petite pastille aussi translucide que le fil. La section
+« Routage indépendant, ponts en post-traitement » ci-dessus est caduque ; la
+chaîne devient objets et fils → ports → segment → dessin.
+
 ## Conséquences
 
 - Aucune dépendance ajoutée ; le port physique gagne des « dispositifs » dans
   son instantané (`devices` : position des leviers, sens et défilement des
   convoyeurs), lus par la présentation sans importer le moteur.
-- Le routage est un calcul pur, testé sans navigateur ; son coût est
-  négligeable aux budgets d'objets actuels.
+- Le tracé est un calcul pur, testé sans navigateur.
 - Un besoin futur de réseau (jonctions, logique) rouvre cette ADR : il n'est
   pas anticipé.

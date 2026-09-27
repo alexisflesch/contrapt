@@ -92,8 +92,9 @@ pendant le travail.
   de tour du ventilateur, de la barrière et du tremplin (boutons et poignée),
   états de départ du ventilateur et de la barrière, câblage levier/bouton →
   appareil au toucher, suppression.
-- Fils de commande routés orthogonalement, ponts aux croisements, lettres de
-  circuit (`src/presentation/control-wires.ts`, `wire-renderer.ts`).
+- Fils de commande droits, sous les objets, translucides (presque effacés en
+  simulation), lettres de circuit (`src/presentation/control-wires.ts`,
+  `wire-renderer.ts`).
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
   `/editor`, `/demo` (machine en chaîne qui se résout seule, testée),
   `/settings` (vide) et `/shared` (niveau éphémère décodé depuis le fragment URL).

@@ -107,7 +107,6 @@ const canDrawWires = (context: BoardCanvasContext): context is BoardCanvasContex
   typeof context.beginPath === 'function' &&
   typeof context.moveTo === 'function' &&
   typeof context.lineTo === 'function' &&
-  typeof context.arcTo === 'function' &&
   typeof context.arc === 'function' &&
   typeof context.stroke === 'function' &&
   typeof context.fill === 'function' &&
@@ -186,9 +185,9 @@ export type ProjectedBoardObject = Readonly<{
 
 type BoardProjection = Readonly<{
   readonly objects: readonly ProjectedBoardObject[];
-  /** Derived routes of the control wires (ADR 0009), drawn under the objects. */
+  /** Derived segments of the control wires (ADR 0009), drawn under the objects. */
   readonly wires: readonly ProjectedWire[];
-  /** While a simulation runs, wires fade so they do not clutter the machine. */
+  /** While a simulation runs, wires almost vanish so they do not clutter the machine. */
   readonly wiresDimmed: boolean;
   /** Ephemeral selection state; it is never part of `LevelDocument`. */
   readonly selectedPlacementId?: string;
@@ -568,7 +567,7 @@ export const projectLevel = (
 
   return {
     objects,
-    wires: projectWires(document, footprintForObject),
+    wires: projectWires(document),
     wiresDimmed: simulation !== undefined,
   };
 };
