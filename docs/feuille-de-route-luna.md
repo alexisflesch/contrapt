@@ -21,7 +21,7 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
    caractères Unicode (↺, ↩, →, ☰, ?, 🔒, etc.) par des icônes `lucide-react`.
    Dépendance structurante : ADR court d’abord. Garder des libellés
    accessibles. Les paliers ✅ ⭐ 🏆 peuvent devenir des icônes aussi.
-3. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
+2. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
    `docs/levels/nouveaux-niveaux.md`, générer un JSON « à peu près » (pas de
    calibrage fin) au format U22 : décor, objets à placer en inventaire,
    solution de référence approximative. Les enregistrer dans la campagne à la
