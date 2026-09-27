@@ -60,7 +60,7 @@ const tapWorldPoint = async (page: Page, point: WorldPoint): Promise<void> => {
   await page.touchscreen.tap(screenPoint.x, screenPoint.y);
 };
 
-/** U4 : captures du bandeau de résultat aux trois formats de validation (§ 6). */
+/** U4b : captures de la modale de victoire aux trois formats de validation (§ 6). */
 const captureResultFormats = async (page: Page, pathPrefix: string): Promise<void> => {
   const initial = page.viewportSize();
   for (const { width, height } of [
@@ -69,7 +69,9 @@ const captureResultFormats = async (page: Page, pathPrefix: string): Promise<voi
     { width: 1440, height: 900 },
   ]) {
     await page.setViewportSize({ width, height });
-    await expect(page.getByRole('region', { name: 'Résultat du niveau' })).toBeVisible();
+    const dialog = page.getByRole('dialog', { name: 'Bravo !' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toBeInViewport({ ratio: 1 });
     await page.screenshot({ path: `${pathPrefix}-${String(width)}x${String(height)}.png` });
   }
   if (initial !== null) await page.setViewportSize(initial);
@@ -281,9 +283,11 @@ test('niveau 4 : choisir la poutre longue et gagner au tactile', async ({ page }
   await expect(result).toBeVisible({ timeout: 15_000 });
   await expect(result.getByText('Victoire')).toBeVisible();
   // U4 : une seule poutre longue atteint le minimum connu du défi (ADR 0010).
-  await expect(result.getByText('🏆 Minimal')).toBeVisible();
-  await expect(result.getByText('avec 1 objet.')).toBeVisible();
-  await captureResultFormats(page, 'test-results/u4/niveau-4-minimal');
+  const victory = page.getByRole('dialog', { name: 'Bravo !' });
+  await expect(victory).toHaveAttribute('data-level-tier', 'minimal');
+  await expect(victory.locator('[data-earned="true"]')).toHaveCount(3);
+  await expect(victory.getByText('Résolu avec 1 objet.')).toBeVisible();
+  await captureResultFormats(page, 'test-results/u4b/niveau-4-minimal');
 });
 
 test('niveau 5 : détourner la balle avec deux poutres tournées au tactile', async ({
@@ -612,10 +616,11 @@ test('niveau 2 : poser puis glisser la poutre avant de gagner au tactile', async
   const victoryResult = page.getByRole('region', { name: 'Résultat du niveau' });
   await expect(victoryResult).toBeVisible({ timeout: 15_000 });
   await expect(victoryResult.getByText('Victoire')).toBeVisible();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // U4b : une victoire de campagne ouvre la modale de résultat.
+  await expect(page.getByRole('dialog', { name: 'Bravo !' })).toBeVisible();
 });
 
-test('U4 — affiche le palier puis ouvre le niveau suivant au tactile', async ({
+test('U4b — ouvre la modale de victoire, voit la scène puis passe au niveau suivant au tactile', async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'La résolution au toucher est testée sur mobile.');
@@ -627,19 +632,27 @@ test('U4 — affiche le palier puis ouvre le niveau suivant au tactile', async (
   await tapWorldPoint(page, { x: 5.0, y: 2.15 });
   await page.getByRole('button', { name: 'Tester' }).tap();
 
-  const result = page.getByRole('region', { name: 'Résultat du niveau' });
-  await expect(result).toBeVisible({ timeout: 15_000 });
-  await expect(result).toHaveAttribute('data-level-tier', 'resolved');
-  await expect(result.getByText('✅ Résolu')).toBeVisible();
-  await expect(result.getByText('avec 1 objet.')).toBeVisible();
-  await expect(result.getByRole('button', { name: /Recommencer/ })).toHaveCount(1);
-  await captureResultFormats(page, 'test-results/u4/niveau-1-resolu');
+  const banner = page.getByRole('region', { name: 'Résultat du niveau' });
+  await expect(banner).toBeVisible({ timeout: 15_000 });
+  const dialog = page.getByRole('dialog', { name: 'Bravo !' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute('data-level-tier', 'resolved');
+  await expect(dialog.getByText('Résolu avec 1 objet.')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: /Recommencer/ })).toHaveCount(1);
+  await expect(dialog.getByRole('button', { name: 'Retour aux niveaux' })).toHaveCount(0);
+  await captureResultFormats(page, 'test-results/u4b/niveau-1-resolu');
 
-  const next = result.getByRole('button', { name: 'Niveau suivant' });
-  await next.scrollIntoViewIfNeeded();
+  await dialog.getByRole('button', { name: 'Voir la scène' }).tap();
+  await expect(dialog).toHaveCount(0);
+  await banner.getByRole('button', { name: 'Voir le résultat' }).tap();
+  await expect(dialog).toBeVisible();
+
+  const next = dialog.getByRole('button', { name: 'Niveau suivant' });
+  await expect(next).toBeInViewport({ ratio: 1 });
   await next.tap();
   await expect(page).toHaveURL(/\/levels\/level-2-le-pont\/play$/);
   await expect(page.getByText('Niveau 2 · Le pont')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Résultat du niveau' })).toHaveCount(0);
 });
 
@@ -749,7 +762,8 @@ test('niveau 1 : échouer sans poutre puis résoudre par toucher', async ({ page
   const victoryResult = page.getByRole('region', { name: 'Résultat du niveau' });
   await expect(victoryResult).toBeVisible({ timeout: 15_000 });
   await expect(victoryResult.getByText('Victoire')).toBeVisible();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // U4b : une victoire de campagne ouvre la modale de résultat.
+  await expect(page.getByRole('dialog', { name: 'Bravo !' })).toBeVisible();
 
   const boardBounds = await board.boundingBox();
   const resultBounds = await victoryResult.boundingBox();
@@ -759,5 +773,6 @@ test('niveau 1 : échouer sans poutre puis résoudre par toucher', async ({ page
     expect(resultBounds.y).toBeGreaterThanOrEqual(boardBounds.y + boardBounds.height - 1);
   }
   await expect(victoryResult.getByRole('button', { name: 'Recommencer' })).toBeVisible();
-  await expect(victoryResult.getByRole('button', { name: 'Retour aux niveaux' })).toBeVisible();
+  // U4b : le menu mène déjà à la liste ; la victoire de campagne n'y renvoie plus.
+  await expect(victoryResult.getByRole('button', { name: 'Retour aux niveaux' })).toHaveCount(0);
 });

@@ -4,7 +4,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { countObjectsUsed, evaluateTier } from '../application/progression';
 
 import { embeddedLevels, nextCampaignLevel } from '../content/embedded-levels';
-import type { CampaignVictory } from '../ui/LevelResult';
+import type { CampaignVictory } from '../ui/CampaignVictoryDialog';
 import { BoardShell } from './BoardShell';
 import { useCampaignProgress } from './use-campaign-progress';
 
@@ -32,6 +32,7 @@ export function PlayLevelPage() {
       : {
           tier: evaluateTier(wonObjectCount, level.challenge),
           objectsUsed: wonObjectCount,
+          hasChallenge: level.challenge !== undefined,
           hint: levelProgress[level.id]?.nextChallengeHint ?? null,
           isNewRecord:
             level.challenge !== undefined && wonObjectCount < level.challenge.minimalObjectCount,

@@ -230,6 +230,7 @@ describe('coque TinkerBolt', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('ouvre l’objectif dans une boîte de dialogue modale et rend le focus en la fermant', () => {
@@ -874,7 +875,8 @@ describe('coque TinkerBolt', () => {
     });
   });
 
-  it('affiche le palier, les objets posés et ouvre le niveau suivant après une victoire de campagne (U4)', () => {
+  it('ouvre la modale de victoire après un court délai, puis le niveau suivant (U4, U4b)', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const animationFrames = createAnimationFrameHarness();
     const { repository } = createProgressRepository();
     render(<App progressRepository={repository} />);
@@ -884,31 +886,108 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
     advanceSimulationToResult(animationFrames, 360);
 
-    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
+    // U4b : la balle entre d'abord dans le panier, la modale vient ensuite.
+    const banner = screen.getByRole('region', { name: 'Résultat du niveau' });
+    expect(banner).toHaveAttribute('data-level-tier', 'resolved');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(599);
+    });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+
+    const result = screen.getByRole('dialog', { name: 'Bravo !' });
     expect(result).toHaveAttribute('data-level-tier', 'resolved');
-    expect(within(result).getByText('✅ Résolu')).toBeVisible();
-    expect(within(result).getByText('avec 1 objet.')).toBeVisible();
+    expect(within(result).getByText('Résolu avec 1 objet.')).toBeVisible();
     expect(within(result).getAllByRole('button', { name: /Recommencer/ })).toHaveLength(1);
+    expect(within(result).queryByRole('button', { name: 'Retour aux niveaux' })).toBeNull();
 
     fireEvent.click(within(result).getByRole('button', { name: 'Niveau suivant' }));
 
     expect(window.location.pathname).toBe('/levels/level-2-le-pont/play');
     expect(screen.getByText('Niveau 2 · Le pont')).toBeVisible();
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).toBeNull();
   });
 
-  it('n’affiche pas le bandeau de campagne hors campagne (U4)', () => {
+  it('ferme la modale pour voir la scène et la rouvre depuis le bandeau (U4b)', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const animationFrames = createAnimationFrameHarness();
+    const { repository } = createProgressRepository();
+    render(<App progressRepository={repository} />);
+
+    openEmbeddedLevelOne();
+    placeCampaignBeam(5.0, 2.15);
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 360);
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'Bravo !' })).getByRole('button', {
+        name: 'Voir la scène',
+      }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const banner = screen.getByRole('region', { name: 'Résultat du niveau' });
+    fireEvent.click(within(banner).getByRole('button', { name: 'Voir le résultat' }));
+    expect(screen.getByRole('dialog', { name: 'Bravo !' })).toBeVisible();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.click(
+      within(screen.getByRole('region', { name: 'Résultat du niveau' })).getByRole('button', {
+        name: 'Recommencer',
+      }),
+    );
+    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('ouvre la modale sans attendre quand le mouvement est réduit (U4b)', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const animationFrames = createAnimationFrameHarness();
+    const { repository } = createProgressRepository();
+    render(<App progressRepository={repository} />);
+
+    openEmbeddedLevelOne();
+    placeCampaignBeam(5.0, 2.15);
+    // Stubbed once the beam is placed: `matchMedia` also gates the side layout.
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+    }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 360);
+    act(() => {
+      vi.advanceTimersByTime(0);
+    });
+
+    expect(screen.getByRole('dialog', { name: 'Bravo !' })).toBeVisible();
+  });
+
+  it('n’affiche ni bandeau ni modale de campagne hors campagne (U4, U4b)', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const animationFrames = createAnimationFrameHarness();
     window.history.replaceState(null, '', '/demo');
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
     advanceSimulationToResult(animationFrames, 600);
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
 
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
     expect(result).toHaveTextContent('Victoire');
     expect(result).not.toHaveAttribute('data-level-tier');
     expect(within(result).queryByRole('button', { name: 'Niveau suivant' })).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('laisse un niveau verrouillé jouable quand son URL est ouverte directement', () => {
@@ -963,7 +1042,8 @@ describe('coque TinkerBolt', () => {
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
     expect(within(result).getByText('Victoire')).toBeVisible();
     expect(within(result).getByRole('button', { name: 'Recommencer' })).toBeVisible();
-    expect(within(result).getByRole('button', { name: 'Retour aux niveaux' })).toBeVisible();
+    // U4b : le menu mène déjà à la liste ; la victoire de campagne n'y renvoie plus.
+    expect(within(result).queryByRole('button', { name: 'Retour aux niveaux' })).toBeNull();
   });
 
   it('affiche le bandeau de victoire après le plateau dans le flux normal, jamais en overlay', () => {
