@@ -117,6 +117,18 @@ pendant le travail.
   son palier (✅ / ⭐ / 🏆, `data-level-tier`) recalculé depuis le meilleur
   résultat. « Éditer le niveau » (U17) reste disponible pour tous les niveaux ;
   l’URL directe d’un niveau verrouillé reste jouable (comportement L21 inchangé).
+- **U22 — atelier créateur de puzzles** (ADR 0013) : réglage « Fixe / À
+  placer » dans l’inspecteur de l’atelier (annulable, jamais sur la balle ni le
+  panier de l’objectif, champ `toPlace` du document) ; contour pointillé violet
+  autour des objets à placer pendant la construction ; bouton d’en-tête
+  « Jouer » (« Jouer le puzzle ») qui ouvre le puzzle en mode joueur sur une
+  copie, avec « Retour à l’atelier » ; l’export (fichier et lien) produit le
+  puzzle — décor fixe, inventaire des objets à placer regroupés, `solution` de
+  référence, zone = scène si l’atelier n’en a pas, défi ⭐ = 🏆 = nombre
+  d’objets à placer — après vérification par simulation à pas fixe (solution
+  posée par les commandes du joueur : gagne ; décor seul : ne gagne pas ; au
+  moins un objet à placer), sinon un message dit pourquoi. Un brouillon de
+  campagne d’un niveau à solution se rouvre sous forme d’atelier.
 - Panneau « Propriétés » (rail droit en grand format, tiroir compact sur petit
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
   rotation libre des poutres, limitée à ±135° pour les leviers, et par quarts
@@ -321,9 +333,17 @@ pendant le travail.
   est revalidé par le schéma. Seul l’ajout d’objet est exposé (catalogue, U20).
 - **Mode auteur incomplet** : l’atelier ne permet pas encore de créer et gérer
   ces commandes dans l’interface (scène, zones, inventaire, objectif,
-  métadonnées), ni d’importer un fichier. L’export U16 prend le document tel
-  quel : l’atelier libre exporte donc son inventaire de 99 par famille (le
-  catalogue auteur ne le consomme plus depuis U20).
+  métadonnées), ni d’importer un fichier. Depuis U22, l’export remplace
+  l’inventaire de l’atelier par les objets à placer.
+- **Atelier U22** : un objet à placer relié par un fil n’est pas exportable
+  (refus avec message) ; revenir de « Jouer le puzzle » remonte l’atelier sur
+  son dernier document, l’historique annuler/rétablir repart de là ; sur
+  téléphone l’en-tête de l’éditeur (quatre boutons) ne laisse presque plus de
+  place au titre ; le brouillon du niveau 1 (inventaire vide) n’affiche pas le
+  catalogue auteur (préexistant, `hasInventory` de `BoardShell`).
+- **Gate et worktrees** : `pnpm lint` (`eslint .`) lit aussi les worktrees
+  d’autres agents sous `.claude/worktrees/` et échoue sur leurs `dist/` ; la
+  gate U22 a été passée avec `eslint . --ignore-pattern '.claude/**'`.
 - **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
   brouillon créé, ni de lister ou supprimer les brouillons dans l’interface.
 - `format:check` ne couvre pas le Markdown.
@@ -336,6 +356,10 @@ pendant le travail.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U22 (27 septembre 2026), lint limité hors `.claude/` (voir
+Dettes) : typecheck, lint, formatage, Knip, contenu, 776 tests Vitest (65
+fichiers), build et 56 tests Playwright `mobile` (55 réussis, 1 ignoré).
 
 `pnpm check` après U5 (27 septembre 2026) : passe d’une traite — typecheck,
 lint, formatage, Knip, contenu, 741 tests Vitest (62 fichiers), build et 55

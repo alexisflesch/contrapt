@@ -4,7 +4,7 @@ Vue d’ensemble en une page ; le détail reste dans § 5, § 6 et le journal (�
 
 **Fait.** Toute la logique L1 à L28 (fondations, progression, fichiers et
 partage, commandes d’auteur, brouillons, CI, PWA) ; niveaux 1 à 12 ; P1 ; côté
-interface U4 à U6, U13 à U21 (U4 et U5 en attente de validation visuelle).
+interface U4 à U6, U13 à U22 (U4, U5 et U22 en attente de validation visuelle).
 
 **Campagne abandonnée (décision auteur du 27 septembre 2026).** Les niveaux
 actuels ne sont pas amusants (« placer une poutre quelque part ») : ils seront
@@ -14,7 +14,9 @@ générées grossièrement puis ajustées par l’auteur dans l’atelier (U22).
 
 **Reste à faire — interface (§ 6, captures et validation de l’auteur).**
 
-- U22 atelier créateur de puzzles (remplace U9) : prochaine grosse tâche.
+- U22 atelier créateur de puzzles : livré (ADR 0013), captures sous
+  `test-results/u22/` à valider ; suites hors U22 : édition de la scène, des
+  zones, de l’objectif et du défi, import, liste des brouillons, fils à placer.
 - U14b fils de commande en équerre : en cours.
 - U12 poutres en trois tailles et icônes de la PWA : les dessins sont dans
   `art/` (`art/assets/beam/`, `art/icons-splash_screen/`), à exporter et câbler.
@@ -22,7 +24,7 @@ générées grossièrement puis ajustées par l’auteur dans l’atelier (U22).
   balle suivie, U8 aide du niveau 1, U10 invitation PWA, U11 réglages.
 - Minuteur animé (`art/assets/timer/README.md`) : pas encore de tâche.
 
-**En attente de l’auteur.** Validation visuelle de U4 et U5 ; tri des
+**En attente de l’auteur.** Validation visuelle de U4, U5 et U22 ; tri des
 propositions déposées le 27 septembre (`docs/propositions-*.md`,
 `docs/proposition-evolutions-canary.md`, `docs/levels/idees-niveaux.md`,
 `docs/levels/propositions-evolution-astra.md`) ; questions ouvertes de
@@ -2336,3 +2338,41 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/u5/liste-844x390.png`, `test-results/u5/liste-1440x900.png`
   (niveaux 1 à 3 ✅, 4 ⭐, 5 🏆, 6 ouvert, 7 à 12 verrouillés). Faut-il masquer
   « Éditer » pour le joueur, ou bloquer l’URL d’un niveau verrouillé ?
+
+### U22 — Atelier créateur de puzzles — fait (validation visuelle attendue) — `32bd5ff`, `403ee84`, `ecdc27f`
+
+- Commits : `feat(domain): ajoute les objets à placer et la solution de référence (U22)`,
+  `feat(application): transforme l’atelier en puzzle et le vérifie par simulation (U22)`,
+  `feat(editor): règle les objets à placer, teste en joueur et vérifie l’export (U22)`.
+- Tests ajoutés : `level-document.test.ts › objets à placer et solution de référence
+  (U22, ADR 0013)` (8) ; codecs fichier et URL (allers-retours atelier et puzzle) ;
+  `authoring-commands.test.ts › réglage « Fixe / À placer »` ;
+  `puzzle-workshop.test.ts` (11) ; `simulation/level-outcome.test.ts` ;
+  `level-export.test.ts`, `LevelExportDialog.test.tsx`, `PuzzleWorkshop.test.tsx` (5) ;
+  `board-renderer.test.ts › pointillé` ; `campaign-draft.test.ts › niveau à solution` ;
+  E2E `puzzle-workshop.spec.ts` et `export.spec.ts` (réécrit).
+- Échec initial constaté : clés `toPlace`/`solution` refusées par le schéma
+  strict ; `setPlacementToPlace is not a function` ; module `./puzzle-workshop`
+  absent ; boutons « Fixe », « À placer », « Tester comme un joueur » introuvables ;
+  `toPlaceIds` indéfini.
+- Tests existants réécrits : export U16 (`level-export.test.ts`,
+  `LevelExportDialog.test.tsx`, `e2e/export.spec.ts`) — l’atelier sans objet à
+  placer est désormais refusé ; `e2e/campaign-draft.spec.ts` — l’export du
+  brouillon du niveau 2 demande un objet à placer au lieu de copier le lien.
+- Fichiers touchés hors périmètre : `LevelResult.tsx` (libellé du bouton de
+  retour), `board-renderer.ts` (contour ; fils non touchés).
+- Écarts et choix de l’agent (option la plus simple, à confirmer) : nom
+  accessible « Jouer le puzzle » (visible « Jouer ») au lieu de « Tester comme
+  un joueur », qui entrait en collision avec les sélecteurs E2E « Tester » ;
+  objet à placer relié par un fil refusé à l’export ; inventaire de l’atelier
+  abandonné à l’export ; objets identiques regroupés en une entrée ; ⭐ = 🏆 =
+  nombre d’objets à placer ; zones existantes conservées, scène entière sinon ;
+  retour de test : historique annuler/rétablir réinitialisé.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Non vérifié : durée de la vérification sur un vieux téléphone (deux
+  simulations synchrones, jusqu’à 20 s simulées chacune) ; gate passée avec lint
+  hors `.claude/` (worktrees d’autres agents).
+- Pour l’auteur : captures `test-results/u22/{390x844,844x390,1440x900}-{1..6}-*.png`
+  (atelier, refus d’export, inspecteur, pointillé, export vérifié, test joueur) ;
+  en-tête téléphone très chargé (titre réduit à « É… M… »).
