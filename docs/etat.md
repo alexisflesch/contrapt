@@ -218,6 +218,9 @@ pendant le travail.
   décidés, mais non implémentés (ADR 0011, 0012). Les métadonnées de défi v2 sont
   utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité du niveau 8 reste
   à compléter avec les coordonnées de sa grille « bascule seule ».
+- **Codec de fichier de niveau** : L22 encode les documents dans l’ordre du schéma
+  et décode avec limite UTF-8, validation stricte et migration v1 → v2. Le codec de
+  partage URL et la route `/shared` (L23–L24) restent à faire.
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
 - **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
@@ -236,8 +239,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après L21 : typecheck, lint,
-formatage, Knip, contenu (14 niveaux embarqués), 556 tests Vitest (47 fichiers),
+`pnpm check` passe le 27 septembre 2026 après L22 : typecheck, lint,
+formatage, Knip, contenu (14 niveaux embarqués), 563 tests Vitest (48 fichiers),
 build et 42 tests Playwright `mobile` (41 réussis, 1 ignoré car C3 est
 spécifique au projet desktop). Le parcours mobile L17b ouvre maintenant
 l’inspecteur compact avant de

@@ -1616,7 +1616,6 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L20 n’ajoute aucune interface visible.
 
-
 ### L21 — Branchement de la progression — fait — `72128cf feat(app): branche la progression de campagne (L21)`
 
 - Tests ajoutés : le hook `useCampaignProgress()` est rendu avec Testing Library
@@ -1649,3 +1648,28 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   tests Vitest (47 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
   1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L21 n’ajoute aucune interface visible.
+
+### L22 — Codec de fichier de niveau — fait — commit dédié L22
+
+- Tests ajoutés : `level-file-codec.test.ts` — JSON indenté et saut de ligne,
+  ordre des clés même depuis un objet désordonné, aller-retour identique du niveau
+  12 avec `challenge` et `wires`, migration v1, limite UTF-8 de 256 Kio avant
+  parsing, JSON invalide, version inconnue et rejet d’un objet hors scène avec
+  issues Zod.
+- Échec initial constaté : la suite ciblée ne pouvait pas charger
+  `level-file-codec`, absent avant l’implémentation.
+- Tests existants modifiés : aucun.
+- Fichiers touchés : `src/infrastructure/level-file/level-file-codec.ts`, son
+  test, `docs/etat.md` et ce journal.
+- Écarts avec la tâche : aucun. La migration v1 est revalidée par le schéma v2 ;
+  son erreur `scene-too-large` devient `invalid-document` sans exception.
+- Mesures qui ne se reproduisent pas : un premier `pnpm check` a expiré au
+  niveau 4 en attendant « Fermer les propriétés » ; sa capture montrait le tiroir
+  replié. Le parcours passe isolément en 7,4 s, puis la gate complète relancée
+  passe. Les 7 tests ciblés du codec passent aussi.
+- Contradictions rencontrées : aucune. La taille est calculée en octets UTF-8 et
+  vérifiée avant `JSON.parse` ; les échecs attendus ont des codes stables.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 563
+  tests Vitest (48 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
+  1 ignoré car C3 est spécifique au projet desktop).
+- Captures : sans objet, L22 n’ajoute aucune interface visible.

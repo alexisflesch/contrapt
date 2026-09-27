@@ -1,0 +1,155 @@
+import { describe, expect, it } from 'vitest';
+
+import type { LevelDocument, LevelDocumentV1 } from '../../domain/level-document';
+import { embeddedLevels } from '../../content/embedded-levels';
+import { decodeLevelFile, encodeLevelFile, MAX_LEVEL_FILE_SIZE_BYTES } from './level-file-codec';
+
+const legacyDocument: LevelDocumentV1 = {
+  schemaVersion: 1,
+  id: 'legacy-level',
+  metadata: { title: 'Niveau historique' },
+  objects: [
+    {
+      id: 'ball-1',
+      type: 'ball',
+      transform: { position: { x: 0, y: 0 }, rotation: 0 },
+      props: {},
+      permissions: { move: false, rotate: false, remove: false },
+    },
+    {
+      id: 'basket-1',
+      type: 'basket',
+      transform: { position: { x: 4, y: 2 }, rotation: 0 },
+      props: {},
+      permissions: { move: false, rotate: false, remove: false },
+    },
+  ],
+  inventory: [],
+  goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+  buildZones: [{ min: { x: 0, y: 0 }, max: { x: 4, y: 2 } }],
+};
+
+const getChallengeAndWiresLevel = () => {
+  const level = embeddedLevels.find(({ id }) => id === 'level-12-le-bon-ordre');
+  if (level === undefined) throw new Error('Le niveau 12 embarqué est absent du test.');
+  return level;
+};
+
+describe('codec de fichier de niveau', () => {
+  it('encode en JSON indenté, avec une nouvelle ligne finale et les clés du schéma dans l’ordre', () => {
+    const document = getChallengeAndWiresLevel();
+
+    const text = encodeLevelFile(document);
+
+    expect(text.endsWith('\n')).toBe(true);
+    expect(text).toBe(`${JSON.stringify(document, null, 2)}\n`);
+    const decoded = decodeLevelFile(text);
+    expect(decoded.status).toBe('ok');
+    if (decoded.status !== 'ok') return;
+    expect(Object.keys(decoded.document)).toEqual([
+      'schemaVersion',
+      'id',
+      'metadata',
+      'objects',
+      'inventory',
+      'goal',
+      'buildZones',
+      'scene',
+      'wires',
+      'challenge',
+    ]);
+
+    const reorderedDocument: LevelDocument = {
+      challenge: document.challenge,
+      wires: document.wires,
+      scene: document.scene,
+      buildZones: document.buildZones,
+      goal: document.goal,
+      inventory: document.inventory,
+      objects: document.objects,
+      metadata: document.metadata,
+      id: document.id,
+      schemaVersion: document.schemaVersion,
+    };
+    expect(encodeLevelFile(reorderedDocument)).toBe(text);
+  });
+
+  it('fait un aller-retour identique d’un niveau embarqué avec challenge et wires', () => {
+    const document = getChallengeAndWiresLevel();
+
+    const result = decodeLevelFile(encodeLevelFile(document));
+
+    expect(result).toEqual({ status: 'ok', document });
+    if (result.status !== 'ok') return;
+    expect(result.document.challenge).toEqual(document.challenge);
+    expect(result.document.wires).toEqual(document.wires);
+  });
+
+  it('valide puis migre un document v1 vers un document v2 utilisable', () => {
+    const result = decodeLevelFile(JSON.stringify(legacyDocument));
+
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.document.schemaVersion).toBe(2);
+    expect(result.document.id).toBe('legacy-level');
+    expect(result.document.scene.min.x).toBeLessThanOrEqual(0);
+    expect(result.document.scene.max.x).toBeGreaterThanOrEqual(4);
+    expect(result.document.wires).toEqual([]);
+  });
+
+  it('refuse le dépassement de taille en octets avant d’essayer le JSON', () => {
+    expect(decodeLevelFile(' '.repeat(MAX_LEVEL_FILE_SIZE_BYTES + 1))).toEqual({
+      status: 'error',
+      code: 'too-large',
+    });
+    expect(decodeLevelFile('é'.repeat(Math.floor(MAX_LEVEL_FILE_SIZE_BYTES / 2) + 1))).toEqual({
+      status: 'error',
+      code: 'too-large',
+    });
+  });
+
+  it('renvoie une erreur contrôlée pour un JSON invalide', () => {
+    expect(decodeLevelFile('{ JSON cassé')).toEqual({
+      status: 'error',
+      code: 'invalid-json',
+    });
+  });
+
+  it('refuse une version de document inconnue', () => {
+    expect(decodeLevelFile('{"schemaVersion":3}')).toEqual({
+      status: 'error',
+      code: 'unsupported-version',
+    });
+  });
+
+  it('refuse un document hors scène avec les problèmes Zod', () => {
+    const document = getChallengeAndWiresLevel();
+    const invalidDocument = {
+      ...document,
+      objects: document.objects.map((object) =>
+        object.type === 'ball'
+          ? {
+              ...object,
+              transform: {
+                ...object.transform,
+                position: { ...object.transform.position, x: document.scene.min.x - 1 },
+              },
+            }
+          : object,
+      ),
+    };
+
+    const result = decodeLevelFile(JSON.stringify(invalidDocument));
+
+    expect(result.status).toBe('error');
+    if (result.status !== 'error') return;
+    expect(result.code).toBe('invalid-document');
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: ['objects', 0, 'transform', 'position', 'x'],
+        }),
+      ]),
+    );
+  });
+});
