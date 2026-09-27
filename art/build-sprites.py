@@ -386,14 +386,14 @@ save(
 # Barrière : poteau fixe et barre qui coulisse dans le poteau. Repère :
 # pixels du poteau, origine au centre du poteau. La barre est exportée
 # entière ; le renderer n'en dessine que la partie sortie du poteau.
-pillar = load("barrier/contrapt_barrier_fixed.png")
+pillar = load("barrier/tinkerbolt_barrier_fixed.png")
 pillar_box = opaque_box(pillar)
 barrier_scale = 0.8 / (pillar_box[2] - pillar_box[0])
 barrier_origin = ((pillar_box[0] + pillar_box[2]) / 2, (pillar_box[1] + pillar_box[3]) / 2)
 BARREL = (90, 495)  # fût du poteau, où la barre rentre
 BAR_CENTER_Y = 300
 BAR_THICKNESS = 0.28
-bar = load("barrier/contrapt_barrier_mobile.png")
+bar = load("barrier/tinkerbolt_barrier_mobile.png")
 bar_box = opaque_box(bar)
 bar_length = BAR_THICKNESS * (bar_box[2] - bar_box[0]) / (bar_box[3] - bar_box[1])
 pillar_sprite = export(pillar, pillar_box, 0.8, (pillar_box[3] - pillar_box[1]) * barrier_scale, "barrier-pillar")

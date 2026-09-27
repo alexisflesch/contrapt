@@ -5,10 +5,10 @@ import { decodeLevelFile } from '../level-file/level-file-codec';
 import { createLocalStorageDraftRepository } from './local-storage-draft-repository';
 import type { DraftRepository } from '../../application/drafts/draft-repository';
 
-const draftsIndexKey = 'contrapt:drafts';
-const backupIndexKey = 'contrapt:backup:drafts';
-const draftKey = (id: string): string => `contrapt:draft:${id}`;
-const backupDraftKey = (id: string): string => `contrapt:backup:draft:${id}`;
+const draftsIndexKey = 'tinkerbolt:drafts';
+const backupIndexKey = 'tinkerbolt:backup:drafts';
+const draftKey = (id: string): string => `tinkerbolt:draft:${id}`;
+const backupDraftKey = (id: string): string => `tinkerbolt:backup:draft:${id}`;
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();

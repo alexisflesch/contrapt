@@ -6,7 +6,7 @@ Date : 2026-09-26
 
 ## Contexte
 
-Le cahier des charges fait de Contrapt! une PWA statique, installable et jouable
+Le cahier des charges fait de TinkerBolt une PWA statique, installable et jouable
 hors ligne. `architecture.md` exige qu'une nouvelle version ne prenne pas le
 contrôle au milieu d'une session d'édition sans prévenir. Rien n'est implémenté.
 
@@ -30,7 +30,7 @@ contrôle au milieu d'une session d'édition sans prévenir. Rien n'est impléme
   « Mettre à jour ». Pendant une simulation ou une manipulation en cours,
   l'invitation attend la fin. Les brouillons étant enregistrés en continu
   (ADR 0011), recharger ne perd rien.
-- **Manifeste** : nom « Contrapt! », `display: standalone`, orientation libre,
+- **Manifeste** : nom « TinkerBolt », `display: standalone`, orientation libre,
   couleurs de la coque, icônes 192, 512 et 512 masquable. Les icônes sont fournies
   ou validées par l'auteur ; en attendant, un visuel provisoire tiré des sprites
   existants est accepté et signalé comme tel.

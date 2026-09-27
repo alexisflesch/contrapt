@@ -1,5 +1,5 @@
 interface:
-  display_name: "Orchestrateur Contrapt!"
+  display_name: "Orchestrateur TinkerBolt"
   short_description: "Découper une tranche, déléguer par modèle, intégrer derrière la gate"
   default_prompt: "Utilise $orchestrate pour découper la tranche demandée, la déléguer et l'intégrer."
 policy:

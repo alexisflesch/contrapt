@@ -216,7 +216,7 @@ const boardCanvasRect: DOMRect = {
   },
 };
 
-describe('coque Contrapt!', () => {
+describe('coque TinkerBolt', () => {
   beforeEach(() => {
     // `BrowserRouter` (ADR 0008) reads the real `window.location`, which
     // jsdom keeps across tests in this file — without this reset, a test
@@ -276,7 +276,7 @@ describe('coque Contrapt!', () => {
     // commandes d’édition libre.
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: 'Contrapt!' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
     expect(screen.getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();

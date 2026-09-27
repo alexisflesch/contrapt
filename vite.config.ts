@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // GitHub Pages serves the site under `/<repository>/`; the deploy workflow sets
 // this variable. Locally, in tests and in Playwright, the app lives at `/`.
-const basePath = process.env.CONTRAPT_BASE_PATH ?? '/';
+const basePath = process.env.TINKERBOLT_BASE_PATH ?? '/';
 const basePathPrefix = basePath === '/' ? '' : basePath.replace(/\/$/, '');
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const routeBasePattern = escapeRegExp(basePathPrefix);
@@ -22,8 +22,8 @@ export default defineConfig({
       injectRegister: false,
       devOptions: { enabled: false },
       manifest: {
-        name: 'Contrapt!',
-        short_name: 'Contrapt!',
+        name: 'TinkerBolt',
+        short_name: 'TinkerBolt',
         lang: 'fr',
         description: 'Construisez, testez et améliorez vos machines mécaniques.',
         start_url: basePath,
@@ -34,19 +34,19 @@ export default defineConfig({
         theme_color: '#101923',
         icons: [
           {
-            src: 'icons/contrapt-192.svg',
+            src: 'icons/tinkerbolt-192.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
             purpose: 'any',
           },
           {
-            src: 'icons/contrapt-512.svg',
+            src: 'icons/tinkerbolt-512.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'any',
           },
           {
-            src: 'icons/contrapt-maskable-512.svg',
+            src: 'icons/tinkerbolt-maskable-512.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'maskable',

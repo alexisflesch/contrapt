@@ -8,7 +8,7 @@ Date : 2026-09-25
 
 De nouveaux assets introduisent un levier à trois positions et un convoyeur. Une
 première note de conception, produite en amont
-([`contrapt_control_wires_v1.md`](../contrapt_control_wires_v1.md), depuis
+([`tinkerbolt_control_wires_v1.md`](../tinkerbolt_control_wires_v1.md), depuis
 réécrite), proposait des liaisons directes contrôleur → dispositif, routées
 automatiquement, avec des ponts graphiques aux croisements. Le principe est
 retenu ; plusieurs moyens proposés contredisaient les décisions en place ou

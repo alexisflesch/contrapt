@@ -1,4 +1,4 @@
-# Propositions de puzzles et d’évolution — Contrapt!
+# Propositions de puzzles et d’évolution — TinkerBolt
 
 Document de réflexion, 27 septembre 2026.
 

@@ -8,8 +8,8 @@ import type {
   ProgressSaveResult,
 } from '../../application/progression/progress-repository';
 
-const PROGRESS_KEY = 'contrapt:progress';
-const PROGRESS_BACKUP_KEY = 'contrapt:backup:progress';
+const PROGRESS_KEY = 'tinkerbolt:progress';
+const PROGRESS_BACKUP_KEY = 'tinkerbolt:backup:progress';
 
 const levelProgressSchema = z
   .strictObject({

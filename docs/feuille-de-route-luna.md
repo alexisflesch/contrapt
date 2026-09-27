@@ -596,7 +596,7 @@ pas ouvert.
 Port `ProgressRepository` dans `src/application/progression/`, adaptateur dans
 `src/infrastructure/storage/` prenant un objet `Storage` injecté. Enveloppe
 `{ kind: 'progress', version: 1, data }` validée par Zod ; valeur invalide
-sauvegardée sous `contrapt:backup:progress` avant toute écriture ; quota dépassé
+sauvegardée sous `tinkerbolt:backup:progress` avant toute écriture ; quota dépassé
 ou stockage indisponible → résultat d’erreur, jamais d’exception.
 
 Tests avec un faux `Storage` en mémoire écrit dans le test (pas de dépendance) :
@@ -691,7 +691,7 @@ Chaque document produit est revalidé par le schéma (déjà le cas via
 #### L26 — Brouillons ●●
 
 Port `DraftRepository` et adaptateur `localStorage` (ADR 0011 : index
-`contrapt:drafts`, un brouillon par clé, documents passés par le codec L22).
+`tinkerbolt:drafts`, un brouillon par clé, documents passés par le codec L22).
 Fonction pure de sauvegarde automatique : enregistrer au plus une fois par
 seconde pendant l’édition et immédiatement au lancement d’un test, horloge
 injectée. Tests comme L20.
@@ -1649,7 +1649,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Fichiers touchés : port `progress-repository.ts`, adaptateur et test dans
   `src/infrastructure/storage/`, `docs/etat.md` et ce journal.
 - Écarts avec la tâche : aucun. Une donnée invalide est copiée sous
-  `contrapt:backup:progress` avant remplacement et la lecture renvoie une
+  `tinkerbolt:backup:progress` avant remplacement et la lecture renvoie une
   progression vide avec avertissement. Une sauvegarde de secours qui échoue
   empêche l’écrasement ; les erreurs de quota et de stockage sont renvoyées comme
   résultats typés.

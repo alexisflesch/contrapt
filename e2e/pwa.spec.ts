@@ -4,7 +4,7 @@ test.use({ serviceWorkers: 'allow' });
 
 test('ouvre le niveau 1 hors ligne après le premier chargement', async ({ page, context }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Contrapt!' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
 
   await expect
     .poll(
@@ -23,6 +23,6 @@ test('ouvre le niveau 1 hors ligne après le premier chargement', async ({ page,
   await context.setOffline(true);
   await page.reload();
 
-  await expect(page.getByRole('heading', { name: 'Contrapt!' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
   await expect(page.getByText(/^Niveau 1\b/)).toBeVisible();
 });

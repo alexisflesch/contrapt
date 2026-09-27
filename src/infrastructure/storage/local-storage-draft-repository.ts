@@ -15,8 +15,8 @@ import {
   MAX_LEVEL_FILE_SIZE_BYTES,
 } from '../level-file/level-file-codec';
 
-const DRAFTS_INDEX_KEY = 'contrapt:drafts';
-const DRAFTS_INDEX_BACKUP_KEY = 'contrapt:backup:drafts';
+const DRAFTS_INDEX_KEY = 'tinkerbolt:drafts';
+const DRAFTS_INDEX_BACKUP_KEY = 'tinkerbolt:backup:drafts';
 const MAX_DRAFT_VALUE_CHARACTERS = MAX_LEVEL_FILE_SIZE_BYTES * 4;
 type DraftRepositoryFailure = Extract<DraftWriteResult, { readonly status: 'error' }>;
 
@@ -59,8 +59,8 @@ const storageError = (error: unknown): DraftRepositoryFailure => ({
       : 'storage-unavailable',
 });
 
-const draftStorageKey = (id: string): string => `contrapt:draft:${id}`;
-const draftBackupKey = (id: string): string => `contrapt:backup:draft:${id}`;
+const draftStorageKey = (id: string): string => `tinkerbolt:draft:${id}`;
+const draftBackupKey = (id: string): string => `tinkerbolt:backup:draft:${id}`;
 
 const parseJson = (text: string): unknown => {
   try {

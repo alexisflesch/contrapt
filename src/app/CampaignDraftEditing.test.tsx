@@ -95,7 +95,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
     expect(stored.status === 'ok' ? stored.document?.metadata.title : null).toBe(
       'Le pont (brouillon)',
     );
-    expect(window.localStorage.getItem('contrapt:draft:level-2-le-pont')).toBeNull();
+    expect(window.localStorage.getItem('tinkerbolt:draft:level-2-le-pont')).toBeNull();
     expect(save).not.toHaveBeenCalled();
     expect(levelTwo).toEqual(pristineLevelTwo);
   });

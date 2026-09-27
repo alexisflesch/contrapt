@@ -143,6 +143,6 @@ qu'il n'a pas été modifié pour consommer les deux calques.
 ## Référence
 
 Visuel de ton et de qualité (pas un contrat littéral, le catalogue réel a
-4 familles) : `/home/aflesch/contrapt/ee99b245-f82e-4090-992b-15305004f8a3.png`.
+4 familles) : `/home/aflesch/tinkerbolt/ee99b245-f82e-4090-992b-15305004f8a3.png`.
 Convention complète des sprites : [ADR 0007](../decisions/0007-world-scale-and-camera.md)
 § Convention de sprite.

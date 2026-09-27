@@ -1,11 +1,11 @@
 ---
 name: orchestrate
-description: Découper une tranche de travail Contrapt! en sous-tâches, déléguer chacune à un agent Codex avec le modèle et l'effort adaptés, puis intégrer les résultats derrière la gate du dépôt. Utiliser quand la demande couvre plusieurs couches, plusieurs fichiers indépendants, ou une tranche entière de docs/backlog.md. Ne pas utiliser pour un changement tenant dans un seul fichier ou une seule couche.
+description: Découper une tranche de travail TinkerBolt en sous-tâches, déléguer chacune à un agent Codex avec le modèle et l'effort adaptés, puis intégrer les résultats derrière la gate du dépôt. Utiliser quand la demande couvre plusieurs couches, plusieurs fichiers indépendants, ou une tranche entière de docs/backlog.md. Ne pas utiliser pour un changement tenant dans un seul fichier ou une seule couche.
 metadata:
-  short-description: Déléguer une tranche Contrapt! à des agents Codex, un modèle par job
+  short-description: Déléguer une tranche TinkerBolt à des agents Codex, un modèle par job
 ---
 
-# Orchestration Contrapt!
+# Orchestration TinkerBolt
 
 Tu ne codes pas. Tu découpes, tu délègues, tu vérifies, tu intègres.
 
@@ -59,10 +59,10 @@ Lire `references/routing.md`. Règles qui ne se négocient pas :
 Une sous-tâche par processus, en fond, worktree dédié dès qu'il y a parallélisme.
 
 ```bash
-git worktree add ../contrapt-<tache> -b <tache>
+git worktree add ../tinkerbolt-<tache> -b <tache>
 
 codex exec \
-  --cd ../contrapt-<tache> \
+  --cd ../tinkerbolt-<tache> \
   -m <modèle> \
   -c model_reasoning_effort=<effort> \
   --output-last-message /tmp/<tache>.report.md \

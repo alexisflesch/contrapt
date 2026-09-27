@@ -32,7 +32,7 @@ jobs:
         env:
           # Le site est servi sous /<dépôt>/ : Vite préfixe les assets et le
           # routeur prend ce chemin comme base (vite.config.ts, App.tsx).
-          CONTRAPT_BASE_PATH: /${{ github.event.repository.name }}/
+          TINKERBOLT_BASE_PATH: /${{ github.event.repository.name }}/
       # Pages ne réécrit pas les URL : une route profonde (/levels/…/play,
       # /bench) rechargée tombe sur 404.html, qui est l'application elle-même.
       - run: cp dist/index.html dist/404.html

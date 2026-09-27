@@ -368,11 +368,11 @@ describe('chemins des assets publics', () => {
     expect(publicAssetUrl('/assets/sprites/ball-base@2x.png', '/')).toBe(
       '/assets/sprites/ball-base@2x.png',
     );
-    expect(publicAssetUrl('/assets/sprites/ball-base@2x.png', '/contrapt/')).toBe(
-      '/contrapt/assets/sprites/ball-base@2x.png',
+    expect(publicAssetUrl('/assets/sprites/ball-base@2x.png', '/tinkerbolt/')).toBe(
+      '/tinkerbolt/assets/sprites/ball-base@2x.png',
     );
-    expect(publicAssetUrl('/assets/sprites/thumbs/ball.png', '/contrapt')).toBe(
-      '/contrapt/assets/sprites/thumbs/ball.png',
+    expect(publicAssetUrl('/assets/sprites/thumbs/ball.png', '/tinkerbolt')).toBe(
+      '/tinkerbolt/assets/sprites/thumbs/ball.png',
     );
   });
 });

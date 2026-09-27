@@ -1,4 +1,4 @@
-# État du dépôt — Contrapt!
+# État du dépôt — TinkerBolt
 
 Dernière mise à jour : 27 septembre 2026.
 
@@ -150,7 +150,7 @@ pendant le travail.
 ### Déploiement et mesure
 
 - Déploiement GitHub Pages par `.github/workflows/deploy-pages.yml` (push sur
-  `main` ou lancement manuel), sous le sous-chemin `/contrapt/` (ADR 0008,
+  `main` ou lancement manuel), sous le sous-chemin `/tinkerbolt/` (ADR 0008,
   amendement). Build vérifié localement sous ce sous-chemin : routes profondes,
   sprites et fonds chargés sans erreur.
 - Page de mesure `/bench` (porte de l'ADR 0002) : scène dense de 31 corps
@@ -275,8 +275,8 @@ pendant le travail.
   bornée ; L24 valide `location.hash`, puis ouvre le document en mode joueur ou
   affiche une erreur avec un lien vers la liste.
 - **Brouillons L26** : `DraftRepository` et son adaptateur `localStorage` stockent
-  un document par identifiant sous `contrapt:draft:<id>`, avec l’index
-  `contrapt:drafts`. Les enveloppes versionnées sont validées, les documents
+  un document par identifiant sous `tinkerbolt:draft:<id>`, avec l’index
+  `tinkerbolt:drafts`. Les enveloppes versionnées sont validées, les documents
   passent par le codec de fichier L22, et les valeurs corrompues sont sauvegardées
   avant remplacement. La fonction pure `decideDraftAutosave` limite les essais
   d’enregistrement à une fois par seconde pendant l’édition et autorise un

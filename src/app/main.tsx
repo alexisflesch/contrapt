@@ -7,7 +7,7 @@ import '../ui/styles.css';
 const rootElement = document.getElementById('root');
 
 if (rootElement === null) {
-  throw new Error('Le point de montage de Contrapt! est introuvable.');
+  throw new Error('Le point de montage de TinkerBolt est introuvable.');
 }
 
 createRoot(rootElement).render(

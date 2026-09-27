@@ -9,13 +9,13 @@ const openWorkshopFromMenu = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: 'Atelier de construction' }).click();
 };
 
-test('affiche la coque Contrapt! sur un écran mobile, prête à jouer le niveau 1', async ({
+test('affiche la coque TinkerBolt sur un écran mobile, prête à jouer le niveau 1', async ({
   page,
 }) => {
   await page.goto('/');
 
-  await expect(page).toHaveTitle('Contrapt!');
-  await expect(page.getByRole('heading', { name: 'Contrapt!' })).toBeVisible();
+  await expect(page).toHaveTitle('TinkerBolt');
+  await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
   await expect(page.getByText('Niveau 1 · Prolonger la pente')).toBeVisible();
   await expect(page.getByText('Mode joueur')).toBeVisible();
   const board = page.getByRole('region', { name: 'Plateau de jeu' });

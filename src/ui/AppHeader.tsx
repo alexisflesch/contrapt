@@ -26,7 +26,7 @@ export function AppHeader({ title, subtitle, action }: AppHeaderProps) {
         <span className="brand-mark" aria-hidden="true">
           +
         </span>
-        <h1 className="brand-name">Contrapt!</h1>
+        <h1 className="brand-name">TinkerBolt</h1>
       </div>
       <p className="level-label">
         <span className="level-title">{title}</span>

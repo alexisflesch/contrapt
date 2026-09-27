@@ -41,7 +41,7 @@ export const spriteAssetsForFamily = (family: SpriteFamily): readonly SpriteAsse
   spriteAssetsByFamily[family];
 
 /**
- * A `public/` path under the deployment's base path (`/` locally, `/contrapt/`
+ * A `public/` path under the deployment's base path (`/` locally, `/tinkerbolt/`
  * on GitHub Pages). Asset paths stay absolute from the site root on purpose:
  * a relative path would break under nested routes (ADR 0008).
  */

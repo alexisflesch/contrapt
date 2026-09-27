@@ -1,6 +1,6 @@
 # Concevoir un niveau
 
-Ce document suffit pour concevoir un niveau de Contrapt! sans lire le reste du
+Ce document suffit pour concevoir un niveau de TinkerBolt sans lire le reste du
 dépôt. Il fait autorité sur l'**intention** de conception. Les valeurs chiffrées
 viennent du code (`src/domain/family-geometry.ts`,
 `src/simulation/simulation-session.ts`, `src/domain/level-document.ts`) : en

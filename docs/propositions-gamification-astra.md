@@ -1,4 +1,4 @@
-# Gamification de Contrapt! — analyse et propositions Astra
+# Gamification de TinkerBolt — analyse et propositions Astra
 
 27 septembre 2026 · Document de réflexion produit.
 
@@ -347,7 +347,7 @@ avec une indication claire de ce qu’elle révèle.
 Pour une invitation au jeu en général, proposer quelques puzzles particulièrement
 lisibles et représentatifs, choisis éditorialement. Le puzzle le plus difficile
 que je viens de résoudre n’est pas forcément la meilleure première expérience
-pour quelqu’un qui découvre Contrapt!.
+pour quelqu’un qui découvre TinkerBolt.
 
 ### Une carte partageable qui montre pourquoi c’est intéressant
 
@@ -561,4 +561,4 @@ une courte peut correspondre à une excellente expérience complète.
 
 La prochaine étape utile serait un petit parcours jouable qui relie **résoudre,
 conserver et faire essayer**, avec quelques vrais bons puzzles. C’est là que l’on
-pourra vérifier si Contrapt! donne envie d’enchaîner, de revenir et d’en parler.
+pourra vérifier si TinkerBolt donne envie d’enchaîner, de revenir et d’en parler.

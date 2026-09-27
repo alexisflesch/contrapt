@@ -4,7 +4,7 @@ Statut : accepté
 
 ## Décision
 
-Le jeu, nommé **Contrapt!**, est une réinterprétation moderne et originale du
+Le jeu, nommé **TinkerBolt**, est une réinterprétation moderne et originale du
 puzzle mécanique à réaction en chaîne. Il ne cherche pas la fidélité à un catalogue
 ou à des mécanismes historiques.
 

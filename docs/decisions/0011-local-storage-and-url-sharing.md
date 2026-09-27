@@ -29,13 +29,13 @@ La persistance locale utilise `localStorage`, pas IndexedDB.
 
 Règles :
 
-- clés préfixées `contrapt:` (`contrapt:progress`, `contrapt:preferences`,
-  `contrapt:drafts` pour l'index, `contrapt:draft:<id>` par brouillon) ;
+- clés préfixées `tinkerbolt:` (`tinkerbolt:progress`, `tinkerbolt:preferences`,
+  `tinkerbolt:drafts` pour l'index, `tinkerbolt:draft:<id>` par brouillon) ;
 - chaque valeur est une enveloppe JSON `{ "kind": "...", "version": 1, "data": ... }`
   validée par Zod à la lecture ; les documents de niveau d'un brouillon passent
   par le codec de fichier (migrations incluses) ;
 - une valeur illisible ou invalide n'est **jamais écrasée silencieusement** : elle
-  est copiée sous `contrapt:backup:<clé>` avant la première écriture, et la
+  est copiée sous `tinkerbolt:backup:<clé>` avant la première écriture, et la
   lecture renvoie un état vide accompagné d'un avertissement ;
 - une erreur de quota ou un stockage indisponible (navigation privée, stockage
   bloqué) est un résultat d'erreur, jamais une exception qui remonte à l'écran ;

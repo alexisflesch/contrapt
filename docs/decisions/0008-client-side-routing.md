@@ -94,7 +94,7 @@ bibliothèque.
   mesure de performance de la porte de l'ADR 0002 ; `/shared` est prévue par
   l'ADR 0011.
 - **Chemin de base.** L'application peut être servie sous un sous-chemin
-  (GitHub Pages : `/contrapt/`). Le build lit `CONTRAPT_BASE_PATH` (défaut `/`) ;
+  (GitHub Pages : `/tinkerbolt/`). Le build lit `TINKERBOLT_BASE_PATH` (défaut `/`) ;
   Vite préfixe alors JS, CSS et `url()` des feuilles de style, `BrowserRouter`
   reçoit `basename={import.meta.env.BASE_URL}`, et les chemins d'assets publics
   passent par `publicAssetUrl` (`src/presentation/sprite-loader.ts`).

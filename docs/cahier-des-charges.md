@@ -1,4 +1,4 @@
-# Cahier des charges — Contrapt!
+# Cahier des charges — TinkerBolt
 
 Statut : cadrage consolidé, version 0.2.
 
@@ -10,7 +10,7 @@ divergence.
 
 ## Vision
 
-**Contrapt!** est un jeu original de puzzles mécaniques 2D, moderne et
+**TinkerBolt** est un jeu original de puzzles mécaniques 2D, moderne et
 mobile-first. Le joueur place un petit nombre d’objets dans une scène, lance la
 simulation et observe si sa construction atteint un objectif clairement exprimé.
 
@@ -19,7 +19,7 @@ le catalogue, les niveaux, les graphismes ou les mécanismes d’un jeu existant
 doit commencer simplement et accepter de nouvelles familles d’objets sans remise à
 plat du format de niveau, du domaine ou de l’éditeur.
 
-Contrapt! repose sur un **modèle de jeu unique** : placer ou configurer des
+TinkerBolt repose sur un **modèle de jeu unique** : placer ou configurer des
 éléments, lancer une simulation, observer le résultat, puis corriger la
 construction. Il n’existe pas de « mode balle », de « mode souris » ou de règle de
 victoire réservée à une famille. La variété des niveaux naît des comportements

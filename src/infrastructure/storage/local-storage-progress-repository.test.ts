@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { createLocalStorageProgressRepository } from './local-storage-progress-repository';
 
-const progressKey = 'contrapt:progress';
-const backupKey = 'contrapt:backup:progress';
+const progressKey = 'tinkerbolt:progress';
+const backupKey = 'tinkerbolt:backup:progress';
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();

@@ -17,7 +17,7 @@ const tapWorldPoint = async (page: Page, x: number, y: number): Promise<void> =>
 
 const storedRampX = (page: Page): Promise<number | null> =>
   page.evaluate(() => {
-    const raw = localStorage.getItem('contrapt:draft:level-2-le-pont-brouillon');
+    const raw = localStorage.getItem('tinkerbolt:draft:level-2-le-pont-brouillon');
     if (raw === null) return null;
     // The draft envelope stores the L22 file as an escaped JSON string.
     const match = /\\"id\\": \\"ramp\\"[\s\S]*?\\"x\\": ([0-9.]+)/u.exec(raw);
@@ -61,10 +61,10 @@ test('édite une copie du niveau 2 au toucher, la conserve et l’exporte (U17)'
 
   await page.goto('/levels/level-2-le-pont/play');
   await expect(page.getByText('Niveau 2 · Le pont')).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem('contrapt:progress'))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem('tinkerbolt:progress'))).toBeNull();
 });
 
-const draftKey = 'contrapt:draft:level-2-le-pont-brouillon';
+const draftKey = 'tinkerbolt:draft:level-2-le-pont-brouillon';
 
 /** Reads the stored draft back through the draft repository, as the app does. */
 const storedDraft = async (page: Page) => {

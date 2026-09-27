@@ -144,7 +144,7 @@ describe('boîte « Exporter » de l’atelier (U16)', () => {
 
     const createObjectURL = vi.fn((blob: Blob) => {
       void blob;
-      return 'blob:contrapt';
+      return 'blob:tinkerbolt';
     });
     vi.stubGlobal(
       'URL',

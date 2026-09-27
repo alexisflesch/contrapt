@@ -6,7 +6,7 @@ Date : 2026-09-01
 
 ## Contexte
 
-Contrapt! doit pouvoir partager les mêmes niveaux entre campagne, résolution et
+TinkerBolt doit pouvoir partager les mêmes niveaux entre campagne, résolution et
 création sans sérialiser un monde physique ou des détails de rendu. Les premiers
 niveaux ne requièrent que les quatre familles initiales, un inventaire, une zone de
 construction et un objectif de panier. Un schéma plus large introduirait des

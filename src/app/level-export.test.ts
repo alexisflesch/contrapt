@@ -41,10 +41,10 @@ describe('export d’un niveau (U16)', () => {
     const link = await createShareLink(
       embeddedWorkshopDocument,
       'https://exemple.test',
-      '/contrapt/',
+      '/tinkerbolt/',
     );
 
-    expect(link.startsWith('https://exemple.test/contrapt/shared#level=1.')).toBe(true);
+    expect(link.startsWith('https://exemple.test/tinkerbolt/shared#level=1.')).toBe(true);
     const fragment = new URL(link).hash;
     await expect(decodeShareFragment(fragment)).resolves.toEqual({
       status: 'ok',

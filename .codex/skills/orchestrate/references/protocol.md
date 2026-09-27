@@ -86,9 +86,9 @@ signal qu'un rapport complet non prouvé.
 Un worktree par sous-tâche dès qu'il y a plus d'un agent en vol :
 
 ```bash
-git worktree add ../contrapt-<tache> -b <tache>
+git worktree add ../tinkerbolt-<tache> -b <tache>
 # …
-git worktree remove ../contrapt-<tache>
+git worktree remove ../tinkerbolt-<tache>
 ```
 
 `node_modules` n'est pas partagé entre worktrees : prévoir `pnpm install` dans

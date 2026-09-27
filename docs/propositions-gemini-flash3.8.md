@@ -1,6 +1,6 @@
 # Propositions d'évolutions — Niveaux, Assets et Objectifs (Gemini)
 
-Document de réflexion et de conception, inspiré de *The Incredible Machine* (TIM) et fidèle à l'esprit de *Contrapt!* : **un atelier de bricolage physique, déterministe, lisible et expressif**.
+Document de réflexion et de conception, inspiré de *The Incredible Machine* (TIM) et fidèle à l'esprit de *TinkerBolt* : **un atelier de bricolage physique, déterministe, lisible et expressif**.
 
 Ce document s'appuie exclusivement sur les règles et constats de `conception-niveaux.md`, en dialogue avec les propositions d'`evolution-astra.md` et de `proposition-evolutions-canary.md`.
 
@@ -72,7 +72,7 @@ Pour enrichir le vocabulaire sans transformer le jeu en simulateur électronique
 
 ## 3. Nouveaux Types d'Objectifs
 
-Actuellement, Contrapt! a une seule condition de victoire : *amener la balle rouge dans le panier et y rester 0,5 s*. Pour ouvrir le design de niveau sans dénaturer le moteur, voici 4 nouveaux types d'objectifs stimulants :
+Actuellement, TinkerBolt a une seule condition de victoire : *amener la balle rouge dans le panier et y rester 0,5 s*. Pour ouvrir le design de niveau sans dénaturer le moteur, voici 4 nouveaux types d'objectifs stimulants :
 
 ### Objectif 1 : "La Machine à Éteindre" (Désactivation / Interruption)
 - **Concept** : Le niveau commence avec une machine folle qui tourne à plein régime (ventilateur qui bloque un passage, barrières battantes, convoyeur rapide). L'objectif est d'**amener la machine à l'arrêt complet**.

@@ -28,7 +28,7 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/architecture.md`                                    | 223     | couches, dépendances, états distincts, modèle d'objet            |
 | `docs/qualite.md`                                         | 149     | stratégie de test, niveaux de test, gates                        |
 | `docs/catalogue-initial.md`                               | 239     | contrats des onze familles d'objets                              |
-| `docs/contrapt_control_wires_v1.md`                       | 125     | spécification fonctionnelle des fils de commande                 |
+| `docs/tinkerbolt_control_wires_v1.md`                       | 125     | spécification fonctionnelle des fils de commande                 |
 | `docs/mobile-editor-interactions.md`                      | 504     | gestes, états d'interface, scénarios d'acceptation tactiles      |
 | `docs/levels/initial-progression.md`                      | 439     | campagne : 14 niveaux, géométries mesurées                       |
 | `docs/levels/conception-niveaux.md`                       | 156     | concevoir un niveau : règles du jeu, objets, physique, méthode   |
@@ -73,7 +73,7 @@ Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans rai
 | Conformité physique, arbitrage moteur          | ADR 0002, `catalogue-initial.md` § Tests contractuels                                                             | `test/conformance/`                            |
 | Rendu du plateau, cadrage, projection          | ADR 0007, ADR 0006, `architecture.md` § Rendu et interface                                                        | `src/presentation/`                            |
 | Assets, sprites, export depuis `art/`          | ADR 0007 § Amendement du 25 septembre 2026, `art/build-sprites.py`                                                | `art/`, `public/assets/`                       |
-| Fils de commande, levier, convoyeur            | ADR 0009, `contrapt_control_wires_v1.md`, `catalogue-initial.md` § Levier, § Convoyeur                            | `src/domain/`, `src/presentation/`             |
+| Fils de commande, levier, convoyeur            | ADR 0009, `tinkerbolt_control_wires_v1.md`, `catalogue-initial.md` § Levier, § Convoyeur                            | `src/domain/`, `src/presentation/`             |
 | Interface tactile, tiroir, gestes              | `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile                                     | `src/ui/`, `src/app/`                          |
 | Routage, navigation, schéma d'URL              | ADR 0008                                                                                                          | `src/app/`                                     |
 | Conception d'un nouveau niveau                 | `levels/conception-niveaux.md` (se suffit à lui-même)                                                             | `src/content/levels/`                          |

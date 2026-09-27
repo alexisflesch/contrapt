@@ -1,4 +1,4 @@
-# Contrapt! — Fils de commande
+# TinkerBolt — Fils de commande
 
 Statut : spécification fonctionnelle de la v1, conforme à l'implémentation du
 26 septembre 2026 (bouton, ventilateur, barrière ajoutés). Les décisions et leurs raisons sont dans
