@@ -1736,7 +1736,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   toucher ; le follow-up U13 sur la mise en évidence des zones de placement reste
   différé comme demandé.
 
-### L25 — Commandes d’auteur — fait — commit dédié L25
+### L25 — Commandes d’auteur — fait — `d222706 feat(application): ajoute les commandes auteur (L25)`
 
 - Tests ajoutés : `authoring-commands.test.ts` — 36 tests couvrent chaque
   commande, son cycle annuler/rétablir, les refus dans le contexte joueur,
