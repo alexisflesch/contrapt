@@ -1592,7 +1592,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L19 n’ajoute aucune interface visible.
 
-### L20 — Dépôt de progression local — fait — commit dédié L20
+### L20 — Dépôt de progression local — fait — `f930b72 feat(storage): persiste la progression locale (L20)`
 
 - Tests ajoutés : `local-storage-progress-repository.test.ts` — absence de valeur,
   aller-retour d’enveloppe, JSON invalide, enveloppes et données inconnues,
