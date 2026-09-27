@@ -6,7 +6,7 @@ dans l’ordre. Ces tâches d’interface sont **autorisées par l’auteur** (l
 de § 6 ne s’y applique pas) ; captures aux trois formats dans le journal, mais
 l’auteur valide plus tard, sans bloquer l’avancée.
 
-**Fait.** Toute la logique L1 à L28 ; P1 ; interface U4 à U6, U13 à U25, U4b
+**Fait.** Toute la logique L1 à L28 ; P1 ; interface U4 à U6, U13 à U26, U4b
 (modale de victoire), U5b (niveaux verrouillés, déblocage sous `pnpm dev`),
 U14b (fils en équerre). Rendus visuels acceptés en l’état par l’auteur.
 
@@ -2479,3 +2479,29 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : captures `test-results/u25/fil-{390x844,844x390,1440x900}.png` ;
   les boutons « Fixe / À placer » apparaissent sous chaque fil connecté dans
   l’inspecteur auteur.
+
+### Réparation E2E — transition du catalogue — fait — `test(e2e): synchronise la fermeture du catalogue (U21)`
+
+- Cause : le catalogue était replié par l’état React, mais sa transition CSS de
+  hauteur continuait à recouvrir le plateau ; un toucher immédiatement suivant
+  pouvait donc être absorbé par le tiroir.
+- Correctif : les parcours U15 et niveau 9 attendent la classe repliée puis la
+  hauteur CSS cible du tiroir avant de toucher le plateau ; le niveau 9 vérifie
+  aussi que l’inspecteur du convoyeur est monté.
+- Vérification ciblée : U15 et niveau 9 passent chacun 5 fois avec
+  `--repeat-each=5`.
+- Fichiers touchés : `e2e/editor-interactions.spec.ts` et
+  `e2e/levels.spec.ts`. Aucun code de production modifié.
+
+### U26 — Catalogue auteur dans un brouillon de campagne — fait — `test(editor): couvre le catalogue auteur des brouillons (U26)`
+
+- Reproduction : le défaut signalé n’est pas reproduit. Le niveau 1 embarqué
+  contient bien une poutre dans son inventaire ; `hasInventory` de
+  `BoardShell` vaut donc `true`, et le brouillon conserve ce catalogue.
+- Test ajouté : `CampaignDraftEditing.test.tsx` ouvre « Éditer le niveau 1 »,
+  ouvre le tiroir et vérifie les cartes auteur « Poutre moyenne » et
+  « Convoyeur ».
+- Production : aucun changement nécessaire.
+- Écarts : aucun ; la note obsolète sur un inventaire vide a été retirée de
+  `docs/etat.md`.
+- Non vérifié : aucune capture spécifique, le comportement était déjà livré.

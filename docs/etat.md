@@ -83,6 +83,8 @@ pendant le travail.
   placer », ainsi que ceux qui touchent un objet à placer, passent dans
   l’inventaire `wire` et la solution de référence. L’inspecteur auteur permet
   de choisir « Fixe / À placer » pour chaque fil connecté.
+- U26 : le brouillon du niveau 1 conserve son inventaire de poutre et affiche le
+  catalogue auteur complet ; une non-régression applicative couvre ce parcours.
 
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
@@ -336,9 +338,9 @@ pendant le travail.
 - **Inspecteur compact et sélection** : quand l’inspecteur compact est fermé
   et qu’un objet reste sélectionné, toucher un autre objet ne le rouvre pas
   (il faut « Ouvrir les propriétés ») ; constaté pendant U21, préexistant.
-- **E2E instable** : `e2e/levels.spec.ts` « niveau 9 : poser le convoyeur… »
-  échoue par intermittence (« Fermer les propriétés » introuvable), y compris
-  sur le commit précédent U21.
+- **E2E du catalogue** : la transition de hauteur du tiroir pouvait encore
+  recouvrir le plateau après sa fermeture logique ; les parcours U15 et niveau 9
+  attendent désormais sa hauteur repliée avant le toucher suivant.
 - **Retest du Xiaomi après L2c** : le vieux téléphone avait exigé un rechargement
   de `/bench/play`. Le chargeur retente maintenant un asset en échec lors des
   rendus suivants, au plus trois fois ; le comportement doit encore être vérifié
@@ -355,8 +357,7 @@ pendant le travail.
 - **Atelier U22/U25** : revenir de « Jouer le puzzle » remonte l’atelier sur son
   dernier document, l’historique annuler/rétablir repart de là ; les fils à
   placer sont exportables et rouverts avec leur marquage ; le brouillon du
-  niveau 1 (inventaire vide) n’affiche pas le catalogue auteur (préexistant,
-  `hasInventory` de `BoardShell`).
+  niveau 1 conserve son inventaire et son catalogue auteur (U26).
 - **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
   brouillon créé, ni de lister ou supprimer les brouillons dans l’interface.
 - `format:check` ne couvre pas le Markdown.
@@ -370,8 +371,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` après les correctifs U21, U23, U24 et U25 (27 septembre 2026) :
-typecheck, lint, formatage, Knip, contenu, 796 tests Vitest (66 fichiers), build
+`pnpm check` après U26 et la réparation E2E du catalogue (27 septembre 2026) :
+typecheck, lint, formatage, Knip, contenu, 797 tests Vitest (66 fichiers), build
 et 56 tests Playwright `mobile` (55 réussis, 1 ignoré).
 
 `pnpm check` après U5 (27 septembre 2026) : passe d’une traite — typecheck,

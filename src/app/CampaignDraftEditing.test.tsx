@@ -100,6 +100,19 @@ describe('éditer un niveau de la campagne (U17)', () => {
     expect(levelTwo).toEqual(pristineLevelTwo);
   });
 
+  it('affiche le catalogue auteur dans le brouillon du niveau 1 (U26)', () => {
+    window.history.replaceState(null, '', '/levels');
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 1' }));
+
+    const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
+    expect(drawer).toBeVisible();
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Ouvrir le catalogue' }));
+    expect(within(drawer).getByRole('button', { name: 'Poutre moyenne' })).toBeVisible();
+    expect(within(drawer).getByRole('button', { name: 'Convoyeur' })).toBeVisible();
+  });
+
   it('enregistre les ajustements de l’auteur dans le brouillon, jamais dans le niveau', () => {
     window.history.replaceState(null, '', '/levels');
     render(<App />);
