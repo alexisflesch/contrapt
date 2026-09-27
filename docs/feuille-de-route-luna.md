@@ -1675,7 +1675,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Captures : sans objet, L22 n’ajoute aucune interface visible.
 
 
-### L23 — Codec de partage par URL — fait — commit dédié L23
+### L23 — Codec de partage par URL — fait — `729cf21 feat(storage): ajoute le codec de partage URL (L23)`
 
 - Tests ajoutés : `level-share-codec.test.ts` — aller-retour du niveau 12,
   CRC-32 IEEE de référence, longueur maximale, version 2, taille annoncée trop
