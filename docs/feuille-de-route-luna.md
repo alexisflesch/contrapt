@@ -1617,7 +1617,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Captures : sans objet, L20 n’ajoute aucune interface visible.
 
 
-### L21 — Branchement de la progression — fait — commit dédié L21
+### L21 — Branchement de la progression — fait — `72128cf feat(app): branche la progression de campagne (L21)`
 
 - Tests ajoutés : le hook `useCampaignProgress()` est rendu avec Testing Library
   et un dépôt injecté ; les déblocages, le palier et l’indice sont vérifiés, ainsi
