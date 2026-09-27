@@ -20,6 +20,7 @@ import { Dialog } from '../ui/Dialog';
 import { SimulationControls } from '../ui/SimulationControls';
 import { useBoardCamera } from './use-board-camera';
 import { useBoardPointers } from './use-board-pointers';
+import { LevelExportDialog } from './LevelExportDialog';
 import { useWiringTool } from './use-wiring-tool';
 import { useEditorSession } from './use-editor-session';
 import { useIsSideLayout } from './use-side-layout';
@@ -90,6 +91,7 @@ export function BoardShell({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   // B1 (plan-remise-en-jeu.md § 4, `initial-progression.md` § Niveau 1):
   // level 1 declares `inventory: []`, so the catalogue drawer must not
@@ -123,25 +125,46 @@ export function BoardShell({
       subtitle={subtitle}
       variant="board"
       headerAction={
-        // The objective is reachable on demand rather than permanently on
-        // screen (`mobile-editor-interactions.md` § Organisation de l'écran:
-        // « un accès à l'objectif »), so the board keeps all remaining space.
-        <button
-          className="icon-button objective-button"
-          type="button"
-          aria-label="Voir l’objectif"
-          aria-haspopup="dialog"
-          onClick={() => {
-            setIsObjectiveOpen(true);
-          }}
-        >
-          <span className="objective-button-glyph" aria-hidden="true">
-            ?
-          </span>
-          <span className="objective-button-label" aria-hidden="true">
-            Objectif
-          </span>
-        </button>
+        <>
+          {mode === 'creation' && (
+            // U16: exporting is an author command, absent from player screens.
+            <button
+              className="icon-button objective-button export-button"
+              type="button"
+              aria-label="Exporter le niveau"
+              aria-haspopup="dialog"
+              onClick={() => {
+                setIsExportOpen(true);
+              }}
+            >
+              <span className="objective-button-glyph" aria-hidden="true">
+                ⤴
+              </span>
+              <span className="objective-button-label" aria-hidden="true">
+                Exporter
+              </span>
+            </button>
+          )}
+          {/* The objective is reachable on demand rather than permanently on
+          screen (`mobile-editor-interactions.md` § Organisation de l'écran:
+          « un accès à l'objectif »), so the board keeps all remaining space. */}
+          <button
+            className="icon-button objective-button"
+            type="button"
+            aria-label="Voir l’objectif"
+            aria-haspopup="dialog"
+            onClick={() => {
+              setIsObjectiveOpen(true);
+            }}
+          >
+            <span className="objective-button-glyph" aria-hidden="true">
+              ?
+            </span>
+            <span className="objective-button-label" aria-hidden="true">
+              Objectif
+            </span>
+          </button>
+        </>
       }
     >
       {hasInventory && (
@@ -244,6 +267,16 @@ export function BoardShell({
         >
           <p className="dialog-text">Faire entrer la balle dans le panier</p>
         </Dialog>
+      )}
+      {isExportOpen && (
+        <LevelExportDialog
+          // The committed history state is the author's document: a running
+          // simulation works on its own snapshot and a gesture on a preview.
+          document={session.history.state.document}
+          onClose={() => {
+            setIsExportOpen(false);
+          }}
+        />
       )}
     </AppFrame>
   );

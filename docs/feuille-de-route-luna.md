@@ -1939,3 +1939,30 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `docs/etat.md`.
 - Captures : `test-results/u18/` (niveau partagé avec une balle rouge et une
   bleue, construction et simulation, trois formats).
+
+### U16 — Exporter depuis l’éditeur — fait — `feat(editor): exporte et partage le niveau depuis l'atelier (U16)`
+
+- Comportement : en mode auteur seulement, « Exporter » (en-tête, icône seule sur
+  téléphone) ouvre un `Dialog` : « Télécharger le fichier » (`<id>.json`, codec
+  L22) et « Copier le lien de partage » (`/shared#level=…` sous le chemin de base,
+  codec L23), avec « Lien copié » ou, si le presse-papiers manque ou refuse, le
+  lien dans un champ en lecture seule. Le document exporté est
+  `session.history.state` (jamais l’instantané de simulation ni l’aperçu d’un
+  geste). Un document refusé par `levelDocumentSchema` affiche les messages du
+  schéma au lieu d’exporter.
+- Tests ajoutés : `src/app/level-export.test.ts` (4), `LevelExportDialog.test.tsx`
+  (6 : refus expliqué, téléchargement, copie, deux replis, bouton absent en mode
+  joueur), `e2e/export.spec.ts` (mobile : fichier téléchargé décodé, lien copié
+  puis ouvert).
+- Échec initial constaté : module `./level-export` introuvable, puis « Unable to
+  find … button "Exporter le niveau" » avant le branchement dans `BoardShell`.
+- Tests existants réécrits : aucun.
+- Écarts : aucun import de fichier (hors tâche). Le document est exporté tel
+  quel, inventaire restant compris (voir `etat.md` § Dettes).
+- Vérification : `pnpm check` passe (658 tests Vitest, 56 fichiers ; 47 E2E
+  mobiles, 46 réussis, 1 ignoré). Une gate intermédiaire a expiré sur le parcours
+  tactile du niveau 12 (Vitest) puis du niveau 3 (E2E) ; ils passent seuls.
+- Captures : hors dépôt, `…/scratchpad/captures/u16/` (atelier, boîte, lien
+  copié, repli du lien ; 390 × 844, 844 × 390, 1440 × 900).
+- Pour l’auteur : exporter l’atelier libre exporte aussi son inventaire de 99
+  par famille ; l’édition de l’inventaire relève de U9.

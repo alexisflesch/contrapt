@@ -1113,6 +1113,44 @@ select:focus-visible {
   line-height: 1.4;
 }
 
+/* Export (U16) : raisons d'un refus, retour de copie, lien de repli. */
+
+.export-reasons {
+  padding-left: var(--space-4);
+  font-size: var(--text-s);
+  line-height: 1.4;
+}
+
+.export-status {
+  min-height: 1.4em;
+  font-size: var(--text-s);
+  font-weight: 700;
+}
+
+.export-link {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-s);
+  font-weight: 700;
+}
+
+.export-link-field {
+  width: 100%;
+  padding: var(--space-2);
+  border: 2px solid var(--night-950);
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-weight: 400;
+  min-height: 6.5em;
+  color: var(--ink);
+  background: var(--panel-bg);
+  color-scheme: light;
+  word-break: break-all;
+  resize: none;
+}
+
 /* 6h. Catalogue */
 
 .object-drawer {

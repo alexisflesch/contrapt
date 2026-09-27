@@ -103,6 +103,12 @@ pendant le travail.
   dialogue à la demande ; bandeau de résultat dans un emplacement réservé.
 - Atelier libre `src/content/levels/workshop.json` (scène 16 × 9, inventaire de
   99 par famille, contexte auteur).
+- Export U16 : en mode auteur, le bouton « Exporter » de l’en-tête ouvre une
+  boîte qui télécharge le document engagé de l’auteur (`<id>.json`, codec L22,
+  `application/json`) ou copie le lien `/shared#level=…` (codec L23) avec le
+  retour « Lien copié ». Sans presse-papiers, le lien s’affiche dans un champ
+  sélectionnable. Un document que le schéma refuse n’est pas exporté : la boîte
+  en donne les raisons (`src/app/level-export.ts`, `LevelExportDialog.tsx`).
 
 ### Déploiement et mesure
 
@@ -262,7 +268,11 @@ pendant le travail.
   contexte joueur et chaque document accepté est revalidé par le schéma. Aucune
   interface auteur ne les expose encore.
 - **Mode auteur incomplet** : l’atelier ne permet pas encore de créer et gérer
-  ces commandes dans l’interface, ni d’enregistrer, exporter ou partager un niveau.
+  ces commandes dans l’interface (scène, zones, inventaire, objectif,
+  métadonnées), ni d’importer un fichier. L’export U16 prend le document tel
+  quel : l’atelier libre exporte donc son inventaire de 99 par famille, et les
+  objets posés depuis l’inventaire deviennent des objets du niveau (le stock
+  restant devient l’inventaire exporté).
 - `format:check` ne couvre pas le Markdown.
 - Le workflow `.github/workflows/check.yml` exécute la gate sur push et pull
   request avec Node 24, cache pnpm et Chromium Playwright. Son premier passage
