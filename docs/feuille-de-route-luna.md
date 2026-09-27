@@ -1,34 +1,67 @@
-# Tableau de bord (27 septembre 2026)
+# Tableau de bord (27 septembre 2026, fin de session)
 
 Vue d’ensemble en une page ; le détail reste dans § 5, § 6 et le journal (§ 8).
+Un agent qui reprend commence par la liste « Prochaines tâches » ci-dessous,
+dans l’ordre. Ces tâches d’interface sont **autorisées par l’auteur** (l’interdit
+de § 6 ne s’y applique pas) ; captures aux trois formats dans le journal, mais
+l’auteur valide plus tard, sans bloquer l’avancée.
 
-**Fait.** Toute la logique L1 à L28 (fondations, progression, fichiers et
-partage, commandes d’auteur, brouillons, CI, PWA) ; niveaux 1 à 12 ; P1 ; côté
-interface U4 à U6, U13 à U22 (U4, U5 et U22 en attente de validation visuelle).
+**Fait.** Toute la logique L1 à L28 ; P1 ; interface U4 à U6, U13 à U22, U4b
+(modale de victoire), U5b (niveaux verrouillés, déblocage sous `pnpm dev`),
+U14b (fils en équerre). Rendus visuels acceptés en l’état par l’auteur.
 
-**Campagne abandonnée (décision auteur du 27 septembre 2026).** Les niveaux
-actuels ne sont pas amusants (« placer une poutre quelque part ») : ils seront
-remplacés. Les tâches L14, L16, L17, L18b et L18c sont closes sans suite. La
-nouvelle campagne part des esquisses de `docs/levels/nouveaux-niveaux.md`,
-générées grossièrement puis ajustées par l’auteur dans l’atelier (U22).
-
-**Reste à faire — interface (§ 6, captures et validation de l’auteur).**
-
-- U22 atelier créateur de puzzles : livré (ADR 0013), captures sous
-  `test-results/u22/` à valider ; suites hors U22 : édition de la scène, des
-  zones, de l’objectif et du défi, import, liste des brouillons, fils à placer.
-- U14b fils de commande en équerre : en cours.
-- U12 poutres en trois tailles et icônes de la PWA : les dessins sont dans
-  `art/` (`art/assets/beam/`, `art/icons-splash_screen/`), à exporter et câbler.
-- U1 fantôme de placement, U2 fond qui suit la caméra, U3 ombre portée, U7
-  balle suivie, U8 aide du niveau 1, U10 invitation PWA, U11 réglages.
-- Minuteur animé (`art/assets/timer/README.md`) : pas encore de tâche.
-
-**En attente de l’auteur.** Validation visuelle de U4, U5 et U22 ; tri des
-propositions déposées le 27 septembre (`docs/propositions-*.md`,
-`docs/proposition-evolutions-canary.md`, `docs/levels/idees-niveaux.md`,
-`docs/levels/propositions-evolution-astra.md`) ; questions ouvertes de
+**Campagne abandonnée.** Les niveaux 1 à 12 actuels ne sont pas amusants
+(« placer une poutre quelque part ») et seront remplacés ; L14, L16, L17, L18b
+et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
 `docs/levels/nouveaux-niveaux.md`.
+
+## Prochaines tâches, dans l’ordre
+
+1. **U23 — Retirer le titre de l’en-tête de l’atelier.** « Éditeur de
+   niveaux » / « Éditeur · <titre> » (`src/app/EditorPage.tsx`) ne tient pas sur
+   téléphone avec quatre boutons : le supprimer de l’en-tête.
+2. **U24 — Pas de palier pour les puzzles exportés.** Un puzzle produit par
+   l’atelier (U22) n’a ni `challenge` ni ⭐/🏆 : retirer les seuils calculés à
+   l’export (`src/application/puzzle/puzzle-workshop.ts`), tests d’abord.
+3. **U25 — Fils « à placer ».** Le fil est un objet d’inventaire comme les
+   autres (U15, U21). Aujourd’hui l’export refuse un objet à placer relié par un
+   fil : lever ce refus. Un fil peut être marqué « à placer » ; il passe dans
+   l’inventaire (`wire`) et dans la solution de référence ; un objet à placer
+   relié garde son fil dans la solution. Amender ADR 0013 si le format bouge.
+4. **U26 — Catalogue auteur dans un brouillon de campagne.** L’agent U22 a
+   signalé que le brouillon du niveau 1 n’affiche pas le catalogue auteur
+   (`hasInventory`, `src/app/BoardShell.tsx`) ; l’auteur n’a pas reproduit
+   (le niveau 1 a bien une poutre en inventaire). Reproduire d’abord ; si faux,
+   le noter au journal et passer.
+5. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
+   caractères Unicode (↺, ↩, →, ☰, ?, 🔒, etc.) par des icônes `lucide-react`.
+   Dépendance structurante : ADR court d’abord. Garder des libellés
+   accessibles. Les paliers ✅ ⭐ 🏆 peuvent devenir des icônes aussi.
+6. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
+   `docs/levels/nouveaux-niveaux.md`, générer un JSON « à peu près » (pas de
+   calibrage fin) au format U22 : décor, objets à placer en inventaire,
+   solution de référence approximative. Les enregistrer dans la campagne à la
+   place des niveaux actuels, marqués comme esquisses (non soumis à la
+   régression « gagne avec la solution » tant que l’auteur ne les a pas
+   ajustés). L’auteur les ouvre par « Éditer le niveau » (U17), les ajuste dans
+   l’atelier, les exporte ; l’agent remplace alors le JSON par l’export et
+   active la régression (la solution de référence la fournit). Supprimer les
+   anciens niveaux et leurs tests quand les nouveaux les remplacent ; garder la
+   progression cohérente (identifiants nouveaux, pas de migration des records
+   exigée : ancienne campagne jamais publiée). Questions ouvertes du document
+   (§ 2 de `nouveaux-niveaux.md`, fin) : appliquer les réponses de l’auteur
+   si elles y figurent, sinon choisir l’option la plus simple et la noter.
+7. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
+   U1, U7, U8, U10, U11, U2, U3 ; minuteur animé (`art/assets/timer/`).
+
+**Dettes notées, non prioritaires.** Durée de la vérification d’export (deux
+simulations synchrones) non mesurée sur vieux téléphone. Suites de U22 : édition
+de la scène, des zones, de l’objectif ; import de fichier ; liste des
+brouillons.
+
+**En attente de l’auteur.** Tri des propositions du 27 septembre
+(`docs/propositions-*.md`, `docs/proposition-evolutions-canary.md`,
+`docs/levels/idees-niveaux.md`, `docs/levels/propositions-evolution-astra.md`).
 
 # Feuille de route — reprise de l’implémentation
 

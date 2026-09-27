@@ -371,3 +371,16 @@ Tailles de scène : 8 × 5,5 (chapitres 1-3), 10 × 6,5 (chapitre 4),
 | Dominos (idée 6 ; Astra B1)                                                        | Élevé : beaucoup de corps, stabilité, pose en série.                 |
 | Poulie / contrepoids, chariot (idée 10 ; Canary)                                   | Élevé : contraintes + corde.                                         |
 | Bougies et vent (idée 9)                                                           | Moyen : nouvelle cible, dépend du vent occulté (existant).           |
+
+## 4. Questions pour l’auteur
+
+Réponse par défaut appliquée tant que l’auteur n’a pas tranché.
+
+1. Scènes plus grandes que 8 × 5,5 (10 × 6,5, 12 × 7,5) sur téléphone ?
+   Défaut : oui, le zoom et le panoramique existent.
+2. Fils dans l’inventaire du joueur dès le niveau 5 ? Défaut : oui (U21, U25).
+3. Catapulte à bascule (niveaux 3 et 16) : la garder si elle est fiable au
+   banc ? Défaut : oui ; `conception-niveaux.md` dit que seul le ventilateur
+   fait monter plus haut que le départ, à amender si la catapulte est gardée.
+4. Niveau 15 : le garder, ou le reporter à l’arrivée d’un retardateur ?
+   Défaut : le reporter.
