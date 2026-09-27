@@ -210,11 +210,13 @@ pendant le travail.
   « L’interrupteur » et « Le bon ordre ». Les niveaux 13 « Deux tapis » et 14
   « Grand final » sont bloqués après trois esquisses sans fenêtre de robustesse de
   0,3 unité. Aucun bouton « Niveau suivant ».
-- **Paliers et progression de campagne, stockage local, partage, PWA** : décidés
-  (ADR 0010, 0011, 0012), non implémentés. Les métadonnées de défi existent au
-  format v2 et sont utilisées par les niveaux 4, 5 et 8 ; la preuve de minimalité
-  à deux objets du niveau 8 reste à compléter avec les coordonnées de sa grille
-  « bascule seule ».
+- **Progression de campagne** : les fonctions pures L19 comptent les objets
+  placés, calculent les paliers et indices, gardent le meilleur record et ouvrent
+  le niveau suivant. Le dépôt local L20 et le branchement à l’application L21 ne
+  sont pas encore faits. Le partage et la PWA restent décidés, mais non
+  implémentés (ADR 0011, 0012). Les métadonnées de défi v2 sont utilisées par les
+  niveaux 4, 5 et 8 ; la preuve de minimalité du niveau 8 reste à compléter avec
+  les coordonnées de sa grille « bascule seule ».
 - **Câblage réservé à l’auteur** : un levier ou un convoyeur pris dans
   l’inventaire en résolution ne peut pas être relié (ADR 0009).
 - **Rien n’indique au joueur quelle balle est suivie** par l’objectif quand
@@ -233,8 +235,8 @@ pendant le travail.
 
 ## Dernière exécution de la gate
 
-`pnpm check` passe le 27 septembre 2026 après le constat L18c : typecheck, lint,
-formatage, Knip, contenu (14 niveaux embarqués), 520 tests Vitest (44 fichiers), build et
+`pnpm check` passe le 27 septembre 2026 après L19 : typecheck, lint,
+formatage, Knip, contenu (14 niveaux embarqués), 542 tests Vitest (45 fichiers), build et
 42 tests Playwright `mobile` (41 réussis, 1 ignoré car C3 est spécifique au projet
 desktop). Le parcours mobile L17b ouvre maintenant l’inspecteur compact avant de
 vérifier les propriétés du levier sélectionné. Les captures au repos sont

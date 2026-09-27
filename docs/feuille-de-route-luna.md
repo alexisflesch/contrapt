@@ -1518,7 +1518,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 - Pour l’auteur : une nouvelle idée de scène est nécessaire pour L13 ; les trois
   géométries testées ne sont pas des références à reprendre.
 
-### L18c — Niveau 14 « Grand final » — bloqué — commit de constat L18c
+### L18c — Niveau 14 « Grand final » — bloqué — `dc11981 docs(content): consigne le blocage du niveau 14 (L18c)`
 
 - Régression L14 : aucun test de niveau 14 ; après trois esquisses, aucune
   géométrie n’atteint la marge de robustesse demandée. Aucun JSON, test E2E ou
@@ -1566,3 +1566,28 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   après correction ; la gate complète passe également après correction.
 - Pour l’auteur : une nouvelle idée de scène est nécessaire ; ne pas reprendre
   cette géométrie comme référence validée.
+
+### L19 — Paliers et verrouillage — fait — commit dédié L19
+
+- Tests ajoutés : `src/application/progression/index.test.ts` — 22 assertions sur
+  les cinq fonctions pures : provenance des placements, objets fixes, seuils de
+  palier inclusifs, indices progressifs, record conservé sans mutation et ordre
+  de campagne entre chapitres.
+- Échec initial constaté : sur 22 tests, 16 échouaient avec les fonctions
+  minimales : `countObjectsUsed` renvoyait −1 au lieu de 0 ou 3, les paliers
+  élégant/minimal restaient `resolved`, les indices et records n’étaient pas
+  produits, et le premier niveau restait verrouillé. Les six cas sans défi ou
+  portant sur l’absence d’indice et le maintien d’un record inchangé passaient.
+- Tests existants modifiés : aucun.
+- Fichiers touchés : `src/application/progression/index.ts` et son test,
+  `docs/etat.md` et ce journal.
+- Écarts avec la tâche : aucun. `CampaignProgress` est une carte clairsemée ; les
+  comptes d’objets négatifs, fractionnaires ou non sûrs sont refusés par
+  `RangeError`.
+- Mesures qui ne se reproduisent pas : aucune ; les 22 tests ciblés passent.
+- Contradictions rencontrées : aucune. Le palier se recalcule depuis le défi
+  courant ; les records inférieurs au minimum connu restent `minimal`.
+- Vérification finale : `pnpm check` passe — contenu (14 niveaux embarqués), 542
+  tests Vitest (45 fichiers), build et 42 parcours Playwright mobiles (41 réussis,
+  1 ignoré car C3 est spécifique au projet desktop).
+- Captures : sans objet, L19 n’ajoute aucune interface visible.
