@@ -120,6 +120,25 @@ export function BoardShell({
 
   const hasSelection = session.selectedPlacementId !== null && session.phase === 'construction';
 
+  const resetDialogCopy =
+    mode === 'creation'
+      ? {
+          label: 'Remise à zéro de l’atelier',
+          title: 'Remettre l’atelier à zéro ?',
+          closeLabel: 'Fermer la remise à zéro',
+          description:
+            'Cette action efface tous les objets ajoutés, leurs positions, leurs réglages et leurs fils. L’atelier reviendra à son document de départ.',
+          confirmLabel: 'Remettre l’atelier à zéro',
+        }
+      : {
+          label: 'Recommencer le niveau',
+          title: 'Recommencer le niveau depuis le début ?',
+          closeLabel: 'Fermer le recommencement du niveau',
+          description:
+            'Cette action efface tous les objets ajoutés, leurs positions, leurs réglages et leurs fils. Le niveau reviendra à son document de départ.',
+          confirmLabel: 'Recommencer le niveau',
+        };
+
   // Only committed history states are reported: gesture previews and the
   // simulation snapshot never reach the draft.
   const committedDocument = session.history.state.document;
@@ -261,7 +280,7 @@ export function BoardShell({
           onPause={simulation.pauseCurrentSimulation}
           onResume={simulation.resumeCurrentSimulation}
           onRestoreConstruction={simulation.restoreConstruction}
-          onResetWorkshop={() => {
+          onResetDocument={() => {
             setIsResetDialogOpen(true);
           }}
         />
@@ -328,20 +347,17 @@ export function BoardShell({
           <p className="dialog-text">Faire entrer la balle dans le panier</p>
         </Dialog>
       )}
-      {isResetDialogOpen && mode === 'creation' && (
+      {isResetDialogOpen && (
         <Dialog
-          label="Remise à zéro de l’atelier"
-          title="Remettre l’atelier à zéro ?"
-          closeLabel="Fermer la remise à zéro"
+          label={resetDialogCopy.label}
+          title={resetDialogCopy.title}
+          closeLabel={resetDialogCopy.closeLabel}
           initialFocusRef={resetDialogCancelRef}
           onClose={() => {
             setIsResetDialogOpen(false);
           }}
         >
-          <p className="dialog-text">
-            Cette action efface tous les objets ajoutés, leurs positions, leurs réglages et leurs
-            fils. L’atelier reviendra à son document de départ.
-          </p>
+          <p className="dialog-text">{resetDialogCopy.description}</p>
           <div className="level-result-actions">
             <Button
               ref={resetDialogCancelRef}
@@ -352,7 +368,7 @@ export function BoardShell({
               Annuler
             </Button>
             <Button tone="reset" onClick={resetToInitialAttempt}>
-              Remettre l’atelier à zéro
+              {resetDialogCopy.confirmLabel}
             </Button>
           </div>
         </Dialog>

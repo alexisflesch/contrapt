@@ -20,7 +20,7 @@ interface SimulationControlsProps {
   readonly onPause: () => void;
   readonly onResume: () => void;
   readonly onRestoreConstruction: () => void;
-  readonly onResetWorkshop: () => void;
+  readonly onResetDocument: () => void;
 }
 
 /** The "tester / pause / reset" bar: construction commands while building, playback controls while simulating. */
@@ -38,7 +38,7 @@ export function SimulationControls({
   onPause,
   onResume,
   onRestoreConstruction,
-  onResetWorkshop,
+  onResetDocument,
 }: SimulationControlsProps) {
   // A session with no inventory (level 1: `initial-progression.md` § Niveau 1,
   // "Aucune action d'édition") has nothing a command could ever undo or redo:
@@ -87,18 +87,16 @@ export function SimulationControls({
               </Button>
             </div>
           )}
-          {isCreation && (
-            <Button
-              tone="reset"
-              className="toolbar-reset"
-              aria-label="Remettre l’atelier à zéro"
-              aria-haspopup="dialog"
-              onClick={onResetWorkshop}
-            >
-              <span aria-hidden="true">↺</span>
-              Ràz atelier
-            </Button>
-          )}
+          <Button
+            tone="reset"
+            className="toolbar-reset"
+            aria-label={isCreation ? 'Remettre l’atelier à zéro' : 'Recommencer le niveau'}
+            aria-haspopup="dialog"
+            onClick={onResetDocument}
+          >
+            <span aria-hidden="true">↺</span>
+            {isCreation ? 'Ràz atelier' : 'Recommencer le niveau'}
+          </Button>
           <Button tone="go" className="toolbar-primary" onClick={onLaunchSimulation}>
             <span aria-hidden="true">▶</span>
             Tester

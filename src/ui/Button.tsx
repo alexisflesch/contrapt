@@ -6,7 +6,7 @@ import type { ButtonHTMLAttributes, Ref } from 'react';
  *
  * - `go` — launches or moves the player forward (Tester, Reprendre, Lancer, Recommencer);
  * - `pause` — suspends without losing anything (Mettre en pause);
- * - `reset` — returns to construction or opens a destructive reset (Recommencer, Ràz atelier);
+ * - `reset` — returns to construction or opens a destructive reset (Recommencer, Ràz atelier, Recommencer le niveau);
  * - `neutral` — every other action (navigation, undo/redo, properties).
  */
 type ButtonTone = 'go' | 'pause' | 'reset' | 'neutral';

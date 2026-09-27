@@ -318,6 +318,72 @@ test('U6 — remet l’atelier à zéro après confirmation au tactile', async (
   await expect(page.getByRole('region', { name: 'Propriétés de Poutre' })).toHaveCount(0);
 });
 
+test('U6 — permet de recommencer un puzzle depuis son document initial', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'mobile' && testInfo.project.name !== 'desktop',
+    'Le reset de puzzle est capturé sur mobile et Chromium desktop.',
+  );
+  await page.setViewportSize(
+    testInfo.project.name === 'mobile' ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+  );
+  await page.goto('/levels/level-1-prolonger-la-pente/play');
+
+  const reset = page.getByRole('button', { name: 'Recommencer le niveau' });
+  const tester = page.getByRole('button', { name: 'Tester' });
+  await expect(reset).toBeVisible();
+  await expect(tester).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 568 });
+  await expect(reset).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const resetBounds = await reset.boundingBox();
+  const testerBounds = await tester.boundingBox();
+  expect(resetBounds).not.toBeNull();
+  expect(testerBounds).not.toBeNull();
+  if (resetBounds === null || testerBounds === null) {
+    throw new Error('Les commandes du puzzle doivent être mesurables.');
+  }
+  expect(resetBounds.x + resetBounds.width).toBeLessThanOrEqual(testerBounds.x + 1);
+
+  const activate = async (control: Locator): Promise<void> => {
+    if (testInfo.project.name === 'mobile') {
+      await control.tap();
+    } else {
+      await control.click();
+    }
+  };
+
+  if (testInfo.project.name === 'mobile') {
+    await page.screenshot({ path: 'test-results/u6/puzzle-390x844.png', fullPage: true });
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(reset).toBeVisible();
+    await page.screenshot({ path: 'test-results/u6/puzzle-844x390.png', fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+  } else {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(reset).toBeVisible();
+    await page.screenshot({ path: 'test-results/u6/puzzle-1440x900.png', fullPage: true });
+  }
+
+  await activate(reset);
+  const dialog = page.getByRole('dialog', { name: 'Recommencer le niveau' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Annuler' })).toBeFocused();
+  await activate(dialog.getByRole('button', { name: 'Annuler' }));
+  await expect(dialog).toHaveCount(0);
+
+  await activate(reset);
+  await activate(dialog.getByRole('button', { name: 'Recommencer le niveau' }));
+  await expect(dialog).toHaveCount(0);
+});
+
 test('U15 — relie un levier à un convoyeur par la carte Fil, au tactile', async ({
   page,
 }, testInfo) => {

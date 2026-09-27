@@ -311,6 +311,9 @@ Vocabulaire (décision de l'auteur, 26 septembre 2026) :
   de dialogue de confirmation qui dit ce qui sera perdu, avec « Annuler » comme
   action par défaut. Elle n'apparaît jamais à côté de « Recommencer » ni dans les
   contrôles de simulation.
+- En résolution, pendant la construction d’un puzzle, ce reset destructif est
+  présenté sous le libellé « Recommencer le niveau ». Il ne doit pas être confondu
+  avec « Recommencer » après le lancement, qui conserve la construction d’avant test.
 - Le mot « Réinitialiser » n'est plus employé dans l'interface.
 
 Les phases forment l'automate suivant :

@@ -97,9 +97,10 @@ pendant le travail.
 - **U6 — recommencer et remise à zéro de l’atelier** : pendant la simulation,
   une seule commande « Recommencer » est visible ; dans l’atelier, « Ràz atelier »
   est placé à gauche de « Tester » et ouvre une confirmation qui décrit la perte,
-  avec « Annuler » ciblé par défaut. La remise à zéro restaure le document de
-  départ et ferme les tiroirs et sélections ; après une victoire d’atelier, le
-  résultat conserve uniquement « Retour à l’édition ».
+  avec « Annuler » ciblé par défaut. En mode puzzle, le même contrôle devient
+  « Recommencer le niveau » et restaure le document initial après confirmation.
+  Dans les deux modes, la remise à zéro ferme les tiroirs et sélections ; après
+  une victoire d’atelier, le résultat conserve uniquement « Retour à l’édition ».
 - Panneau « Propriétés » (rail droit en grand format, tiroir compact sur petit
   écran) : longueur de poutre, cran de départ du levier, sens du convoyeur,
   rotation libre des poutres, limitée à ±135° pour les leviers, et par quarts
@@ -330,6 +331,11 @@ premier essai avait échoué sur l’E2E instable du niveau 9 (voir les dettes).
 
 `pnpm check` après U6 (27 septembre 2026) : passe — 729 tests Vitest, build et
 52 tests Playwright `mobile` (51 réussis, 1 ignoré).
+
+Complément U6 : 730 tests Vitest, typecheck, lint, formatage, Knip, contenu et
+build passent. La suite E2E mobile standard a rencontré des flakies préexistants
+sur des inspecteurs de niveaux ; la relance Playwright en mode CI a terminé avec
+53 tests (51 réussis, 1 flaky, 1 ignoré).
 
 Exécution précédente :
 `pnpm check` après U15 (27 septembre 2026) : passe d’une traite — typecheck,

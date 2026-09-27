@@ -776,9 +776,10 @@ commencer de ta propre initiative.
   libellé « Réinitialiser » disparaît ; une seule commande « Recommencer » visible
   à la fois (aujourd’hui en double dans `SimulationControls.tsx` et
   `LevelResult.tsx`) ; dans l’éditeur, « Remettre l’atelier à zéro » derrière une
-  boîte de confirmation (`Dialog`) qui dit ce qui sera perdu. Après une victoire
-  pendant « Tester » dans l’éditeur, ne pas afficher « Rejouer le niveau » si cette
-  action efface la construction, ni « Retour à la liste des niveaux » : la reprise
+  boîte de confirmation (`Dialog`) qui dit ce qui sera perdu ; en mode puzzle,
+  « Recommencer le niveau » derrière la même confirmation destructive. Après une
+  victoire pendant « Tester » dans l’éditeur, ne pas afficher « Rejouer le niveau »
+  si cette action efface la construction, ni « Retour à la liste des niveaux » : la reprise
   de l’édition doit conserver l’atelier et sa construction.
 - **U7 — Balle suivie** : signaler quelle balle est la cible de l’objectif.
 - **U8 — Aide du niveau 1** : indication brève et non bloquante vers « Tester »
@@ -2194,23 +2195,29 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
 
 - Tests ajoutés : `src/app/App.test.tsx` couvre le bouton « Ràz atelier », l’ordre
   avec « Tester », la confirmation, son annulation par défaut et l’effacement
-  confirmé ; `e2e/editor-interactions.spec.ts` couvre le même parcours au mobile
-  (390 × 844, puis 844 × 390) et sur Chromium desktop (1440 × 900).
+  confirmé ; le même test couvre désormais « Recommencer le niveau » en mode
+  puzzle ; `e2e/editor-interactions.spec.ts` couvre les deux parcours au mobile
+  (390 × 844, 844 × 390 et contrôle 320 × 568) et sur Chromium desktop (1440 × 900).
 - Échec initial constaté : le test attendait « Retour à l’édition », mais le
   bandeau exposait « Rejouer le niveau » et « Retour aux niveaux ».
 - Tests existants réécrits : les attentes de simulation et de résultat utilisent
   désormais « Recommencer » ; les scénarios E2E joueur ont été alignés.
 - Fichiers touchés : `src/app/BoardShell.tsx`, `src/ui/LevelResult.tsx`,
   `src/ui/SimulationControls.tsx`, `src/ui/Dialog.tsx`, `src/ui/Button.tsx`,
-  `src/ui/styles.css`, `src/app/App.test.tsx` et les scénarios E2E concernés.
+  `src/ui/styles.css`, `src/app/App.test.tsx`, les spécifications d’interaction
+  et les scénarios E2E concernés.
 - Écarts avec la tâche : aucun comportement U6 restant ; la capture visuelle est
   produite dans `test-results/u6/` et reste hors dépôt.
 - Mesures qui ne se reproduisent pas : aucune.
 - Contradictions rencontrées : aucune.
-- Vérification : le test ciblé (70 tests), le parcours Playwright U6 (2 tests)
-  et `pnpm check` passent ; la gate complète compte 729 tests Vitest et 52
-  tests Playwright `mobile` (51 réussis, 1 ignoré).
-- Captures : `test-results/u6/390x844.png`, `test-results/u6/844x390.png` et
-  `test-results/u6/1440x900.png`.
-- Pour l’auteur : vérifier les trois captures ; « Ràz atelier » doit rester à
-  gauche de « Tester » et « Annuler » doit recevoir le focus à l’ouverture.
+- Vérification : le test ciblé (71 tests) et le parcours Playwright U6 (4 tests)
+  passent ; typecheck, lint, formatage, Knip, contenu, Vitest (730 tests) et build
+  passent aussi. `pnpm check` rencontre ensuite l’échec intermittent préexistant
+  du niveau 9, dans l’inspecteur (« Fermer les propriétés »).
+- Captures atelier : `test-results/u6/390x844.png`, `test-results/u6/844x390.png`
+  et `test-results/u6/1440x900.png` ; captures puzzle :
+  `test-results/u6/puzzle-390x844.png`, `test-results/u6/puzzle-844x390.png` et
+  `test-results/u6/puzzle-1440x900.png`.
+- Pour l’auteur : vérifier les captures ; « Ràz atelier » / « Recommencer le
+  niveau » doivent rester à gauche de « Tester » et « Annuler » doit recevoir le
+  focus à l’ouverture.

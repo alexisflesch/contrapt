@@ -733,6 +733,39 @@ describe('coque Contrapt!', () => {
     expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).toBeNull();
   });
 
+  it('propose de recommencer le puzzle depuis le document initial', () => {
+    render(<App />);
+    openEmbeddedLevelOne();
+
+    const resetButton = screen.getByRole('button', { name: 'Recommencer le niveau' });
+    const testButton = screen.getByRole('button', { name: 'Tester' });
+    expect(
+      resetButton.compareDocumentPosition(testButton) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    fireEvent.click(resetButton);
+
+    const dialog = screen.getByRole('dialog', { name: 'Recommencer le niveau' });
+    expect(dialog).toHaveTextContent('efface tous les objets ajoutés');
+    const cancelButton = within(dialog).getByRole('button', { name: 'Annuler' });
+    expect(document.activeElement).toBe(cancelButton);
+    fireEvent.click(cancelButton);
+    expect(screen.queryByRole('dialog', { name: 'Recommencer le niveau' })).toBeNull();
+
+    placeCampaignBeam(5.0, 2.15);
+    expect(screen.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
+
+    fireEvent.click(resetButton);
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'Recommencer le niveau' })).getByRole('button', {
+        name: 'Recommencer le niveau',
+      }),
+    );
+
+    expect(screen.queryByRole('dialog', { name: 'Recommencer le niveau' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).toBeNull();
+  });
+
   it('navigue vers une page de réglages dédiée depuis le menu (ADR 0008)', () => {
     render(<App />);
 
