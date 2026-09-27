@@ -17,25 +17,18 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
 
 ## Prochaines tâches, dans l’ordre
 
-1. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
-   caractères Unicode (↺, ↩, →, ☰, ?, 🔒, etc.) par des icônes `lucide-react`.
-   Dépendance structurante : ADR court d’abord. Garder des libellés
-   accessibles. Les paliers ✅ ⭐ 🏆 peuvent devenir des icônes aussi.
-2. **N1 — Nouvelle campagne, en esquisses.** Pour chaque niveau de
-   `docs/levels/nouveaux-niveaux.md`, générer un JSON « à peu près » (pas de
-   calibrage fin) au format U22 : décor, objets à placer en inventaire,
-   solution de référence approximative. Les enregistrer dans la campagne à la
-   place des niveaux actuels, marqués comme esquisses (non soumis à la
-   régression « gagne avec la solution » tant que l’auteur ne les a pas
-   ajustés). L’auteur les ouvre par « Éditer le niveau » (U17), les ajuste dans
-   l’atelier, les exporte ; l’agent remplace alors le JSON par l’export et
-   active la régression (la solution de référence la fournit). Supprimer les
-   anciens niveaux et leurs tests quand les nouveaux les remplacent ; garder la
-   progression cohérente (identifiants nouveaux, pas de migration des records
-   exigée : ancienne campagne jamais publiée). Questions ouvertes du document
-   (§ 2 de `nouveaux-niveaux.md`, fin) : appliquer les réponses de l’auteur
-   si elles y figurent, sinon choisir l’option la plus simple et la noter.
-3. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
+1. **U28 — Outillage de calibrage et parcours d’édition.** Pour chaque niveau
+   de campagne, afficher dans l’éditeur au moins en mode développement une fiche
+   d’aide qui indique : l’intention de l’esquisse, ce que l’agent a essayé de
+   construire, à quoi la solution devrait ressembler, et la liste exacte des
+   objets autorisés (famille, quantité, objets fixes du décor et objets à placer).
+   Commencer par exploiter les données U22 et, si nécessaire, une note auteur
+   temporaire sans élargir tout de suite le format public du niveau ; décider
+   ensuite de la forme persistante. Revoir en même temps le parcours « Éditer » :
+   évaluer sa suppression de la liste publique des niveaux ou son déplacement
+   vers un accès auteur discret, par exemple après la fin d’un niveau ou dans un
+   contexte de développement, sans casser les brouillons ni l’URL directe.
+2. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
    U1, U7, U8, U10, U11, U2, U3 ; minuteur animé (`art/assets/timer/`).
 
 **Dettes notées, non prioritaires.** Durée de la vérification d’export (deux
