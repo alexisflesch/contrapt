@@ -49,6 +49,30 @@ const closeCompactProperties = async (page: Page): Promise<void> => {
   }
 };
 
+const waitForCatalogueToCollapse = async (page: Page): Promise<void> => {
+  const drawer = page.getByRole('region', { name: 'Objets disponibles' });
+  await expect(drawer).toHaveClass(/object-drawer-collapsed/u);
+  const isCompactPortrait = await page.evaluate(
+    () => window.matchMedia('(orientation: portrait) and (max-width: 999px)').matches,
+  );
+  if (!isCompactPortrait) return;
+
+  const expectedHeight = await drawer.evaluate((element) =>
+    Number.parseFloat(getComputedStyle(element).getPropertyValue('--drawer-peek-height')),
+  );
+  expect(Number.isFinite(expectedHeight)).toBe(true);
+  await expect
+    .poll(
+      () =>
+        drawer.evaluate(
+          (element, height) => Math.abs(element.getBoundingClientRect().height - height) < 1,
+          expectedHeight,
+        ),
+      { timeout: 1_000 },
+    )
+    .toBe(true);
+};
+
 const openPropertiesIfCompact = async (page: Page): Promise<void> => {
   const open = page.getByRole('button', { name: 'Ouvrir les propriétés' });
   if ((await open.count()) > 0 && (await open.first().isVisible())) await open.first().click();
@@ -398,6 +422,7 @@ test('U15 — relie un levier à un convoyeur par la carte Fil, au tactile', asy
   const pick = async (card: string): Promise<void> => {
     if (await openCatalogue.isVisible()) await openCatalogue.tap();
     await page.getByRole('button', { name: card, exact: true }).tap();
+    await waitForCatalogueToCollapse(page);
   };
   const tapWorld = async (x: number, y: number): Promise<void> => {
     const point = await screenPointForWorld(canvas, { x, y });
