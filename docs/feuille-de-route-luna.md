@@ -17,12 +17,7 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
 
 ## Prochaines tâches, dans l’ordre
 
-1. **U26 — Catalogue auteur dans un brouillon de campagne.** L’agent U22 a
-   signalé que le brouillon du niveau 1 n’affiche pas le catalogue auteur
-   (`hasInventory`, `src/app/BoardShell.tsx`) ; l’auteur n’a pas reproduit
-   (le niveau 1 a bien une poutre en inventaire). Reproduire d’abord ; si faux,
-   le noter au journal et passer.
-2. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
+1. **U27 — Icônes avec `lucide-react`.** Remplacer les pictogrammes composés en
    caractères Unicode (↺, ↩, →, ☰, ?, 🔒, etc.) par des icônes `lucide-react`.
    Dépendance structurante : ADR court d’abord. Garder des libellés
    accessibles. Les paliers ✅ ⭐ 🏆 peuvent devenir des icônes aussi.
@@ -40,7 +35,7 @@ et L18c sont closes sans suite. La nouvelle campagne part des esquisses de
    exigée : ancienne campagne jamais publiée). Questions ouvertes du document
    (§ 2 de `nouveaux-niveaux.md`, fin) : appliquer les réponses de l’auteur
    si elles y figurent, sinon choisir l’option la plus simple et la noter.
-4. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
+3. Ensuite, § 6 dans l’ordre : U12 (poutres, icônes PWA déjà dans `art/`),
    U1, U7, U8, U10, U11, U2, U3 ; minuteur animé (`art/assets/timer/`).
 
 **Dettes notées, non prioritaires.** Durée de la vérification d’export (deux
