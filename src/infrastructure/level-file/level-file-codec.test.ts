@@ -104,6 +104,36 @@ describe('codec de fichier de niveau', () => {
     expect(decodeLevelFile(encodeLevelFile(document))).toEqual({ status: 'ok', document });
   });
 
+  it('fait un aller-retour identique d’un atelier avec un objet à placer (U22)', () => {
+    const level = getChallengeAndWiresLevel();
+    const document: LevelDocument = {
+      ...level,
+      objects: level.objects.map((object) =>
+        object.id === 'lever' ? { ...object, toPlace: true } : object,
+      ),
+    };
+
+    const result = decodeLevelFile(encodeLevelFile(document));
+
+    expect(result).toEqual({ status: 'ok', document });
+  });
+
+  it('fait un aller-retour identique d’un puzzle avec sa solution de référence (U22)', () => {
+    const document: LevelDocument = {
+      ...getChallengeAndWiresLevel(),
+      solution: {
+        placements: [
+          { inventoryId: 'inventory-beam', transform: { position: { x: 3, y: 2 }, rotation: 0.5 } },
+        ],
+      },
+    };
+
+    const text = encodeLevelFile(document);
+
+    expect(text).toContain('"solution"');
+    expect(decodeLevelFile(text)).toEqual({ status: 'ok', document });
+  });
+
   it('valide puis migre un document v1 vers un document v2 utilisable', () => {
     const result = decodeLevelFile(JSON.stringify(legacyDocument));
 

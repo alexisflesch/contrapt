@@ -44,6 +44,7 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/decisions/0010-object-challenge-and-progression.md` | 92      | défi d'objets ✅/⭐/🏆, ouverture des niveaux (accepté)          |
 | `docs/decisions/0011-local-storage-and-url-sharing.md`    | 98      | `localStorage`, codec de fichier, partage par URL (accepté)      |
 | `docs/decisions/0012-pwa-service-worker.md`               | 47      | PWA, service worker, mises à jour (accepté)                      |
+| `docs/decisions/0013-puzzle-workshop-solution.md`         | 95      | objets à placer, solution de référence, export vérifié (accepté) |
 
 Sources de vérité exécutables, prioritaires sur toute prose :
 
@@ -66,7 +67,7 @@ Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans rai
 
 | Tâche                                          | Lire                                                                                                              | Écrire dans                                    |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Format de niveau, schéma Zod, migration        | ADR 0004, ADR 0007 § Scène d'un niveau, `architecture.md` § Enveloppe de niveau, `level-document.ts`              | `src/domain/`                                  |
+| Format de niveau, schéma Zod, migration        | ADR 0004, ADR 0007 § Scène d'un niveau, ADR 0013, `architecture.md` § Enveloppe de niveau, `level-document.ts`              | `src/domain/`                                  |
 | Commande, historique, undo/redo, tentative     | ADR 0005, `architecture.md` § Commandes et historique                                                             | `src/application/`                             |
 | Nouvelle famille d'objet                       | `catalogue-initial.md`, `architecture.md` § Modèle d'objet, ADR 0004                                              | `src/domain/`, `src/simulation/`               |
 | Port physique, boucle à pas fixe, déterminisme | ADR 0002, `qualite.md` § Déterminisme, `architecture.md` § Simulation                                             | `src/simulation/`, `test/conformance/`         |

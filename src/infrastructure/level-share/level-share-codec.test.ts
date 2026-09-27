@@ -69,6 +69,22 @@ describe('codec de partage par URL', () => {
     expect(result).toEqual({ status: 'ok', document });
   });
 
+  it('encode et décode un puzzle avec sa solution de référence (U22)', async () => {
+    const document: LevelDocument = {
+      ...levelTwelve(),
+      solution: {
+        placements: [
+          { inventoryId: 'inventory-beam', transform: { position: { x: 3, y: 2 }, rotation: 0.5 } },
+          { inventoryId: 'inventory-mass', transform: { position: { x: 5, y: 4 }, rotation: 0 } },
+        ],
+      },
+    };
+
+    const result = await decodeShareFragment(await encodeShareFragment(document));
+
+    expect(result).toEqual({ status: 'ok', document });
+  });
+
   it('calcule le CRC-32 IEEE de référence', () => {
     expect(crc32Ieee(new TextEncoder().encode('123456789')).toString(16)).toBe('cbf43926');
   });

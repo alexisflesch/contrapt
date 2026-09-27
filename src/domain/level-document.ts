@@ -80,63 +80,38 @@ const placementFields = {
   permissions: objectPermissionsSchema,
 };
 
-const objectPlacementSchema = z.discriminatedUnion('type', [
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('ball'),
-    props: ballPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('basket'),
-    props: basketPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('beam'),
-    props: beamPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('seesaw'),
-    props: seesawPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('mass'),
-    props: massPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('lever'),
-    props: leverPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('conveyor'),
-    props: conveyorPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('button'),
-    props: buttonPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('fan'),
-    props: fanPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('barrier'),
-    props: barrierPropertiesSchema,
-  }),
-  z.strictObject({
-    ...placementFields,
-    type: z.literal('springboard'),
-    props: springboardPropertiesSchema,
-  }),
-]);
+/** Builds the discriminated union of placed objects over `fields`, shared by every family. */
+const placementSchemaFor = <Fields extends z.ZodRawShape>(fields: Fields) =>
+  z.discriminatedUnion('type', [
+    z.strictObject({ ...fields, type: z.literal('ball'), props: ballPropertiesSchema }),
+    z.strictObject({ ...fields, type: z.literal('basket'), props: basketPropertiesSchema }),
+    z.strictObject({ ...fields, type: z.literal('beam'), props: beamPropertiesSchema }),
+    z.strictObject({ ...fields, type: z.literal('seesaw'), props: seesawPropertiesSchema }),
+    z.strictObject({ ...fields, type: z.literal('mass'), props: massPropertiesSchema }),
+    z.strictObject({ ...fields, type: z.literal('lever'), props: leverPropertiesSchema }),
+    z.strictObject({ ...fields, type: z.literal('conveyor'), props: conveyorPropertiesSchema }),
+    z.strictObject({ ...fields, type: z.literal('button'), props: buttonPropertiesSchema }),
+    z.strictObject({ ...fields, type: z.literal('fan'), props: fanPropertiesSchema }),
+    z.strictObject({ ...fields, type: z.literal('barrier'), props: barrierPropertiesSchema }),
+    z.strictObject({
+      ...fields,
+      type: z.literal('springboard'),
+      props: springboardPropertiesSchema,
+    }),
+  ]);
+
+/** v1 placements: no workshop marking. */
+const objectPlacementV1Schema = placementSchemaFor(placementFields);
+
+/**
+ * v2 placements. `toPlace` (U22, ADR 0013) marks, in the workshop only, an
+ * object the player will have to place; absent means fixed, so only `true`
+ * is accepted.
+ */
+const objectPlacementSchema = placementSchemaFor({
+  ...placementFields,
+  toPlace: z.literal(true).optional(),
+});
 
 const inventoryFields = {
   id: identifierSchema,
@@ -247,6 +222,19 @@ const basketGoalSchema = z.strictObject({
 
 const challengeObjectCountSchema = z.int().min(1).max(MAX_CHALLENGE_OBJECT_COUNT);
 
+/**
+ * U22 (ADR 0013): one pose of the reference solution. The family and the
+ * properties are those of the inventory entry it names.
+ */
+const solutionPlacementSchema = z.strictObject({
+  inventoryId: identifierSchema,
+  transform: transformSchema,
+});
+
+const solutionSchema = z.strictObject({
+  placements: z.array(solutionPlacementSchema).max(MAX_OBJECTS),
+});
+
 const challengeSchema = z.strictObject({
   elegantObjectCount: challengeObjectCountSchema,
   minimalObjectCount: challengeObjectCountSchema,
@@ -338,7 +326,9 @@ const sharedDocumentFields = {
 const levelDocumentV1StructureSchema = z.strictObject({
   schemaVersion: z.literal(LEVEL_DOCUMENT_V1_SCHEMA_VERSION),
   ...sharedDocumentFields,
-  // Overrides the shared key in place, keeping the key order: no wire in v1.
+  // Override the shared keys in place, keeping the key order: no workshop
+  // marking and no wire in v1.
+  objects: z.array(objectPlacementV1Schema).max(MAX_OBJECTS),
   inventory: z.array(placementInventoryEntrySchema).max(MAX_INVENTORY_ENTRIES),
 });
 
@@ -350,6 +340,8 @@ const levelDocumentV2StructureSchema = z.strictObject({
   wires: z.array(controlWireSchema).max(MAX_WIRES).default([]),
   /** Optional without a default: absent means that the level has no challenge (ADR 0010). */
   challenge: challengeSchema.optional(),
+  /** Optional without a default: absent means that the level ships no reference solution (ADR 0013). */
+  solution: solutionSchema.optional(),
 });
 
 type ObjectPlacement = z.infer<typeof objectPlacementSchema>;
@@ -606,6 +598,97 @@ const addLevelDocumentRelationIssues = (
   }
 };
 
+type Solution = z.infer<typeof solutionSchema>;
+
+interface PuzzleRelationsInput {
+  readonly scene: { readonly min: WorldPosition; readonly max: WorldPosition };
+  readonly objects: readonly ObjectPlacement[];
+  readonly inventory: readonly InventoryEntry[];
+  readonly goal: { readonly ballId: string; readonly basketId: string };
+  readonly solution?: Solution | undefined;
+}
+
+const isInsideRange = (value: number, min: number, max: number): boolean =>
+  value >= min && value <= max;
+
+/**
+ * U22 (ADR 0013): the goal is never to be placed; a workshop marking and a
+ * reference solution never coexist; each pose of the solution names a
+ * placeable inventory entry, within its quantity when `checkQuantities`
+ * (an attempt consumes its inventory), inside the scene, and turned as its
+ * family allows.
+ */
+const addPuzzleIssues = (
+  document: PuzzleRelationsInput,
+  issues: LevelDocumentValidationIssue[],
+  checkQuantities: boolean,
+): void => {
+  document.objects.forEach((placement, index) => {
+    const isGoal = placement.id === document.goal.ballId || placement.id === document.goal.basketId;
+    if (placement.toPlace === true && isGoal) {
+      issues.push({
+        path: ['objects', index, 'toPlace'],
+        message: 'La balle et le panier de l’objectif restent fixes.',
+      });
+    }
+  });
+
+  const { solution } = document;
+  if (solution === undefined) return;
+
+  if (document.objects.some(({ toPlace }) => toPlace === true)) {
+    issues.push({
+      path: ['solution'],
+      message: 'Un niveau avec une solution de référence n’a plus d’objet à placer.',
+    });
+  }
+
+  const usesByEntryId = new Map<string, number>();
+  solution.placements.forEach((pose, index) => {
+    const path = ['solution', 'placements', index] as const;
+    const entry = document.inventory.find(({ id }) => id === pose.inventoryId);
+    if (entry === undefined || entry.type === 'wire') {
+      issues.push({
+        path: [...path, 'inventoryId'],
+        message: `La solution doit poser un objet de l’inventaire, pas « ${pose.inventoryId} ».`,
+      });
+      return;
+    }
+
+    const uses = (usesByEntryId.get(entry.id) ?? 0) + 1;
+    usesByEntryId.set(entry.id, uses);
+    if (checkQuantities && uses > entry.quantity) {
+      issues.push({
+        path: [...path, 'inventoryId'],
+        message: `La solution pose plus d’objets « ${entry.id} » que l’inventaire n’en contient.`,
+      });
+    }
+
+    const { position, rotation } = pose.transform;
+    if (!isInsideRange(position.x, document.scene.min.x, document.scene.max.x)) {
+      issues.push({
+        path: [...path, 'transform', 'position', 'x'],
+        message: 'Chaque pose de la solution doit être dans la scène sur l’axe x.',
+      });
+    }
+    if (!isInsideRange(position.y, document.scene.min.y, document.scene.max.y)) {
+      issues.push({
+        path: [...path, 'transform', 'position', 'y'],
+        message: 'Chaque pose de la solution doit être dans la scène sur l’axe y.',
+      });
+    }
+    const turnedWrongly =
+      (rotationMode(entry.type) === 'quarter-turn' && !isQuarterTurn(rotation)) ||
+      (entry.type === 'lever' && Math.abs(rotation) > MAX_LEVER_ROTATION_RADIANS);
+    if (turnedWrongly) {
+      issues.push({
+        path: [...path, 'transform', 'rotation'],
+        message: `La pose de la solution ne respecte pas la rotation de la famille « ${entry.type} ».`,
+      });
+    }
+  });
+};
+
 interface SceneContainmentInput {
   readonly scene: { readonly min: WorldPosition; readonly max: WorldPosition };
   readonly objects: readonly ObjectPlacement[];
@@ -683,6 +766,7 @@ export const levelDocumentSchema = levelDocumentV2StructureSchema.superRefine(
     const issues: LevelDocumentValidationIssue[] = [];
     addLevelDocumentRelationIssues(document, issues);
     addSceneContainmentIssues(document, issues);
+    addPuzzleIssues(document, issues, true);
     addLeverRotationIssues(document.objects, issues);
     addQuarterTurnIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);
@@ -703,6 +787,7 @@ export const levelDocumentAttemptSchema = levelDocumentV2StructureSchema.superRe
     const issues: LevelDocumentValidationIssue[] = [];
     addLevelDocumentRelationIssues(document, issues, false);
     addSceneContainmentIssues(document, issues);
+    addPuzzleIssues(document, issues, false);
     addLeverRotationIssues(document.objects, issues);
     addQuarterTurnIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);

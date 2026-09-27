@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   controlWireSourceIssue,
   controlWireTargetIssue,
+  levelDocumentAttemptSchema,
   levelDocumentSchema,
   levelDocumentV1Schema,
   migrateLevelDocumentV1ToV2,
@@ -1035,5 +1036,137 @@ describe('règles d’un fil de commande, expliquées une à une', () => {
     expect(controlWireTargetIssue('button', 'conveyor')).toBe(
       'Un bouton ne commande pas de convoyeur : seul un levier en donne le sens.',
     );
+  });
+});
+
+describe('objets à placer et solution de référence (U22, ADR 0013)', () => {
+  const beamEntry = validLevel.inventory[0];
+  const fanEntry = {
+    id: 'inventory-fan',
+    type: 'fan',
+    props: { state: 'on' },
+    quantity: 1,
+    permissions: { move: true, rotate: true, remove: true },
+  } as const;
+  const pose = (inventoryId: string, x = 2, y = 5, rotation = 0) => ({
+    inventoryId,
+    transform: { position: { x, y }, rotation },
+  });
+  const markedBeam = { ...validLevel.objects[2], toPlace: true };
+
+  it('relit à l’identique un document sans objet à placer ni solution', () => {
+    const parsed = levelDocumentSchema.safeParse(validLevel);
+
+    expect(parsed.success && parsed.data).toEqual(validLevel);
+    expect(parsed.success && 'solution' in parsed.data).toBe(false);
+  });
+
+  it('accepte un objet marqué à placer et le relit à l’identique', () => {
+    const candidate = {
+      ...validLevel,
+      objects: validLevel.objects.map((object) => (object.id === 'beam-1' ? markedBeam : object)),
+    };
+
+    const parsed = levelDocumentSchema.safeParse(candidate);
+
+    expect(parsed.success && parsed.data).toEqual(candidate);
+  });
+
+  it('n’a qu’une écriture pour un objet fixe et ne marque jamais l’objectif', () => {
+    expect(
+      issuePaths({
+        ...validLevel,
+        objects: validLevel.objects.map((object) =>
+          object.id === 'beam-1' ? { ...object, toPlace: false } : object,
+        ),
+      }),
+    ).toEqual(['objects.2.toPlace']);
+    expect(
+      issuePaths({
+        ...validLevel,
+        objects: validLevel.objects.map((object) =>
+          object.type === 'ball' || object.type === 'basket'
+            ? { ...object, toPlace: true }
+            : object,
+        ),
+      }),
+    ).toEqual(['objects.0.toPlace', 'objects.1.toPlace']);
+  });
+
+  it('accepte une solution qui pose les entrées de l’inventaire et la relit à l’identique', () => {
+    const candidate = {
+      ...validLevel,
+      inventory: [...validLevel.inventory, fanEntry],
+      solution: { placements: [pose('inventory-beam-medium'), pose('inventory-fan', 3, 6)] },
+    };
+
+    const parsed = levelDocumentSchema.safeParse(candidate);
+
+    expect(parsed.success && parsed.data).toEqual(candidate);
+  });
+
+  it('refuse une pose de solution sans entrée posable ou au-delà de la quantité', () => {
+    expect(
+      issuePaths({
+        ...validLevel,
+        inventory: [
+          ...validLevel.inventory,
+          {
+            id: 'inventory-wire',
+            type: 'wire',
+            props: {},
+            quantity: 1,
+            permissions: { move: false, rotate: false, remove: true },
+          },
+        ],
+        solution: {
+          placements: [
+            pose('inventory-beam-medium'),
+            pose('inventory-beam-medium'),
+            pose('missing-entry'),
+            pose('inventory-wire'),
+          ],
+        },
+      }),
+    ).toEqual([
+      'solution.placements.1.inventoryId',
+      'solution.placements.2.inventoryId',
+      'solution.placements.3.inventoryId',
+    ]);
+  });
+
+  it('refuse une pose de solution hors scène ou hors de la règle de rotation de sa famille', () => {
+    expect(
+      issuePaths({
+        ...validLevel,
+        inventory: [{ ...beamEntry, quantity: 2 }, fanEntry],
+        solution: {
+          placements: [pose('inventory-beam-medium', 40, 5), pose('inventory-fan', 2, 5, 0.3)],
+        },
+      }),
+    ).toEqual([
+      'solution.placements.0.transform.position.x',
+      'solution.placements.1.transform.rotation',
+    ]);
+  });
+
+  it('refuse un document qui porte à la fois des objets à placer et une solution', () => {
+    expect(
+      issuePaths({
+        ...validLevel,
+        objects: validLevel.objects.map((object) => (object.id === 'beam-1' ? markedBeam : object)),
+        solution: { placements: [pose('inventory-beam-medium')] },
+      }),
+    ).toEqual(['solution']);
+  });
+
+  it('laisse une tentative consommer l’inventaire qu’utilise la solution', () => {
+    expect(
+      levelDocumentAttemptSchema.safeParse({
+        ...validLevel,
+        inventory: [{ ...beamEntry, quantity: 0 }],
+        solution: { placements: [pose('inventory-beam-medium')] },
+      }).success,
+    ).toBe(true);
   });
 });

@@ -52,7 +52,8 @@ recréer. Cela ne restaure jamais un monde physique sérialisé dans le niveau.
 ## Enveloppe de niveau
 
 Le contrat persistant courant est `LevelDocument v2` : celui de l'ADR 0004,
-plus le rectangle de scène de l'ADR 0007 et les fils de commande de l'ADR 0009.
+plus le rectangle de scène de l'ADR 0007, les fils de commande de l'ADR 0009,
+le défi de l'ADR 0010 et la solution de référence de l'ADR 0013.
 Il porte l'intention de niveau échangée entre campagne, résolution et création : objets placés,
 inventaire, zones de construction et objectif, sans jamais sérialiser un monde
 physique ni un détail de rendu.
