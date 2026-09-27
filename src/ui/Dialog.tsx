@@ -3,9 +3,13 @@ import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { Panel } from './Panel';
 
 interface DialogProps {
-  /** Accessible name of the dialog. */
-  readonly label: string;
+  /** Accessible name of the dialog; when omitted, the visible title names it (`aria-labelledby`). */
+  readonly label?: string;
   readonly title: ReactNode;
+  /** Extra class on the panel, for a dialog with its own layout (U4b's victory). */
+  readonly className?: string;
+  /** `data-*` attributes exposing state to tests and styles. */
+  readonly dataAttributes?: Readonly<Record<`data-${string}`, string>>;
   /** Accessible name of the explicit close control. */
   readonly closeLabel: string;
   readonly onClose: () => void;
@@ -32,6 +36,8 @@ const focusableSelector =
 export function Dialog({
   label,
   title,
+  className,
+  dataAttributes,
   closeLabel,
   onClose,
   initialFocusRef,
@@ -91,10 +97,11 @@ export function Dialog({
       />
       <Panel
         ref={dialogRef}
-        className="dialog"
-        label={label}
+        className={`dialog${className === undefined ? '' : ` ${className}`}`}
+        {...(label === undefined ? {} : { label })}
         title={title}
         isModalDialog
+        {...(dataAttributes === undefined ? {} : { dataAttributes })}
         headerAction={
           <button
             ref={closeRef}

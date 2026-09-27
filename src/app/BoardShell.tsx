@@ -14,7 +14,8 @@ import type { ConstructionAttempt } from '../application/construction';
 import { AppFrame } from '../ui/AppFrame';
 import { BoardView } from '../ui/BoardView';
 import { ContextPanel } from '../ui/ContextPanel';
-import { LevelResult, type CampaignVictory } from '../ui/LevelResult';
+import { CampaignVictoryDialog, type CampaignVictory } from '../ui/CampaignVictoryDialog';
+import { LevelResult } from '../ui/LevelResult';
 import { InspectorDrawer } from '../ui/InspectorDrawer';
 import { Button } from '../ui/Button';
 import { ObjectDrawer } from '../ui/ObjectDrawer';
@@ -26,6 +27,7 @@ import { LevelExportDialog } from './LevelExportDialog';
 import { useWiringTool, wiringGuide } from './use-wiring-tool';
 import { useEditorSession } from './use-editor-session';
 import { useIsSideLayout } from './use-side-layout';
+import { useVictoryDialog } from './use-victory-dialog';
 import { useSimulationRunner } from './use-simulation-runner';
 
 interface BoardShellProps {
@@ -37,7 +39,7 @@ interface BoardShellProps {
   readonly onSimulationCompleted?: (outcome: AttemptOutcome) => void;
   /** Called with each newly committed author document (U17 draft autosave). */
   readonly onDocumentCommitted?: (document: LevelDocument) => void;
-  /** U4: tier, object count and next level after a campaign victory. */
+  /** U4, U4b: tier, object count and next level after a campaign victory, shown in a dialog. */
   readonly campaignVictory?: CampaignVictory | null;
 }
 
@@ -113,6 +115,9 @@ export function BoardShell({
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const resetDialogCancelRef = useRef<HTMLButtonElement>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const shownCampaignVictory =
+    simulation.attemptOutcome?.outcome === 'won' ? campaignVictory : null;
+  const victoryDialog = useVictoryDialog(shownCampaignVictory !== null);
 
   // B1 (plan-remise-en-jeu.md § 4, `initial-progression.md` § Niveau 1):
   // level 1 declares `inventory: []`, so the catalogue drawer must not
@@ -333,7 +338,14 @@ export function BoardShell({
                 onReplay={resetToInitialAttempt}
                 onReset={simulation.restoreConstruction}
                 onReturnToLevels={returnToLevels}
-                {...(campaignVictory === null ? {} : { campaign: campaignVictory })}
+                {...(shownCampaignVictory === null
+                  ? {}
+                  : {
+                      campaign: {
+                        tier: shownCampaignVictory.tier,
+                        onOpenResult: victoryDialog.open,
+                      },
+                    })}
               />
             }
           />
@@ -376,6 +388,13 @@ export function BoardShell({
             </Button>
           </div>
         </Dialog>
+      )}
+      {victoryDialog.isOpen && shownCampaignVictory !== null && (
+        <CampaignVictoryDialog
+          campaign={shownCampaignVictory}
+          onReplay={resetToInitialAttempt}
+          onClose={victoryDialog.close}
+        />
       )}
       {isExportOpen && (
         <LevelExportDialog

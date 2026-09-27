@@ -1,22 +1,17 @@
-import type { ChallengeHint } from '../application/progression';
 import type { AttemptFailureReason, AttemptOutcome } from '../domain/attempt-failure-evaluator';
+import type { CampaignVictory } from './CampaignVictoryDialog';
 import { Button } from './Button';
 import { Panel } from './Panel';
 
 /**
- * U4: what a campaign victory adds to the banner (ADR 0010). Absent for the
- * workshop, the demo and shared levels, which only say « Victoire ».
+ * U4b: a campaign victory tells its tier and next steps in
+ * `CampaignVictoryDialog`. The banner below the board only keeps the tier
+ * for styles and tests, a way to reopen that dialog after « Voir la scène »,
+ * and « Recommencer ». « Retour aux niveaux » is left to the menu.
  */
-export interface CampaignVictory {
-  /** Tier earned by this attempt, from the objects counted at launch. */
-  readonly tier: 'resolved' | 'elegant' | 'minimal';
-  readonly objectsUsed: number;
-  /** Progressive revelation from the saved best result (ADR 0010). */
-  readonly hint: ChallengeHint;
-  /** Fewer objects than the author's known minimum. */
-  readonly isNewRecord: boolean;
-  /** Opens the next campaign level; `null` when none exists or it is locked. */
-  readonly onNextLevel: (() => void) | null;
+export interface CampaignResult {
+  readonly tier: CampaignVictory['tier'];
+  readonly onOpenResult: () => void;
 }
 
 interface LevelResultProps {
@@ -26,42 +21,7 @@ interface LevelResultProps {
   readonly onReplay: () => void;
   readonly onReset: () => void;
   readonly onReturnToLevels: () => void;
-  readonly campaign?: CampaignVictory;
-}
-
-const tierLabels: Record<CampaignVictory['tier'], string> = {
-  resolved: '✅ Résolu',
-  elegant: '⭐ Élégant',
-  minimal: '🏆 Minimal',
-};
-
-const objectCountLabel = (objectsUsed: number): string => {
-  if (objectsUsed === 0) return 'sans poser d’objet.';
-  return `avec ${String(objectsUsed)} ${objectsUsed === 1 ? 'objet' : 'objets'}.`;
-};
-
-const challengeLabel = ({ hint, isNewRecord }: CampaignVictory): string | null => {
-  if (isNewRecord) return 'Nouveau record : moins que le minimum connu !';
-  if (hint === null) return null;
-  if (hint.nextTier === 'elegant') {
-    return `Tu penses pouvoir le faire avec ${String(hint.objectCount)} ?`;
-  }
-  return `Record à battre : 🏆 avec ${String(hint.objectCount)} ${
-    hint.objectCount === 1 ? 'objet' : 'objets'
-  }.`;
-};
-
-function CampaignSummary({ campaign }: { readonly campaign: CampaignVictory }) {
-  const challenge = challengeLabel(campaign);
-  return (
-    <div className="level-result-summary">
-      <p className="level-result-tier">
-        <strong>{tierLabels[campaign.tier]}</strong>{' '}
-        <span>{objectCountLabel(campaign.objectsUsed)}</span>
-      </p>
-      {challenge !== null && <p className="level-result-challenge">{challenge}</p>}
-    </div>
-  );
+  readonly campaign?: CampaignResult;
 }
 
 /**
@@ -123,30 +83,33 @@ export function LevelResult({
     );
   }
 
-  const onNextLevel = campaign?.onNextLevel ?? null;
+  if (campaign !== undefined) {
+    return (
+      <Panel
+        className="level-result level-result-victory"
+        label="Résultat du niveau"
+        title="Victoire"
+        dataAttributes={{ 'data-level-tier': campaign.tier }}
+      >
+        <div className="level-result-actions">
+          <Button onClick={campaign.onOpenResult}>Voir le résultat</Button>
+          <Button tone="go" onClick={onReplay}>
+            <span aria-hidden="true">↺</span>
+            Recommencer
+          </Button>
+        </div>
+      </Panel>
+    );
+  }
 
   return (
     <Panel
       className="level-result level-result-victory"
       label="Résultat du niveau"
       title="Victoire"
-      {...(campaign === undefined ? {} : { dataAttributes: { 'data-level-tier': campaign.tier } })}
     >
-      {campaign !== undefined && <CampaignSummary campaign={campaign} />}
-      <div
-        className={`level-result-actions${onNextLevel === null ? '' : ' level-result-actions-three'}`}
-      >
-        {onNextLevel !== null && (
-          <Button tone="go" onClick={onNextLevel}>
-            Niveau suivant
-            <span aria-hidden="true">→</span>
-          </Button>
-        )}
-        <Button
-          tone={onNextLevel === null ? 'go' : 'neutral'}
-          className="level-result-replay"
-          onClick={onReplay}
-        >
+      <div className="level-result-actions">
+        <Button tone="go" onClick={onReplay}>
           <span aria-hidden="true">↺</span>
           Recommencer
         </Button>
