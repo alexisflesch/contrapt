@@ -1649,7 +1649,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   1 ignoré car C3 est spécifique au projet desktop).
 - Captures : sans objet, L21 n’ajoute aucune interface visible.
 
-### L22 — Codec de fichier de niveau — fait — commit dédié L22
+### L22 — Codec de fichier de niveau — fait — `2dea24c feat(storage): ajoute le codec de fichier des niveaux (L22)`
 
 - Tests ajoutés : `level-file-codec.test.ts` — JSON indenté et saut de ligne,
   ordre des clés même depuis un objet désordonné, aller-retour identique du niveau
