@@ -293,6 +293,9 @@ pendant le travail.
 - **Deux boutons « Réinitialiser »** (libellé à remplacer par « Recommencer », voir
   `mobile-editor-interactions.md`) actifs simultanément après une simulation
   terminée (barre d’actions et bandeau de résultat).
+- **Victoire dans l’éditeur** : après « Tester », une victoire affiche désormais
+  « Retour à l’édition », qui restaure la construction d’avant lancement et
+  masque les actions joueur « Rejouer le niveau » et « Retour aux niveaux ».
 - **Retest du Xiaomi après L2c** : le vieux téléphone avait exigé un rechargement
   de `/bench/play`. Le chargeur retente maintenant un asset en échec lors des
   rendus suivants, au plus trois fois ; le comportement doit encore être vérifié
@@ -324,6 +327,9 @@ pendant le travail.
 essai — typecheck, lint, formatage, Knip, contenu, 727 tests Vitest (61
 fichiers), build et 51 tests Playwright `mobile` (50 réussis, 1 ignoré). Le
 premier essai avait échoué sur l’E2E instable du niveau 9 (voir les dettes).
+
+`pnpm check` après U6 (27 septembre 2026) : passe — 728 tests Vitest, build et
+51 tests Playwright `mobile` (50 réussis, 1 ignoré).
 
 Exécution précédente :
 `pnpm check` après U15 (27 septembre 2026) : passe d’une traite — typecheck,

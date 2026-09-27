@@ -2189,3 +2189,21 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   commit précédent (échecs intermittents à « Fermer les propriétés »).
 - Pour l’auteur : captures hors dépôt, `…/scratchpad/captures/u21/` ; valider
   la fin du geste au dernier fil et `remove` comme permission de délier.
+
+### U6 — « Recommencer » et « Remettre à zéro » — fait — non commité
+
+- Tests ajoutés : src/app/App.test.tsx › conserve la construction après une victoire obtenue dans l’éditeur.
+- Échec initial constaté : le test attendait « Retour à l’édition », mais le
+  bandeau exposait « Rejouer le niveau » et « Retour aux niveaux ».
+- Tests existants réécrits : aucun.
+- Fichiers touchés : src/app/BoardShell.tsx, src/ui/LevelResult.tsx,
+  src/app/App.test.tsx.
+- Écarts avec la tâche : le changement est limité à la victoire en mode éditeur ;
+  les actions de défaite et le vocabulaire global « Réinitialiser » restent à
+  traiter séparément.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Vérification : le test ciblé, pnpm check:fast et la gate complète passent.
+- Captures : à valider par l’auteur dans les trois formats de l’interface U6.
+- Pour l’auteur : vérifier /editor après une victoire ; « Retour à l’édition »
+  conserve le panier déplacé et ne propose plus de rejouer ni de revenir aux niveaux.

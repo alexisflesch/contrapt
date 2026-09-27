@@ -296,6 +296,7 @@ export function BoardShell({
             result={
               <LevelResult
                 outcome={simulation.attemptOutcome}
+                isCreation={mode === 'creation'}
                 onReplay={resetToInitialAttempt}
                 onReset={simulation.restoreConstruction}
                 onReturnToLevels={returnToLevels}

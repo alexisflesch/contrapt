@@ -540,6 +540,51 @@ describe('coque Contrapt!', () => {
     expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
   });
 
+  it('conserve la construction après une victoire obtenue dans l’éditeur', () => {
+    const animationFrames = createAnimationFrameHarness();
+    render(<App />);
+    openEmbeddedWorkshop();
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    // Déplacer le panier auteur sur la balle rend la victoire immédiate, tout
+    // en laissant une modification réelle de l’atelier à vérifier après le
+    // retour à l’édition.
+    firePointerEvent(board, 'pointerdown', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 600,
+      clientY: 350,
+    });
+    firePointerEvent(board, 'pointermove', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 50,
+    });
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 400,
+      clientY: 50,
+    });
+
+    expect(screen.getByRole('region', { name: 'Propriétés de Panier' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    advanceSimulationToResult(animationFrames, 40);
+
+    const result = screen.getByRole('region', { name: 'Résultat du niveau' });
+    expect(within(result).getByText('Victoire')).toBeVisible();
+    expect(within(result).getByRole('button', { name: 'Retour à l’édition' })).toBeVisible();
+    expect(within(result).queryByRole('button', { name: 'Rejouer le niveau' })).toBeNull();
+    expect(within(result).queryByRole('button', { name: 'Retour aux niveaux' })).toBeNull();
+
+    fireEvent.click(within(result).getByRole('button', { name: 'Retour à l’édition' }));
+
+    expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Propriétés de Panier' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+  });
+
   it('avance la physique par RAF contrôlé et permet de la mettre en pause puis de reprendre', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);

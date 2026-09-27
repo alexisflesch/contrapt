@@ -5,6 +5,7 @@ import { Panel } from './Panel';
 interface LevelResultProps {
   /** How the attempt ended; `null` while none has concluded. */
   readonly outcome: AttemptOutcome | null;
+  readonly isCreation: boolean;
   readonly onReplay: () => void;
   readonly onReset: () => void;
   readonly onReturnToLevels: () => void;
@@ -27,7 +28,13 @@ const failureExplanations: Record<AttemptFailureReason, string> = {
  * whose size is reserved up front, so the banner appearing never resizes
  * the board (B5).
  */
-export function LevelResult({ outcome, onReplay, onReset, onReturnToLevels }: LevelResultProps) {
+export function LevelResult({
+  outcome,
+  isCreation,
+  onReplay,
+  onReset,
+  onReturnToLevels,
+}: LevelResultProps) {
   if (outcome === null) return null;
 
   if (outcome.outcome === 'lost') {
@@ -40,6 +47,23 @@ export function LevelResult({ outcome, onReplay, onReset, onReturnToLevels }: Le
             Réinitialiser
           </Button>
           <Button onClick={onReturnToLevels}>Retour aux niveaux</Button>
+        </div>
+      </Panel>
+    );
+  }
+
+  if (isCreation) {
+    return (
+      <Panel
+        className="level-result level-result-victory"
+        label="Résultat du niveau"
+        title="Victoire"
+      >
+        <div className="level-result-actions">
+          <Button tone="go" onClick={onReset}>
+            <span aria-hidden="true">↩</span>
+            Retour à l’édition
+          </Button>
         </div>
       </Panel>
     );
