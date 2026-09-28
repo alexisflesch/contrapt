@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 27 septembre 2026.
+Dernière mise à jour : 28 septembre 2026.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -21,6 +21,14 @@ La gate `pnpm check` orchestre typecheck, lint sans warning, vérification du
 formatage, code mort, validation du contenu, tests Vitest, build statique et E2E
 du projet Playwright `mobile`. `pnpm check:fast` (typecheck, lint, Vitest) sert
 pendant le travail.
+
+## Licence
+
+Le code de TinkerBolt est sous GNU AGPL version 3 ou ultérieure
+(`AGPL-3.0-or-later`). Le texte intégral est dans [`LICENSE`](../LICENSE) ; le
+README et `package.json` déclarent aussi cette licence. Les dépendances et
+ressources tierces gardent leurs licences respectives. `pnpm format:check` passe
+le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 
 ## Réellement livré et couvert par des tests
 

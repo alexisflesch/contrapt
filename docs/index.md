@@ -46,6 +46,7 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/decisions/0012-pwa-service-worker.md`               | 47      | PWA, service worker, mises à jour (accepté)                      |
 | `docs/decisions/0013-puzzle-workshop-solution.md`         | 95      | objets à placer, solution de référence, export vérifié (accepté) |
 | `docs/decisions/0014-icon-library.md`                    | —       | bibliothèque d’icônes de l’interface (accepté)                         |
+| `LICENSE`                                                 | 661     | conditions de licence du code du logiciel (GNU AGPL-3.0-or-later) |
 
 Sources de vérité exécutables, prioritaires sur toute prose :
 
@@ -85,6 +86,7 @@ Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans rai
 | Défi d'objets, progression de campagne         | ADR 0010, ADR 0011 § `localStorage`                                                                               | `src/application/progression/`, `src/content/` |
 | PWA, service worker                            | ADR 0012, ADR 0003                                                                                                | racine, `src/app/`                             |
 | Outillage, script, configuration, CI           | ADR 0003, `package.json`                                                                                          | racine                                         |
+| Licence du logiciel                            | `LICENSE`, `README.md`, `package.json`                                                                            | racine                                         |
 | Décision structurante, nouvelle ADR            | `cahier-des-charges.md` § Décisions ouvertes, ADR concernée                                                       | `docs/decisions/`                              |
 
 ## Règles de lecture

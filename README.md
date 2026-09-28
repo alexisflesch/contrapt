@@ -3,6 +3,14 @@
 TinkerBolt est un jeu de puzzles mécaniques en 2D : place des objets, règle leurs
 mécanismes, lance la simulation et guide la balle jusque dans le panier.
 
+## Licence
+
+Le code de TinkerBolt est distribué sous la GNU Affero General Public License,
+version 3 ou ultérieure (`AGPL-3.0-or-later`). Le texte complet est dans
+[`LICENSE`](LICENSE). Le [dépôt source](https://github.com/alexisflesch/tinkerbolt)
+contient le code de l’application ; les dépendances et ressources tierces restent
+soumises à leurs propres licences.
+
 Le projet est encore en développement. La campagne contient actuellement douze
 niveaux jouables ; le mode auteur permet aussi de tester, modifier, sauvegarder
 et partager des niveaux localement.

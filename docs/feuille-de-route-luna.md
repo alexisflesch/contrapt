@@ -2580,3 +2580,22 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   `test-results/levels-page/levels-844x390.png` et
   `test-results/levels-page/levels-1440x900.png`. Le contrôle supplémentaire
   320 × 568 ne montre aucun débordement.
+
+### Licence AGPL du logiciel — fait — non commité
+
+- Tests ajoutés : aucun ; modification de licence et documentation.
+- Échec initial constaté : sans objet.
+- Tests existants réécrits : aucun.
+- Production : ajout du texte GNU AGPL v3, déclaration SPDX `AGPL-3.0-or-later`
+  dans `package.json`, mention et lien vers le dépôt source dans le README.
+- Fichiers touchés hors périmètre : `docs/index.md`, `docs/etat.md` et ce journal
+  (carte de lecture, état livré et suivi de la reprise).
+- Écarts avec la tâche : aucun.
+- Mesures qui ne se reproduisent pas : aucune.
+- Contradictions rencontrées : aucune.
+- Vérifications : `pnpm format:check` passe ; `git diff --check` passe.
+- Non vérifié : la gate complète n’a pas été exécutée. Prettier signale des écarts
+  préexistants dans `docs/index.md` et cette feuille ; aucun reformatage global
+  n’a été appliqué (L2 reste bloquée).
+- Pour l’auteur : AGPL v3 ou ultérieure, suivant la recommandation GNU pour les
+  licences copyleft ; le dépôt source est public à l’adresse citée dans le README.
