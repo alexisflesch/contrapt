@@ -58,11 +58,20 @@ const tapBoard = (clientX: number, clientY: number): void => {
   }
 };
 
+/** M11: level 2 can only be modified once level 1 is resolved (ADR 0015, ADR 0010). */
 const createProgressRepository = () => {
   const save = vi.fn(() => ({ status: 'ok' as const }));
-  const repository: ProgressRepository = { load: () => ({ status: 'ok', progress: {} }), save };
+  const repository: ProgressRepository = {
+    load: () => ({
+      status: 'ok',
+      progress: { 'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 1 } },
+    }),
+    save,
+  };
   return { repository, save };
 };
+
+const levelTwoUnlocked = (): ProgressRepository => createProgressRepository().repository;
 
 describe('éditer un niveau de la campagne (U17)', () => {
   beforeEach(() => {
@@ -79,10 +88,11 @@ describe('éditer un niveau de la campagne (U17)', () => {
   it('ouvre depuis la liste un brouillon distinct du niveau en mode auteur', () => {
     const { repository, save } = createProgressRepository();
     window.history.replaceState(null, '', '/levels');
-    render(<App progressRepository={repository} />);
+    // The calibration guide only shows in development (M11, ADR 0015 § Révéler).
+    render(<App progressRepository={repository} developmentMode />);
 
     const card = screen.getByRole('region', { name: 'Niveau 2' });
-    fireEvent.click(within(card).getByRole('button', { name: 'Éditer le niveau 2' }));
+    fireEvent.click(within(card).getByRole('button', { name: 'Modifier le niveau 2' }));
 
     expect(window.location.pathname).toBe('/editor');
     expect(new URLSearchParams(window.location.search).get('draft')).toBe(
@@ -125,7 +135,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
     window.history.replaceState(null, '', '/levels');
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier le niveau 1' }));
 
     const stored = createLocalStorageDraftRepository(window.localStorage, testClock).load(
       'campaign-01-la-bille-de-service-brouillon',
@@ -140,8 +150,8 @@ describe('éditer un niveau de la campagne (U17)', () => {
 
   it('enregistre les ajustements de l’auteur dans le brouillon, jamais dans le niveau', () => {
     window.history.replaceState(null, '', '/levels');
-    render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
+    render(<App progressRepository={levelTwoUnlocked()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier le niveau 2' }));
 
     // The shelf is locked for the player (`move: false`); the author context ignores it.
     tapWorldPoint(5.0, 3.6);
@@ -165,7 +175,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
       creationFromLevel(levelTwo, { createId: () => draftId }),
     );
     window.history.replaceState(null, '', `/editor?draft=${draftId}`);
-    render(<App />);
+    render(<App progressRepository={levelTwoUnlocked()} />);
 
     tapWorldPoint(5.0, 3.6);
     const properties = screen.getByRole('region', { name: /^Propriétés de/ });
@@ -191,9 +201,9 @@ describe('éditer un niveau de la campagne (U17)', () => {
       },
     });
     window.history.replaceState(null, '', '/levels');
-    render(<App />);
+    render(<App progressRepository={levelTwoUnlocked()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier le niveau 2' }));
 
     expect(screen.queryByText('Éditeur · Mon pont')).not.toBeInTheDocument();
   });
@@ -235,8 +245,8 @@ describe('éditer un niveau de la campagne (U17)', () => {
 
   it('ajoute au brouillon un objet absent de l’inventaire du niveau (U20)', () => {
     window.history.replaceState(null, '', '/levels');
-    render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
+    render(<App progressRepository={levelTwoUnlocked()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier le niveau 2' }));
     const before = storedDraft();
 
     placeFromCatalogue('Masse', 6.5, 1.0);
@@ -250,8 +260,8 @@ describe('éditer un niveau de la campagne (U17)', () => {
 
   it('ajoute une balle bleue sans jamais changer la balle de l’objectif (U20)', () => {
     window.history.replaceState(null, '', '/levels');
-    render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 2' }));
+    render(<App progressRepository={levelTwoUnlocked()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier le niveau 2' }));
     expect(ballColours().red).toBe('ball-red');
     expect(ballColours().blue).toContain('ball-blue');
 

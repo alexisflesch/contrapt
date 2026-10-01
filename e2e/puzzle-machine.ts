@@ -45,6 +45,9 @@ const levelOne = levelDocumentSchema.parse({
   buildZones: [{ min: { x: 3.6, y: 1.7 }, max: { x: 7, y: 2.9 } }],
   scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
 });
+/** The puzzle itself: the player wins by laying the short beam at `machineBeam` (M11). */
+export const machinePuzzle: LevelDocument = levelOne;
+
 /** U22: level 1 with its reference beam in place, still fixed — the author's complete machine. */
 const machine: LevelDocument = {
   ...levelOne,

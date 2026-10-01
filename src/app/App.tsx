@@ -20,6 +20,7 @@ import { ReceivedLevelPlayPage } from './ReceivedLevelPlayPage';
 import { SettingsPage } from './SettingsPage';
 import { SharedLevelPage } from './SharedLevelPage';
 import { CampaignProgressProvider } from './CampaignProgressProvider';
+import { DevelopmentModeContext } from './development-mode-context';
 import { DraftRepositoryContext, unavailableDraftRepository } from './draft-repository-context';
 import { PwaUpdateProvider } from './PwaUpdateProvider';
 import {
@@ -42,6 +43,12 @@ interface AppProps {
    * always gets.
    */
   readonly unlockAllLevels?: boolean;
+  /**
+   * Dev-mode tools (ADR 0015 § Révéler): `main.tsx` passes
+   * `import.meta.env.DEV`; a new campaign creation opens with its solution
+   * revealed and the calibration guide shows. `false` by default.
+   */
+  readonly developmentMode?: boolean;
 }
 
 const unavailableProgressRepository: ProgressRepository = {
@@ -82,6 +89,7 @@ export function App({
   draftRepository,
   receivedLevelRepository,
   unlockAllLevels = false,
+  developmentMode = false,
 }: AppProps = {}) {
   const [browserDraftRepository] = useState(() =>
     draftRepository === undefined ? createBrowserDraftRepository() : unavailableDraftRepository,
@@ -100,31 +108,33 @@ export function App({
 
   return (
     <PwaUpdateProvider>
-      <CampaignProgressProvider repository={repository} unlockAllLevels={unlockAllLevels}>
-        <DraftRepositoryContext value={draftRepository ?? browserDraftRepository}>
-          <ReceivedLevelRepositoryContext
-            value={receivedLevelRepository ?? browserReceivedLevelRepository}
-          >
-            <BrowserRouter basename={import.meta.env.BASE_URL}>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/levels" element={<LevelsPage />} />
-                <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
-                <Route path="/editor" element={<EditorPage />} />
-                <Route path="/my-levels" element={<MyLevelsPage />} />
-                <Route path="/my-levels/:id/play" element={<ReceivedLevelPlayPage />} />
-                <Route path="/import" element={<Navigate to="/my-levels" replace />} />
-                <Route path="/demo" element={<DemoPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/shared" element={<SharedLevelPage />} />
-                <Route path="/bench" element={<BenchPage />} />
-                <Route path="/bench/play" element={<BenchPlayPage />} />
-                <Route path="*" element={<Navigate to="/levels" replace />} />
-              </Routes>
-            </BrowserRouter>
-          </ReceivedLevelRepositoryContext>
-        </DraftRepositoryContext>
-      </CampaignProgressProvider>
+      <DevelopmentModeContext value={developmentMode}>
+        <CampaignProgressProvider repository={repository} unlockAllLevels={unlockAllLevels}>
+          <DraftRepositoryContext value={draftRepository ?? browserDraftRepository}>
+            <ReceivedLevelRepositoryContext
+              value={receivedLevelRepository ?? browserReceivedLevelRepository}
+            >
+              <BrowserRouter basename={import.meta.env.BASE_URL}>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/levels" element={<LevelsPage />} />
+                  <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
+                  <Route path="/editor" element={<EditorPage />} />
+                  <Route path="/my-levels" element={<MyLevelsPage />} />
+                  <Route path="/my-levels/:id/play" element={<ReceivedLevelPlayPage />} />
+                  <Route path="/import" element={<Navigate to="/my-levels" replace />} />
+                  <Route path="/demo" element={<DemoPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/shared" element={<SharedLevelPage />} />
+                  <Route path="/bench" element={<BenchPage />} />
+                  <Route path="/bench/play" element={<BenchPlayPage />} />
+                  <Route path="*" element={<Navigate to="/levels" replace />} />
+                </Routes>
+              </BrowserRouter>
+            </ReceivedLevelRepositoryContext>
+          </DraftRepositoryContext>
+        </CampaignProgressProvider>
+      </DevelopmentModeContext>
     </PwaUpdateProvider>
   );
 }

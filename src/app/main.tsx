@@ -15,10 +15,11 @@ if (rootElement === null) {
  * `useCampaignProgress()` never do, since Vitest sets it to `true` and would
  * break the lock tests. Under `pnpm dev` every level unlocks, in the list and
  * by direct URL; a production build (and Playwright, which serves it) keeps
- * the real campaign lock.
+ * the real campaign lock. `developmentMode` likewise reveals the solution of
+ * a new campaign creation and shows the calibration guide (ADR 0015 § Révéler).
  */
 createRoot(rootElement).render(
   <StrictMode>
-    <App unlockAllLevels={import.meta.env.DEV} />
+    <App unlockAllLevels={import.meta.env.DEV} developmentMode={import.meta.env.DEV} />
   </StrictMode>,
 );

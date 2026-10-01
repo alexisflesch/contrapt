@@ -7,7 +7,9 @@ import type { LevelDocument } from '../domain/level-document';
 import type { CampaignVictory } from '../ui/CampaignVictoryDialog';
 import { BoardShell } from './BoardShell';
 import { attributionLine } from './level-attribution';
+import { victoryNotKeptNotice } from './not-kept-notice';
 import { useReceivedLevelRepository } from './received-level-repository-context';
+import { useRemix } from './use-remix';
 
 interface ReceivedLevelBoardProps {
   readonly document: LevelDocument;
@@ -26,9 +28,10 @@ interface ReceivedLevelBoardProps {
  * A received level, played (ADR 0015 § Victoire sur un niveau reçu): the
  * attempt snapshot taken at launch records a victory on the stored entry,
  * as `PlayLevelPage` does for the campaign, which it never touches. A
- * storage failure is ignored: the game goes on. The result only shows ✅,
- * like an exported puzzle (U24). The header carries the attribution
- * (ADR 0016 § Affichage).
+ * storage failure never stops the game: a discreet status says the victory
+ * was not kept (M11). The result only shows ✅, like an exported puzzle
+ * (U24), and « Remixer » poses the winning attempt in a new creation. The
+ * header carries the attribution (ADR 0016 § Affichage).
  */
 export function ReceivedLevelBoard({
   document,
@@ -39,18 +42,26 @@ export function ReceivedLevelBoard({
 }: ReceivedLevelBoardProps) {
   const repository = useReceivedLevelRepository();
   const launchedAttemptRef = useRef<ConstructionAttempt | null>(null);
-  const [wonObjectCount, setWonObjectCount] = useState<number | null>(null);
+  /** The last won attempt, as launched; `null` otherwise. */
+  const [wonAttempt, setWonAttempt] = useState<ConstructionAttempt | null>(null);
+  const [isVictoryNotKept, setIsVictoryNotKept] = useState(false);
+  const { remix, error: remixError, clearError: clearRemixError } = useRemix(document);
   const victory: CampaignVictory | null =
-    wonObjectCount === null
+    wonAttempt === null
       ? null
       : {
           tier: 'resolved',
-          objectsUsed: wonObjectCount,
+          objectsUsed: countObjectsUsed(wonAttempt),
           hasChallenge: false,
           hint: null,
           isNewRecord: false,
           onNextLevel: null,
+          onRemix: () => {
+            remix(wonAttempt);
+          },
+          ...(remixError === undefined ? {} : { remixError }),
         };
+  const shownNotice = isVictoryNotKept ? victoryNotKeptNotice : notice;
 
   return (
     <BoardShell
@@ -62,16 +73,20 @@ export function ReceivedLevelBoard({
       campaignVictory={victory}
       onSimulationLaunched={(attempt) => {
         launchedAttemptRef.current = attempt;
-        setWonObjectCount(null);
+        setWonAttempt(null);
+        clearRemixError();
       }}
       onSimulationCompleted={(outcome) => {
         const attempt = launchedAttemptRef.current;
         launchedAttemptRef.current = null;
         if (outcome.outcome !== 'won' || attempt === null) return;
-        if (entryId !== null) recordReceivedVictory(repository, entryId, attempt);
-        setWonObjectCount(countObjectsUsed(attempt));
+        if (entryId !== null) {
+          const recorded = recordReceivedVictory(repository, entryId, attempt);
+          setIsVictoryNotKept(recorded.status === 'not-kept');
+        }
+        setWonAttempt(attempt);
       }}
-      {...(notice === undefined ? {} : { notice })}
+      {...(shownNotice === undefined ? {} : { notice: shownNotice })}
       {...(exit === undefined ? {} : { exit })}
     />
   );

@@ -13,6 +13,7 @@ const victory = (overrides: Partial<CampaignVictory> = {}): CampaignVictory => (
   hint: null,
   isNewRecord: false,
   onNextLevel: null,
+  onRemix: null,
   ...overrides,
 });
 
@@ -152,5 +153,25 @@ describe('CampaignVictoryDialog — victoire de campagne (U4b)', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Voir la scène' }));
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('propose « Remixer » quand la victoire peut être remixée (M11)', () => {
+    const onRemix = vi.fn();
+    const dialog = renderDialog(victory({ onRemix }));
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remixer' }));
+
+    expect(onRemix).toHaveBeenCalledTimes(1);
+  });
+
+  it('n’offre pas « Remixer » sans remix possible, et dit pourquoi un remix a échoué (M11)', () => {
+    const dialog = renderDialog(victory({ onRemix: null }));
+    expect(within(dialog).queryByRole('button', { name: 'Remixer' })).toBeNull();
+    cleanup();
+
+    const failed = renderDialog(
+      victory({ onRemix: () => undefined, remixError: 'Le remix n’a pas pu être créé.' }),
+    );
+    expect(within(failed).getByRole('alert')).toHaveTextContent('Le remix n’a pas pu être créé.');
   });
 });

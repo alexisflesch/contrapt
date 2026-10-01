@@ -17,6 +17,7 @@ import type { LevelDocument } from '../domain/level-document';
 import { AppFrame } from '../ui/AppFrame';
 import { Button } from '../ui/Button';
 import { Panel } from '../ui/Panel';
+import { useDevelopmentMode } from './development-mode-context';
 import { useDraftRepository } from './draft-repository-context';
 import { useCampaignProgress } from './use-campaign-progress';
 
@@ -80,12 +81,14 @@ const totalLevelCount = numberedChapters.reduce(
 /**
  * `/levels` (ADR 0008): the campaign, chapter by chapter (U5). A locked level
  * stays visible but cannot be launched; a resolved one shows its tier
- * (ADR 0010). Editing a draft copy (U17) stays available for every level.
+ * (ADR 0010). « Modifier » opens the level's creation (U17, ADR 0015),
+ * disabled like « Lancer » while the level is locked.
  */
 export function LevelsPage() {
   const navigate = useNavigate();
   const drafts = useDraftRepository();
   const { levels: levelProgress, unlockAllLevels } = useCampaignProgress();
+  const developmentMode = useDevelopmentMode();
   const [draftErrorLevelId, setDraftErrorLevelId] = useState<string | null>(null);
 
   return (
@@ -169,11 +172,14 @@ export function LevelsPage() {
                           <Play size={18} aria-hidden="true" />
                           Lancer le niveau {number}
                         </Button>
-                        {/* U17: the author edits a draft copy; the embedded level and progress stay untouched. */}
+                        {/* U17, M11: the author edits a creation; the embedded level and progress stay untouched. A locked level is not editable (ADR 0015). */}
                         <Button
                           className="level-card-edit"
+                          disabled={!unlocked}
                           onClick={() => {
-                            const result = openCampaignDraft(drafts, level);
+                            const result = openCampaignDraft(drafts, level, {
+                              revealSolution: developmentMode,
+                            });
                             if (result.status === 'error') {
                               setDraftErrorLevelId(level.id);
                               return;
@@ -182,7 +188,7 @@ export function LevelsPage() {
                           }}
                         >
                           <Pencil size={18} aria-hidden="true" />
-                          Éditer le niveau {number}
+                          Modifier le niveau {number}
                         </Button>
                         {draftErrorLevelId === level.id && (
                           <p className="panel-note" role="alert">

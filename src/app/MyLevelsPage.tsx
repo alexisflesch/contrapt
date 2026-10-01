@@ -17,6 +17,7 @@ import { campaignDraftId } from '../application/drafts/campaign-draft';
 import type { DraftCreation } from '../application/drafts/draft-repository';
 import { duplicateCreation } from '../application/drafts/duplicate-creation';
 import { listCreations } from '../application/drafts/list-creations';
+import { saveCreationFromLevel } from '../application/drafts/save-creation-from-level';
 import { puzzleFromWorkshop } from '../application/puzzle/puzzle-workshop';
 import { listReceivedLevels } from '../application/received/list-received-levels';
 import { receiveLevel } from '../application/received/receive-level';
@@ -32,6 +33,7 @@ import { fingerprintOf } from './fingerprint-of';
 import { attributionParts } from './level-attribution';
 import { LevelExportDialog } from './LevelExportDialog';
 import { notKeptNotice } from './not-kept-notice';
+import { randomIdPart } from './random-id-part';
 import { readLevelFile } from './read-level-file';
 import { ReceivedLevelBoard } from './ReceivedLevelBoard';
 import { ReceivedLevelShareDialog } from './ReceivedLevelShareDialog';
@@ -40,13 +42,6 @@ import { useCampaignProgress } from './use-campaign-progress';
 
 /** Composition point: the real clock stamps `receivedAt`, as on `/shared`. */
 const systemClock = (): Date => new Date();
-
-/** Composition point: the random part of `creation-<aléa>` (ADR 0015 § Identifiants). */
-const randomIdPart = (): string => {
-  const bytes = new Uint8Array(16);
-  globalThis.crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-};
 
 type PendingDeletion =
   | { readonly kind: 'creation'; readonly id: string; readonly title: string }
@@ -161,6 +156,24 @@ export function MyLevelsPage() {
         : { tone: 'alert', message: `${storageMessage(result.code)} La copie n’a pas été créée.` },
     );
     refresh();
+  };
+
+  /** M11: « Modifier » a received level opens a new creation, its winning solution posed if solved. */
+  const editReceived = (level: ReceivedLevel): void => {
+    const result = saveCreationFromLevel(drafts, level.document, {
+      ...(level.solved && level.playerSolution !== undefined
+        ? { playerSolution: level.playerSolution }
+        : {}),
+      createId: randomIdPart,
+    });
+    if (result.status === 'error') {
+      setImportNotice({
+        tone: 'alert',
+        message: `${storageMessage(result.code)} La création n’a pas été créée.`,
+      });
+      return;
+    }
+    void navigate(`/editor?draft=${encodeURIComponent(result.draftId)}`);
   };
 
   const importFile = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
@@ -295,6 +308,14 @@ export function MyLevelsPage() {
           >
             <Play size={18} aria-hidden="true" />
             Jouer
+          </Button>
+          <Button
+            onClick={() => {
+              editReceived(level);
+            }}
+          >
+            <Pencil size={18} aria-hidden="true" />
+            Modifier
           </Button>
           <Button
             onClick={() => {

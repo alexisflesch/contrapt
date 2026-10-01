@@ -53,7 +53,7 @@ test('importe un fichier depuis « Mes niveaux » et le retrouve dans la liste (
 
   // A creation too, for the filled page: the campaign's first level, edited.
   await page.goto('/levels');
-  await page.getByRole('button', { name: 'Éditer le niveau 1', exact: true }).tap();
+  await page.getByRole('button', { name: 'Modifier le niveau 1', exact: true }).tap();
   await expect(page.getByText('Mode éditeur')).toBeVisible();
   await page.goto('/my-levels');
   await expect(

@@ -4,6 +4,7 @@ import { embeddedLevels } from '../../content/embedded-levels';
 import type { LevelDocument } from '../../domain/level-document';
 import { createConstructionAttempt, movePlacement } from '../construction/construction-attempt';
 import { executeCommand, createHistory } from '../history';
+import { workshopFromPuzzle } from '../puzzle/puzzle-workshop';
 import type { DraftCreationContent, DraftRepository } from './draft-repository';
 
 import { campaignDraftId, openCampaignDraft } from './campaign-draft';
@@ -88,6 +89,32 @@ describe('brouillon d’un niveau de la campagne (U17)', () => {
     const { repository, saved } = createMemoryDraftRepository([edited]);
 
     expect(openCampaignDraft(repository, levelTwo)).toEqual({
+      status: 'ok',
+      draftId: 'campaign-02-par-dessus-le-mur-brouillon',
+    });
+    expect(saved).toEqual([]);
+  });
+
+  it('pose la solution de l’auteur dans une nouvelle création quand elle est révélée d’office (M11, ADR 0015 § Révéler)', () => {
+    const { repository, saved } = createMemoryDraftRepository();
+    const revealed = workshopFromPuzzle(levelTwo);
+    expect(levelTwo.solution?.placements.length).toBeGreaterThan(0);
+
+    openCampaignDraft(repository, levelTwo, { revealSolution: true });
+
+    expect(saved).toHaveLength(1);
+    const [creation] = saved;
+    expect(creation?.document.objects).toEqual(revealed.objects);
+    expect(creation?.document.wires).toEqual(revealed.wires);
+    expect(creation?.document.inventory).toEqual([]);
+    expect(creation?.document.metadata.title).toBe('Par-dessus le mur (remix)');
+    expect(creation?.source).toEqual(levelTwo);
+  });
+
+  it('rouvre telle quelle une création existante, même révélée d’office (M11)', () => {
+    const { repository, saved } = createMemoryDraftRepository([levelTwoCreation().document]);
+
+    expect(openCampaignDraft(repository, levelTwo, { revealSolution: true })).toEqual({
       status: 'ok',
       draftId: 'campaign-02-par-dessus-le-mur-brouillon',
     });

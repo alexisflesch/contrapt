@@ -1213,3 +1213,107 @@ accessible element with the role "button" and name "Jouer quand même"`
   retirer le bouton d’en-tête « Mes niveaux » de `/my-levels/:id/play` (le
   menu y mène déjà) pour laisser plus de place au titre et à l’auteur ?
   Faut-il un message discret quand une victoire n’a pas pu être gardée ?
+
+### M11 — Modifier et Remixer — fait — commit de cette entrée
+
+- Précisions du pilote appliquées : « Remixer » pose la tentative gagnante
+  (instantané du lancement, celui qui enregistre la victoire) ; révélation
+  d’office sous `import.meta.env.DEV` pour une création de campagne **neuve**
+  seulement, par la commande M7, drapeau injecté (`App` prop
+  `developmentMode`, comme `unlockAllLevels`) ; verrou recalculé depuis la
+  progression, URL directe refusée sans ouvrir l’atelier ni écrire ; statut
+  discret « Ta victoire n’a pas pu être enregistrée sur cet appareil. »
+  (dette M10 retirée d’`etat.md`) ; en-tête tronqué en 390 px laissé tel quel.
+- Tests ajoutés : `src/application/drafts/save-creation-from-level.test.ts`
+  (4 tests : `creation-<aléa>` avec la solution du joueur posée, sans
+  solution aucun objet à placer, nouvel aléa si l’identifiant est pris,
+  erreurs du dépôt en résultats) ; `campaign-draft.test.ts` › « pose la
+  solution de l’auteur dans une nouvelle création quand elle est révélée
+  d’office (M11…) » (objets et fils égaux à `workshopFromPuzzle` du niveau
+  2), « rouvre telle quelle une création existante, même révélée d’office
+  (M11) » ; `src/ui/CampaignVictoryDialog.test.tsx` › « propose « Remixer »
+  quand la victoire peut être remixée (M11) », « n’offre pas « Remixer » sans
+  remix possible, et dit pourquoi un remix a échoué (M11) » ;
+  `src/app/EditAndRemix.test.tsx` (10 tests App : Modifier un reçu non résolu
+  sans objet à placer ; résolu, solution du joueur posée ; Remixer après une
+  victoire reçue pose la poutre placée, niveau reçu inchangé ; victoire non
+  enregistrée → statut discret ; hors développement, création du niveau 2
+  déverrouillé sans solution ni fiche ; en développement, création neuve
+  révélée avec la fiche ; création existante rouverte sans révélation ;
+  « Modifier le niveau 2 » désactivé quand verrouillé ; URL directe d’une
+  création enregistrée d’un niveau verrouillé : « Ce niveau est encore
+  verrouillé. », lien `/levels`, pas de plateau, `localStorage` identique ;
+  ouverte sous `unlockAllLevels`) ; `src/app/CampaignRemix.test.tsx` (Remixer
+  après une victoire de campagne : création `creation-<aléa>` avec la poutre
+  posée, victoire comptée — aucune esquisse de campagne ne gagne, vérifié
+  headless, le niveau 1 est donc remplacé par `vi.mock` du module de
+  contenu) ; `e2e/remix.spec.ts` (mobile : importer, jouer, poser, gagner,
+  remixer, glisser la poutre au doigt, exporter un puzzle vérifié dont la
+  solution porte la nouvelle position ; liste avec niveau verrouillé et URL
+  directe refusée ; captures).
+- Échec initial constaté : `Failed to load url ./save-creation-from-level`
+  et `AssertionError: expected [ { id: 'ball-red', …(4) }, …(7) ] to deeply
+  equal [ { id: 'ball-red', …(4) }, …(9) ]` (révélation) ; App : `Unable to
+  find an accessible element with the role "button" and name "Modifier"`,
+  `… name "Remixer"`, `… name "Modifier le niveau 2"`, `Unable to find an
+  element with the text: Ce niveau est encore verrouillé.`, `… Ta victoire
+  n’a pas pu être enregistrée sur cet appareil.` (10 sur 10, et 1 sur 1 pour
+  la campagne) ; dialogue : `… name "Remixer"`, `Unable to find role="alert"`.
+  « rouvre telle quelle une création existante… » passait déjà
+  (non-régression). Les fixtures App ont d’abord échoué faute de zone de
+  construction (« choisissez une position dans la zone de construction »),
+  corrigé dans le test.
+- Tests existants réécrits (comportement remplacé par l’ADR 0015) :
+  `CampaignDraftEditing.test.tsx` — « Éditer le niveau N » devient
+  « Modifier le niveau N » ; le niveau 2 n’est modifiable que niveau 1 résolu,
+  d’où une progression injectée ; « ouvre depuis la liste un brouillon
+  distinct… » rend l’App avec `developmentMode` pour garder ses assertions
+  sur la fiche de calibrage. `MyLevelsPage.test.tsx` › « joue un niveau reçu
+  sur `/my-levels/:id/play` » attendait l’absence de « Modifier » (M9) ; il
+  attend désormais le bouton. `e2e/campaign-draft.spec.ts` : progression
+  semée (niveau 1 résolu), « Modifier le niveau 2 », et la fiche de calibrage,
+  absente d’un build de production, est vérifiée absente au lieu d’être
+  fermée. `e2e/my-levels.spec.ts` : libellé « Modifier le niveau 1 ».
+- Fichiers touchés hors périmètre : `src/application/drafts/duplicate-creation.ts`
+  (boucle d’identifiant extraite dans `free-creation-id.ts`, deuxième usage ;
+  6 tests inchangés verts) ;
+  `src/app/LockedLevelPage.tsx` (écran verrouillé extrait de
+  `PlayLevelPage`, deuxième usage) ; `src/app/random-id-part.ts` (aléa
+  extrait de `MyLevelsPage`, partagé avec `useRemix`) ; `src/app/App.tsx`,
+  `main.tsx`, `development-mode-context.ts` (drapeau) ; `src/app/not-kept-notice.ts` ;
+  `e2e/puzzle-machine.ts` (export `machinePuzzle`, la fixture U22 que le
+  joueur gagne en posant la poutre). Lecture de `BoardShell.tsx`,
+  `local-storage-progress-repository.ts`, `embedded-levels.ts`,
+  `ObjectDrawer.tsx`, `styles.css` (victoire), des E2E existants et de
+  `puzzle-workshop.ts` : raisons des fixtures, du mock et des captures.
+- Choix d’implémentation : `saveCreationFromLevel` (application) sert à
+  Modifier un reçu et aux deux Remixer ; chaque clic crée une nouvelle
+  création. `PlayLevelPage` délègue le plateau à `CampaignLevelBoard`, qui
+  garde la tentative du lancement (et non plus son seul compte d’objets),
+  comme `ReceivedLevelBoard`. `openCampaignDraft(…, { revealSolution })`
+  applique `revealAuthorSolution` à la création neuve avant de
+  l’enregistrer ; la vérification du verrou dans l’éditeur précède toute
+  lecture du dépôt (une lecture peut réécrire une enveloppe v1, M4b).
+  « Remixer » reste proposé pour un niveau reçu non gardé (lien ou import) :
+  la création ne dépend pas de l’entrée reçue.
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : un vrai téléphone ; la victoire d’un vrai niveau de campagne
+  (aucune esquisse ne gagne, le test App remplace le niveau 1) ; sous
+  `pnpm dev` en vrai navigateur (le drapeau est testé par injection). La
+  première gate a échoué une fois sur l’intermittence D4 de `layout.spec.ts`
+  (atelier libre, non touché ; 210/210 en 10 répétitions isolées ; gate
+  relancée verte), notée dans `etat.md`.
+- Pour l'auteur : validation visuelle — captures inspectées
+  `test-results/remix/levels-locked-{390x844,844x390,1440x900}.png`
+  (« Modifier le niveau 2 » grisé sous « Lancer » grisé, pastille
+  « Verrouillé »), `remix-victory-{…}.png` (« Remixer » en bouton neutre sous
+  « Recommencer », côte à côte en paysage), `remix-workshop-{…}.png` (atelier
+  ouvert, poutre posée « à placer » en pointillés violets, catalogue auteur),
+  `locked-draft-{…}.png` (même écran que le niveau verrouillé joué : « Ce
+  niveau est encore verrouillé. », « Liste des niveaux »), et
+  `test-results/my-levels/my-levels-filled-390x844.png` (carte reçue :
+  Jouer, puis Modifier/Partager, puis Supprimer). Questions : une création
+  `creation-<aléa>` remixée d’un niveau de campagne doit-elle être
+  verrouillée si la progression est réinitialisée (l’ADR ne verrouille que
+  `<id>-brouillon`) ? L’icône `Shuffle` convient-elle à « Remixer » ?

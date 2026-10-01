@@ -162,7 +162,7 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   redirige vers `/my-levels` ; `LevelImportPage` et `import-level-draft.ts`
   sont retirés. `/my-levels/:id/play` joue le niveau reçu (M10) ; un
   identifiant inconnu affiche une erreur et un lien vers « Mes niveaux ».
-  « Modifier » un niveau reçu arrive en M11. Validation visuelle attendue
+  « Modifier » un niveau reçu ouvre une nouvelle création (M11). Validation visuelle attendue
   (captures `test-results/my-levels/my-levels-{empty,filled}-{390x844,844x390,1440x900}.png`,
   `my-levels-delete-390x844.png`, `test-results/home/accueil-*.png`).
 - Jouer un niveau reçu M10 (ADR 0015 § Victoire sur un niveau reçu, ADR 0016
@@ -189,6 +189,32 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   discret « Ce niveau n’a pas été gardé sur cet appareil. » et « Mes niveaux »
   pour revenir à la liste. Validation visuelle attendue (captures
   `test-results/received-play/{received-header,received-victory,import-not-kept,import-not-kept-play}-{390x844,844x390,1440x900}.png`).
+- Modifier et Remixer M11 (ADR 0015 § Points d’entrée, « Un niveau de
+  campagne verrouillé », § Révéler) : cas d’usage
+  `saveCreationFromLevel(repository, level, { playerSolution?, createId })`
+  (`src/application/drafts/save-creation-from-level.ts`) qui enregistre
+  `creationFromLevel` sous un `creation-<aléa>` libre (`freeCreationId`,
+  partagé avec `duplicateCreation`). « Modifier » d’un niveau reçu
+  (« Mes niveaux ») ouvre une nouvelle création, la `playerSolution` posée
+  « à placer » s’il est résolu ; « Remixer », dans la boîte de victoire de la
+  campagne et des niveaux reçus (`CampaignVictory.onRemix`, icône `Shuffle`),
+  pose la tentative gagnante, celle de l’instantané pris au lancement
+  (`useRemix`, `solutionFromAttempt`) ; un échec de stockage s’affiche en
+  alerte dans la boîte. Le niveau d’origine n’est jamais modifié. Un niveau
+  de campagne verrouillé (`isLevelUnlocked` recalculé depuis la progression,
+  ou `unlockAllLevels`) a son « Modifier le niveau N » désactivé, et
+  `/editor?draft=<id>-brouillon` affiche « Ce niveau est encore verrouillé. »
+  avec un lien vers `/levels` sans lire ni écrire la création
+  (`LockedLevelPage`, partagée avec `/levels/:id/play`). Prop d’`App`
+  `developmentMode` (`import.meta.env.DEV` passé par `main.tsx`, contexte
+  `DevelopmentModeContext`) : une création de campagne **neuve** s’ouvre
+  solution révélée par la commande M7 (`openCampaignDraft(…, { revealSolution
+  })`), une création existante est rouverte telle quelle ; la fiche de
+  calibrage U28 n’est affichée qu’en développement. Une victoire sur un niveau
+  reçu qui ne peut pas être écrite affiche le statut discret « Ta victoire
+  n’a pas pu être enregistrée sur cet appareil. ». Validation visuelle
+  attendue (captures `test-results/remix/{levels-locked,remix-victory,remix-workshop,locked-draft}-{390x844,844x390,1440x900}.png`,
+  `test-results/my-levels/my-levels-filled-*.png`).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -301,9 +327,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   niveau verrouillé reste visible avec
   « Verrouillé » et un bouton « Lancer » désactivé ; un niveau résolu affiche
   son palier (icône et libellé, `data-level-tier`) recalculé depuis le meilleur
-  résultat. « Éditer le niveau » (U17) reste disponible pour tous les niveaux ;
-  l’URL directe d’un niveau verrouillé affiche « Ce niveau est encore
-  verrouillé. » (U5b) ; sous `pnpm dev`, `unlockAllLevels` débloque tout.
+  résultat. « Modifier le niveau N » (U17, M11) est désactivé comme « Lancer »
+  tant que le niveau est verrouillé ; l’URL directe d’un niveau verrouillé
+  affiche « Ce niveau est encore verrouillé. » (U5b) ; sous `pnpm dev`,
+  `unlockAllLevels` débloque tout.
 - **Retouche visuelle de `/levels`** : un bandeau de campagne donne les
   dimensions du parcours, les chapitres sont séparés par des plaques numérotées
   et chaque carte porte son numéro, son état et son titre dans une hiérarchie
@@ -369,12 +396,12 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   sélectionnable. Un document que le schéma refuse n’est pas exporté : la boîte
   en donne les raisons (`src/app/level-export.ts`, `LevelExportDialog.tsx`).
 - Brouillon d’un niveau de campagne U17 : chaque carte de `/levels` porte
-  « Éditer le niveau N », qui ouvre `/editor?draft=<id>-brouillon`. Depuis M6,
+  « Modifier le niveau N » (M11), qui ouvre `/editor?draft=<id>-brouillon`. Depuis M6,
   une création neuve est construite par `creationFromLevel` (sans solution
   posée, sans inventaire, titrée « <titre> (remix) », niveau gardé en `source`)
   ; une création existante est rouverte telle quelle
   (`src/application/drafts/campaign-draft.ts`). La fiche de calibrage U28 lit
-  toujours le niveau embarqué. En mode création, le tiroir du catalogue auteur et
+  toujours le niveau embarqué, et n’est affichée qu’en développement (M11). En mode création, le tiroir du catalogue auteur et
   « Annuler »/« Rétablir » s’affichent même sans inventaire (`BoardShell`,
   `SimulationControls`) ; en mode joueur, la règle B1 est inchangée.
   Chaque état engagé de l’historique est enregistré dans le brouillon. Le
@@ -424,10 +451,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 
 ## Dettes et limites explicites
 
-- **Niveau reçu (M10).** Une victoire qui ne peut pas être écrite (quota,
-  stockage indisponible) est perdue sans message. En 390 px, l’en-tête de
-  `/my-levels/:id/play` (bouton « Mes niveaux », objectif, menu) ne laisse
-  que « par <auteur> · d’a… » de l’attribution, tronquée par une ellipse.
+- **Niveau reçu (M10).** En 390 px, l’en-tête de `/my-levels/:id/play`
+  (bouton « Mes niveaux », objectif, menu) ne laisse que « par <auteur> ·
+  d’a… » de l’attribution, tronquée par une ellipse (accepté par le pilote
+  en M11).
 - **Aperçu de placement en CSS.** L’overlay DOM `.placement-preview`
   (`src/ui/BoardView.tsx`) n’a ni la forme, ni la taille, ni la rotation de
   l’objet ; le fantôme dessiné par le renderer (C1) reste à faire.
@@ -442,10 +469,11 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   près. Les 30 tests desktop passent.
 - **Calibration des esquisses** (décision auteur du 27 septembre 2026) : les
   17 niveaux de campagne sont livrés comme points de départ. L’auteur doit les
-  ouvrir avec « Éditer le niveau », ajuster la physique et exporter les
+  ouvrir sous `pnpm dev` avec « Modifier le niveau » (solution révélée et
+  fiche de calibrage, M11), ajuster la physique et exporter les
   documents avant activation de régressions de solution. La fiche U28 facilite
   désormais cette reprise ; le calibrage physique final reste à faire.
-- **Parcours « Éditer »** : la position actuelle du bouton sur la liste des
+- **Parcours « Modifier »** : la position actuelle du bouton sur la liste des
   niveaux est conservée provisoirement. Son éventuel déplacement vers un accès
   auteur plus discret sera réévalué séparément.
 - **Progression de campagne** : L19 calcule les paliers, records, indices et
@@ -510,12 +538,19 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   placer sont exportables et rouverts avec leur marquage ; la création du
   niveau 1 n’a plus d’inventaire (M6) mais garde son catalogue auteur (U26).
   Les brouillons de campagne créés avant M6 gardent leur solution posée et
-  leur inventaire (ADR 0015) ; « Révéler » arrive avec M7 et M12, et rien ne
-  rend encore la solution sous `pnpm dev` (M11).
+  leur inventaire (ADR 0015) ; sous `pnpm dev`, une création neuve s’ouvre
+  solution révélée (M11) ; la commande « Révéler » dans l’atelier arrive avec
+  M12.
 - **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
-  brouillon créé (le supprimer depuis « Mes niveaux » puis « Éditer le niveau »
-  en recrée un). « Éditer le niveau » d’un niveau verrouillé reste actif sur
-  `/levels` jusqu’à M11.
+  brouillon créé (le supprimer depuis « Mes niveaux » puis « Modifier le
+  niveau » en recrée un). Une création `creation-<aléa>` remixée d’un niveau
+  de campagne n’est pas verrouillée si la progression est ensuite
+  réinitialisée : seul `<id>-brouillon` l’est (ADR 0015).
+- **E2E sous charge (M11)** : la première gate après M11 a échoué une fois
+  sur `layout.spec.ts` › « D4 — le scrim des propriétés… » (« Poutre
+  moyenne » introuvable : le catalogue de l’atelier libre ne s’était pas
+  ouvert au clic) ; 10 répétitions isolées passent (210/210) et la gate
+  relancée passe. L’atelier libre n’est pas touché par M11.
 - `format:check` ne couvre pas le Markdown.
 - Le workflow `.github/workflows/check.yml` exécute la gate sur push et pull
   request avec Node 24, cache pnpm et Chromium Playwright. Son premier passage
@@ -526,6 +561,12 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M11 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 899 tests Vitest (72 fichiers),
+build Vite/PWA et 51 tests Playwright `mobile` (50 réussis, 1 ignoré). Une
+première exécution avait échoué sur l’intermittence D4 décrite dans les
+dettes.
 
 `pnpm check` après M10 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 880 tests Vitest (69 fichiers),

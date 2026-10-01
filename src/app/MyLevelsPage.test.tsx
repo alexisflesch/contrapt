@@ -467,7 +467,7 @@ describe('page « Mes niveaux » (M9, ADR 0015 § Page « Mes niveaux »)', () =
       ),
     );
     openMyLevels();
-    expect(within(card('À jouer')).queryByRole('button', { name: 'Modifier' })).toBeNull();
+    expect(within(card('À jouer')).getByRole('button', { name: 'Modifier' })).toBeEnabled();
 
     fireEvent.click(within(card('À jouer')).getByRole('button', { name: 'Jouer' }));
 

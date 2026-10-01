@@ -2,13 +2,17 @@ import { useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 
 import type { DraftCreation } from '../application/drafts/draft-repository';
+import { campaignDraftId } from '../application/drafts/campaign-draft';
 import { puzzleFromWorkshop } from '../application/puzzle/puzzle-workshop';
 import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
 import { AppFrame } from '../ui/AppFrame';
 import { Panel } from '../ui/Panel';
 import { BoardShell } from './BoardShell';
+import { useDevelopmentMode } from './development-mode-context';
 import { useDraftRepository } from './draft-repository-context';
+import { LockedLevelPage } from './LockedLevelPage';
+import { useCampaignProgress } from './use-campaign-progress';
 
 /**
  * `/editor` (ADR 0008): the free-creation workshop, or with `?draft=<id>` an
@@ -94,8 +98,36 @@ function Workshop({
   );
 }
 
+/**
+ * ADR 0015 § Un niveau de campagne verrouillé: the creation of a locked
+ * campaign level is refused before it is even read (a read may rewrite an
+ * old envelope), whatever is stored. The lock is recomputed from progress.
+ */
 function DraftEditor({ draftId }: { readonly draftId: string }) {
+  const { levels: levelProgress } = useCampaignProgress();
+  const levelIndex = embeddedLevels.findIndex((level) => campaignDraftId(level) === draftId);
+  const campaignLevel = embeddedLevels[levelIndex];
+
+  if (campaignLevel !== undefined && levelProgress[campaignLevel.id]?.unlocked !== true) {
+    return (
+      <LockedLevelPage
+        title={`Niveau ${String(levelIndex + 1)} · ${campaignLevel.metadata.title}`}
+      />
+    );
+  }
+
+  return <StoredDraftEditor draftId={draftId} campaignLevel={campaignLevel} />;
+}
+
+interface StoredDraftEditorProps {
+  readonly draftId: string;
+  /** The campaign level a `<id>-brouillon` creation comes from, if any. */
+  readonly campaignLevel: LevelDocument | undefined;
+}
+
+function StoredDraftEditor({ draftId, campaignLevel }: StoredDraftEditorProps) {
   const drafts = useDraftRepository();
+  const developmentMode = useDevelopmentMode();
   // `location.state` is typed `any`: read it as `unknown` and narrow it.
   const navigationState: unknown = useLocation().state;
   const [draft] = useState<DraftCreation | null>(() => {
@@ -120,7 +152,8 @@ function DraftEditor({ draftId }: { readonly draftId: string }) {
     );
   }
 
-  const calibrationDocument = embeddedLevels.find((level) => `${level.id}-brouillon` === draftId);
+  // ADR 0015 § Révéler: the U28 calibration guide lists the solution; development only.
+  const calibrationDocument = developmentMode ? campaignLevel : undefined;
 
   return (
     <Workshop

@@ -1,4 +1,5 @@
 import type { DraftRepository, DraftRepositoryErrorCode } from './draft-repository';
+import { freeCreationId } from './free-creation-id';
 import { withTitleSuffix } from './title-suffix';
 
 type DuplicateCreationResult =
@@ -6,7 +7,6 @@ type DuplicateCreationResult =
   | { readonly status: 'error'; readonly code: DraftRepositoryErrorCode };
 
 const COPY_SUFFIX = ' (copie)';
-const MAX_ID_ATTEMPTS = 10;
 
 /**
  * ADR 0015 § Page « Mes niveaux »: « Dupliquer » saves a copy of a creation
@@ -24,25 +24,20 @@ export const duplicateCreation = (
   if (original.creation === null) return { status: 'error', code: 'invalid-draft' };
   const { document, source } = original.creation;
 
-  for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt += 1) {
-    const draftId = `creation-${createId()}`;
-    const existing = repository.load(draftId);
-    if (existing.status === 'error') return existing;
-    if (existing.creation !== null) continue;
+  const free = freeCreationId(repository, createId);
+  if (free.status === 'error') return free;
+  const { draftId } = free;
 
-    const saved = repository.save({
-      document: {
-        ...document,
-        id: draftId,
-        metadata: {
-          ...document.metadata,
-          title: withTitleSuffix(document.metadata.title, COPY_SUFFIX),
-        },
+  const saved = repository.save({
+    document: {
+      ...document,
+      id: draftId,
+      metadata: {
+        ...document.metadata,
+        title: withTitleSuffix(document.metadata.title, COPY_SUFFIX),
       },
-      ...(source === undefined ? {} : { source }),
-    });
-    return saved.status === 'ok' ? { status: 'ok', draftId } : saved;
-  }
-
-  return { status: 'error', code: 'invalid-draft' };
+    },
+    ...(source === undefined ? {} : { source }),
+  });
+  return saved.status === 'ok' ? { status: 'ok', draftId } : saved;
 };

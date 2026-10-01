@@ -1,5 +1,13 @@
 import { useRef, type ReactNode } from 'react';
-import { ArrowRight, CircleCheck, RotateCcw, Star, Trophy, type LucideIcon } from 'lucide-react';
+import {
+  ArrowRight,
+  CircleCheck,
+  RotateCcw,
+  Shuffle,
+  Star,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react';
 
 import type { ChallengeHint } from '../application/progression';
 import { Button } from './Button';
@@ -21,6 +29,10 @@ export interface CampaignVictory {
   readonly isNewRecord: boolean;
   /** Opens the next campaign level; `null` when none exists or it is locked. */
   readonly onNextLevel: (() => void) | null;
+  /** M11 (ADR 0015 § Points d'entrée): opens the winning attempt in a new creation. */
+  readonly onRemix: (() => void) | null;
+  /** Why the last « Remixer » could not create the creation (storage). */
+  readonly remixError?: string;
 }
 
 type Tier = CampaignVictory['tier'];
@@ -109,6 +121,11 @@ export function CampaignVictoryDialog({ campaign, onReplay, onClose }: CampaignV
         <p className="victory-count">{objectCountLabel(campaign.objectsUsed)}</p>
         {challenge !== null && <p className="victory-challenge">{challenge}</p>}
       </div>
+      {campaign.remixError !== undefined && (
+        <p className="panel-note victory-remix-error" role="alert">
+          {campaign.remixError}
+        </p>
+      )}
       <div className="victory-actions">
         {onNextLevel !== null && (
           <Button ref={primaryRef} tone="go" className="victory-next" onClick={onNextLevel}>
@@ -124,6 +141,12 @@ export function CampaignVictoryDialog({ campaign, onReplay, onClose }: CampaignV
           <RotateCcw size={18} aria-hidden="true" />
           Recommencer
         </Button>
+        {campaign.onRemix !== null && (
+          <Button className="victory-remix" onClick={campaign.onRemix}>
+            <Shuffle size={18} aria-hidden="true" />
+            Remixer
+          </Button>
+        )}
         <button className="victory-see-scene" type="button" onClick={onClose}>
           Voir la scène
         </button>
