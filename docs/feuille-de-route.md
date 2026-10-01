@@ -72,8 +72,8 @@ suivante, mais la tâche reste marquée « validation visuelle attendue » dans
 - affaiblir, supprimer ou `skip` un test. Réécrire un test dont la tâche
   remplace explicitement le comportement est permis : le nommer dans le journal
   avec la raison ;
-- modifier les niveaux de `src/content/levels/` : leur calibrage revient à
-  l'auteur (§ 6).
+- modifier les niveaux de `src/content/levels/` ou de `levels/` : le contenu
+  de la campagne revient à l'auteur (§ 6).
 
 **Quand s'arrêter** et écrire « bloqué » dans le journal (mesures et sortie
 d'erreur exactes) :
@@ -428,9 +428,14 @@ pas inventer de tâche suivante.
 
 ## 6. En attente de l'auteur — ne pas faire à sa place
 
-- **Calibrage des 17 esquisses de campagne** : l'auteur ajuste chaque niveau
-  dans l'atelier (`pnpm dev`, solution révélée d'office après M11) et exporte ;
-  les régressions de solution et les défis ⭐/🏆 viennent ensuite.
+- **Niveaux de la campagne** (décision du 1er octobre 2026) : l'auteur les
+  conçoit lui-même, un par un, avec l'atelier, et les dépose dans `levels/` à la
+  racine. Les 17 esquisses de `src/content/levels/` sont provisoires et ne sont ni
+  calibrées ni retouchées par un agent. Les intégrer à la campagne embarquée
+  (remplacer `src/content/levels/` et le catalogue, identifiants uniques,
+  régression de chaque solution) est une tâche que l'auteur déclenche ; à ce
+  jour, `levels/tuto-1.json` porte l'identifiant `free-workshop` et
+  `levels/tuto-4-…json` reprend celui de `tuto-3` : à corriger à l'intégration.
 - Validation visuelle des tâches livrées avec captures.
 - Retest du vieux téléphone Xiaomi après L2c.
 - Premier passage distant du workflow CI.

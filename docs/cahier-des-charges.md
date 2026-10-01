@@ -199,26 +199,38 @@ quantité d’objets.
 
 ## Progression pédagogique et contenu
 
-La campagne compte deux chapitres, spécifiés niveau par niveau et mesurés sur le
-moteur réel dans [la campagne](levels/initial-progression.md) :
+**Décision de l’auteur du 1er octobre 2026 : les niveaux de la campagne sont
+conçus à la main par l’auteur, un par un.** Les niveaux générés jusqu’ici par des
+agents (les 12 premiers, puis les 17 esquisses de
+[`levels/nouveaux-niveaux.md`](levels/nouveaux-niveaux.md) embarquées dans
+`src/content/levels/`) ne sont pas assez bons : ils sont provisoires et seront
+remplacés. Aucun agent ne conçoit ni ne calibre de niveau de campagne.
 
-1. **Poutres et bascule** (8 niveaux) : poser, déplacer, tourner, économiser des
-   objets, enchaîner deux poutres, découvrir puis placer la bascule, combiner
-   poutre et bascule ;
-2. **Mécanismes** (6 niveaux) : convoyeur, masse, levier câblé, puis trois
-   synthèses dont une grande scène finale.
+Les niveaux de l’auteur sont des exports JSON de l’atelier, déposés dans le
+dossier [`levels/`](../levels/) à la racine du dépôt. Ils y arrivent au fil de
+l’eau ; à terme, ils y seront tous. L’auteur les fabrique et les retouche avec
+l’application elle-même : import dans « Mes niveaux », « Modifier », « Révéler la
+solution de l’auteur », puis export vérifié
+([ADR 0015](decisions/0015-mes-niveaux.md)). C’est pourquoi la finition de ces
+niveaux attend que ces fonctions soient livrées : par exemple, `tuto-4` doit être
+réédité pour que son fil devienne « à placer ».
 
-Chaque niveau demande une action du joueur, sauf celui qui présente la bascule.
-Les rebonds de précision et les catapultes sont exclus. Une métaprogression
-légère — paliers ✅ résolu, ⭐ élégant, 🏆 minimal selon le nombre d'objets
-utilisés, et ouverture des niveaux dans l'ordre — est fixée par
-[l'ADR 0010](decisions/0010-object-challenge-and-progression.md). Chaque niveau livré devra être
-valide, compréhensible, résoluble au tactile et accompagné d’un scénario de
-régression physique robuste.
+Au 1er octobre 2026, `levels/` contient cinq niveaux d’apprentissage (`tuto-1` à
+`tuto-5`). **La version 1 peut se contenter de ces cinq niveaux.** Leur nombre
+final et leur découpage en chapitres restent la décision de l’auteur.
 
-La version 1 vise une campagne complète et non une collection de scènes
-techniques. Son nombre final de chapitres et de niveaux sera décidé après mesure du
-rythme de production et des apprentissages.
+Passer de `levels/` à la campagne embarquée est une tâche à part, déclenchée par
+l’auteur : remplacer le contenu de `src/content/levels/` et du catalogue de
+campagne par les niveaux retenus, avec des identifiants uniques et une
+régression de la solution de référence pour chacun. Les règles de conception
+restent celles de [la conception de niveaux](levels/conception-niveaux.md).
+
+Une métaprogression légère — paliers ✅ résolu, ⭐ élégant, 🏆 minimal selon le
+nombre d'objets utilisés, et ouverture des niveaux dans l'ordre — est fixée par
+[l'ADR 0010](decisions/0010-object-challenge-and-progression.md). Les paliers ⭐
+et 🏆 n’existent que pour un niveau dont l’auteur fixe le défi. Chaque niveau livré
+devra être valide, compréhensible, résoluble au tactile et accompagné d’un
+scénario de régression physique robuste.
 
 ## Format de niveau
 
@@ -406,15 +418,15 @@ l’ordre du travail restant dans
 Vue d’ensemble pour l’auteur, mise à jour à chaque tâche livrée (une ligne par
 phase ; le détail reste dans `etat.md` et le journal de la feuille de route).
 
-| Phase de la feuille de route      | État au 1er octobre 2026                                                  |
-| --------------------------------- | ------------------------------------------------------------------------- |
-| 0 — Gate verte                    | faite (G1, G2)                                                            |
-| 1 — « Mes niveaux » et communauté | en cours : M1 à M14 livrées ; M15 reste                                   |
-| 2 — Interface en attente          | à faire                                                                   |
-| 3 — Atelier complet               | à faire                                                                   |
-| 4 — Outillage et mesures          | à faire                                                                   |
-| 5 — Décisions de l’auteur         | en attente (minuteur et niveau 15, bouton Grist, tri des propositions)    |
-| Calibrage des 17 esquisses        | en attente de l’auteur                                                    |
+| Phase de la feuille de route      | État au 1er octobre 2026                                                                                                                            |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0 — Gate verte                    | faite (G1, G2)                                                                                                                                      |
+| 1 — « Mes niveaux » et communauté | en cours : M1 à M14 livrées ; M15 reste                                                                                                             |
+| 2 — Interface en attente          | à faire                                                                                                                                             |
+| 3 — Atelier complet               | à faire                                                                                                                                             |
+| 4 — Outillage et mesures          | à faire                                                                                                                                             |
+| 5 — Décisions de l’auteur         | en attente (minuteur et niveau 15, bouton Grist, tri des propositions)                                                                              |
+| Niveaux de la campagne            | l’auteur les conçoit dans `levels/` (5 tutoriels déposés ; peut suffire pour la v1) ; intégration à la campagne embarquée à déclencher par l’auteur |
 
 ## Décisions réellement encore ouvertes
 
@@ -459,4 +471,4 @@ questions ouvertes.
 - [Qualité et TDD](qualite.md)
 - [Catalogue initial](catalogue-initial.md)
 - [Interactions mobiles](mobile-editor-interactions.md)
-- [Campagne, chapitres 1 et 2](levels/initial-progression.md)
+- [Niveaux de l’auteur](../levels/) (campagne en cours de conception)
