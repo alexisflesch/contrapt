@@ -272,6 +272,15 @@ hébergement de fichiers. IndexedDB conservera au minimum la progression, les
 préférences, les brouillons et les niveaux locaux. Import et export utiliseront des
 fichiers JSON versionnés.
 
+Depuis le 1er octobre 2026, le stockage local est `localStorage` (ADR 0011) et
+la page « Mes niveaux » regroupe les créations du joueur et les niveaux reçus par
+lien ou par fichier ; tout niveau peut être remixé dans l’atelier, sa solution
+d’auteur cachée par défaut ([ADR 0015](decisions/0015-mes-niveaux.md)). Les
+niveaux sont sous CC BY 4.0, avec pseudo d’auteur et sources
+([ADR 0016](decisions/0016-attribution-licence-niveaux.md)). À terme, un
+formulaire Grist de la forge edu recueille les propositions de niveaux pour la
+campagne officielle.
+
 Un petit niveau pourra être partagé dans le fragment de l’URL par une enveloppe
 versionnée, compressée, bornée et protégée par une somme de contrôle. Le fragment
 ne sera jamais la copie canonique du niveau et une importation invalide ne devra
@@ -391,6 +400,21 @@ de la gate sont décrits dans [`etat.md`](etat.md), réécrit à chaque fin de
 tranche. Le découpage des tranches est dans [`backlog.md`](backlog.md) et
 l’ordre du travail restant dans
 [`feuille-de-route.md`](feuille-de-route.md).
+
+### Avancement
+
+Vue d’ensemble pour l’auteur, mise à jour à chaque tâche livrée (une ligne par
+phase ; le détail reste dans `etat.md` et le journal de la feuille de route).
+
+| Phase de la feuille de route      | État au 1er octobre 2026                                                  |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| 0 — Gate verte                    | faite (G1, G2)                                                            |
+| 1 — « Mes niveaux » et communauté | en cours : M1 à M13 livrées ; M14 (partage, pseudo, licence), M15 restent |
+| 2 — Interface en attente          | à faire                                                                   |
+| 3 — Atelier complet               | à faire                                                                   |
+| 4 — Outillage et mesures          | à faire                                                                   |
+| 5 — Décisions de l’auteur         | en attente (minuteur et niveau 15, bouton Grist, tri des propositions)    |
+| Calibrage des 17 esquisses        | en attente de l’auteur                                                    |
 
 ## Décisions réellement encore ouvertes
 

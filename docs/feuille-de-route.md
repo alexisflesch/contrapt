@@ -44,7 +44,9 @@ suivante, sauf dépendance déclarée (« Après : »).
 3. implémenter le minimum, puis refactorer ;
 4. `pnpm check:fast` pendant le travail ;
 5. `pnpm check` en fin de tâche, obligatoire avant commit ;
-6. mettre à jour `docs/etat.md` (livré, dettes, dernière gate) et le journal ;
+6. mettre à jour `docs/etat.md` (livré, dettes, dernière gate), le journal, et
+   le tableau « Avancement » de `docs/cahier-des-charges.md` (une ligne par
+   phase : ce qui est livré, ce qui reste) ;
 7. un commit par tâche, message en français à l'impératif, préfixe de couche,
    identifiant entre parenthèses, avec la ligne d'attribution demandée par
    l'environnement. Exemple : `feat(storage): enregistre les niveaux reçus (M3)`.
