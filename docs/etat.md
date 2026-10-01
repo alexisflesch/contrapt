@@ -52,6 +52,19 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   codec de fichier ; deux documents égaux ont la même empreinte et
   `recu-<empreinte>` respecte le schéma d’identifiant. Aucun appelant en
   production avant M8 (seul son test l’importe, ce que Knip accepte).
+- Dépôt des niveaux reçus M3 (ADR 0015 § Stockage local) : port
+  `ReceivedLevelRepository` (`src/application/received/`, list, load, save,
+  delete) et adaptateur `localStorage`
+  (`src/infrastructure/storage/local-storage-received-level-repository.ts`), sur
+  le modèle des brouillons : index `tinkerbolt:received`, une enveloppe
+  `{ kind: "received-level", version: 1, data }` par
+  `tinkerbolt:received:<id>`, identifiant `recu-<16 chiffres hexadécimaux>`,
+  document relu par le codec de fichier, `receivedAt` ISO 8601 fourni par
+  l’appelant, `playerSolution` validée par le schéma `solution` du domaine
+  (désormais exporté), ni record ni solution du joueur sur une entrée non
+  résolue. Valeur illisible sauvegardée sous `tinkerbolt:backup:` avant
+  écrasement, quota et stockage indisponible en résultats d’erreur. Aucun
+  appelant en production avant M8.
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -374,6 +387,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M3 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 790 tests Vitest (61 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après M2 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 755 tests Vitest (60 fichiers),

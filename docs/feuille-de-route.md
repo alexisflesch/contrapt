@@ -592,3 +592,52 @@ file exist?` (module absent ; les 5 tests ne se chargent pas).
   accès par IP en HTTP sur un réseau local l’aurait indisponible. Aucun test
   de ce cas.
 - Pour l'auteur : rien à valider à l’écran.
+
+### M3 — Dépôt des niveaux reçus — fait — commit de cette entrée
+
+- Tests ajoutés : `src/infrastructure/storage/local-storage-received-level-repository.test.ts`
+  › « dépôt local des niveaux reçus (M3, ADR 0015) » (35 tests) : liste vide
+  sans clé ; aller-retour d’une entrée complète (enveloppe, index, document
+  relu par le codec de fichier) et d’une entrée non résolue sans champ
+  facultatif ; remplacement sans doublon d’index ; index illisible ou invalide
+  (JSON cassé, autre `kind`, autre version, doublon, identifiant hors
+  `recu-<empreinte>`) sauvegardé sous `tinkerbolt:backup:received` avec liste
+  vide et avertissement ; entrée invalide (JSON cassé, autre `kind` ou version,
+  document refusé par le codec, identifiant différent de la clé, origine,
+  date, solution mal formée, record négatif, record ou solution sur un niveau
+  non résolu, champ inconnu) sauvegardée sous
+  `tinkerbolt:backup:received:<id>` puis `null` avec avertissement ; refus
+  avant toute écriture d’une entrée invalide ; sauvegarde avant écrasement et
+  pas d’écrasement si la sauvegarde échoue ; suppression, avec sauvegarde
+  d’une entrée illisible et restauration si l’index échoue ; quota dépassé
+  (entrée ou index) en résultat, sans entrée orpheline ; `Storage`
+  indisponible pour les quatre opérations.
+- Échec initial constaté : `Failed to load url
+./local-storage-received-level-repository … Does the file exist?` (module
+  absent, aucun test chargé). Après implémentation, contrôle par mutation :
+  retirer la règle « ni record ni solution sans résolution » ou la comparaison
+  identifiant/clé fait échouer 4 tests.
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : `src/domain/level-document.ts` — export de
+  `solutionSchema` et du type `Solution` (sans changement de schéma), à la
+  demande de la tâche (réutiliser le schéma plutôt que le dupliquer).
+- Choix d’implémentation : `list()` renvoie les identifiants dans l’ordre
+  d’insertion, comme le dépôt de brouillons ; le tri par `receivedAt` reste à
+  la page (M9). Dans l’enveloppe, `data.document` est la valeur JSON du texte
+  du codec de fichier (forme de l’ADR 0015) et se relit par
+  `decodeLevelFile(JSON.stringify(…))`, migrations comprises ; les brouillons
+  v1 stockent eux une chaîne `levelFile`. L’identifiant est contraint à
+  `^recu-[0-9a-f]{16}$` (ADR 0015 § Identifiants), ce qui borne aussi les clés.
+  `receivedAt` : `z.iso.datetime({ offset: true })`. `bestObjectCount` : entier
+  positif ou nul, comme la progression. Une entrée non résolue ne peut porter
+  ni record ni solution du joueur (cohérence calquée sur la progression) ; une
+  entrée résolue n’est pas obligée d’en porter. `playerSolution` est validée
+  par la forme seule, pas contre l’inventaire du document. Le dépôt n’accepte
+  ni ne refuse les documents `toPlace` : c’est la réception (M8).
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : un vrai `localStorage` de navigateur (faux `Storage` en
+  mémoire seulement) ; aucun appelant en production avant M8 (Knip passe : le
+  test sert de point d’entrée, comme pour M2).
+- Pour l'auteur : rien à valider à l’écran. Question : faut-il exiger un record
+  et une solution du joueur sur toute entrée résolue ? Laissé facultatif.

@@ -244,7 +244,8 @@ const solutionWireSchema = z.strictObject({
   targetId: identifierSchema,
 });
 
-const solutionSchema = z.strictObject({
+/** ADR 0013 solution shape, also used for a player's winning solution (ADR 0015). */
+export const solutionSchema = z.strictObject({
   placements: z.array(solutionPlacementSchema).max(MAX_OBJECTS),
   wires: z.array(solutionWireSchema).max(MAX_WIRES).optional(),
 });
@@ -666,7 +667,7 @@ const addLevelDocumentRelationIssues = (
   }
 };
 
-type Solution = z.infer<typeof solutionSchema>;
+export type Solution = z.infer<typeof solutionSchema>;
 
 interface PuzzleRelationsInput {
   readonly scene: { readonly min: WorldPosition; readonly max: WorldPosition };
