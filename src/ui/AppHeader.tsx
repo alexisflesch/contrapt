@@ -7,6 +7,11 @@ import { Button } from './Button';
 interface AppHeaderProps {
   readonly title: string;
   readonly subtitle: string;
+  /**
+   * ADR 0016 § Affichage: the level's author and first source, plain text.
+   * Shown in place of the subtitle, which the header has no room to add.
+   */
+  readonly attribution?: string | undefined;
   /** Optional screen-specific control placed before the menu button. */
   readonly action?: ReactNode;
 }
@@ -17,7 +22,7 @@ interface AppHeaderProps {
  * away, which unmounts this component along with its own open/closed state
  * — no explicit "close the menu" step is needed after a selection.
  */
-export function AppHeader({ title, subtitle, action }: AppHeaderProps) {
+export function AppHeader({ title, subtitle, attribution, action }: AppHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -31,7 +36,11 @@ export function AppHeader({ title, subtitle, action }: AppHeaderProps) {
       </div>
       <p className="level-label">
         <span className="level-title">{title}</span>
-        <span className="level-mode">{subtitle}</span>
+        {attribution === undefined ? (
+          <span className="level-mode">{subtitle}</span>
+        ) : (
+          <span className="level-attribution">{attribution}</span>
+        )}
       </p>
       <div className="header-actions">
         {action}

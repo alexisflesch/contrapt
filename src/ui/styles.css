@@ -411,7 +411,8 @@ select:focus-visible {
 }
 
 .level-title,
-.level-mode {
+.level-mode,
+.level-attribution {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -429,6 +430,13 @@ select:focus-visible {
   font-weight: 800;
   letter-spacing: 0.11em;
   text-transform: uppercase;
+}
+
+/* ADR 0016 § Affichage : l'auteur d'un niveau reçu, tel qu'il l'a écrit (pas de capitales). */
+.level-attribution {
+  color: var(--on-night-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
 }
 
 .level-menu {
@@ -1242,6 +1250,10 @@ select:focus-visible {
 
 .my-levels-notice {
   color: var(--on-night);
+}
+
+.my-levels-play-anyway {
+  justify-self: start;
 }
 
 .my-level-card::before {
@@ -2638,6 +2650,22 @@ select:focus-visible {
 
   .level-mode {
     display: none;
+  }
+
+  /* L'attribution reste visible : elle suit le titre sur la même ligne. */
+  .level-label:has(.level-attribution) {
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .level-label:has(.level-attribution) .level-title {
+    flex: 0 1 auto;
+  }
+
+  .level-attribution {
+    flex: 1 1 0;
+    min-width: 4em;
   }
 
   .workspace {

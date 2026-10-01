@@ -39,6 +39,8 @@ interface BoardShellProps {
   readonly mode: EditorSession['mode'];
   readonly title: string;
   readonly subtitle: string;
+  /** ADR 0016 § Affichage: author and first source of a received level, in the header. */
+  readonly attribution?: string | undefined;
   readonly onSimulationLaunched?: (attempt: ConstructionAttempt) => void;
   readonly onSimulationCompleted?: (outcome: AttemptOutcome) => void;
   /** Called with each newly committed author document (U17 draft autosave). */
@@ -49,8 +51,15 @@ interface BoardShellProps {
   readonly resetDocument?: LevelDocument;
   /** U22, workshop only: plays the puzzle the committed workshop gives. */
   readonly onPlayAsPlayer?: (puzzle: LevelDocument) => void;
-  /** U22: replaces « Retour aux niveaux », in the header and the result banner. */
-  readonly exit?: { readonly label: string; readonly onExit: () => void };
+  /**
+   * U22: replaces « Retour aux niveaux », in the header and the result banner.
+   * `shortLabel` is the header's visible text (« Atelier » by default).
+   */
+  readonly exit?: {
+    readonly label: string;
+    readonly shortLabel?: string;
+    readonly onExit: () => void;
+  };
   /** U28: the pristine campaign document used as the author calibration brief. */
   readonly calibrationDocument?: LevelDocument;
   /** A discreet status over the board until dismissed (M8: a shared level not kept). */
@@ -69,6 +78,7 @@ export function BoardShell({
   mode,
   title,
   subtitle,
+  attribution,
   onSimulationLaunched,
   onSimulationCompleted,
   onDocumentCommitted,
@@ -243,6 +253,7 @@ export function BoardShell({
     <AppFrame
       title={title}
       subtitle={subtitle}
+      attribution={attribution}
       variant="board"
       headerAction={
         <>
@@ -257,7 +268,7 @@ export function BoardShell({
                 <ArrowLeft size={18} />
               </span>
               <span className="objective-button-label" aria-hidden="true">
-                Atelier
+                {exit.shortLabel ?? 'Atelier'}
               </span>
             </button>
           )}

@@ -29,8 +29,11 @@ import { Dialog } from '../ui/Dialog';
 import { Panel } from '../ui/Panel';
 import { useDraftRepository } from './draft-repository-context';
 import { fingerprintOf } from './fingerprint-of';
+import { attributionParts } from './level-attribution';
 import { LevelExportDialog } from './LevelExportDialog';
+import { notKeptNotice } from './not-kept-notice';
 import { readLevelFile } from './read-level-file';
+import { ReceivedLevelBoard } from './ReceivedLevelBoard';
 import { ReceivedLevelShareDialog } from './ReceivedLevelShareDialog';
 import { useReceivedLevelRepository } from './received-level-repository-context';
 import { useCampaignProgress } from './use-campaign-progress';
@@ -66,18 +69,13 @@ const campaignLevelOf = (creationId: string): LevelDocument | undefined =>
 
 /** ADR 0016 § Affichage: author and first source, always rendered as plain text. */
 function Attribution({ metadata }: { readonly metadata: LevelDocument['metadata'] }) {
-  const firstSource = metadata.basedOn?.[0];
-  if (metadata.author === undefined && firstSource === undefined) return null;
+  const parts = attributionParts(metadata);
+  if (parts.length === 0) return null;
   return (
     <p className="my-level-attribution">
-      {metadata.author !== undefined && <span>par {metadata.author}</span>}
-      {firstSource !== undefined && (
-        <span>
-          {firstSource.author === undefined
-            ? `d’après ${firstSource.title}`
-            : `d’après ${firstSource.title} (par ${firstSource.author})`}
-        </span>
-      )}
+      {parts.map((part) => (
+        <span key={part}>{part}</span>
+      ))}
     </p>
   );
 }
@@ -120,6 +118,9 @@ export function MyLevelsPage() {
   const [sharing, setSharing] = useState<Sharing | null>(null);
   const [creationNotice, setCreationNotice] = useState<Notice>(null);
   const [importNotice, setImportNotice] = useState<Notice>(null);
+  /** M10: an imported level that could not be kept, still playable once. */
+  const [unkeptImport, setUnkeptImport] = useState<LevelDocument | null>(null);
+  const [playingUnkept, setPlayingUnkept] = useState<LevelDocument | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelDeletionRef = useRef<HTMLButtonElement>(null);
   const creationsTitleId = useId();
@@ -142,6 +143,7 @@ export function MyLevelsPage() {
         ? drafts.delete(pendingDeletion.id)
         : received.delete(pendingDeletion.id);
     const setNotice = pendingDeletion.kind === 'creation' ? setCreationNotice : setImportNotice;
+    if (pendingDeletion.kind === 'received') setUnkeptImport(null);
     setNotice(
       result.status === 'ok'
         ? null
@@ -167,6 +169,7 @@ export function MyLevelsPage() {
     input.value = '';
     if (file === undefined) return;
 
+    setUnkeptImport(null);
     setImportNotice({ tone: 'status', message: 'Lecture du fichier…' });
     const read = await readLevelFile(file);
     if (read.status === 'error') {
@@ -196,6 +199,8 @@ export function MyLevelsPage() {
               ? 'Ce niveau n’a pas été gardé : cet appareil ne peut pas le reconnaître hors connexion sécurisée.'
               : `Ce niveau n’a pas été gardé. ${storageMessage(result.code)}`,
         });
+        // ADR 0015 § Réception: a storage failure never prevents playing.
+        setUnkeptImport(read.document);
         break;
     }
     refresh();
@@ -313,6 +318,25 @@ export function MyLevelsPage() {
     );
   };
 
+  if (playingUnkept !== null) {
+    // Played in place, like an unkept `/shared` link: nothing is recorded.
+    return (
+      <ReceivedLevelBoard
+        document={playingUnkept}
+        title={playingUnkept.metadata.title}
+        entryId={null}
+        notice={notKeptNotice}
+        exit={{
+          label: 'Retour à Mes niveaux',
+          shortLabel: 'Mes niveaux',
+          onExit: () => {
+            setPlayingUnkept(null);
+          },
+        }}
+      />
+    );
+  }
+
   return (
     <AppFrame title="Mes niveaux" subtitle="Ta collection" variant="page">
       <div className="page-content page-content-levels my-levels">
@@ -382,6 +406,18 @@ export function MyLevelsPage() {
             <p className="panel-note my-levels-notice" role={importNotice.tone}>
               {importNotice.message}
             </p>
+          )}
+          {unkeptImport !== null && (
+            <Button
+              tone="go"
+              className="my-levels-play-anyway"
+              onClick={() => {
+                setPlayingUnkept(unkeptImport);
+              }}
+            >
+              <Play size={18} aria-hidden="true" />
+              Jouer quand même
+            </Button>
           )}
           {receivedLevels.status === 'error' ? (
             <p className="panel-note my-levels-notice" role="alert">

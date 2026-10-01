@@ -44,8 +44,9 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   `metadata.basedOn` (au plus 16 sources `{ title, author? }`), facultatifs en
   v2, absents de v1. Un document sans ces champs se relit à l’identique ; avec,
   il fait l’aller-retour par le codec de fichier et le codec URL, et
-  `puzzleFromWorkshop` les conserve. Aucune interface ne les renseigne ni ne
-  les affiche encore (M6, M10, M14).
+  `puzzleFromWorkshop` les conserve. Affichés en texte brut sur les cartes de
+  « Mes niveaux » (M9) et dans l’en-tête de jeu d’un niveau reçu (M10) ;
+  aucune interface ne les renseigne encore (M14).
 - Empreinte M2 (ADR 0015) : `levelFingerprint(document)`
   (`src/infrastructure/level-file/level-fingerprint.ts`, asynchrone) renvoie les
   16 premiers chiffres hexadécimaux du SHA-256 (`crypto.subtle`) du texte du
@@ -88,8 +89,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   du décor déplacé n’y figure pas. `playSolution(level, solution)` est extraite
   et exportée de `puzzle-workshop.ts` (rend la tentative, `verifyPuzzle`
   inchangé). Rejouer la solution sur le niveau d’origine redonne la même
-  tentative et gagne en simulation headless (fixture locale). Aucun appelant en
-  production avant M10 (seuls ses tests l’importent).
+  tentative et gagne en simulation headless (fixture locale). Appelée par la
+  victoire sur un niveau reçu depuis M10.
 - Création depuis un niveau M6 (ADR 0015 § Ouvrir dans l’atelier, ADR 0016 §
   Remplissage automatique) :
   `creationFromLevel(level, { playerSolution?, createId })`
@@ -135,7 +136,7 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   dépôt est fourni par `ReceivedLevelRepositoryContext`
   (`src/app/received-level-repository-context.ts`), branché dans `App`
   (`localStorage` par défaut, prop `receivedLevelRepository` pour les tests).
-  Les victoires sur `/shared` ne sont pas encore enregistrées (M10). Validation visuelle attendue (statut
+  Les victoires sur `/shared` sont enregistrées depuis M10. Validation visuelle attendue (statut
   discret, captures `test-results/shared/shared-not-kept-*.png`).
 - Page « Mes niveaux » M9 (ADR 0015 § Page « Mes niveaux », ADR 0008
   amendée) : `/my-levels` (`MyLevelsPage.tsx`), dans le menu partagé et en
@@ -159,12 +160,35 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   reçoit (`origin: 'file'`) sans quitter la page ; un atelier est refusé
   (« Ce fichier est un atelier, pas un niveau à jouer. »). `/import`
   redirige vers `/my-levels` ; `LevelImportPage` et `import-level-draft.ts`
-  sont retirés. `/my-levels/:id/play` est provisoire : il joue le niveau reçu
-  sans enregistrer de victoire ni afficher l’attribution (M10) ; un
+  sont retirés. `/my-levels/:id/play` joue le niveau reçu (M10) ; un
   identifiant inconnu affiche une erreur et un lien vers « Mes niveaux ».
   « Modifier » un niveau reçu arrive en M11. Validation visuelle attendue
   (captures `test-results/my-levels/my-levels-{empty,filled}-{390x844,844x390,1440x900}.png`,
   `my-levels-delete-390x844.png`, `test-results/home/accueil-*.png`).
+- Jouer un niveau reçu M10 (ADR 0015 § Victoire sur un niveau reçu, ADR 0016
+  § Affichage) : cas d’usage pur
+  `recordReceivedVictory(repository, id, attempt)`
+  (`src/application/received/record-received-victory.ts`) : à partir de
+  l’instantané de la tentative pris au lancement, l’entrée devient résolue,
+  `bestObjectCount` garde le minimum (`countObjectsUsed`, ADR 0010) et
+  `playerSolution` est remplacée par `solutionFromAttempt` ; entrée absente
+  (`not-found`) ou erreur du dépôt (`not-kept`) sont des résultats, sans
+  exception. `ReceivedLevelBoard` (`src/app/`) joue un niveau reçu pour
+  `/my-levels/:id/play` et `/shared` : il l’appelle à la victoire quand le
+  niveau est gardé (rien sinon), ignore une erreur de stockage, n’affiche que
+  ✅ (palier « Résolu » seul, sans niveau suivant) et ne touche jamais la
+  progression de campagne. L’en-tête montre « par <auteur> · d’après <titre>
+  (par <auteur>) » (première source) en texte brut, à la place de « Mode
+  joueur » (`AppHeader`, prop `attribution`, helper `level-attribution.ts`
+  partagé avec les cartes) ; en paysage téléphone, sur la ligne du titre.
+  `/my-levels/:id/play` a un bouton d’en-tête « Mes niveaux » (sortie `exit`,
+  libellé court `shortLabel`), qui sert aussi au bandeau d’échec. Un fichier
+  importé non gardé (quota, stockage, `crypto.subtle` absent) affiche sous
+  l’alerte « Jouer quand même » : le niveau se joue sur place dans
+  `/my-levels`, sans rien enregistrer (victoire comprise), avec le statut
+  discret « Ce niveau n’a pas été gardé sur cet appareil. » et « Mes niveaux »
+  pour revenir à la liste. Validation visuelle attendue (captures
+  `test-results/received-play/{received-header,received-victory,import-not-kept,import-not-kept-play}-{390x844,844x390,1440x900}.png`).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -400,6 +424,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 
 ## Dettes et limites explicites
 
+- **Niveau reçu (M10).** Une victoire qui ne peut pas être écrite (quota,
+  stockage indisponible) est perdue sans message. En 390 px, l’en-tête de
+  `/my-levels/:id/play` (bouton « Mes niveaux », objectif, menu) ne laisse
+  que « par <auteur> · d’a… » de l’attribution, tronquée par une ellipse.
 - **Aperçu de placement en CSS.** L’overlay DOM `.placement-preview`
   (`src/ui/BoardView.tsx`) n’a ni la forme, ni la taille, ni la rotation de
   l’objet ; le fantôme dessiné par le renderer (C1) reste à faire.
@@ -498,6 +526,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M10 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 880 tests Vitest (69 fichiers),
+build Vite/PWA et 49 tests Playwright `mobile` (48 réussis, 1 ignoré).
 
 `pnpm check` après M9 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 866 tests Vitest (67 fichiers),

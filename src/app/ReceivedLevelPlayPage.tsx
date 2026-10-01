@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import type { ReceivedLevel } from '../application/received/received-level-repository';
 import { AppFrame } from '../ui/AppFrame';
 import { Panel } from '../ui/Panel';
-import { BoardShell } from './BoardShell';
+import { ReceivedLevelBoard } from './ReceivedLevelBoard';
 import { useReceivedLevelRepository } from './received-level-repository-context';
 
 /**
  * `/my-levels/:id/play` (ADR 0008 amended): a received level, played. The id
  * comes from the URL and is untrusted: it only serves one repository read,
- * which validates it. Provisional page (M9): a victory is not recorded yet,
- * and the header does not show the attribution yet (M10).
+ * which validates it. A victory updates the entry (M10).
  */
 export function ReceivedLevelPlayPage() {
   const { id = '' } = useParams();
@@ -20,6 +19,7 @@ export function ReceivedLevelPlayPage() {
 
 function ReceivedLevelPlay({ id }: { readonly id: string }) {
   const repository = useReceivedLevelRepository();
+  const navigate = useNavigate();
   const [level] = useState<ReceivedLevel | null>(() => {
     const result = repository.load(id);
     return result.status === 'ok' ? result.level : null;
@@ -43,11 +43,17 @@ function ReceivedLevelPlay({ id }: { readonly id: string }) {
   }
 
   return (
-    <BoardShell
-      initialDocument={level.document}
-      mode="resolution"
+    <ReceivedLevelBoard
+      document={level.document}
       title={level.document.metadata.title}
-      subtitle="Mode joueur"
+      entryId={level.id}
+      exit={{
+        label: 'Retour à Mes niveaux',
+        shortLabel: 'Mes niveaux',
+        onExit: () => {
+          void navigate('/my-levels');
+        },
+      }}
     />
   );
 }

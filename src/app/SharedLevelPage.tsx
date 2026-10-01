@@ -6,7 +6,8 @@ import type { LevelDocument } from '../domain/level-document';
 import { decodeShareFragment } from '../infrastructure/level-share/level-share-codec';
 import { AppFrame } from '../ui/AppFrame';
 import { Panel } from '../ui/Panel';
-import { BoardShell } from './BoardShell';
+import { notKeptNotice } from './not-kept-notice';
+import { ReceivedLevelBoard } from './ReceivedLevelBoard';
 import { fingerprintOf } from './fingerprint-of';
 import { useReceivedLevelRepository } from './received-level-repository-context';
 
@@ -14,7 +15,12 @@ type SharedLevelState =
   | { readonly status: 'loading' }
   | { readonly status: 'invalid' }
   | { readonly status: 'workshop' }
-  | { readonly status: 'loaded'; readonly document: LevelDocument; readonly kept: boolean };
+  | {
+      readonly status: 'loaded';
+      readonly document: LevelDocument;
+      /** The stored entry a victory updates (M10); `null` when the level was not kept. */
+      readonly entryId: string | null;
+    };
 
 /** Composition point: the real clock stamps `receivedAt`, as `App` does for drafts. */
 const systemClock = (): Date => new Date();
@@ -22,7 +28,7 @@ const systemClock = (): Date => new Date();
 /**
  * `/shared` (ADR 0008, 0011, 0015 § Réception): the level decoded from the URL
  * hash is stored as a received level, then played; a storage failure only
- * shows a discreet status.
+ * shows a discreet status. A victory updates the stored entry (M10).
  */
 export function SharedLevelPage() {
   const { hash } = useLocation();
@@ -43,7 +49,7 @@ export function SharedLevelPage() {
       return {
         status: 'loaded',
         document: decoded.document,
-        kept: received.status === 'received',
+        entryId: received.status === 'received' ? received.level.id : null,
       };
     };
 
@@ -62,13 +68,12 @@ export function SharedLevelPage() {
 
   if (state.status === 'loaded') {
     return (
-      <BoardShell
+      <ReceivedLevelBoard
         key={hash}
-        initialDocument={state.document}
-        mode="resolution"
+        document={state.document}
         title={`Partage · ${state.document.metadata.title}`}
-        subtitle="Mode joueur"
-        {...(state.kept ? {} : { notice: 'Ce niveau n’a pas été gardé sur cet appareil.' })}
+        entryId={state.entryId}
+        {...(state.entryId === null ? { notice: notKeptNotice } : {})}
       />
     );
   }

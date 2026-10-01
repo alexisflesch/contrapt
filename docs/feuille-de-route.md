@@ -1126,3 +1126,90 @@ introuvable.`. Le test du partage d’un reçu, écrit après le composant, a
   (quatre destinations : une colonne, 2 × 2, puis une rangée). Questions :
   le sous-titre d’en-tête « Ta collection » convient-il ? Faut-il afficher
   la date de modification ou de réception sur les cartes ?
+
+### M10 — Jouer un niveau reçu — fait — commit de cette entrée
+
+- Précisions du pilote appliquées : cas d’usage pur dans
+  `src/application/received/`, appelé par `/my-levels/:id/play` et
+  `/shared` ; une erreur de stockage n’interrompt jamais la partie ; résultat
+  ✅ seul (U24), sans « Remixer » (M11) ; correctif « Jouer quand même »
+  pour un import non gardé ; auteur et première source dans l’en-tête des
+  deux pages.
+- Tests ajoutés : `src/application/received/record-received-victory.test.ts`
+  › « victoire sur un niveau reçu (M10, …) » (6 tests) : entrée résolue avec
+  le nombre d’objets et la solution du lancement ; seconde victoire avec
+  plus d’objets : record gardé, solution remplacée ; record abaissé par une
+  victoire avec moins d’objets ; document, origine et date intacts ; entrée
+  absente sans écriture ; erreurs de lecture et d’écriture en résultats.
+  `src/app/ReceivedLevelPlay.test.tsx` › « jouer un niveau reçu (M10, …) »
+  (8 tests App) : auteur et première source dans l’en-tête en texte brut
+  (`<i>`, `<b>` littéraux) ; victoire sur `/my-levels/:id/play` qui met
+  l’entrée à jour, n’affiche que le palier « Résolu » et ne sollicite pas la
+  progression ; échec qui ne change rien ; dépôt en erreur à la victoire,
+  partie qui continue ; victoire d’un lien `/shared` gardé enregistrée, avec
+  l’attribution ; lien non gardé : aucune écriture, victoire comprise ;
+  import non gardé (quota) : « Jouer quand même », plateau, statut discret,
+  aucune écriture même à la victoire, retour à la liste ; import sans
+  `crypto.subtle` : « Jouer quand même » et `localStorage` vide.
+  `e2e/received-play.spec.ts` (mobile, 2 parcours) : importer, jouer, gagner,
+  « Résolu » sur la carte ; import avec `setItem` qui lève
+  `QuotaExceededError` puis « Jouer quand même » ; captures.
+- Échec initial constaté : `record-received-victory` : `Failed to load url
+./record-received-victory … Does the file exist?`, puis avec un bouchon
+  `AssertionError: expected { status: 'stub' } to deeply equal { status:
+'recorded', level: { …(7) } }` (6 sur 6). App : `Unable to find an element
+with the text: par <i>Lili</i> · d’après <b>La chute</b> (par Max)`,
+  `expected { id: 'recu-aaaaaaaaaaaaaaaa', …(4) } to deeply equal { …(6) }`,
+  `expected [] to have a length of 1 but got +0`,
+  `toHaveAttribute("data-level-tier", "resolved")`, `Unable to find an
+accessible element with the role "button" and name "Jouer quand même"`
+  (7 sur 8 ; « ne change rien à l’entrée après un échec » passait déjà,
+  non-régression).
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : `src/ui/AppHeader.tsx`,
+  `src/ui/AppFrame.tsx` (prop `attribution`, à la place du sous-titre : l’en-tête
+  de 56 px n’a pas la place d’une troisième ligne) ; `src/app/BoardShell.tsx`
+  (prop `attribution`, `exit.shortLabel` pour que le bouton d’en-tête dise
+  « Mes niveaux » et non « Atelier ») ; `src/ui/styles.css`
+  (`.level-attribution` sans capitales, pour ne pas déformer le pseudo ; en
+  paysage téléphone, sur la ligne du titre, puisque `.level-mode` y est
+  masqué ; `.my-levels-play-anyway`) ; `src/app/MyLevelsPage.tsx`
+  (`Attribution` passe par `attributionParts`, partagé avec l’en-tête, rendu
+  identique) ; `src/app/not-kept-notice.ts` (message partagé par `/shared` et
+  l’import).
+- Choix d’implémentation : `ReceivedLevelBoard` compose `BoardShell` pour les
+  trois usages (entrée gardée, lien, import non gardé) ; il garde la
+  tentative du lancement (comme `PlayLevelPage` garde son compte) et appelle
+  `recordReceivedVictory` à la victoire si `entryId` n’est pas `null`. Le
+  résultat réutilise `CampaignVictory` avec `hasChallenge: false`,
+  `hint: null`, `onNextLevel: null`, soit le seul palier « Résolu ».
+  « Jouer quand même » : rendu en place dans `MyLevelsPage` (état local), sans
+  nouvelle route ni état de navigation. Un document dans `history.state`
+  serait relu après un rechargement et devrait être revalidé comme donnée non
+  fiable ; il n’apporterait rien à une partie éphémère, que le rechargement
+  doit au contraire oublier. Même précédent que « Jouer le puzzle » de
+  l’atelier (U22), qui joue en place avec une sortie `exit`. La sortie
+  « Retour à Mes niveaux » revient à la liste. Sur `/my-levels/:id/play`,
+  la même sortie remplace « Retour aux niveaux » (qui menait à `/levels`)
+  dans l’en-tête et le bandeau d’échec. Une erreur à l’écriture d’une
+  victoire est ignorée, sans message (aucune décision ne le demande).
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune. Le correctif « Jouer quand même »
+  aligne l’import sur l’ADR 0015 (« un échec de stockage n’empêche jamais de
+  jouer »), que M9 ne respectait pas.
+- Non vérifié : un vrai téléphone ; un vrai déploiement HTTP sans
+  `crypto.subtle` (simulé) ; le rechargement de la page pendant une partie
+  « Jouer quand même » (revient à la liste, le document est perdu, par
+  construction).
+- Pour l'auteur : validation visuelle — captures inspectées
+  `test-results/received-play/received-header-{390x844,844x390,1440x900}.png`
+  (attribution en gris clair sous le titre, sans capitales ; sur la ligne du
+  titre en paysage ; en 390 px tronquée en « par Lili · d’a… »),
+  `received-victory-{…}.png` (boîte « Bravo ! » avec le seul palier
+  « Résolu », « Résolu sans poser d’objet. », Recommencer, pas de niveau
+  suivant), `import-not-kept-{…}.png` (alerte puis bouton vert « Jouer quand
+  même » sous elle, aligné à gauche) et `import-not-kept-play-{…}.png`
+  (plateau, statut discret, attribution). Questions : en 390 px, faut-il
+  retirer le bouton d’en-tête « Mes niveaux » de `/my-levels/:id/play` (le
+  menu y mène déjà) pour laisser plus de place au titre et à l’auteur ?
+  Faut-il un message discret quand une victoire n’a pas pu être gardée ?
