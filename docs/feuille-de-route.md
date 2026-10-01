@@ -9,6 +9,25 @@ Destinataire : l'agent d'implémentation qui reprend le dépôt — Claude Code
 une passe de captures) à un sous-agent Claude Sonnet ou Opus, mais il reste
 responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
+## Point de reprise (fin de session du 1er octobre 2026)
+
+- **Prochaine tâche : M14b**, puis M15 ; ensuite la phase 2. Phase 0 et M1 à
+  M14 sont faites (journal § 7). `pnpm check` était vert au dernier commit.
+- **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
+  part dans un sous-agent neuf, une à la fois, avec pour consigne de lire
+  `AGENTS.md`, `docs/index.md`, ce fichier (§ 1 à 3, la tâche, le journal),
+  `docs/etat.md` et les ADR citées, puis de faire un commit par tâche.
+  **Sonnet pour une tâche sans changement visible, Opus pour une tâche
+  d'interface** (choix de l'auteur). Entre deux tâches, la session principale
+  relit le rapport et le diff, regarde au moins une capture, tranche les
+  questions simples en les écrivant dans l'ADR ou la tâche concernée, et
+  remonte à l'auteur ce qui relève de son goût ou de son contenu.
+- **N'attend que l'auteur** : validation visuelle des captures de M8 à M14
+  (`test-results/`) ; questions de goût listées dans les entrées M12 et M14 du
+  journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
+  la phase 5.
+- **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
+
 Ce document fixe **quoi faire et dans quel ordre**. Il ne redéfinit aucune
 règle : les règles sont dans `AGENTS.md`, les contrats dans les ADR et le code.
 En cas de contradiction avec une source d'autorité (`docs/index.md`), la source
