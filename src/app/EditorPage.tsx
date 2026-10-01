@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
+import type { DraftCreation } from '../application/drafts/draft-repository';
 import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
 import { AppFrame } from '../ui/AppFrame';
@@ -83,9 +84,9 @@ function Workshop({
 
 function DraftEditor({ draftId }: { readonly draftId: string }) {
   const drafts = useDraftRepository();
-  const [draft] = useState<LevelDocument | null>(() => {
+  const [draft] = useState<DraftCreation | null>(() => {
     const result = drafts.load(draftId);
-    return result.status === 'ok' ? result.document : null;
+    return result.status === 'ok' ? result.creation : null;
   });
 
   if (draft === null) {
@@ -109,12 +110,16 @@ function DraftEditor({ draftId }: { readonly draftId: string }) {
 
   return (
     <Workshop
-      initialDocument={draft}
+      initialDocument={draft.document}
       title=""
       {...(calibrationDocument === undefined ? {} : { calibrationDocument })}
       onDocumentCommitted={(document) => {
         // Best effort, like progress (ADR 0011): a failed save never blocks editing.
-        drafts.save(document);
+        // The creation's source (ADR 0015) is kept as loaded.
+        drafts.save({
+          document,
+          ...(draft.source === undefined ? {} : { source: draft.source }),
+        });
       }}
     />
   );

@@ -8,12 +8,17 @@ import { importLevelAsDraft } from './import-level-draft';
 const source = embeddedLevels[0];
 if (source === undefined) throw new Error('Niveau embarqué introuvable.');
 
+const updatedAt = '2026-10-01T12:00:00.000Z';
+
 const createMemoryRepository = (documents: readonly LevelDocument[] = []) => {
   const saved = new Map(documents.map((document) => [document.id, document]));
   const repository: DraftRepository = {
     list: () => ({ status: 'ok', ids: [...saved.keys()] }),
-    load: (id) => ({ status: 'ok', document: saved.get(id) ?? null }),
-    save: (document) => {
+    load: (id) => {
+      const document = saved.get(id);
+      return { status: 'ok', creation: document === undefined ? null : { document, updatedAt } };
+    },
+    save: ({ document }) => {
       saved.set(document.id, document);
       return { status: 'ok' };
     },

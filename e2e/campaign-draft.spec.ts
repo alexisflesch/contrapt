@@ -23,13 +23,14 @@ const storedWallX = (page: Page): Promise<number | null> =>
   page.evaluate(() => {
     const raw = localStorage.getItem('tinkerbolt:draft:campaign-02-par-dessus-le-mur-brouillon');
     if (raw === null) return null;
-    const envelope = JSON.parse(raw) as { data?: { levelFile?: string } };
-    const document =
-      envelope.data?.levelFile === undefined
-        ? null
-        : (JSON.parse(envelope.data.levelFile) as {
-            objects?: Array<{ id?: string; transform?: { position?: { x?: number } } }>;
-          });
+    const envelope = JSON.parse(raw) as {
+      data?: {
+        document?: {
+          objects?: Array<{ id?: string; transform?: { position?: { x?: number } } }>;
+        };
+      };
+    };
+    const document = envelope.data?.document ?? null;
     const wall = document?.objects?.find((object) => object.id === 'wall');
     return wall?.transform?.position?.x ?? null;
   });

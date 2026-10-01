@@ -52,7 +52,8 @@ const createBrowserProgressRepository = (): ProgressRepository => {
 const createBrowserDraftRepository = (): DraftRepository => {
   try {
     if (typeof window === 'undefined') return unavailableDraftRepository;
-    return createLocalStorageDraftRepository(window.localStorage);
+    // Composition point: the real clock is injected here, like `BenchPage`'s default `now`.
+    return createLocalStorageDraftRepository(window.localStorage, () => new Date());
   } catch {
     return unavailableDraftRepository;
   }

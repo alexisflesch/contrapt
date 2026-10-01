@@ -28,9 +28,9 @@ export const importLevelAsDraft = (
 
     const existingDraft = repository.load(draftId);
     if (existingDraft.status === 'error') return existingDraft;
-    if (existingDraft.document !== null) continue;
+    if (existingDraft.creation !== null) continue;
 
-    const saved = repository.save({ ...document, id: draftId });
+    const saved = repository.save({ document: { ...document, id: draftId } });
     return saved.status === 'ok' ? { status: 'ok', draftId } : saved;
   }
 

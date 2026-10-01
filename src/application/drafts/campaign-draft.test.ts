@@ -11,13 +11,18 @@ import { campaignDraftId, createCampaignDraft, openCampaignDraft } from './campa
 const levelTwo = embeddedLevels.find(({ id }) => id === 'campaign-02-par-dessus-le-mur');
 if (levelTwo === undefined) throw new Error('Niveau 2 embarqué introuvable.');
 
+const updatedAt = '2026-10-01T12:00:00.000Z';
+
 const createMemoryDraftRepository = (initial: readonly LevelDocument[] = []) => {
   const drafts = new Map(initial.map((document) => [document.id, document]));
   const saved: LevelDocument[] = [];
   const repository: DraftRepository = {
     list: () => ({ status: 'ok', ids: [...drafts.keys()] }),
-    load: (id) => ({ status: 'ok', document: drafts.get(id) ?? null }),
-    save: (document) => {
+    load: (id) => {
+      const document = drafts.get(id);
+      return { status: 'ok', creation: document === undefined ? null : { document, updatedAt } };
+    },
+    save: ({ document }) => {
       saved.push(document);
       drafts.set(document.id, document);
       return { status: 'ok' };

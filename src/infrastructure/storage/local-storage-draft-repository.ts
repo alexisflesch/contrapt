@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import type { LevelDocument } from '../../domain/level-document';
 import type {
+  DraftCreation,
+  DraftCreationContent,
   DraftIndexLoadResult,
   DraftLoadResult,
   DraftRepository,
@@ -34,13 +36,39 @@ const draftIndexEnvelopeSchema = z.strictObject({
   }),
 });
 
-const draftEnvelopeSchema = z.strictObject({
+/** L26 drafts: the level file codec text, stored as a string. Read only. */
+const draftEnvelopeV1Schema = z.strictObject({
   kind: z.literal('draft'),
   version: z.literal(1),
   data: z.strictObject({
     levelFile: z.string().max(MAX_LEVEL_FILE_SIZE_BYTES * 3),
   }),
 });
+
+/**
+ * Creations (ADR 0015): `document` and `source` are the JSON values of the level
+ * file codec text, decoded again by that codec (migrations included), as for
+ * received levels.
+ */
+const draftEnvelopeV2Schema = z.strictObject({
+  kind: z.literal('draft'),
+  version: z.literal(2),
+  data: z.strictObject({
+    document: z.record(z.string(), z.unknown()),
+    source: z.record(z.string(), z.unknown()).optional(),
+    updatedAt: z.iso.datetime({ offset: true }),
+  }),
+});
+
+const draftEnvelopeSchema = z.discriminatedUnion('version', [
+  draftEnvelopeV1Schema,
+  draftEnvelopeV2Schema,
+]);
+
+/** A v1 draft has no date: the caller dates it when it is read (migration). */
+type StoredDraft =
+  | { readonly version: 1; readonly document: LevelDocument }
+  | { readonly version: 2; readonly creation: DraftCreation };
 
 type DraftIndexReadResult =
   | {
@@ -78,16 +106,59 @@ const decodeIndex = (rawValue: string): readonly string[] | null => {
   return parsed.success ? parsed.data.data.ids : null;
 };
 
-const decodeStoredDraft = (rawValue: string, expectedId: string): LevelDocument | null => {
+const decodeStoredDocument = (value: unknown): LevelDocument | null => {
+  const fileResult = decodeLevelFile(typeof value === 'string' ? value : JSON.stringify(value));
+  return fileResult.status === 'ok' ? fileResult.document : null;
+};
+
+const decodeStoredDraft = (rawValue: string, expectedId: string): StoredDraft | null => {
   if (rawValue.length > MAX_DRAFT_VALUE_CHARACTERS) return null;
 
   const parsed = draftEnvelopeSchema.safeParse(parseJson(rawValue));
   if (!parsed.success) return null;
 
-  const fileResult = decodeLevelFile(parsed.data.data.levelFile);
-  return fileResult.status === 'ok' && fileResult.document.id === expectedId
-    ? fileResult.document
-    : null;
+  if (parsed.data.version === 1) {
+    const document = decodeStoredDocument(parsed.data.data.levelFile);
+    return document !== null && document.id === expectedId ? { version: 1, document } : null;
+  }
+
+  const { document: storedDocument, source: storedSource, updatedAt } = parsed.data.data;
+  const document = decodeStoredDocument(storedDocument);
+  if (document === null || document.id !== expectedId) return null;
+  if (storedSource === undefined) return { version: 2, creation: { document, updatedAt } };
+
+  const source = decodeStoredDocument(storedSource);
+  return source === null ? null : { version: 2, creation: { document, source, updatedAt } };
+};
+
+/** The injected clock's instant in ISO 8601, or null for an invalid date. */
+const currentInstant = (now: () => Date): string | null => {
+  try {
+    const instant = now().toISOString();
+    return z.iso.datetime({ offset: true }).safeParse(instant).success ? instant : null;
+  } catch {
+    return null;
+  }
+};
+
+const toStoredJson = (document: LevelDocument): unknown => JSON.parse(encodeLevelFile(document));
+
+/** Serialize a v2 envelope, or return null when it would not be read back as valid. */
+const encodeStoredDraft = (creation: DraftCreationContent, updatedAt: string): string | null => {
+  try {
+    const envelope = {
+      kind: 'draft',
+      version: 2,
+      data: {
+        document: toStoredJson(creation.document),
+        ...(creation.source === undefined ? {} : { source: toStoredJson(creation.source) }),
+        updatedAt,
+      },
+    };
+    return draftEnvelopeV2Schema.safeParse(envelope).success ? JSON.stringify(envelope) : null;
+  } catch {
+    return null;
+  }
 };
 
 const readIndex = (storage: Storage): DraftIndexReadResult => {
@@ -135,8 +206,14 @@ const successfulWrite = (warning: boolean): DraftWriteResult =>
 
 const repositoryError = (result: DraftRepositoryFailure): DraftWriteResult => result;
 
-/** Create the localStorage adapter around an explicitly injected Storage object. */
-export const createLocalStorageDraftRepository = (storage: Storage): DraftRepository => ({
+/**
+ * Create the localStorage adapter around an explicitly injected Storage object
+ * and clock; the clock dates every save and every v1 draft read (migration).
+ */
+export const createLocalStorageDraftRepository = (
+  storage: Storage,
+  now: () => Date,
+): DraftRepository => ({
   list(): DraftIndexLoadResult {
     const result = readIndex(storage);
     if (result.status === 'error') return result;
@@ -156,38 +233,33 @@ export const createLocalStorageDraftRepository = (storage: Storage): DraftReposi
     } catch (error) {
       return storageError(error);
     }
-    if (rawValue === null) return { status: 'ok', document: null };
+    if (rawValue === null) return { status: 'ok', creation: null };
 
-    const document = decodeStoredDraft(rawValue, id);
-    if (document !== null) return { status: 'ok', document };
+    const stored = decodeStoredDraft(rawValue, id);
+    if (stored?.version === 2) return { status: 'ok', creation: stored.creation };
+    if (stored?.version === 1) {
+      // ADR 0015 § Stockage local: a v1 draft is dated at the instant of its migration.
+      const updatedAt = currentInstant(now);
+      if (updatedAt === null) return { status: 'error', code: 'invalid-draft' };
+      return { status: 'ok', creation: { document: stored.document, updatedAt } };
+    }
 
     const backup = backupValue(storage, draftBackupKey(id), rawValue);
     if (backup !== null) return backup;
-    return { status: 'ok', document: null, warning: 'invalid-data-backed-up' };
+    return { status: 'ok', creation: null, warning: 'invalid-data-backed-up' };
   },
 
-  save(document: LevelDocument): DraftWriteResult {
+  save(creation: DraftCreationContent): DraftWriteResult {
+    const { document } = creation;
     if (!draftIdSchema.safeParse(document.id).success) {
       return { status: 'error', code: 'invalid-draft' };
     }
 
-    let levelFile: string;
-    try {
-      levelFile = encodeLevelFile(document);
-    } catch {
-      return { status: 'error', code: 'invalid-draft' };
-    }
+    const updatedAt = currentInstant(now);
+    if (updatedAt === null) return { status: 'error', code: 'invalid-draft' };
 
-    let serializedDraft: string;
-    try {
-      serializedDraft = JSON.stringify({
-        kind: 'draft',
-        version: 1,
-        data: { levelFile },
-      });
-    } catch {
-      return { status: 'error', code: 'invalid-draft' };
-    }
+    const serializedDraft = encodeStoredDraft(creation, updatedAt);
+    if (serializedDraft === null) return { status: 'error', code: 'invalid-draft' };
 
     const key = draftStorageKey(document.id);
     let previousDraft: string | null;

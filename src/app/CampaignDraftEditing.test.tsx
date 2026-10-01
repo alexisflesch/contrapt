@@ -4,11 +4,14 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createCampaignDraft } from '../application/drafts/campaign-draft';
 import type { ProgressRepository } from '../application/progression/progress-repository';
 import { embeddedLevels } from '../content/embedded-levels';
 import { createLocalStorageDraftRepository } from '../infrastructure/storage/local-storage-draft-repository';
 
 import { App } from './App';
+
+const testClock = (): Date => new Date('2026-10-01T12:00:00.000Z');
 
 const levelTwo = embeddedLevels.find(({ id }) => id === 'campaign-02-par-dessus-le-mur');
 if (levelTwo === undefined) throw new Error('Niveau 2 embarqué introuvable.');
@@ -104,10 +107,10 @@ describe('éditer un niveau de la campagne (U17)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fermer le catalogue' }));
     expect(screen.getByRole('button', { name: 'Exporter le niveau' })).toBeVisible();
 
-    const stored = createLocalStorageDraftRepository(window.localStorage).load(
+    const stored = createLocalStorageDraftRepository(window.localStorage, testClock).load(
       'campaign-02-par-dessus-le-mur-brouillon',
     );
-    expect(stored.status === 'ok' ? stored.document?.metadata.title : null).toBe(
+    expect(stored.status === 'ok' ? stored.creation?.document.metadata.title : null).toBe(
       'Par-dessus le mur (brouillon)',
     );
     expect(
@@ -140,21 +143,48 @@ describe('éditer un niveau de la campagne (U17)', () => {
     const properties = screen.getByRole('region', { name: /^Propriétés de/ });
     fireEvent.click(within(properties).getByRole('button', { name: 'Vers la droite' }));
 
-    const stored = createLocalStorageDraftRepository(window.localStorage).load(
+    const stored = createLocalStorageDraftRepository(window.localStorage, testClock).load(
       'campaign-02-par-dessus-le-mur-brouillon',
     );
     const storedWall =
-      stored.status === 'ok' ? stored.document?.objects.find(({ id }) => id === 'wall') : undefined;
+      stored.status === 'ok'
+        ? stored.creation?.document.objects.find(({ id }) => id === 'wall')
+        : undefined;
     expect(storedWall?.transform.position.x).toBeGreaterThan(5.0);
     expect(levelTwo).toEqual(pristineLevelTwo);
   });
 
+  it('conserve la source d’une création quand l’auteur l’édite (M4, ADR 0015)', () => {
+    const draftId = 'campaign-02-par-dessus-le-mur-brouillon';
+    createLocalStorageDraftRepository(window.localStorage, testClock).save({
+      document: createCampaignDraft(levelTwo),
+      source: levelTwo,
+    });
+    window.history.replaceState(null, '', `/editor?draft=${draftId}`);
+    render(<App />);
+
+    tapWorldPoint(5.0, 3.6);
+    const properties = screen.getByRole('region', { name: /^Propriétés de/ });
+    fireEvent.click(within(properties).getByRole('button', { name: 'Vers la droite' }));
+
+    const stored = createLocalStorageDraftRepository(window.localStorage, testClock).load(draftId);
+    if (stored.status !== 'ok' || stored.creation === null) {
+      throw new Error('Création introuvable.');
+    }
+    expect(
+      stored.creation.document.objects.find(({ id }) => id === 'wall')?.transform.position.x,
+    ).toBeGreaterThan(5.0);
+    expect(stored.creation.source).toEqual(pristineLevelTwo);
+  });
+
   it('rouvre le brouillon existant plutôt que de l’écraser', () => {
-    const drafts = createLocalStorageDraftRepository(window.localStorage);
+    const drafts = createLocalStorageDraftRepository(window.localStorage, testClock);
     drafts.save({
-      ...levelTwo,
-      id: 'campaign-02-par-dessus-le-mur-brouillon',
-      metadata: { title: 'Mon pont' },
+      document: {
+        ...levelTwo,
+        id: 'campaign-02-par-dessus-le-mur-brouillon',
+        metadata: { title: 'Mon pont' },
+      },
     });
     window.history.replaceState(null, '', '/levels');
     render(<App />);
@@ -174,13 +204,13 @@ describe('éditer un niveau de la campagne (U17)', () => {
   });
 
   const storedDraft = () => {
-    const stored = createLocalStorageDraftRepository(window.localStorage).load(
+    const stored = createLocalStorageDraftRepository(window.localStorage, testClock).load(
       'campaign-02-par-dessus-le-mur-brouillon',
     );
-    if (stored.status !== 'ok' || stored.document == null) {
+    if (stored.status !== 'ok' || stored.creation == null) {
       throw new Error('Brouillon introuvable.');
     }
-    return stored.document;
+    return stored.creation.document;
   };
 
   const ballColours = (): { readonly red: string | null; readonly blue: string | null } => {

@@ -11,12 +11,17 @@ import { createLocalStorageDraftRepository } from '../infrastructure/storage/loc
 
 import { App } from './App';
 
+const testInstant = '2026-10-01T12:00:00.000Z';
+const testClock = (): Date => new Date(testInstant);
+
 const source = embeddedLevels[0];
 if (source === undefined) throw new Error('Niveau embarqué introuvable.');
 
 const openImportPage = (): void => {
   window.history.replaceState(null, '', '/');
-  render(<App draftRepository={createLocalStorageDraftRepository(window.localStorage)} />);
+  render(
+    <App draftRepository={createLocalStorageDraftRepository(window.localStorage, testClock)} />,
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
   fireEvent.click(screen.getByRole('button', { name: 'Importer un fichier JSON' }));
 };
@@ -52,8 +57,8 @@ describe('importation d’un niveau JSON', () => {
       id: 'import-kept',
       metadata: { title: 'Mon puzzle' },
     } satisfies LevelDocument;
-    const drafts = createLocalStorageDraftRepository(window.localStorage);
-    expect(drafts.save(existing).status).toBe('ok');
+    const drafts = createLocalStorageDraftRepository(window.localStorage, testClock);
+    expect(drafts.save({ document: existing }).status).toBe('ok');
     openImportPage();
 
     expect(screen.getByRole('region', { name: 'Importer un niveau JSON' })).toBeVisible();
@@ -71,15 +76,18 @@ describe('importation d’un niveau JSON', () => {
     if (ids.status !== 'ok') throw new Error('Index de brouillons illisible.');
     const importId = ids.ids.find((id) => id !== existing.id);
     expect(importId).toMatch(/^import-/u);
-    expect(drafts.load(existing.id)).toEqual({ status: 'ok', document: existing });
+    expect(drafts.load(existing.id)).toEqual({
+      status: 'ok',
+      creation: { document: existing, updatedAt: testInstant },
+    });
     expect(drafts.load(importId ?? '')).toEqual({
       status: 'ok',
-      document: { ...imported, id: importId },
+      creation: { document: { ...imported, id: importId }, updatedAt: testInstant },
     });
   });
 
   it('annonce un JSON invalide et ne modifie aucun brouillon', async () => {
-    const drafts = createLocalStorageDraftRepository(window.localStorage);
+    const drafts = createLocalStorageDraftRepository(window.localStorage, testClock);
     openImportPage();
     chooseFile('casse.json', '{ JSON cassé');
 

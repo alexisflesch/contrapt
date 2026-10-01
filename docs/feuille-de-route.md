@@ -641,3 +641,61 @@ file exist?` (module absent ; les 5 tests ne se chargent pas).
   test sert de point d’entrée, comme pour M2).
 - Pour l'auteur : rien à valider à l’écran. Question : faut-il exiger un record
   et une solution du joueur sur toute entrée résolue ? Laissé facultatif.
+
+### M4 — Enveloppe des créations v2 — fait — commit de cette entrée
+
+- Tests ajoutés : `src/infrastructure/storage/local-storage-draft-repository.test.ts`
+  › « enveloppe des créations v2 (M4, ADR 0015) » (16 tests) : une enveloppe
+  v1 existante se lit comme une création sans `source` datée par l’horloge
+  injectée, sans écriture ; une v2 se relit à l’identique (source et date
+  comprises) ; aller-retour d’une création avec `source` stockée comme valeur
+  du codec de fichier ; une v1 réécrite en v2 sans sauvegarde de secours ;
+  v2 invalide sauvegardée puis avertissement (source refusée par le codec,
+  source non objet, document refusé, document d’un autre identifiant, date
+  absente ou invalide, champ inconnu, version 3) ; création à la source
+  invalide sauvegardée avant remplacement ; source invalide refusée avant toute
+  écriture ; horloge invalide : écriture refusée, et v1 non datable rendue en
+  erreur `invalid-draft` sans sauvegarde. `src/app/CampaignDraftEditing.test.tsx`
+  › « conserve la source d’une création quand l’auteur l’édite (M4, ADR 0015) ».
+- Échec initial constaté : `AssertionError: expected { status: 'ok', document:
+{ …(10) } } to deeply equal { status: 'ok', creation: { …(2) } }` (v1) et
+  `expected { status: 'ok', document: null, …(1) } to deeply equal { status:
+'ok', creation: { …(3) } }` (v2 non reconnue, 24 échecs sur 33). Test de
+  l’éditeur : écrit après l’adaptation de `EditorPage`, vérifié rouge en
+  retirant la conservation de la source (`expected undefined to deeply equal
+{ schemaVersion: 2, …(9) }`), puis rétabli.
+- Tests existants réécrits : `local-storage-draft-repository.test.ts` ›
+  « sauvegarde chaque document via le codec de fichier… » devient « sauvegarde
+  chaque création dans une enveloppe v2… » — la tâche remplace l’écriture v1
+  par la v2. Adaptations mécaniques de forme (port `creation` au lieu de
+  `document`, `save({ document })`, horloge fixe passée à l’adaptateur) :
+  le reste de ce fichier, `campaign-draft.test.ts` et
+  `import-level-draft.test.ts` (dépôts en mémoire), `CampaignDraftEditing.test.tsx`,
+  `LevelImportPage.test.tsx` (attendu `{ creation: { document, updatedAt } }`),
+  `PuzzleWorkshop.test.tsx`, `e2e/puzzle-machine.ts` et
+  `e2e/campaign-draft.spec.ts` (lecture brute de l’enveloppe : `data.document`
+  au lieu de `JSON.parse(data.levelFile)`). Aucune assertion retirée.
+- Fichiers touchés hors périmètre : `src/app/App.tsx` (point de composition :
+  `() => new Date()`, précédent `now = () => performance.now()` de
+  `BenchPage`), `src/app/PuzzleWorkshop.test.tsx`, `src/app/LevelImportPage.test.tsx`,
+  `src/app/CampaignDraftEditing.test.tsx`, `e2e/puzzle-machine.ts`,
+  `e2e/campaign-draft.spec.ts` : utilisateurs du port ou de l’enveloppe brute.
+- Choix d’implémentation : `save` reçoit `{ document, source? }`
+  (`DraftCreationContent`) et l’adaptateur fixe `updatedAt` avec l’horloge
+  injectée (`now: () => Date`, obligatoire) ; `load` renvoie la création
+  entière (`DraftCreation`). Les noms `DraftRepository`/`draft` sont gardés
+  (pas de renommage hors tâche). La lecture d’une v1 ne réécrit rien :
+  `updatedAt` change donc à chaque lecture tant que la création n’est pas
+  réenregistrée (l’éditeur l’enregistre au premier changement). La `source`
+  n’est validée que par le codec ; sa forme puzzle (sans objet `toPlace`)
+  n’est pas imposée par le dépôt, comme pour les niveaux reçus en M3.
+  `EditorPage` garde la création chargée et renvoie sa `source` à chaque
+  enregistrement. `openCampaignDraft` et l’import enregistrent sans `source`,
+  comportement inchangé (la source viendra avec M6).
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : un vrai `localStorage` contenant des brouillons v1 d’une
+  version déployée (couvert par des enveloppes v1 fabriquées dans les tests).
+- Pour l'auteur : rien à valider à l’écran. Question : faut-il réécrire en v2
+  une création v1 dès sa lecture, pour figer son `updatedAt` (utile au tri de
+  M9) ? Laissé sans écriture à la lecture.

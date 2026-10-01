@@ -84,7 +84,9 @@ export const openMachineDraft = async (page: Page): Promise<void> => {
       entries.set(key, value);
     },
   };
-  createLocalStorageDraftRepository(storage).save(machine);
+  createLocalStorageDraftRepository(storage, () => new Date('2026-10-01T12:00:00.000Z')).save({
+    document: machine,
+  });
 
   await page.goto('/');
   await page.evaluate(

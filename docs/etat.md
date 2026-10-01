@@ -65,6 +65,20 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   résolue. Valeur illisible sauvegardée sous `tinkerbolt:backup:` avant
   écrasement, quota et stockage indisponible en résultats d’erreur. Aucun
   appelant en production avant M8.
+- Enveloppe des créations v2 M4 (ADR 0015 § Stockage local) : le port
+  `DraftRepository` lit et écrit une création entière (`DraftCreation` :
+  `document`, `source?`, `updatedAt`) ; `save` reçoit `document` et `source?`
+  et l’adaptateur la date avec son horloge injectée
+  (`createLocalStorageDraftRepository(storage, now)`, `() => new Date()` passé
+  par `App`). Toute écriture produit `{ kind: "draft", version: 2, data }` où
+  `document` et `source` sont la valeur JSON du texte du codec de fichier,
+  relue par le codec (migrations comprises), comme pour les niveaux reçus. Une
+  enveloppe v1 (`levelFile` en chaîne) reste lisible : création sans `source`,
+  `updatedAt` donné par l’horloge à la lecture, sans réécriture ; la prochaine
+  sauvegarde la passe en v2. Une `source` invalide rend l’entrée invalide
+  (sauvegarde `tinkerbolt:backup:draft:<id>` puis avertissement). L’éditeur
+  conserve la `source` chargée à chaque enregistrement ; aucun appelant n’en
+  crée encore (M6).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -328,8 +342,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   affiche une erreur avec un lien vers la liste. La page `/import` valide un
   fichier JSON avec L22, l’enregistre comme un nouveau brouillon et l’ouvre dans
   l’éditeur sans remplacer les brouillons existants.
-- **Brouillons L26** : `DraftRepository` et son adaptateur `localStorage` stockent
-  un document par identifiant sous `tinkerbolt:draft:<id>`, avec l’index
+- **Brouillons L26** (créations depuis M4) : `DraftRepository` et son adaptateur `localStorage` stockent
+  une création par identifiant sous `tinkerbolt:draft:<id>`, avec l’index
   `tinkerbolt:drafts`. Les enveloppes versionnées sont validées, les documents
   passent par le codec de fichier L22, et les valeurs corrompues sont sauvegardées
   avant remplacement. L’import depuis `/import` choisit un identifiant neuf et
@@ -387,6 +401,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M4 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 807 tests Vitest (61 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après M3 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 790 tests Vitest (61 fichiers),

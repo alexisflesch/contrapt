@@ -30,8 +30,8 @@ export const openCampaignDraft = (
 ): OpenCampaignDraftResult => {
   const draftId = campaignDraftId(level);
   const existing = repository.load(draftId);
-  if (existing.status === 'ok' && existing.document !== null) return { status: 'ok', draftId };
+  if (existing.status === 'ok' && existing.creation !== null) return { status: 'ok', draftId };
 
-  const saved = repository.save(createCampaignDraft(level));
+  const saved = repository.save({ document: createCampaignDraft(level) });
   return saved.status === 'ok' ? { status: 'ok', draftId } : saved;
 };

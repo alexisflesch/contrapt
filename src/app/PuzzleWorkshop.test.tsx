@@ -10,6 +10,8 @@ import { createLocalStorageDraftRepository } from '../infrastructure/storage/loc
 
 import { App } from './App';
 
+const testClock = (): Date => new Date('2026-10-01T12:00:00.000Z');
+
 const levelOne = embeddedLevels.find(({ id }) => id === 'campaign-01-la-bille-de-service');
 if (levelOne === undefined) throw new Error('Niveau 1 embarqué introuvable.');
 const { solution: ignoredSolution, ...levelOneWithoutSolution } = levelOne;
@@ -74,12 +76,14 @@ const tapWorldPoint = (x: number, y: number): void => {
 };
 
 const storedDraft = (): LevelDocument | null => {
-  const result = createLocalStorageDraftRepository(window.localStorage).load('machine-u22');
-  return result.status === 'ok' ? result.document : null;
+  const result = createLocalStorageDraftRepository(window.localStorage, testClock).load(
+    'machine-u22',
+  );
+  return result.status === 'ok' ? (result.creation?.document ?? null) : null;
 };
 
 const openMachine = (document: LevelDocument = machine): void => {
-  createLocalStorageDraftRepository(window.localStorage).save(document);
+  createLocalStorageDraftRepository(window.localStorage, testClock).save({ document });
   window.history.replaceState(null, '', '/editor?draft=machine-u22');
   render(<App />);
 };
