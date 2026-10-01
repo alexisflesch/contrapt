@@ -178,7 +178,8 @@ résultat d'erreur ; `Storage` indisponible.
 
 ADR 0015 § Stockage local. L'enveloppe des brouillons passe en version 2
 (`document`, `source?`, `updatedAt`) ; le port expose la création entière (pas
-seulement le document). Horloge injectée.
+seulement le document). Horloge injectée. La migration d'une v1 est écrite à la
+première lecture, au mieux (M4b).
 
 Tests rouges : une enveloppe v1 existante se lit comme une création sans
 `source`, avec `updatedAt` fourni par l'horloge injectée ; une v2 se relit à
@@ -699,3 +700,39 @@ file exist?` (module absent ; les 5 tests ne se chargent pas).
 - Pour l'auteur : rien à valider à l’écran. Question : faut-il réécrire en v2
   une création v1 dès sa lecture, pour figer son `updatedAt` (utile au tri de
   M9) ? Laissé sans écriture à la lecture.
+
+### M4b — Migration persistée des créations v1 — fait — commit de cette entrée
+
+- Décision du pilote : à la première lecture valide d'une enveloppe v1,
+  `load` la réécrit en v2 avec `updatedAt` = instant de cette lecture, une
+  seule fois ; les lectures suivantes renvoient la même date (utile au tri de
+  M9). Réponse à la question posée à l'auteur dans l'entrée M4.
+- Tests ajoutés : `src/infrastructure/storage/local-storage-draft-repository.test.ts`
+  › « migration persistée à la première lecture (M4b, ADR 0015) » (3 tests) :
+  deux lectures avec une horloge qui avance renvoient la même date et le
+  stockage contient une v2 (seule la clé du brouillon est écrite, ni index ni
+  sauvegarde) ; écriture en échec (quota) : la création est rendue sans
+  erreur, le stockage reste v1, la lecture suivante retente et migre ; une v1
+  invalide garde la sauvegarde de secours et l'avertissement, sans migration.
+- Échec initial constaté : `expected 1 to be 2` sur la version stockée
+  (`"version": 1` au lieu de `2`, 2 échecs sur 36), la lecture n'écrivant rien ;
+  le cas d'échec d'écriture échouait à sa relecture (toujours v1, pas de
+  retentative), pas à la lecture initiale, qui renvoyait déjà la création.
+- Test M4 réécrit : « lit une enveloppe v1 existante comme une création sans
+  source datée par l'horloge injectée » ne contient plus
+  `expect(storage.writes).toEqual([])` — c'était le comportement « sans rien
+  réécrire » remplacé par cette tâche ; l'assertion sur la création lue est
+  inchangée et l'écriture est désormais vérifiée dans les tests M4b. Aucun
+  autre test modifié.
+- Choix d'implémentation : l'écriture réutilise `encodeStoredDraft` (même
+  v2 que `save`, sans `source`) et ne touche pas l'index (la v1 y figure
+  déjà). Un `updatedAt` non datable (horloge invalide) reste une erreur
+  `invalid-draft` sans écriture, comme en M4.
+- ADR 0015 § Stockage local et tâche M4 : une phrase ajoutée chacune
+  (« la migration est écrite à la première lecture, au mieux »). `docs/etat.md`
+  mis à jour (description des créations v2, gate).
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : un vrai `localStorage` de navigateur ; deux onglets lisant une
+  même v1 en même temps (la dernière écriture gagne, chacune est une v2 valide).
+- Pour l'auteur : rien à valider à l'écran.

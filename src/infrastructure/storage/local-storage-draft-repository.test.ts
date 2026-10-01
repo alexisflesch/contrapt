@@ -326,7 +326,86 @@ describe('enveloppe des créations v2 (M4, ADR 0015)', () => {
       status: 'ok',
       creation: { document: documentWithId('draft-one'), updatedAt: migrationInstant },
     });
-    expect(storage.writes).toEqual([]);
+  });
+
+  describe('migration persistée à la première lecture (M4b, ADR 0015)', () => {
+    const seedV1 = (storage: MemoryStorage): void => {
+      storage.seed(draftsIndexKey, indexEnvelope(['draft-one']));
+      storage.seed(
+        draftKey('draft-one'),
+        draftEnvelope(encodeLevelFile(documentWithId('draft-one'))),
+      );
+    };
+
+    it('réécrit la v1 en v2 à la première lecture et renvoie la même date ensuite', () => {
+      const storage = new MemoryStorage();
+      seedV1(storage);
+      let tick = 0;
+      const advancingClock = (): Date => new Date(Date.parse(migrationInstant) + tick++ * 60_000);
+      const repository = createRepository(storage, advancingClock);
+
+      const first = repository.load('draft-one');
+      const second = repository.load('draft-one');
+
+      expect(first).toEqual({
+        status: 'ok',
+        creation: { document: documentWithId('draft-one'), updatedAt: migrationInstant },
+      });
+      expect(second).toEqual(first);
+      expect(JSON.parse(storage.getItem(draftKey('draft-one')) ?? 'null')).toEqual({
+        kind: 'draft',
+        version: 2,
+        data: {
+          document: asStoredJson(documentWithId('draft-one')),
+          updatedAt: migrationInstant,
+        },
+      });
+      expect(storage.writes).toEqual([draftKey('draft-one')]);
+      expect(storage.getItem(backupDraftKey('draft-one'))).toBeNull();
+    });
+
+    it('rend la création sans erreur quand l’écriture de la migration échoue, et retente à la lecture suivante', () => {
+      const storage = new MemoryStorage();
+      seedV1(storage);
+      const v1Value = storage.getItem(draftKey('draft-one'));
+      storage.failSetKey = draftKey('draft-one');
+      storage.setError = new DOMException('quota dépassé', 'QuotaExceededError');
+      let tick = 0;
+      const advancingClock = (): Date => new Date(Date.parse(migrationInstant) + tick++ * 60_000);
+      const repository = createRepository(storage, advancingClock);
+
+      expect(repository.load('draft-one')).toEqual({
+        status: 'ok',
+        creation: { document: documentWithId('draft-one'), updatedAt: migrationInstant },
+      });
+      expect(storage.getItem(draftKey('draft-one'))).toBe(v1Value);
+
+      storage.failSetKey = null;
+      const retried = '2026-09-15T08:31:00.000Z';
+      expect(repository.load('draft-one')).toEqual({
+        status: 'ok',
+        creation: { document: documentWithId('draft-one'), updatedAt: retried },
+      });
+      expect(JSON.parse(storage.getItem(draftKey('draft-one')) ?? 'null')).toMatchObject({
+        version: 2,
+        data: { updatedAt: retried },
+      });
+    });
+
+    it('ne touche pas l’index et ne migre pas une v1 invalide, déjà sauvegardée comme avant', () => {
+      const storage = new MemoryStorage();
+      const invalidValue = draftEnvelope('{ mauvais fichier');
+      storage.seed(draftKey('draft-one'), invalidValue);
+      const repository = createRepository(storage, migrationClock);
+
+      expect(repository.load('draft-one')).toEqual({
+        status: 'ok',
+        creation: null,
+        warning: 'invalid-data-backed-up',
+      });
+      expect(storage.writes).toEqual([backupDraftKey('draft-one')]);
+      expect(storage.getItem(draftKey('draft-one'))).toBe(invalidValue);
+    });
   });
 
   it('relit une enveloppe v2 à l’identique, source et date comprises', () => {

@@ -74,8 +74,9 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   `document` et `source` sont la valeur JSON du texte du codec de fichier,
   relue par le codec (migrations comprises), comme pour les niveaux reçus. Une
   enveloppe v1 (`levelFile` en chaîne) reste lisible : création sans `source`,
-  `updatedAt` donné par l’horloge à la lecture, sans réécriture ; la prochaine
-  sauvegarde la passe en v2. Une `source` invalide rend l’entrée invalide
+  `updatedAt` donné par l’horloge à la première lecture, qui la réécrit en v2
+  (au mieux : un échec d’écriture rend quand même la création, la lecture
+  suivante retente, M4b) ; les lectures suivantes renvoient la même date. Une `source` invalide rend l’entrée invalide
   (sauvegarde `tinkerbolt:backup:draft:<id>` puis avertissement). L’éditeur
   conserve la `source` chargée à chaque enregistrement ; aucun appelant n’en
   crée encore (M6).
@@ -401,6 +402,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M4b (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 810 tests Vitest (61 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après M4 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 807 tests Vitest (61 fichiers),

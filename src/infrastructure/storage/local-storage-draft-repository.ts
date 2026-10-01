@@ -208,7 +208,7 @@ const repositoryError = (result: DraftRepositoryFailure): DraftWriteResult => re
 
 /**
  * Create the localStorage adapter around an explicitly injected Storage object
- * and clock; the clock dates every save and every v1 draft read (migration).
+ * and clock; the clock dates every save and the first read of a v1 draft (migration).
  */
 export const createLocalStorageDraftRepository = (
   storage: Storage,
@@ -238,10 +238,21 @@ export const createLocalStorageDraftRepository = (
     const stored = decodeStoredDraft(rawValue, id);
     if (stored?.version === 2) return { status: 'ok', creation: stored.creation };
     if (stored?.version === 1) {
-      // ADR 0015 § Stockage local: a v1 draft is dated at the instant of its migration.
+      // ADR 0015 § Stockage local: a v1 draft is dated at the instant of its migration, written once.
       const updatedAt = currentInstant(now);
       if (updatedAt === null) return { status: 'error', code: 'invalid-draft' };
-      return { status: 'ok', creation: { document: stored.document, updatedAt } };
+      const creation: DraftCreation = { document: stored.document, updatedAt };
+      // The migration is written on the first read, best effort: if it fails, the
+      // creation is still returned and a later read tries again.
+      const migrated = encodeStoredDraft({ document: stored.document }, updatedAt);
+      if (migrated !== null) {
+        try {
+          storage.setItem(draftStorageKey(id), migrated);
+        } catch {
+          // Best effort: the v1 envelope stays as it is.
+        }
+      }
+      return { status: 'ok', creation };
     }
 
     const backup = backupValue(storage, draftBackupKey(id), rawValue);

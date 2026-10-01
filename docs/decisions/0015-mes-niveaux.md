@@ -87,7 +87,9 @@ data: {
 ```
 
 Migration v1 → v2 : `document` repris, `source` absent, `updatedAt` à
-l'instant de la migration. Les brouillons existants ont déjà leur solution
+l'instant de la migration ; la migration est écrite à la première lecture, au
+mieux (un échec d'écriture n'empêche pas la lecture, la suivante retente), si
+bien que la date reste stable. Les brouillons existants ont déjà leur solution
 posée : ils restent ainsi. Tests de l'ancienne et de la nouvelle enveloppe
 (AGENTS.md).
 
