@@ -351,6 +351,15 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 
 ## Dernière exécution de la gate
 
+`pnpm check` après G1 (1er octobre 2026) : passe trois fois de suite —
+typecheck, lint, formatage, Knip, contenu (19 documents), 734 tests Vitest
+(58 fichiers), build Vite/PWA et 46 tests Playwright `mobile` (45 réussis,
+1 ignoré). `src/app/BenchPage.test.tsx` y prend 348 à 573 ms pour ses 3 tests.
+La cause du timeout intermittent était le premier test, qui simulait 1 200 pas
+réels de la scène dense (2,8 à 3,8 s mesurés dans la suite complète) ; il
+utilise désormais une session injectée (`createSession`). Les flakes E2E L17b
+et U15 ne se sont pas manifestés sur ces trois exécutions (G2 reste ouverte).
+
 `pnpm check` après l’import JSON (1er octobre 2026) : deux tentatives passent
 typecheck, lint, formatage, Knip et validation des 19 niveaux ; chacune échoue
 ensuite sur le timeout à 5 s du test préexistant

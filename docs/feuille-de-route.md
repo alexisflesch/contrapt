@@ -447,3 +447,30 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier :
 ```
 
 <!-- Les entrées commencent ici. -->
+
+### G1 — Stabiliser `BenchPage.test.tsx` — fait — commit de cette entrée
+
+- Cause : le test « mesure chaque pas de physique avec l’horloge injectée… »
+  simulait 1 200 pas réels de la scène dense de `/bench`. Mesuré dans la suite
+  complète avec la version de `8e9a098` : 2 790 ms puis 3 778 ms (délai 5 s),
+  contre 79 ms seul. Travail réel trop long sous charge ; ni timer ni horloge
+  en cause (l’horloge était déjà injectée).
+- Correction : déjà présente dans `HEAD` (commit de l’auteur `901559d`) —
+  `BenchPage` accepte une prop `createSession` et le test injecte une session
+  de substitution qui compte les pas (`expect(advanced).toBe(1200)`). La
+  physique de la scène dense reste couverte par
+  `src/app/bench/dense-bench-document.test.ts`. Aucun changement de code dans
+  cette tâche ; délai inchangé, aucun test sauté.
+- Tests ajoutés : aucun (assertion `advanced` déjà ajoutée par `901559d`).
+- Échec initial constaté : non reproduit en échec franc ; mesure ci-dessus de
+  l’ancienne version (2,8–3,8 s sur 5 s dans `pnpm test:run`).
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : aucun. Lecture hors liste :
+  `docs/feuille-de-route-luna.md` (grep « Bench ») pour retrouver le nom du test
+  en échec — il n’y figure pas.
+- Gate : `pnpm check` passe trois fois de suite (734 tests Vitest, 45 E2E
+  réussis + 1 ignoré ; `BenchPage.test.tsx` en 573, 513 et 348 ms).
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : la stabilité sur une machine plus lente ou en CI distante.
+- Pour l'auteur : rien à valider à l'écran.
