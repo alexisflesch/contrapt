@@ -563,3 +563,30 @@ all, but actually been called 1 times`.
 - Pour l'auteur : rien à valider à l’écran. Question : faut-il refuser un
   pseudo entouré d’espaces (il est aujourd’hui accepté et conservé tel quel) ?
   M14 pourra le normaliser à la saisie.
+
+### M2 — Empreinte d’un niveau — fait — commit de cette entrée
+
+- Tests ajoutés : `src/infrastructure/level-file/level-fingerprint.test.ts` ›
+  « donne la même empreinte à deux documents égaux », « change quand un objet
+  change », « respecte seize chiffres hexadécimaux en minuscules », « est le
+  début du SHA-256 des octets UTF-8 du texte du codec de fichier » (comparé à un
+  calcul indépendant par `crypto.subtle`), « fournit un identifiant
+  `recu-<empreinte>` accepté par le schéma d’identifiant ».
+- Échec initial constaté : `Failed to load url ./level-fingerprint … Does the
+  file exist?` (module absent ; les 5 tests ne se chargent pas).
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : aucun (`docs/etat.md` mis à jour).
+- Implémentation : `levelFingerprint(document)` dans
+  `src/infrastructure/level-file/level-fingerprint.ts` ; encode par
+  `encodeLevelFile`, UTF-8 par `TextEncoder`, SHA-256 par `crypto.subtle`, 16
+  premiers chiffres hexadécimaux. Knip : la fonction n’a pas d’appelant de
+  production avant M8, mais le plugin Vitest de Knip compte les fichiers de test
+  comme point d’entrée (précédent : `decideDraftAutosave`) ; `knip.json`
+  inchangé, aucune règle désactivée.
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : `crypto.subtle` n’existe que dans un contexte sécurisé
+  (HTTPS ou localhost) ; le déploiement GitHub Pages est en HTTPS, mais un
+  accès par IP en HTTP sur un réseau local l’aurait indisponible. Aucun test
+  de ce cas.
+- Pour l'auteur : rien à valider à l’écran.

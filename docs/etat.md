@@ -46,6 +46,12 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   il fait l’aller-retour par le codec de fichier et le codec URL, et
   `puzzleFromWorkshop` les conserve. Aucune interface ne les renseigne ni ne
   les affiche encore (M6, M10, M14).
+- Empreinte M2 (ADR 0015) : `levelFingerprint(document)`
+  (`src/infrastructure/level-file/level-fingerprint.ts`, asynchrone) renvoie les
+  16 premiers chiffres hexadécimaux du SHA-256 (`crypto.subtle`) du texte du
+  codec de fichier ; deux documents égaux ont la même empreinte et
+  `recu-<empreinte>` respecte le schéma d’identifiant. Aucun appelant en
+  production avant M8 (seul son test l’importe, ce que Knip accepte).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -368,6 +374,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M2 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 755 tests Vitest (60 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après M1 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 750 tests Vitest (59 fichiers),
