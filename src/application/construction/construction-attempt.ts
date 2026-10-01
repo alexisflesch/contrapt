@@ -39,6 +39,7 @@ export type ConstructionErrorCode =
   | 'placement-has-inventory-provenance'
   | 'goal-ball-not-found'
   | 'goal-basket-not-found'
+  | 'solution-not-found'
   | 'invalid-level-document';
 
 /**

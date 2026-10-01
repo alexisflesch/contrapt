@@ -4,7 +4,7 @@ import {
   type LevelDocument,
   type Solution,
 } from '../../domain/level-document';
-import { restoreSolution } from '../puzzle/puzzle-workshop';
+import { restoreSolution } from '../puzzle/restore-solution';
 import type { DraftCreationContent } from './draft-repository';
 
 interface CreationFromLevelOptions {

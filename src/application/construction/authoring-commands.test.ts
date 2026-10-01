@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { LevelDocument } from '../../domain/level-document';
+import { levelDocumentSchema, type LevelDocument } from '../../domain/level-document';
+import { creationFromLevel } from '../drafts/creation-from-level';
 import { createHistory, executeCommand, redo, undo, type Command } from '../history';
+import { workshopFromPuzzle } from '../puzzle/puzzle-workshop';
 import type { ConstructionAttempt } from './construction-attempt';
 import {
   addAuthoredPlacement,
@@ -12,6 +14,7 @@ import {
   removeInventoryEntry,
   removeLevelChallenge,
   resizeBuildZone,
+  revealAuthorSolution,
   setLevelChallenge,
   setControlWireToPlace,
   updateInventoryPermissions,
@@ -513,5 +516,220 @@ describe('commandes d’auteur', () => {
         }),
       ).toEqual({ status: 'rejected', reason: 'authoring-only' });
     });
+  });
+});
+
+describe('révéler la solution de l’auteur (M7, ADR 0015)', () => {
+  /** A received or campaign puzzle: decor, inventory, the author's solution. */
+  const source: LevelDocument = levelDocumentSchema.parse({
+    schemaVersion: 2,
+    id: 'recu-0123456789abcdef',
+    metadata: { title: 'Le grand saut', author: 'Lili' },
+    objects: [
+      {
+        id: 'ball',
+        type: 'ball',
+        props: {},
+        transform: { position: { x: 1, y: 1 }, rotation: 0 },
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'basket',
+        type: 'basket',
+        props: {},
+        transform: { position: { x: 11, y: 6 }, rotation: 0 },
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'decor-lever',
+        type: 'lever',
+        props: { position: 'left' },
+        transform: { position: { x: 2, y: 6 }, rotation: 0 },
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'decor-fan',
+        type: 'fan',
+        props: { state: 'off' },
+        transform: { position: { x: 4, y: 6 }, rotation: 0 },
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'decor-barrier',
+        type: 'barrier',
+        props: { state: 'closed' },
+        transform: { position: { x: 6, y: 6 }, rotation: 0 },
+        permissions: lockedPermissions,
+      },
+      {
+        id: 'decor-conveyor',
+        type: 'conveyor',
+        props: { direction: 'stopped' },
+        transform: { position: { x: 8, y: 6 }, rotation: 0 },
+        permissions: lockedPermissions,
+      },
+    ],
+    inventory: [
+      {
+        id: 'beams',
+        type: 'beam',
+        props: { size: 'medium' },
+        quantity: 2,
+        permissions: { move: true, rotate: true, remove: true },
+      },
+      {
+        id: 'buttons',
+        type: 'button',
+        props: {},
+        quantity: 1,
+        permissions: { move: true, rotate: false, remove: true },
+      },
+      {
+        id: 'wires',
+        type: 'wire',
+        props: {},
+        quantity: 2,
+        permissions: { move: false, rotate: false, remove: true },
+      },
+    ],
+    goal: { type: 'basket', ballId: 'ball', basketId: 'basket' },
+    buildZones: [{ min: { x: 0, y: 0 }, max: { x: 12, y: 7 } }],
+    scene: { min: { x: 0, y: 0 }, max: { x: 12, y: 7 } },
+    wires: [{ id: 'decor-wire', sourceId: 'decor-lever', targetId: 'decor-barrier' }],
+    solution: {
+      placements: [
+        { inventoryId: 'beams', transform: { position: { x: 8.25, y: 3.75 }, rotation: 0.3 } },
+        {
+          inventoryId: 'buttons',
+          placementId: 'auteur-bouton',
+          transform: { position: { x: 7, y: 2 }, rotation: 0 },
+        },
+      ],
+      wires: [
+        {
+          id: 'fil-bouton',
+          inventoryId: 'wires',
+          sourceId: 'auteur-bouton',
+          targetId: 'decor-fan',
+        },
+        {
+          id: 'fil-levier',
+          inventoryId: 'wires',
+          sourceId: 'decor-lever',
+          targetId: 'decor-conveyor',
+        },
+      ],
+    },
+  });
+
+  const creation = creationFromLevel(source, { createId: () => 'creation-m7' }).document;
+  const attemptOf = (document: LevelDocument): ConstructionAttempt => ({
+    document,
+    provenance: {},
+  });
+  const reveal = revealAuthorSolution({ context: 'author', source });
+
+  const revealedOn = (document: LevelDocument): LevelDocument => {
+    const outcome = reveal.execute(attemptOf(document));
+    if (outcome.status !== 'accepted') throw new Error(`reveal rejected: ${outcome.reason}`);
+    return outcome.state.document;
+  };
+
+  it('sur une création intacte, pose ce que `workshopFromPuzzle` poserait, sans fil ignoré', () => {
+    const asWorkshop = workshopFromPuzzle(source);
+
+    const revealed = revealedOn(creation);
+
+    expect(revealed.objects).toEqual(asWorkshop.objects);
+    expect(revealed.wires).toEqual(asWorkshop.wires);
+    expect(revealed.inventory).toEqual([]);
+    expect(revealed.metadata).toEqual(creation.metadata);
+    expect(revealed.solution).toBeUndefined();
+    expect(reveal.ignoredWireCount(attemptOf(creation))).toBe(0);
+  });
+
+  it('ajoute sans rien retirer : les objets et fils du remixeur restent, identifiants dédoublonnés', () => {
+    const remixed: LevelDocument = {
+      ...creation,
+      objects: [
+        ...creation.objects,
+        {
+          id: 'beams-2',
+          type: 'barrier',
+          props: { state: 'open' },
+          transform: { position: { x: 10, y: 6 }, rotation: 0 },
+          permissions: lockedPermissions,
+        },
+      ],
+      wires: [
+        ...creation.wires,
+        { id: 'fil-bouton', sourceId: 'decor-lever', targetId: 'beams-2' },
+      ],
+    };
+
+    const revealed = revealedOn(remixed);
+
+    expect(revealed.objects.slice(0, remixed.objects.length)).toEqual(remixed.objects);
+    expect(revealed.wires.slice(0, remixed.wires.length)).toEqual(remixed.wires);
+    expect(revealed.objects.slice(remixed.objects.length).map(({ id }) => id)).toEqual([
+      'beams-3',
+      'buttons-2',
+    ]);
+    expect(revealed.wires.slice(remixed.wires.length)).toEqual([
+      { id: 'fil-bouton-2', sourceId: 'buttons-2', targetId: 'decor-fan', toPlace: true },
+      { id: 'fil-levier', sourceId: 'decor-lever', targetId: 'decor-conveyor', toPlace: true },
+    ]);
+    expect(levelDocumentSchema.safeParse(revealed).success).toBe(true);
+  });
+
+  it('ignore le fil qui touchait un objet du décor supprimé et le compte', () => {
+    const withoutConveyor: LevelDocument = {
+      ...creation,
+      objects: creation.objects.filter(({ id }) => id !== 'decor-conveyor'),
+    };
+
+    const revealed = revealedOn(withoutConveyor);
+
+    expect(revealed.wires.map(({ id }) => id)).toEqual(['decor-wire', 'fil-bouton']);
+    expect(reveal.ignoredWireCount(attemptOf(withoutConveyor))).toBe(1);
+    expect(levelDocumentSchema.safeParse(revealed).success).toBe(true);
+  });
+
+  it('forme une seule entrée d’historique, annulable', () => {
+    const history = createHistory(attemptOf(creation));
+
+    const applied = executeCommand(history, reveal);
+
+    expect(applied.status).toBe('accepted');
+    if (applied.status !== 'accepted') return;
+    expect(applied.recorded).toBe(true);
+    expect(applied.history.past).toHaveLength(1);
+    const undone = undo(applied.history);
+    expect(undone.status).toBe('accepted');
+    expect(undone.history.state.document).toEqual(creation);
+    expect(undone.history.past).toHaveLength(0);
+  });
+
+  it('ne fige ni ne modifie le niveau source', () => {
+    const pristine = structuredClone(source);
+
+    executeCommand(createHistory(attemptOf(creation)), reveal);
+
+    expect(source).toEqual(pristine);
+    expect(Object.isFrozen(source.inventory[0]?.props)).toBe(false);
+    expect(Object.isFrozen(source.solution?.placements[0]?.transform)).toBe(false);
+  });
+
+  it('est refusée en contexte joueur et quand la source n’a pas de solution', () => {
+    expect(
+      revealAuthorSolution({ context: 'player', source }).execute(attemptOf(creation)),
+    ).toEqual({ status: 'rejected', reason: 'authoring-only' });
+    const { solution: ignoredSolution, ...withoutSolution } = source;
+    void ignoredSolution;
+    expect(
+      revealAuthorSolution({ context: 'author', source: withoutSolution }).execute(
+        attemptOf(creation),
+      ),
+    ).toEqual({ status: 'rejected', reason: 'solution-not-found' });
   });
 });

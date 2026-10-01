@@ -103,6 +103,18 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   retiré, `basedOn` prolongé par le niveau d’origine et tronqué à 16.
   Réexportée par `puzzleFromWorkshop`, la création d’une victoire redonne un
   puzzle dont la solution gagne (fixture, simulation headless).
+- Révéler la solution de l’auteur M7, logique seule (ADR 0015 § Révéler) :
+  commande d’auteur `revealAuthorSolution({ context, source })`
+  (`authoring-commands.ts`) qui ajoute au document courant, marqués `toPlace`,
+  les poses et les fils de `source.solution` par `restoreSolution` (déplacée
+  dans `src/application/puzzle/restore-solution.ts`, qui dédoublonne désormais
+  aussi les identifiants de fils), sans rien retirer ; une seule entrée
+  d’historique ; un fil dont une extrémité n’est plus sur le plateau est
+  ignoré. La commande expose `ignoredWireCount(state)` (nombre de fils ignorés
+  pour l’état donné) ; refus `authoring-only` en contexte joueur,
+  `solution-not-found` pour une source sans solution. Sur une création
+  intacte, le résultat égale `workshopFromPuzzle` de la source. Aucun appelant
+  en production avant M12 (menu et confirmation).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -433,6 +445,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M7 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 831 tests Vitest (65 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après M6b (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 825 tests Vitest (65 fichiers),

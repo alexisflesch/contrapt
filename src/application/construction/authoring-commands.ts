@@ -1,6 +1,7 @@
 import { initialObjectFamilyRegistry } from '../../domain/object-family-registry';
 import { withSceneIncluding, type LevelDocument } from '../../domain/level-document';
 import type { Command, CommandOutcome, CommandState } from '../history';
+import { restoreSolution } from '../puzzle/restore-solution';
 import {
   acceptAuthoringCandidate,
   type ConstructionAttempt,
@@ -139,6 +140,21 @@ interface SetLevelChallengeInput {
 
 interface RemoveLevelChallengeInput {
   readonly context: ConstructionContext;
+}
+
+interface RevealAuthorSolutionInput {
+  readonly context: ConstructionContext;
+  /** The level a creation comes from (ADR 0015): its envelope keeps it, not the document. */
+  readonly source: LevelDocument;
+}
+
+/**
+ * The command interface only returns a state, so the reveal also tells, for
+ * the state it is about to run on, how many wires of the author's solution it
+ * leaves out (ADR 0015: the result dialog says so).
+ */
+interface RevealAuthorSolutionCommand extends AuthoringCommand {
+  readonly ignoredWireCount: (state: CommandState<ConstructionAttempt>) => number;
 }
 
 const createAuthoringCommand = (
@@ -534,3 +550,59 @@ export const removeLevelChallenge = (input: RemoveLevelChallengeInput): Authorin
     if (challenge === undefined) return { status: 'unchanged' };
     return { status: 'candidate', document: documentWithoutChallenge };
   });
+
+interface RevealedSolution {
+  readonly objects: Placement[];
+  readonly wires: ControlWire[];
+  readonly ignoredWireCount: number;
+}
+
+/**
+ * ADR 0015 § Révéler: the author's poses and wires, restored to place as
+ * `workshopFromPuzzle` does, next to everything on the board. Identifiers
+ * already used (the board's, the source inventory's, as `workshopFromPuzzle`
+ * reserves them) are skipped; a wire with an end no longer on the board is
+ * left out and counted.
+ */
+const revealedSolution = (
+  document: LevelDocument,
+  source: LevelDocument,
+): RevealedSolution | undefined => {
+  const { solution, inventory } = source;
+  if (solution === undefined) return undefined;
+  const usedIds = new Set(
+    [...document.objects, ...document.inventory, ...document.wires, ...inventory].map(
+      ({ id }) => id,
+    ),
+  );
+  const restored = restoreSolution(solution, inventory, usedIds);
+  const objects = [...document.objects, ...restored.objects];
+  const onBoard = new Set(objects.map(({ id }) => id));
+  const kept = restored.wires.filter(
+    ({ sourceId, targetId }) => onBoard.has(sourceId) && onBoard.has(targetId),
+  );
+  return {
+    objects,
+    wires: [...document.wires, ...kept],
+    ignoredWireCount: restored.wires.length - kept.length,
+  };
+};
+
+/**
+ * ADR 0015 § Révéler la solution de l'auteur: adds, never removes; one
+ * history entry, undone as a whole.
+ */
+export const revealAuthorSolution = (
+  input: RevealAuthorSolutionInput,
+): RevealAuthorSolutionCommand => ({
+  ...createAuthoringCommand(input.context, (state) => {
+    const revealed = revealedSolution(state.document, input.source);
+    if (revealed === undefined) return { status: 'rejected', reason: 'solution-not-found' };
+    return {
+      status: 'candidate',
+      document: { ...state.document, objects: revealed.objects, wires: revealed.wires },
+    };
+  }),
+  ignoredWireCount: (state) =>
+    revealedSolution(state.document, input.source)?.ignoredWireCount ?? 0,
+});

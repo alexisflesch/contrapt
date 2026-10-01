@@ -884,3 +884,58 @@ disponibles"` (U26, U20) et `… role "button" and name "Annuler"` (U20 balle
   titre coupé au milieu d’une paire de substitution (emoji) garde une moitié
   de caractère, comme avant M6b.
 - Pour l'auteur : rien à valider à l’écran.
+
+### M7 — Révéler la solution de l’auteur (logique) — fait — commit de cette entrée
+
+- Tests ajoutés : `src/application/construction/authoring-commands.test.ts` ›
+  « révéler la solution de l’auteur (M7, ADR 0015) » (6 tests) : sur une
+  création intacte (`creationFromLevel`), objets et fils égaux à ceux de
+  `workshopFromPuzzle(source)`, inventaire et métadonnées de la création
+  inchangés, 0 fil ignoré ; objets et fils ajoutés par le remixeur gardés en
+  tête, identifiants dédoublonnés (objet `beams-2` du remixeur → pose
+  `beams-3` ; fil `fil-bouton` du remixeur → fil `fil-bouton-2`), document
+  valide ; objet du décor supprimé → le fil qui le touchait est ignoré, compte
+  1 ; une seule entrée d’historique, annulée par un seul `undo` ; la source
+  n’est ni modifiée ni figée par l’historique ; refus en contexte joueur
+  (`authoring-only`) et pour une source sans solution (`solution-not-found`).
+- Échec initial constaté : `TypeError: (0 , revealAuthorSolution) is not a
+function` (fichier entier rouge). Vérification par mutation après coup :
+  sans le filtre des extrémités, « ignore le fil… » échoue (`reveal rejected:
+invalid-level-document`) ; sans le dédoublonnage des fils, « ajoute sans
+  rien retirer… » échoue de même. Le test « ne fige ni ne modifie le niveau
+  source » est une non-régression : il passe aussi sans copie, car
+  `acceptAuthoringCandidate` repasse le candidat par Zod, qui le recopie ; la
+  copie défensive a donc été retirée.
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : `src/application/puzzle/restore-solution.ts`
+  (nouveau) — `restoreSolution` et `uniqueIdentifier` déplacées hors de
+  `puzzle-workshop.ts` : `authoring-commands.ts` ne peut pas importer
+  `puzzle-workshop.ts`, qui importe `../construction` (`import-x/no-cycle`).
+  `puzzle-workshop.ts` et `creation-from-level.ts` l’importent ; pas de
+  duplication. `restoreSolution` dédoublonne désormais aussi l’identifiant de
+  chaque fil restauré dans `usedIds` (exigé par l’ADR 0015 : un fil du
+  remixeur peut porter l’identifiant d’un fil de la solution) ; pour
+  `workshopFromPuzzle` et M6, rien ne change sur un puzzle valide (fils de
+  solution distincts des fils du décor), tests existants verts.
+  `construction-attempt.ts` : code `solution-not-found` ajouté à
+  `ConstructionErrorCode`.
+- Choix d’implémentation : la commande prend `{ context, source }` (la
+  `source` vit dans l’enveloppe de la création). L’interface `Command` ne rend
+  qu’un état (`accepted`/`rejected` avec raison) : la solution la plus simple
+  pour rendre le nombre de fils ignorés sans changer `History` est une
+  méthode `ignoredWireCount(state)` sur l’objet commande, calculée par la même
+  fonction pure que `execute` ; l’interface (M12) l’appelle sur l’état courant
+  juste avant d’exécuter la commande. Identifiants réservés : objets,
+  inventaire et fils du document, plus l’inventaire de la source (comme
+  `workshopFromPuzzle`, d’où l’égalité exacte sur une création intacte).
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : un fil de la solution dont la cible est déjà commandée par
+  un fil du remixeur, ou une pose hors d’une scène que le remixeur a réduite,
+  rend le document invalide : la commande entière est alors refusée
+  (`invalid-level-document`) au lieu d’ignorer le fil ou d’agrandir la scène ;
+  l’ADR 0015 ne prévoit que le cas de l’extrémité disparue.
+- Pour l'auteur : rien à valider à l’écran. Question : dans ces deux cas
+  (cible déjà commandée, pose hors scène), faut-il ignorer le fil et agrandir
+  la scène comme `addAuthoredPlacement`, plutôt que refuser toute la
+  révélation ?

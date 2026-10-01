@@ -7,6 +7,7 @@ export {
   removeInventoryEntry,
   removeLevelChallenge,
   resizeBuildZone,
+  revealAuthorSolution,
   setControlWireToPlace,
   setLevelChallenge,
   setPlacementToPlace,
