@@ -90,6 +90,17 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   inchangé). Rejouer la solution sur le niveau d’origine redonne la même
   tentative et gagne en simulation headless (fixture locale). Aucun appelant en
   production avant M10 (seuls ses tests l’importent).
+- Création depuis un niveau M6 (ADR 0015 § Ouvrir dans l’atelier, ADR 0016 §
+  Remplissage automatique) : `creationFromLevel(level, { playerSolution?,
+  createId })` (`src/application/drafts/creation-from-level.ts`, pure) rend une
+  création `{ document, source }` : décor repris (objets, fils, zones, scène,
+  objectif), `solution`, `inventory` et `challenge` retirés, poses et fils de la
+  solution du joueur ajoutés `toPlace` par `restoreSolution` (extraite de
+  `workshopFromPuzzle`, mêmes identifiants et même remappage), `source` = copie
+  intacte du niveau ; titre « <titre> (remix) » tronqué à 160 caractères,
+  `author` retiré, `basedOn` prolongé par le niveau d’origine et tronqué à 16.
+  Réexportée par `puzzleFromWorkshop`, la création d’une victoire redonne un
+  puzzle dont la solution gagne (fixture, simulation headless).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -268,9 +279,14 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   sélectionnable. Un document que le schéma refuse n’est pas exporté : la boîte
   en donne les raisons (`src/app/level-export.ts`, `LevelExportDialog.tsx`).
 - Brouillon d’un niveau de campagne U17 : chaque carte de `/levels` porte
-  « Éditer le niveau N », qui ouvre `/editor?draft=<id>-brouillon` sur une copie
-  titrée « <titre> (brouillon) » (`src/application/drafts/campaign-draft.ts`).
-  Un brouillon existant est rouvert tel quel ; sinon la copie est enregistrée.
+  « Éditer le niveau N », qui ouvre `/editor?draft=<id>-brouillon`. Depuis M6,
+  une création neuve est construite par `creationFromLevel` (sans solution
+  posée, sans inventaire, titrée « <titre> (remix) », niveau gardé en `source`)
+  ; une création existante est rouverte telle quelle
+  (`src/application/drafts/campaign-draft.ts`). La fiche de calibrage U28 lit
+  toujours le niveau embarqué. En mode création, le tiroir du catalogue auteur et
+  « Annuler »/« Rétablir » s’affichent même sans inventaire (`BoardShell`,
+  `SimulationControls`) ; en mode joueur, la règle B1 est inchangée.
   Chaque état engagé de l’historique est enregistré dans le brouillon. Le
   contexte auteur ignore les permissions joueur : les objets de départ se
   déplacent et tournent. Le niveau embarqué et la progression ne changent pas.
@@ -398,8 +414,11 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   objets à placer.
 - **Atelier U22/U25** : revenir de « Jouer le puzzle » remonte l’atelier sur son
   dernier document, l’historique annuler/rétablir repart de là ; les fils à
-  placer sont exportables et rouverts avec leur marquage ; le brouillon du
-  niveau 1 conserve son inventaire et son catalogue auteur (U26).
+  placer sont exportables et rouverts avec leur marquage ; la création du
+  niveau 1 n’a plus d’inventaire (M6) mais garde son catalogue auteur (U26).
+  Les brouillons de campagne créés avant M6 gardent leur solution posée et
+  leur inventaire (ADR 0015) ; « Révéler » arrive avec M7 et M12, et rien ne
+  rend encore la solution sous `pnpm dev` (M11).
 - **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
   brouillon créé, ni de lister ou supprimer les brouillons dans l’interface.
 - `format:check` ne couvre pas le Markdown.
@@ -412,6 +431,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M6 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 825 tests Vitest (65 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après M5 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 816 tests Vitest (63 fichiers),

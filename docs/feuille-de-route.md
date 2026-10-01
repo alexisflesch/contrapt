@@ -782,3 +782,83 @@ solution)` qui rend la tentative (et non plus le document), demandée par la
 - Pour l'auteur : rien à valider à l’écran. Question : faut-il inclure dans la
   solution du joueur les déplacements d’objets du décor, pour que « Révéler »
   et le rejeu restent fidèles quand le niveau autorise à les déplacer ?
+
+### M6 — Créer une création depuis un niveau — fait — commit de cette entrée
+
+- Tests ajoutés : `src/application/drafts/creation-from-level.test.ts` ›
+  « créer une création depuis un niveau (M6, ADR 0015, ADR 0016) » (9 tests) :
+  sans solution du joueur, décor repris sans objet `toPlace`, sans `solution`,
+  `inventory` ni `challenge`, et aucune trace de la pose d’origine dans le
+  document ; niveau d’origine intact en `source`, hors du document ; chaque
+  pose du joueur devient un objet `toPlace` verrouillé et son fil est remappé
+  sur l’objet restauré ; objets et fils égaux à ceux de `workshopFromPuzzle`
+  pour la même solution ; document valide pour `levelDocumentSchema`, avec un
+  inventaire vide, avec ou sans solution ; titre « (remix) », `author` retiré,
+  `basedOn` prolongé ; source sans auteur citée sans auteur ; `basedOn`
+  tronqué à 16 (la plus ancienne tombe) ; titre tronqué à 160.
+  `src/app/creation-from-level-replay.test.ts` › « redonne par
+  `puzzleFromWorkshop` un puzzle dont la solution gagne en simulation »
+  (fixture locale, `runLevelOutcome` : le puzzle seul perd, sa solution posée
+  par les commandes du joueur gagne ; dans `src/app/` comme M5, règle des
+  frontières).
+- Échec initial constaté : `Failed to load url ./creation-from-level … Does the
+file exist?` ; puis, avec une fonction qui copie le niveau, 8 échecs sur 9
+  (`expected { placements: [ { …(2) } ] } to be undefined`, `expected
+undefined to deeply equal { schemaVersion: 2, …(10) }`, `expected [] to
+deeply equal [ { id: 'beams-2', …(5) }, …(1) ]`…) ; le test de validité
+  passait déjà (non-régression). Le test headless, écrit après la fonction, a
+  été vérifié rouge par mutation (solution du joueur ignorée : `expected
+'refused' to be 'ok'`). Remplacement de `createCampaignDraft` : `Unable to
+find an accessible element with the role "region" and name "Objets
+disponibles"` (U26, U20) et `… role "button" and name "Annuler"` (U20 balle
+  bleue).
+- Tests existants réécrits (comportement remplacé par l’ADR 0015/0016) :
+  `CampaignDraftEditing.test.tsx` › « affiche le catalogue auteur dans le
+  brouillon du niveau 1 (U26) » devient « affiche le catalogue auteur dans la
+  création du niveau 1, qui n’a plus d’inventaire (U26, M6) » — c’est le test
+  « le brouillon du niveau 1 conserve son inventaire » de la tâche : il vérifie
+  désormais l’inventaire vide et garde l’assertion du catalogue auteur ; « ouvre
+  depuis la liste un brouillon distinct… » attend le titre « (remix) » et la
+  `source` ; « conserve la source d’une création… » enregistre la création par
+  `creationFromLevel`. `campaign-draft.test.ts` : « rouvre dans l’atelier un
+  niveau à solution, ses objets à placer remis en place (U22) » devient
+  « ouvre un niveau à solution sans la poser, le niveau gardé intact comme
+  source (M6) » (solution cachée, ADR 0015) ; « copie le niveau sous un
+  identifiant et un titre distincts… » et « enregistre la copie la première
+  fois » sont fusionnés en « enregistre la création sous un identifiant
+  distinct et un titre « (remix) »… » (mêmes assertions d’identifiant et
+  d’original intact, titre ADR 0016) ; les autres n’ont changé que la
+  fabrique (`creationFromLevel`) et le dépôt en mémoire, qui retient la
+  création entière. « rouvre un brouillon existant sans écraser… » inchangé
+  dans ses assertions (`openCampaignDraft` rouvre toujours tel quel).
+- Fichiers touchés hors périmètre : `src/app/BoardShell.tsx` et
+  `src/ui/SimulationControls.tsx` — le tiroir du catalogue et
+  « Annuler »/« Rétablir » n’étaient affichés que si le document avait un
+  inventaire (règle B1 du niveau 1 joueur) ; une création n’en a plus, ce qui
+  privait l’atelier de son catalogue. Ils s’affichent désormais toujours en
+  mode création ; en mode joueur, rien ne change. Aspect identique pour les
+  brouillons de campagne (ils avaient un inventaire) : pas de capture.
+  `src/domain/level-document.ts` : export de `MAX_TITLE_LENGTH` et
+  `MAX_BASED_ON_ENTRIES` (schéma inchangé). `src/application/puzzle/puzzle-workshop.ts` :
+  `restoreSolution(solution, inventory, usedIds)` extraite de
+  `workshopFromPuzzle` (même comportement, 16 tests verts) pour M6 et M7.
+- Choix d’implémentation : `creationFromLevel` rend un `DraftCreationContent`
+  (`document`, `source`), sans valider (le dépôt valide à l’enregistrement et
+  rend une erreur, pas une exception) ; `createId: () => string`. Les
+  identifiants d’inventaire du niveau sont réservés comme dans
+  `workshopFromPuzzle` (objets restaurés `beams-2`…), pour que M7 puisse
+  comparer à `workshopFromPuzzle`. Les zones de construction sont gardées. Le
+  titre est la chaîne « <titre> (remix) » tronquée (lecture littérale de
+  l’ADR 0016 : au-delà de 152 caractères d’origine, « (remix) » est coupé).
+  `createCampaignDraft` est supprimée ; `openCampaignDraft` enregistre la
+  création avec sa `source`. La fiche U28 lit toujours le niveau embarqué
+  (`EditorPage`), test « ouvre depuis la liste… » vert.
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : les brouillons de campagne enregistrés avant M6 gardent leur
+  solution posée et leur inventaire (ADR 0015 : « ils restent ainsi ») ; sous
+  `pnpm dev`, la création neuve d’un niveau de campagne n’a plus la solution
+  posée tant que M11 ne la révèle pas d’office (la fiche U28 la liste).
+- Pour l'auteur : rien de nouveau à valider à l’écran. Question : faut-il
+  préserver « (remix) » en tronquant plutôt le titre d’origine quand il dépasse
+  152 caractères ?

@@ -25,12 +25,12 @@ const LEVEL_DOCUMENT_SCHEMA_VERSION = 2 as const;
 const LEVEL_DOCUMENT_V1_SCHEMA_VERSION = 1 as const;
 
 const MAX_IDENTIFIER_LENGTH = 128;
-const MAX_TITLE_LENGTH = 160;
+export const MAX_TITLE_LENGTH = 160;
 const MAX_DESCRIPTION_LENGTH = 2_000;
 /** ADR 0016 - Champs du format: a pseudonym, measured once edge spaces are removed. */
 const MAX_AUTHOR_LENGTH = 40;
 /** ADR 0016 - Champs du format: sources kept, the most recent first. */
-const MAX_BASED_ON_ENTRIES = 16;
+export const MAX_BASED_ON_ENTRIES = 16;
 const MAX_OBJECTS = 512;
 const MAX_INVENTORY_ENTRIES = 128;
 const MAX_BUILD_ZONES = 64;

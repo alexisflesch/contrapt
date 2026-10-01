@@ -162,6 +162,55 @@ export const puzzleFromWorkshop = (workshop: LevelDocument): PuzzleConversion =>
 };
 
 /**
+ * The poses and wires of `solution`, back on a workshop board and marked to
+ * place (ADR 0013): each pose takes the family and properties of its entry in
+ * `inventory` and an identifier not yet in `usedIds` (which it then reserves);
+ * a wire end that names a pose's `placementId` is remapped to the restored
+ * object. Shared by `workshopFromPuzzle` and the creations of ADR 0015.
+ */
+export const restoreSolution = (
+  solution: Solution,
+  inventory: readonly InventoryEntry[],
+  usedIds: Set<string>,
+): { readonly objects: Placement[]; readonly wires: LevelDocument['wires'] } => {
+  const restoredIdsByReference = new Map<string, string>();
+  const objects = solution.placements.flatMap((pose): Placement[] => {
+    const entry = inventory.find(({ id }) => id === pose.inventoryId);
+    if (entry === undefined || entry.type === 'wire') return [];
+    const restoredId = uniqueIdentifier(entry.id, usedIds);
+    if (pose.placementId !== undefined) {
+      restoredIdsByReference.set(pose.placementId, restoredId);
+    }
+    // The rest keeps the entry's family and properties paired, as one placement type.
+    const {
+      id: ignoredId,
+      quantity: ignoredQuantity,
+      permissions: ignoredPermissions,
+      ...family
+    } = entry;
+    void ignoredId;
+    void ignoredQuantity;
+    void ignoredPermissions;
+    return [
+      {
+        ...family,
+        id: restoredId,
+        transform: pose.transform,
+        permissions: lockedPermissions,
+        toPlace: true,
+      },
+    ];
+  });
+  const wires = (solution.wires ?? []).map((wire) => ({
+    id: wire.id,
+    sourceId: restoredIdsByReference.get(wire.sourceId) ?? wire.sourceId,
+    targetId: restoredIdsByReference.get(wire.targetId) ?? wire.targetId,
+    toPlace: true as const,
+  }));
+  return { objects, wires };
+};
+
+/**
  * The inverse of `puzzleFromWorkshop`, to reopen a puzzle in the workshop
  * (U17): each pose of the solution is back on the board, marked to place.
  * The inventory stays: the workshop never shows it, and the export derives it
@@ -178,36 +227,12 @@ export const workshopFromPuzzle = (puzzle: LevelDocument): LevelDocument => {
     ...puzzle.inventory.map(({ id }) => id),
     ...puzzle.wires.map(({ id }) => id),
   ]);
-  const restoredIdsByReference = new Map<string, string>();
-  const restored = solution.placements.flatMap((pose) => {
-    const entry = puzzle.inventory.find(({ id }) => id === pose.inventoryId);
-    if (entry === undefined || entry.type === 'wire') return [];
-    const restoredId = uniqueIdentifier(entry.id, usedIds);
-    if (pose.placementId !== undefined) {
-      restoredIdsByReference.set(pose.placementId, restoredId);
-    }
-    return [
-      {
-        id: restoredId,
-        type: entry.type,
-        props: entry.props,
-        transform: pose.transform,
-        permissions: lockedPermissions,
-        toPlace: true,
-      },
-    ];
-  });
-  const restoredWires = (solution.wires ?? []).map((wire) => ({
-    id: wire.id,
-    sourceId: restoredIdsByReference.get(wire.sourceId) ?? wire.sourceId,
-    targetId: restoredIdsByReference.get(wire.targetId) ?? wire.targetId,
-    toPlace: true as const,
-  }));
+  const restored = restoreSolution(solution, puzzle.inventory, usedIds);
 
   const validation = levelDocumentSchema.safeParse({
     ...workshop,
-    objects: [...puzzle.objects, ...restored],
-    wires: [...puzzle.wires, ...restoredWires],
+    objects: [...puzzle.objects, ...restored.objects],
+    wires: [...puzzle.wires, ...restored.wires],
   });
   return validation.success ? validation.data : puzzle;
 };

@@ -156,7 +156,10 @@ export function BoardShell({
   // appear at all — not collapsed, not empty — for it. Read from the
   // current attempt rather than special-casing the level id, so this stays
   // correct for any future level that also ships without an inventory.
-  const hasInventory = currentEditorAttempt(session).document.inventory.length > 0;
+  // The author's catalogue does not depend on the inventory: a creation has
+  // none (ADR 0015 § Ouvrir dans l'atelier) and still places from it.
+  const hasDrawer =
+    mode === 'creation' || currentEditorAttempt(session).document.inventory.length > 0;
 
   const hasSelection = session.selectedPlacementId !== null && session.phase === 'construction';
 
@@ -312,7 +315,7 @@ export function BoardShell({
         </>
       }
     >
-      {hasInventory && (
+      {hasDrawer && (
         <ObjectDrawer
           session={session}
           selectedObject={pointers.placementTool?.kind}
@@ -364,7 +367,7 @@ export function BoardShell({
         />
       )}
       <section
-        className={`workspace${hasInventory ? '' : ' workspace-no-drawer'}`}
+        className={`workspace${hasDrawer ? '' : ' workspace-no-drawer'}`}
         aria-label="Espace de construction"
       >
         <SimulationControls

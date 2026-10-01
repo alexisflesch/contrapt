@@ -45,7 +45,8 @@ export function SimulationControls({
   // "Aucune action d'édition") has nothing a command could ever undo or redo:
   // hiding these buttons outright, rather than just disabling them, keeps the
   // action bar limited to what B1 (plan-remise-en-jeu.md § 4) allows.
-  const hasInventory = currentEditorAttempt(session).document.inventory.length > 0;
+  // The author always edits, even a creation without inventory (ADR 0015).
+  const canEdit = isCreation || currentEditorAttempt(session).document.inventory.length > 0;
 
   return (
     <div
@@ -56,7 +57,7 @@ export function SimulationControls({
     >
       {session.phase === 'construction' && (
         <>
-          {hasInventory && (
+          {canEdit && (
             <div className="toolbar-group">
               <Button
                 className="toolbar-button"

@@ -4,7 +4,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createCampaignDraft } from '../application/drafts/campaign-draft';
+import { creationFromLevel } from '../application/drafts/creation-from-level';
 import type { ProgressRepository } from '../application/progression/progress-repository';
 import { embeddedLevels } from '../content/embedded-levels';
 import { createLocalStorageDraftRepository } from '../infrastructure/storage/local-storage-draft-repository';
@@ -88,7 +88,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
     expect(new URLSearchParams(window.location.search).get('draft')).toBe(
       'campaign-02-par-dessus-le-mur-brouillon',
     );
-    expect(screen.queryByText('Éditeur · Par-dessus le mur (brouillon)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Éditeur · Par-dessus le mur (remix)')).not.toBeInTheDocument();
     expect(screen.getByText('Mode éditeur')).toBeVisible();
     const calibration = screen.getByRole('dialog', { name: 'Fiche de calibrage' });
     expect(calibration).toHaveTextContent('Le tremplin transforme la chute de la rouge en saut.');
@@ -111,8 +111,9 @@ describe('éditer un niveau de la campagne (U17)', () => {
       'campaign-02-par-dessus-le-mur-brouillon',
     );
     expect(stored.status === 'ok' ? stored.creation?.document.metadata.title : null).toBe(
-      'Par-dessus le mur (brouillon)',
+      'Par-dessus le mur (remix)',
     );
+    expect(stored.status === 'ok' ? stored.creation?.source : null).toEqual(pristineLevelTwo);
     expect(
       window.localStorage.getItem('tinkerbolt:draft:campaign-02-par-dessus-le-mur'),
     ).toBeNull();
@@ -120,12 +121,16 @@ describe('éditer un niveau de la campagne (U17)', () => {
     expect(levelTwo).toEqual(pristineLevelTwo);
   });
 
-  it('affiche le catalogue auteur dans le brouillon du niveau 1 (U26)', () => {
+  it('affiche le catalogue auteur dans la création du niveau 1, qui n’a plus d’inventaire (U26, M6)', () => {
     window.history.replaceState(null, '', '/levels');
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Éditer le niveau 1' }));
 
+    const stored = createLocalStorageDraftRepository(window.localStorage, testClock).load(
+      'campaign-01-la-bille-de-service-brouillon',
+    );
+    expect(stored.status === 'ok' ? stored.creation?.document.inventory : null).toEqual([]);
     const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
     expect(drawer).toBeVisible();
     fireEvent.click(within(drawer).getByRole('button', { name: 'Ouvrir le catalogue' }));
@@ -156,10 +161,9 @@ describe('éditer un niveau de la campagne (U17)', () => {
 
   it('conserve la source d’une création quand l’auteur l’édite (M4, ADR 0015)', () => {
     const draftId = 'campaign-02-par-dessus-le-mur-brouillon';
-    createLocalStorageDraftRepository(window.localStorage, testClock).save({
-      document: createCampaignDraft(levelTwo),
-      source: levelTwo,
-    });
+    createLocalStorageDraftRepository(window.localStorage, testClock).save(
+      creationFromLevel(levelTwo, { createId: () => draftId }),
+    );
     window.history.replaceState(null, '', `/editor?draft=${draftId}`);
     render(<App />);
 
