@@ -332,7 +332,8 @@ du navigateur n'a pas d'entrée supplémentaire.
 
 ADR 0016 § Licence, § Pseudo. La boîte d'export (U16) propose le titre (commande
 `updateLevelTitle`) et le pseudo (nouvelle commande d'auteur, annulable),
-l'aide « Un pseudo, pas ton vrai nom » et la mention CC BY 4.0. Port
+l'aide « Un pseudo, pas ton vrai nom » et la mention CC BY 4.0. La saisie retire les espaces de bord avant d'appliquer la
+commande (le schéma, lui, ne réécrit rien : M1). Port
 `PreferencesRepository` (ADR 0011, clé `tinkerbolt:preferences`) pour retenir le
 dernier pseudo ; adaptateur sur le modèle des autres dépôts.
 
@@ -508,7 +509,7 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier :
   tiroir quand le toucher commence et finit sur le scrim », « ferme le tiroir
   quand le scrim est activé au clavier ».
 - Échec initial constaté : `AssertionError: expected "spy" to not be called at
-  all, but actually been called 1 times`.
+all, but actually been called 1 times`.
 - Tests existants réécrits : L17b — le geste visait l’empreinte et non la
   poignée, il ne testait plus la rotation ; il la teste désormais (captures
   `test-results/levels/lever-rotation-{positive,negative}-90deg.png` : levier
@@ -543,8 +544,8 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier :
   `puzzle-workshop.test.ts` › « conserve l’auteur et les sources de l’atelier
   (M1, ADR 0016) ».
 - Échec initial constaté : `expected [ 'metadata' ] to deeply equal
-  [ 'metadata.author' ]` et, dans les codecs, `ZodError: "code":
-  "unrecognized_keys", "keys": ["author", "basedOn"], "path": ["metadata"]` ;
+[ 'metadata.author' ]` et, dans les codecs, `ZodError: "code":
+"unrecognized_keys", "keys": ["author", "basedOn"], "path": ["metadata"]` ;
   `puzzleFromWorkshop` renvoyait `{ status: 'refused' }`. Les tests de
   relecture sans les champs passaient déjà (non-régression attendue).
 - Tests existants réécrits : aucun.
