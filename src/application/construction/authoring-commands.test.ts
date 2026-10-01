@@ -695,6 +695,57 @@ describe('révéler la solution de l’auteur (M7, ADR 0015)', () => {
     expect(levelDocumentSchema.safeParse(revealed).success).toBe(true);
   });
 
+  it('ignore le fil qui viserait un appareil déjà commandé et le compte (M7b)', () => {
+    const remixWire = { id: 'fil-remix', sourceId: 'decor-lever', targetId: 'decor-fan' };
+    const rewired: LevelDocument = { ...creation, wires: [...creation.wires, remixWire] };
+
+    const revealed = revealedOn(rewired);
+
+    expect(revealed.wires).toEqual([
+      ...rewired.wires,
+      { id: 'fil-levier', sourceId: 'decor-lever', targetId: 'decor-conveyor', toPlace: true },
+    ]);
+    expect(revealed.objects.slice(rewired.objects.length).map(({ id }) => id)).toEqual([
+      'beams-2',
+      'buttons-2',
+    ]);
+    expect(reveal.ignoredWireCount(attemptOf(rewired))).toBe(1);
+    expect(levelDocumentSchema.safeParse(revealed).success).toBe(true);
+  });
+
+  it('agrandit une scène réduite par le remixeur comme une pose d’auteur (M7b)', () => {
+    const narrowScene = { min: { x: 0, y: 0 }, max: { x: 8, y: 7 } };
+    const narrowed: LevelDocument = {
+      ...creation,
+      objects: creation.objects.map((object) =>
+        object.id === 'basket' || object.id === 'decor-conveyor'
+          ? { ...object, transform: { ...object.transform, position: { x: 7.5, y: 4 } } }
+          : object,
+      ),
+      buildZones: [narrowScene],
+      scene: narrowScene,
+    };
+    const beamPose = { x: 8.25, y: 3.75 };
+    const expected = addAuthoredPlacement({
+      context: 'author',
+      placementId: 'probe',
+      type: 'beam',
+      props: { size: 'medium' },
+      transform: { position: beamPose, rotation: 0 },
+    }).execute(attemptOf(narrowed));
+    if (expected.status !== 'accepted') throw new Error('probe rejected');
+
+    const revealed = revealedOn(narrowed);
+
+    expect(revealed.scene).toEqual(expected.state.document.scene);
+    expect(revealed.scene).toEqual({ min: { x: 0, y: 0 }, max: { x: 10, y: 7 } });
+    expect(revealed.buildZones).toEqual([revealed.scene]);
+    expect(revealed.objects.find(({ id }) => id === 'beams-2')?.transform.position).toEqual(
+      beamPose,
+    );
+    expect(levelDocumentSchema.safeParse(revealed).success).toBe(true);
+  });
+
   it('forme une seule entrée d’historique, annulable', () => {
     const history = createHistory(attemptOf(creation));
 

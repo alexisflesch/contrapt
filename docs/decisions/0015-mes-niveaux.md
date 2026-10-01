@@ -191,8 +191,10 @@ posée sur le plateau »). Elle **ajoute** les poses et les fils de la solution
 d'origine, marqués `toPlace`, au document courant, sans rien retirer : c'est une
 commande d'auteur annulable, une seule entrée d'historique. Identifiants
 dédoublonnés ; un fil dont une extrémité n'existe plus (objet du décor supprimé
-par le remixeur) n'est pas restauré, et la boîte de résultat dit combien de fils
-ont été ignorés.
+par le remixeur) n'est pas restauré, ni un fil qui viserait un appareil déjà
+commandé ; la boîte de résultat dit combien de fils ont été ignorés. La
+révélation n'est jamais refusée en bloc : une pose hors d'une scène réduite par
+le remixeur agrandit la scène, comme une pose d'auteur (`addAuthoredPlacement`).
 
 Sous `pnpm dev` (`import.meta.env.DEV`), la création d'un niveau de campagne
 s'ouvre solution révélée, pour le calibrage par le mainteneur, comme

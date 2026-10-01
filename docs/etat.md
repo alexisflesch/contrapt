@@ -109,8 +109,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   les poses et les fils de `source.solution` par `restoreSolution` (déplacée
   dans `src/application/puzzle/restore-solution.ts`, qui dédoublonne désormais
   aussi les identifiants de fils), sans rien retirer ; une seule entrée
-  d’historique ; un fil dont une extrémité n’est plus sur le plateau est
-  ignoré. La commande expose `ignoredWireCount(state)` (nombre de fils ignorés
+  d’historique ; un fil dont une extrémité n’est plus sur le plateau, ou qui
+  viserait un appareil déjà commandé, est ignoré et compté ; une pose hors de
+  la scène l’agrandit par `withSceneIncluding`, comme `addAuthoredPlacement`
+  (M7b : la révélation n’est jamais refusée en bloc). La commande expose `ignoredWireCount(state)` (nombre de fils ignorés
   pour l’état donné) ; refus `authoring-only` en contexte joueur,
   `solution-not-found` pour une source sans solution. Sur une création
   intacte, le résultat égale `workshopFromPuzzle` de la source. Aucun appelant
@@ -445,6 +447,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M7b (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 833 tests Vitest (65 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après M7 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 831 tests Vitest (65 fichiers),

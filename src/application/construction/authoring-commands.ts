@@ -552,8 +552,7 @@ export const removeLevelChallenge = (input: RemoveLevelChallengeInput): Authorin
   });
 
 interface RevealedSolution {
-  readonly objects: Placement[];
-  readonly wires: ControlWire[];
+  readonly document: LevelDocument;
   readonly ignoredWireCount: number;
 }
 
@@ -561,8 +560,9 @@ interface RevealedSolution {
  * ADR 0015 § Révéler: the author's poses and wires, restored to place as
  * `workshopFromPuzzle` does, next to everything on the board. Identifiers
  * already used (the board's, the source inventory's, as `workshopFromPuzzle`
- * reserves them) are skipped; a wire with an end no longer on the board is
- * left out and counted.
+ * reserves them) are skipped. A wire with an end no longer on the board, or
+ * aimed at a device already commanded, is left out and counted (M7b); a pose
+ * past the scene's edge grows the scene as an authored placement does.
  */
 const revealedSolution = (
   document: LevelDocument,
@@ -578,12 +578,18 @@ const revealedSolution = (
   const restored = restoreSolution(solution, inventory, usedIds);
   const objects = [...document.objects, ...restored.objects];
   const onBoard = new Set(objects.map(({ id }) => id));
-  const kept = restored.wires.filter(
-    ({ sourceId, targetId }) => onBoard.has(sourceId) && onBoard.has(targetId),
+  const commanded = new Set(document.wires.map(({ targetId }) => targetId));
+  const kept = restored.wires.filter(({ sourceId, targetId }) => {
+    if (!onBoard.has(sourceId) || !onBoard.has(targetId) || commanded.has(targetId)) return false;
+    commanded.add(targetId);
+    return true;
+  });
+  const grown = restored.objects.reduce(
+    (current, { transform }) => withSceneIncluding(current, transform.position),
+    document,
   );
   return {
-    objects,
-    wires: [...document.wires, ...kept],
+    document: { ...grown, objects, wires: [...document.wires, ...kept] },
     ignoredWireCount: restored.wires.length - kept.length,
   };
 };
@@ -598,10 +604,7 @@ export const revealAuthorSolution = (
   ...createAuthoringCommand(input.context, (state) => {
     const revealed = revealedSolution(state.document, input.source);
     if (revealed === undefined) return { status: 'rejected', reason: 'solution-not-found' };
-    return {
-      status: 'candidate',
-      document: { ...state.document, objects: revealed.objects, wires: revealed.wires },
-    };
+    return { status: 'candidate', document: revealed.document };
   }),
   ignoredWireCount: (state) =>
     revealedSolution(state.document, input.source)?.ignoredWireCount ?? 0,

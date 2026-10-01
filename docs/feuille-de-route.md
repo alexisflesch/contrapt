@@ -939,3 +939,34 @@ invalid-level-document`) ; sans le dédoublonnage des fils, « ajoute sans
   (cible déjà commandée, pose hors scène), faut-il ignorer le fil et agrandir
   la scène comme `addAuthoredPlacement`, plutôt que refuser toute la
   révélation ?
+
+### M7b — Révéler ne refuse jamais en bloc — fait — commit de cette entrée
+
+- Décision du pilote (réponse à la question de M7) : un fil de la solution qui
+  viserait un appareil déjà commandé est ignoré et compté dans
+  `ignoredWireCount`, comme un fil dont une extrémité a disparu ; une pose dont
+  le centre tombe hors de la scène courante l’agrandit selon la règle de
+  `addAuthoredPlacement` (`withSceneIncluding` du domaine, réutilisée). ADR 0015
+  § Révéler précisée en deux phrases.
+- Tests ajoutés : `src/application/construction/authoring-commands.test.ts` ›
+  « ignore le fil qui viserait un appareil déjà commandé et le compte (M7b) »
+  (fil du remixeur levier → ventilateur : `fil-bouton` ignoré, poses gardées,
+  compte 1, document valide) ; « agrandit une scène réduite par le remixeur
+  comme une pose d’auteur (M7b) » (scène réduite à x ≤ 8, poutre de la
+  solution à x = 8,25 : scène égale à celle d’`addAuthoredPlacement` au même
+  point, `{0,0}–{10,7}`, zone couvrante agrandie avec elle, document valide).
+- Échec initial constaté : `Error: reveal rejected: invalid-level-document`
+  pour les deux tests.
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : aucun.
+- Choix d’implémentation : les cibles déjà commandées sont celles des fils du
+  document, puis de chaque fil de la solution gardé (deux fils de la solution
+  vers la même cible : le second est ignoré). La scène grandit pose par pose
+  (réduction par `withSceneIncluding`) ; `revealedSolution` rend désormais le
+  document candidat entier.
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : une pose de la solution hors des limites de taille de scène de
+  l’ADR 0007 (scène qui deviendrait trop grande) reste refusée par le schéma,
+  comme pour `addAuthoredPlacement`.
+- Pour l'auteur : rien à valider à l’écran.
