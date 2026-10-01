@@ -244,7 +244,9 @@ est refusé avec un code stable ; une erreur de quota est un résultat.
 
 Puis `/shared` : décoder, recevoir, jouer. Test App : après ouverture d'un lien
 valide, le dépôt contient le niveau ; avec un dépôt en erreur, le niveau se joue
-et un message discret (`role="status"`) dit qu'il n'a pas été gardé ; un lien
+et un message discret (`role="status"`) dit qu'il n'a pas été gardé ; de même si
+l'empreinte ne peut pas être calculée (`crypto.subtle` absent hors contexte
+sécurisé, par exemple un build servi en HTTP sur une IP locale) ; un lien
 invalide n'enregistre rien.
 
 #### M9 — Page « Mes niveaux » ●●●
@@ -573,7 +575,7 @@ all, but actually been called 1 times`.
   calcul indépendant par `crypto.subtle`), « fournit un identifiant
   `recu-<empreinte>` accepté par le schéma d’identifiant ».
 - Échec initial constaté : `Failed to load url ./level-fingerprint … Does the
-  file exist?` (module absent ; les 5 tests ne se chargent pas).
+file exist?` (module absent ; les 5 tests ne se chargent pas).
 - Tests existants réécrits : aucun.
 - Fichiers touchés hors périmètre : aucun (`docs/etat.md` mis à jour).
 - Implémentation : `levelFingerprint(document)` dans
