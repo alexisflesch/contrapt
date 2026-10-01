@@ -62,8 +62,9 @@ un fichier qui porte ces champs ; la mise à jour de la PWA (ADR 0012) le règle
 - `basedOn` = `{ title, author }` du niveau d'origine, suivi de son propre
   `basedOn`, tronqué à 16 entrées (les plus anciennes tombent) ;
 - `author` est retiré : le remixeur n'est pas l'auteur de l'original ;
-- le titre devient « <titre d'origine> (remix) », tronqué à la longueur
-  maximale du titre.
+- le titre devient « <titre d'origine> (remix) » ; si cette chaîne dépasse la
+  longueur maximale du titre, c'est le titre d'origine qui est tronqué, pour
+  que « (remix) » reste entier (décision de l'auteur du 1er octobre 2026, M6b).
 
 L'interface n'édite pas `basedOn` : il se transmet tel quel d'export en export.
 Un fichier modifié à la main peut le falsifier ; c'est la responsabilité de

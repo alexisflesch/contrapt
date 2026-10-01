@@ -14,6 +14,8 @@ interface CreationFromLevelOptions {
   readonly createId: () => string;
 }
 
+const REMIX_SUFFIX = ' (remix)';
+
 /**
  * ADR 0016 § Remplissage automatique: the remixer is not the original's
  * author; the original becomes the most recent source, the oldest ones fall.
@@ -24,7 +26,8 @@ const remixMetadata = ({
   ...metadata
 }: LevelDocument['metadata']): LevelDocument['metadata'] => ({
   ...metadata,
-  title: `${metadata.title} (remix)`.slice(0, MAX_TITLE_LENGTH),
+  // The original title is shortened so that the suffix always stays whole (M6b).
+  title: `${metadata.title.slice(0, MAX_TITLE_LENGTH - REMIX_SUFFIX.length)}${REMIX_SUFFIX}`,
   basedOn: [
     { title: metadata.title, ...(author === undefined ? {} : { author }) },
     ...basedOn,

@@ -231,14 +231,16 @@ describe('créer une création depuis un niveau (M6, ADR 0015, ADR 0016)', () =>
     expect(levelDocumentSchema.safeParse(document).success).toBe(true);
   });
 
-  it('tronque le titre à la longueur maximale d’un titre', () => {
-    const longTitle = 'a'.repeat(155);
+  it('tronque le titre d’origine pour garder « (remix) » entier (M6b)', () => {
+    const longTitle = 'a'.repeat(160);
     const long: LevelDocument = { ...level, metadata: { title: longTitle } };
 
     const { document } = creationFromLevel(long, { createId });
 
-    expect(document.metadata.title).toBe(`${longTitle} (rem`);
-    expect(document.metadata.title).toHaveLength(160);
+    expect(document.metadata.title).toBe(`${'a'.repeat(152)} (remix)`);
+    expect(document.metadata.title.endsWith(' (remix)')).toBe(true);
+    expect(document.metadata.title.length).toBeLessThanOrEqual(160);
+    expect(document.metadata.basedOn?.[0]).toEqual({ title: longTitle });
     expect(levelDocumentSchema.safeParse(document).success).toBe(true);
   });
 });

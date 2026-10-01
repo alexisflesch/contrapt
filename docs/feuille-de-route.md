@@ -862,3 +862,25 @@ disponibles"` (U26, U20) et `… role "button" and name "Annuler"` (U20 balle
 - Pour l'auteur : rien de nouveau à valider à l’écran. Question : faut-il
   préserver « (remix) » en tronquant plutôt le titre d’origine quand il dépasse
   152 caractères ?
+
+### M6b — Titre de remix — fait — commit de cette entrée
+
+- Décision du pilote (réponse à la question de M6) : tronquer le titre
+  d’origine pour que « <titre tronqué> (remix) » tienne en 160 caractères et
+  que le suffixe reste entier. ADR 0016 § Remplissage automatique précisée.
+- Tests ajoutés : `src/application/drafts/creation-from-level.test.ts` ›
+  « tronque le titre d’origine pour garder « (remix) » entier (M6b) » : titre
+  de 160 caractères → 152 caractères d’origine suivis de « (remix) », au plus
+  160, `basedOn` garde le titre d’origine entier, document valide.
+- Échec initial constaté : `AssertionError: expected 'aaaa…' to be 'aaaa…'`
+  (reçu : 160 « a », attendu : 152 « a » puis « (remix) »).
+- Tests existants réécrits : « tronque le titre à la longueur maximale d’un
+  titre » (attendait « (rem » coupé) — comportement remplacé par la décision ;
+  remplacé par le test ci-dessus.
+- Fichiers touchés hors périmètre : aucun.
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : la troncature compte en unités UTF-16 comme le schéma ; un
+  titre coupé au milieu d’une paire de substitution (emoji) garde une moitié
+  de caractère, comme avant M6b.
+- Pour l'auteur : rien à valider à l’écran.

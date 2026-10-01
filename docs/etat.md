@@ -91,14 +91,16 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   tentative et gagne en simulation headless (fixture locale). Aucun appelant en
   production avant M10 (seuls ses tests l’importent).
 - Création depuis un niveau M6 (ADR 0015 § Ouvrir dans l’atelier, ADR 0016 §
-  Remplissage automatique) : `creationFromLevel(level, { playerSolution?,
-  createId })` (`src/application/drafts/creation-from-level.ts`, pure) rend une
+  Remplissage automatique) :
+  `creationFromLevel(level, { playerSolution?, createId })`
+  (`src/application/drafts/creation-from-level.ts`, pure) rend une
   création `{ document, source }` : décor repris (objets, fils, zones, scène,
   objectif), `solution`, `inventory` et `challenge` retirés, poses et fils de la
   solution du joueur ajoutés `toPlace` par `restoreSolution` (extraite de
   `workshopFromPuzzle`, mêmes identifiants et même remappage), `source` = copie
-  intacte du niveau ; titre « <titre> (remix) » tronqué à 160 caractères,
-  `author` retiré, `basedOn` prolongé par le niveau d’origine et tronqué à 16.
+  intacte du niveau ; titre « <titre> (remix) » de 160 caractères au plus, le
+  titre d’origine tronqué pour garder « (remix) » entier (M6b), `author`
+  retiré, `basedOn` prolongé par le niveau d’origine et tronqué à 16.
   Réexportée par `puzzleFromWorkshop`, la création d’une victoire redonne un
   puzzle dont la solution gagne (fixture, simulation headless).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
@@ -431,6 +433,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M6b (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 825 tests Vitest (65 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après M6 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 825 tests Vitest (65 fichiers),
