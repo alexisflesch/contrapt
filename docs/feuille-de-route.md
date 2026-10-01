@@ -1040,3 +1040,89 @@ role="alert"` (atelier). « affiche une erreur de partage invalide… » passait
   plateau). Questions : recevoir à nouveau un niveau déjà gardé doit-il le
   remettre en tête (rafraîchir `receivedAt`) pour M9 ? Le libellé « Ce lien
   est un atelier, pas un niveau à jouer. » convient-il ?
+
+### M9 — Page « Mes niveaux » — fait — commit de cette entrée
+
+- Décisions du pilote appliquées : recevoir à nouveau un niveau gardé ne
+  change que `receivedAt` (ADR 0015 § Empreinte et doublons précisée d’une
+  phrase) ; création d’un niveau de campagne verrouillé listée « Verrouillé »
+  avec Supprimer seul ; « Dupliquer » → `creation-<aléa>`, même `source`,
+  « (copie) » entier ; « Modifier » d’un niveau reçu absent (M11).
+- Tests ajoutés : `src/application/received/receive-level.test.ts` › « remet
+  en tête un niveau déjà gardé en ne changeant que `receivedAt` (M9) », « garde
+  l’entrée telle quelle quand la remise en tête ne peut pas être écrite
+  (M9) » ; `src/application/drafts/duplicate-creation.test.ts` (6 tests :
+  copie `creation-<aléa>` « (copie) » avec la même source et original
+  intact, sans source inventée, titre tronqué, nouvel aléa si l’identifiant
+  est pris, création absente ou dépôt illisible, quota) ;
+  `src/app/MyLevelsPage.test.tsx` › « page « Mes niveaux » » (21 tests App :
+  menu et accueil, sections vides et invites, `/import` redirige, ordre de
+  récence des deux sections, état/auteur/première source en texte brut,
+  suppression confirmée et annulée pour une création et un niveau reçu,
+  import valide en tête sans quitter la page, réimport remis en tête, JSON
+  invalide, fichier trop gros, atelier `toPlace` refusé, Dupliquer, Modifier,
+  Jouer puis « Retour à l’atelier », Jouer désactivé sans objet à placer,
+  Partager une création = boîte d’export vérifiée, Partager un reçu = lien
+  qui redonne le document, Jouer un reçu sur `/my-levels/:id/play`,
+  identifiant inconnu, création verrouillée, « Nouveau niveau ») ;
+  `src/app/ReceivedLevelShareDialog.test.tsx` (2 tests : fichier tel quel,
+  lien `/shared` sous le chemin de base) ; `e2e/my-levels.spec.ts` (mobile :
+  menu, import d’un fichier, carte retrouvée, création de campagne listée,
+  suppression confirmée au doigt, captures).
+- Échec initial constaté : `receiveLevel` : `AssertionError: expected {
+status: 'received', …(2) } to deeply equal { status: 'received', …(2) }`
+  (2 échecs ; le cas « remise en tête impossible » passait déjà,
+  non-régression). `duplicate-creation` : `Failed to load url
+./duplicate-creation`, puis avec un bouchon `expected { status: 'error',
+…(1) } to deeply equal { status: 'ok', …(1) }` (6 sur 6). Page : 21 sur 21,
+  `Unable to find an accessible element with the role "region" and name "Mes
+créations"`, `expected '/import' to be '/my-levels'`, `Sélecteur de fichier
+introuvable.`. Le test du partage d’un reçu, écrit après le composant, a
+  été vérifié rouge par mutation (`JSON.stringify` au lieu du codec).
+- Tests existants réécrits ou retirés : `receive-level.test.ts` › « ne crée
+  qu’une entrée pour le même document reçu deux fois, sans rien
+  réinitialiser » attend désormais `receivedAt` rafraîchi au lieu de
+  « aucune écriture » (décision du pilote ; `solved`, record, solution et
+  `origin` toujours vérifiés intacts). Retirés avec le code remplacé
+  (ADR 0015, `/import` disparaît) : `src/app/LevelImportPage.test.tsx`
+  (3 tests), `src/application/drafts/import-level-draft.test.ts`,
+  `e2e/import-level.spec.ts` ; leurs cas (JSON invalide, trop gros, fichier
+  valide) sont repris par `MyLevelsPage.test.tsx` et `e2e/my-levels.spec.ts`.
+- Fichiers touchés hors périmètre : `src/app/LevelExportDialog.tsx` et
+  `SharedLevelPage.tsx` (téléchargement/presse-papiers et empreinte déplacés
+  dans `browser-share.ts` et `fingerprint-of.ts` pour être partagés, sans
+  changement de comportement) ; `creation-from-level.ts` (suffixe par
+  `withTitleSuffix`, partagé avec « (copie) ») ; `EditorPage.tsx` (état de
+  navigation `playPuzzle`) ; `styles.css` (cartes de « Mes niveaux », grille
+  de l’accueil à 2 puis 4 colonnes pour la quatrième destination).
+- Choix d’implémentation : « Jouer » d’une création ouvre `/editor?draft=<id>`
+  avec l’état de navigation `{ playPuzzle: true }`, lu comme `unknown` et
+  restreint à ce littéral : l’atelier s’ouvre directement sur « Jouer le
+  puzzle » (U22), « Retour à l’atelier » ramène à l’atelier. Pas de nouvelle
+  route : deux boutons menant au même atelier auraient été trompeurs. Le
+  bouton est désactivé quand `puzzleFromWorkshop` refuse (aucun objet à
+  placer). « Jouer » d’un reçu mène à `/my-levels/:id/play`, page provisoire
+  minimale (lecture du dépôt, plateau joueur, aucune victoire enregistrée,
+  pas d’attribution dans l’en-tête) que M10 complète. L’import d’un fichier
+  non gardé (quota, stockage, empreinte indisponible) affiche une alerte ;
+  il n’y a pas de route pour jouer un niveau non gardé. Entrées illisibles :
+  écartées de la liste avec une note discrète (le dépôt les a sauvegardées).
+  Le tri par date garde l’ordre de l’index à égalité. Un commit unique
+  (correctif `receiveLevel` et page), une seule gate.
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : un vrai téléphone ; le refus `crypto.subtle` sur l’import
+  (même chemin que `/shared`, non retesté ici) ; la boîte d’export lance ses
+  deux simulations de vérification au clic sur « Partager », comme dans
+  l’atelier.
+- Pour l'auteur : validation visuelle — captures inspectées
+  `test-results/my-levels/my-levels-empty-{390x844,844x390,1440x900}.png`
+  (titres de section blancs, bouton d’action à droite, invites en texte
+  atténué), `my-levels-filled-{…}.png` (cartes crème sans pastille de
+  numéro, Modifier/Jouer en pleine largeur, actions secondaires sur deux
+  colonnes, cibles ≥ 44 px ; une carte par ligne en 390, grille en 1440),
+  `my-levels-delete-390x844.png` (boîte de confirmation, « Annuler » à
+  gauche) et `test-results/home/accueil-{390x844,844x390,1440x900}.png`
+  (quatre destinations : une colonne, 2 × 2, puis une rangée). Questions :
+  le sous-titre d’en-tête « Ta collection » convient-il ? Faut-il afficher
+  la date de modification ou de réception sur les cartes ?

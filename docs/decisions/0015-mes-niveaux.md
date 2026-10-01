@@ -108,7 +108,9 @@ L'empreinte d'un niveau reçu est le SHA-256 (`crypto.subtle`, natif, sans
 dépendance) des octets UTF-8 du texte produit par le codec de fichier, tronqué à
 16 chiffres hexadécimaux (64 bits). Elle sert d'identifiant : recevoir deux fois
 le même document, par lien puis par fichier, ne crée qu'une entrée, et ne
-réinitialise ni `solved`, ni le record, ni la solution du joueur. Le CRC-32 du
+réinitialise ni `solved`, ni le record, ni la solution du joueur. Le recevoir à
+nouveau met seulement à jour `receivedAt`, pour le remettre en tête des niveaux
+reçus ; `origin` reste celle de la première réception. Le CRC-32 du
 fragment URL n'est pas réutilisé : sur 32 bits, une collision ferait passer un
 niveau différent pour un doublon et le perdrait.
 

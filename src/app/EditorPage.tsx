@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 
 import type { DraftCreation } from '../application/drafts/draft-repository';
+import { puzzleFromWorkshop } from '../application/puzzle/puzzle-workshop';
 import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
 import { AppFrame } from '../ui/AppFrame';
@@ -30,7 +31,13 @@ interface WorkshopProps {
   readonly title: string;
   readonly onDocumentCommitted?: (document: LevelDocument) => void;
   readonly calibrationDocument?: LevelDocument;
+  /** « Jouer » from « Mes niveaux » (M9): open on the puzzle when there is one. */
+  readonly startPlaying?: boolean;
 }
+
+/** Navigation state is untrusted: only a literal `{ playPuzzle: true }` asks to play. */
+const asksToPlayPuzzle = (state: unknown): boolean =>
+  typeof state === 'object' && state !== null && 'playPuzzle' in state && state.playPuzzle === true;
 
 /**
  * U22: the workshop, and the author's puzzle played « comme un joueur » on
@@ -42,9 +49,14 @@ function Workshop({
   title,
   onDocumentCommitted,
   calibrationDocument,
+  startPlaying = false,
 }: WorkshopProps) {
   const [workshopDocument, setWorkshopDocument] = useState(initialDocument);
-  const [playtest, setPlaytest] = useState<LevelDocument | null>(null);
+  const [playtest, setPlaytest] = useState<LevelDocument | null>(() => {
+    if (!startPlaying) return null;
+    const conversion = puzzleFromWorkshop(initialDocument);
+    return conversion.status === 'ok' ? conversion.puzzle : null;
+  });
 
   if (playtest !== null) {
     return (
@@ -84,6 +96,8 @@ function Workshop({
 
 function DraftEditor({ draftId }: { readonly draftId: string }) {
   const drafts = useDraftRepository();
+  // `location.state` is typed `any`: read it as `unknown` and narrow it.
+  const navigationState: unknown = useLocation().state;
   const [draft] = useState<DraftCreation | null>(() => {
     const result = drafts.load(draftId);
     return result.status === 'ok' ? result.creation : null;
@@ -112,6 +126,7 @@ function DraftEditor({ draftId }: { readonly draftId: string }) {
     <Workshop
       initialDocument={draft.document}
       title=""
+      startPlaying={asksToPlayPuzzle(navigationState)}
       {...(calibrationDocument === undefined ? {} : { calibrationDocument })}
       onDocumentCommitted={(document) => {
         // Best effort, like progress (ADR 0011): a failed save never blocks editing.

@@ -5,13 +5,16 @@ import type { LevelDocument } from '../domain/level-document';
 import type { PuzzleRunner } from '../application/puzzle/puzzle-workshop';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
+import {
+  browserClipboard,
+  downloadWithTemporaryLink,
+  type DownloadFile,
+  type WriteClipboard,
+} from './browser-share';
 import { createShareLink, nameExportedLevel, prepareLevelExport } from './level-export';
 
 /** Mirrors the level title's length limit (`level-document.ts`). */
 const MAX_LEVEL_NAME_LENGTH = 160;
-
-type DownloadFile = (fileName: string, mimeType: string, fileText: string) => void;
-type WriteClipboard = (text: string) => Promise<void>;
 
 interface LevelExportDialogProps {
   /** The author's committed document: never a simulation snapshot or a gesture preview. */
@@ -32,29 +35,6 @@ type ShareState =
   | { readonly status: 'copied'; readonly link: string }
   | { readonly status: 'manual'; readonly link: string }
   | { readonly status: 'failed' };
-
-const downloadWithTemporaryLink: DownloadFile = (fileName, mimeType, fileText) => {
-  const url = URL.createObjectURL(new Blob([fileText], { type: mimeType }));
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = fileName;
-  anchor.rel = 'noopener';
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  // Revoke after the click has been handled by the browser.
-  const revokeObjectUrl = URL.revokeObjectURL.bind(URL);
-  window.setTimeout(() => {
-    revokeObjectUrl(url);
-  }, 0);
-};
-
-const browserClipboard = (): WriteClipboard | undefined => {
-  // Absent outside secure contexts, even though the DOM typings declare it.
-  if (typeof navigator === 'undefined' || !('clipboard' in navigator)) return undefined;
-  const clipboard = navigator.clipboard;
-  return (text) => clipboard.writeText(text);
-};
 
 /**
  * U16: « Exporter » from the author mode. Downloads the L22 file or copies

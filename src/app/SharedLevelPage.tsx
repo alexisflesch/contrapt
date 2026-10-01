@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-import { receiveLevel, type LevelFingerprintResult } from '../application/received/receive-level';
+import { receiveLevel } from '../application/received/receive-level';
 import type { LevelDocument } from '../domain/level-document';
-import { levelFingerprint } from '../infrastructure/level-file/level-fingerprint';
 import { decodeShareFragment } from '../infrastructure/level-share/level-share-codec';
 import { AppFrame } from '../ui/AppFrame';
 import { Panel } from '../ui/Panel';
 import { BoardShell } from './BoardShell';
+import { fingerprintOf } from './fingerprint-of';
 import { useReceivedLevelRepository } from './received-level-repository-context';
 
 type SharedLevelState =
@@ -18,15 +18,6 @@ type SharedLevelState =
 
 /** Composition point: the real clock stamps `receivedAt`, as `App` does for drafts. */
 const systemClock = (): Date => new Date();
-
-/** `crypto.subtle` is missing outside a secure context (HTTP on a local IP): not kept, still played. */
-const fingerprintOf = async (document: LevelDocument): Promise<LevelFingerprintResult> => {
-  try {
-    return { status: 'ok', fingerprint: await levelFingerprint(document) };
-  } catch {
-    return { status: 'unavailable' };
-  }
-};
 
 /**
  * `/shared` (ADR 0008, 0011, 0015 § Réception): the level decoded from the URL

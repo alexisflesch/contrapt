@@ -116,15 +116,55 @@ describe('recevoir un niveau (M8, ADR 0015 § Réception)', () => {
         ],
       },
     };
-    const { repository, entries, saves } = createMemoryRepository([solved]);
+    const { repository, entries } = createMemoryRepository([solved]);
 
     const first = receiveLevel(repository, puzzle, 'file', fingerprint, clock);
     const second = receiveLevel(repository, puzzle, 'link', fingerprint, clock);
 
-    expect(first).toEqual({ status: 'received', level: solved, isNew: false });
-    expect(second).toEqual({ status: 'received', level: solved, isNew: false });
-    expect([...entries.values()]).toEqual([solved]);
-    expect(saves).toEqual([]);
+    // M9: receiving it again only brings it back to the top (`receivedAt`).
+    const refreshed: ReceivedLevel = { ...solved, receivedAt: '2026-10-01T12:00:00.000Z' };
+    expect(first).toEqual({ status: 'received', level: refreshed, isNew: false });
+    expect(second).toEqual({ status: 'received', level: refreshed, isNew: false });
+    expect([...entries.values()]).toEqual([refreshed]);
+  });
+
+  it('remet en tête un niveau déjà gardé en ne changeant que `receivedAt` (M9)', () => {
+    const kept: ReceivedLevel = {
+      id: 'recu-0123456789abcdef',
+      document: puzzle,
+      origin: 'link',
+      receivedAt: '2026-09-30T08:00:00.000Z',
+      solved: false,
+    };
+    const { repository, saves } = createMemoryRepository([kept]);
+
+    const result = receiveLevel(repository, puzzle, 'file', fingerprint, clock);
+
+    const refreshed: ReceivedLevel = { ...kept, receivedAt: '2026-10-01T12:00:00.000Z' };
+    expect(result).toEqual({ status: 'received', level: refreshed, isNew: false });
+    // The origin stays the first one: the level was received by link.
+    expect(saves).toEqual([refreshed]);
+  });
+
+  it('garde l’entrée telle quelle quand la remise en tête ne peut pas être écrite (M9)', () => {
+    const kept: ReceivedLevel = {
+      id: 'recu-0123456789abcdef',
+      document: puzzle,
+      origin: 'file',
+      receivedAt: '2026-09-30T08:00:00.000Z',
+      solved: false,
+    };
+    const { repository, entries } = createMemoryRepository([kept], {
+      status: 'error',
+      code: 'quota-exceeded',
+    });
+
+    expect(receiveLevel(repository, puzzle, 'link', fingerprint, clock)).toEqual({
+      status: 'received',
+      level: kept,
+      isNew: false,
+    });
+    expect([...entries.values()]).toEqual([kept]);
   });
 
   it('refuse un document qui porte un objet ou un fil « à placer », avec un code stable', () => {

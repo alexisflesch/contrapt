@@ -122,8 +122,9 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   (`src/application/received/receive-level.ts`) ; l’empreinte (ou
   `unavailable`) et l’horloge sont fournies par l’appelant. Un nouveau
   document est enregistré `recu-<empreinte>`, non résolu, daté par l’horloge ;
-  un document déjà reçu est rendu tel qu’enregistré, sans écriture (ni
-  `solved`, ni record, ni solution du joueur réinitialisés) ; un objet ou un
+  un document déjà reçu garde `origin`, `solved`, record et solution du
+  joueur, et seul son `receivedAt` est rafraîchi pour le remettre en tête
+  (M9, au mieux : un échec d’écriture le laisse tel quel) ; un objet ou un
   fil `toPlace` est refusé (`workshop-document`) ; empreinte indisponible ou
   erreur du dépôt sont un résultat `not-kept`. `/shared` décode, calcule
   l’empreinte (`crypto.subtle` absent → non gardé), reçoit, puis joue ; un
@@ -134,9 +135,36 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   dépôt est fourni par `ReceivedLevelRepositoryContext`
   (`src/app/received-level-repository-context.ts`), branché dans `App`
   (`localStorage` par défaut, prop `receivedLevelRepository` pour les tests).
-  Les victoires sur `/shared` ne sont pas encore enregistrées (M10) ; aucune
-  page ne liste les niveaux reçus (M9). Validation visuelle attendue (statut
+  Les victoires sur `/shared` ne sont pas encore enregistrées (M10). Validation visuelle attendue (statut
   discret, captures `test-results/shared/shared-not-kept-*.png`).
+- Page « Mes niveaux » M9 (ADR 0015 § Page « Mes niveaux », ADR 0008
+  amendée) : `/my-levels` (`MyLevelsPage.tsx`), dans le menu partagé et en
+  quatrième destination de l’accueil (grille de deux colonnes dès 700 px,
+  quatre dès 1 100 px). Section « Mes créations » triée par `updatedAt`
+  décroissant (`listCreations`) : Modifier (`/editor?draft=<id>`), Jouer
+  (même route, état de navigation `{ playPuzzle: true }` qui ouvre
+  directement « Jouer le puzzle » U22 ; désactivé sans objet à placer),
+  Partager (boîte d’export U16, vérification ADR 0013 comprise), Dupliquer
+  (`duplicateCreation` : `creation-<aléa>`, même `source`, titre « (copie) »
+  gardé entier par `withTitleSuffix`, partagé avec « (remix) »), Supprimer ;
+  la création `<id>-brouillon` d’un niveau de campagne verrouillé est marquée
+  « Verrouillé » avec Supprimer seulement. Section « Niveaux reçus » triée par
+  `receivedAt` décroissant (`listReceivedLevels`) : « par <auteur> » et
+  « d’après <titre> (par <auteur>) » en texte brut, Résolu et record ou « Pas
+  encore résolu », Jouer (`/my-levels/:id/play`), Partager (fichier ou lien du
+  document tel quel, `ReceivedLevelShareDialog`, sans vérification),
+  Supprimer. Toute suppression passe par une confirmation `Dialog`
+  (« Annuler » ciblé). « Nouveau niveau » ouvre `/editor` ; « Importer un
+  fichier » lit le fichier (taille puis codec L22, `read-level-file.ts`) et le
+  reçoit (`origin: 'file'`) sans quitter la page ; un atelier est refusé
+  (« Ce fichier est un atelier, pas un niveau à jouer. »). `/import`
+  redirige vers `/my-levels` ; `LevelImportPage` et `import-level-draft.ts`
+  sont retirés. `/my-levels/:id/play` est provisoire : il joue le niveau reçu
+  sans enregistrer de victoire ni afficher l’attribution (M10) ; un
+  identifiant inconnu affiche une erreur et un lien vers « Mes niveaux ».
+  « Modifier » un niveau reçu arrive en M11. Validation visuelle attendue
+  (captures `test-results/my-levels/my-levels-{empty,filled}-{390x844,844x390,1440x900}.png`,
+  `my-levels-delete-390x844.png`, `test-results/home/accueil-*.png`).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -301,6 +329,7 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   palette des circuits n’a ni rouge ni teinte voisine, la poignée du levier
   n’est plus rouge, et la balle du tiroir du joueur est bleue.
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
+  `/my-levels`, `/my-levels/:id/play`, `/import` (redirige vers `/my-levels`),
   `/editor`, `/demo` (machine en chaîne qui se résout seule, testée),
   `/settings` (vide) et `/shared` (niveau décodé depuis le fragment URL,
   enregistré comme niveau reçu avant d’être joué depuis M8).
@@ -404,15 +433,13 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 - **Fichiers et partage** : L22 encode et décode les documents avec validation
   et migration ; L23 sérialise les fragments URL avec CRC-32 et décompression
   bornée ; L24 valide location.hash, puis ouvre le document en mode joueur ou
-  affiche une erreur avec un lien vers la liste. La page `/import` valide un
-  fichier JSON avec L22, l’enregistre comme un nouveau brouillon et l’ouvre dans
-  l’éditeur sans remplacer les brouillons existants.
+  affiche une erreur avec un lien vers la liste. L’import de fichier se fait
+  depuis « Mes niveaux » et aboutit à un niveau reçu (M9).
 - **Brouillons L26** (créations depuis M4) : `DraftRepository` et son adaptateur `localStorage` stockent
   une création par identifiant sous `tinkerbolt:draft:<id>`, avec l’index
   `tinkerbolt:drafts`. Les enveloppes versionnées sont validées, les documents
   passent par le codec de fichier L22, et les valeurs corrompues sont sauvegardées
-  avant remplacement. L’import depuis `/import` choisit un identifiant neuf et
-  sauvegarde le document validé comme brouillon séparé. La fonction pure
+  avant remplacement. La fonction pure
   `decideDraftAutosave` limite les essais d’enregistrement à une fois par seconde
   pendant l’édition et autorise un enregistrement immédiat au lancement d’un test ;
   elle n’est pas encore reliée à une interface.
@@ -458,7 +485,9 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   leur inventaire (ADR 0015) ; « Révéler » arrive avec M7 et M12, et rien ne
   rend encore la solution sous `pnpm dev` (M11).
 - **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
-  brouillon créé, ni de lister ou supprimer les brouillons dans l’interface.
+  brouillon créé (le supprimer depuis « Mes niveaux » puis « Éditer le niveau »
+  en recrée un). « Éditer le niveau » d’un niveau verrouillé reste actif sur
+  `/levels` jusqu’à M11.
 - `format:check` ne couvre pas le Markdown.
 - Le workflow `.github/workflows/check.yml` exécute la gate sur push et pull
   request avec Node 24, cache pnpm et Chromium Playwright. Son premier passage
@@ -469,6 +498,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M9 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 866 tests Vitest (67 fichiers),
+build Vite/PWA et 47 tests Playwright `mobile` (46 réussis, 1 ignoré).
 
 `pnpm check` après M8 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 842 tests Vitest (66 fichiers),

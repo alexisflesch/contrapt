@@ -13,9 +13,10 @@ import { BenchPlayPage } from './BenchPlayPage';
 import { DemoPage } from './DemoPage';
 import { EditorPage } from './EditorPage';
 import { HomePage } from './HomePage';
-import { LevelImportPage } from './LevelImportPage';
 import { LevelsPage } from './LevelsPage';
+import { MyLevelsPage } from './MyLevelsPage';
 import { PlayLevelPage } from './PlayLevelPage';
+import { ReceivedLevelPlayPage } from './ReceivedLevelPlayPage';
 import { SettingsPage } from './SettingsPage';
 import { SharedLevelPage } from './SharedLevelPage';
 import { CampaignProgressProvider } from './CampaignProgressProvider';
@@ -110,7 +111,9 @@ export function App({
                 <Route path="/levels" element={<LevelsPage />} />
                 <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
                 <Route path="/editor" element={<EditorPage />} />
-                <Route path="/import" element={<LevelImportPage />} />
+                <Route path="/my-levels" element={<MyLevelsPage />} />
+                <Route path="/my-levels/:id/play" element={<ReceivedLevelPlayPage />} />
+                <Route path="/import" element={<Navigate to="/my-levels" replace />} />
                 <Route path="/demo" element={<DemoPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/shared" element={<SharedLevelPage />} />

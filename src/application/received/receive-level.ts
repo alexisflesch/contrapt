@@ -19,7 +19,10 @@ type ReceiveLevelResult =
   | {
       readonly status: 'received';
       readonly level: ReceivedLevel;
-      /** `false` when the same document was already received: the entry is left as it was. */
+      /**
+       * `false` when the same document was already received: only its
+       * `receivedAt` is refreshed (M9), at best.
+       */
       readonly isNew: boolean;
       readonly warning?: ReceivedLevelRepositoryWarning;
     }
@@ -37,8 +40,9 @@ const isWorkshop = (document: LevelDocument): boolean =>
 
 /**
  * ADR 0015 § Réception: a level received by link or file is always stored,
- * once per document (`recu-<empreinte>`); receiving it again keeps its
- * resolution, record and player solution. A storage failure is a result,
+ * once per document (`recu-<empreinte>`); receiving it again brings it back
+ * to the top (`receivedAt`) and keeps its origin, resolution, record and
+ * player solution. A storage failure is a result,
  * never an exception: the caller still lets the level be played.
  */
 export const receiveLevel = (
@@ -56,13 +60,23 @@ export const receiveLevel = (
   const id = `recu-${fingerprint.fingerprint}`;
   const existing = repository.load(id);
   if (existing.status === 'error') return { status: 'not-kept', code: existing.code };
-  if (existing.level !== null) return { status: 'received', level: existing.level, isNew: false };
+  const receivedAt = clock().toISOString();
+  if (existing.level !== null) {
+    const refreshed: ReceivedLevel = { ...existing.level, receivedAt };
+    // The level is kept either way: a failed refresh only leaves it lower in the list.
+    const saved = repository.save(refreshed);
+    return {
+      status: 'received',
+      level: saved.status === 'ok' ? refreshed : existing.level,
+      isNew: false,
+    };
+  }
 
   const level: ReceivedLevel = {
     id,
     document,
     origin,
-    receivedAt: clock().toISOString(),
+    receivedAt,
     solved: false,
   };
   const saved = repository.save(level);

@@ -1,0 +1,81 @@
+import { mkdir, readFile } from 'node:fs/promises';
+
+import { expect, test, type Page } from '@playwright/test';
+
+const formats = [
+  { width: 390, height: 844 },
+  { width: 844, height: 390 },
+  { width: 1440, height: 900 },
+] as const;
+
+const captureFormats = async (page: Page, name: string): Promise<void> => {
+  await mkdir('test-results/my-levels', { recursive: true });
+  for (const viewport of formats) {
+    await page.setViewportSize(viewport);
+    await page.screenshot({
+      path: `test-results/my-levels/${name}-${String(viewport.width)}x${String(viewport.height)}.png`,
+      fullPage: true,
+      scale: 'css',
+    });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+};
+
+test('importe un fichier depuis « Mes niveaux » et le retrouve dans la liste (M9)', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Ouvrir le menu' }).tap();
+  await page.getByRole('button', { name: 'Mes niveaux' }).tap();
+
+  await expect(page).toHaveURL(/\/my-levels$/u);
+  const received = page.getByRole('region', { name: 'Niveaux reçus' });
+  await expect(received.getByText(/aucun niveau reçu/u)).toBeVisible();
+  await captureFormats(page, 'my-levels-empty');
+
+  const document = await readFile('src/content/levels/demo.json', 'utf8');
+  await expect(received.getByRole('button', { name: 'Importer un fichier' })).toBeVisible();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'demo.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(document),
+  });
+
+  await expect(received.getByRole('status')).toHaveText(
+    '« Démonstration » est dans tes niveaux reçus.',
+  );
+  await expect(page).toHaveURL(/\/my-levels$/u);
+  const card = received.getByRole('region', { name: 'Démonstration' });
+  await expect(card).toBeVisible();
+  await expect(card.getByText('Pas encore résolu')).toBeVisible();
+
+  // A creation too, for the filled page: the campaign's first level, edited.
+  await page.goto('/levels');
+  await page.getByRole('button', { name: 'Éditer le niveau 1', exact: true }).tap();
+  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await page.goto('/my-levels');
+  await expect(
+    page
+      .getByRole('region', { name: 'Mes créations' })
+      .getByRole('region', { name: 'La bille de service (remix)' }),
+  ).toBeVisible();
+  await expect(received.getByRole('region', { name: 'Démonstration' })).toBeVisible();
+  await captureFormats(page, 'my-levels-filled');
+
+  await received
+    .getByRole('region', { name: 'Démonstration' })
+    .getByRole('button', {
+      name: 'Supprimer',
+    })
+    .tap();
+  const dialog = page.getByRole('dialog', { name: 'Confirmer la suppression' });
+  await expect(dialog).toBeVisible();
+  await page.screenshot({
+    path: 'test-results/my-levels/my-levels-delete-390x844.png',
+    scale: 'css',
+  });
+  await dialog.getByRole('button', { name: 'Supprimer', exact: true }).tap();
+  await expect(received.getByText(/aucun niveau reçu/u)).toBeVisible();
+});

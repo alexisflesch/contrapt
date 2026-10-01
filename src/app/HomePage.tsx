@@ -1,4 +1,13 @@
-import { ArrowRight, CircleCheck, Flag, Play, Settings, Sparkles, Wrench } from 'lucide-react';
+import {
+  ArrowRight,
+  CircleCheck,
+  Flag,
+  Library,
+  Play,
+  Settings,
+  Sparkles,
+  Wrench,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { campaignChapters, embeddedLevels } from '../content/embedded-levels';
@@ -126,6 +135,20 @@ export function HomePage() {
               <p>Construis tes machines, imagine tes puzzles et partage tes trouvailles.</p>
               <span className="home-destination-action">
                 Créer une invention <ArrowRight size={16} aria-hidden="true" />
+              </span>
+            </Link>
+            <Link className="home-destination" to="/my-levels">
+              <div className="home-destination-top">
+                <span className="home-destination-icon">
+                  <Library size={24} aria-hidden="true" />
+                </span>
+                <span className="home-destination-tag">Tes trouvailles</span>
+                <ArrowRight size={20} aria-hidden="true" />
+              </div>
+              <h3>Mes niveaux</h3>
+              <p>Tes créations et les niveaux qu’on t’a envoyés, à rejouer et à partager.</p>
+              <span className="home-destination-action">
+                Ouvrir mes niveaux <ArrowRight size={16} aria-hidden="true" />
               </span>
             </Link>
             <Link className="home-destination" to="/demo">

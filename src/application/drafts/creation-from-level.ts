@@ -1,11 +1,11 @@
 import {
   MAX_BASED_ON_ENTRIES,
-  MAX_TITLE_LENGTH,
   type LevelDocument,
   type Solution,
 } from '../../domain/level-document';
 import { restoreSolution } from '../puzzle/restore-solution';
 import type { DraftCreationContent } from './draft-repository';
+import { withTitleSuffix } from './title-suffix';
 
 interface CreationFromLevelOptions {
   /** A winning solution of the player (M5), posed to place; none by default. */
@@ -26,8 +26,7 @@ const remixMetadata = ({
   ...metadata
 }: LevelDocument['metadata']): LevelDocument['metadata'] => ({
   ...metadata,
-  // The original title is shortened so that the suffix always stays whole (M6b).
-  title: `${metadata.title.slice(0, MAX_TITLE_LENGTH - REMIX_SUFFIX.length)}${REMIX_SUFFIX}`,
+  title: withTitleSuffix(metadata.title, REMIX_SUFFIX),
   basedOn: [
     { title: metadata.title, ...(author === undefined ? {} : { author }) },
     ...basedOn,

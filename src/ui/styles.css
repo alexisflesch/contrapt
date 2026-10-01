@@ -874,7 +874,7 @@ select:focus-visible {
   }
 
   .home-destinations {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .home-destination {
@@ -895,6 +895,13 @@ select:focus-visible {
     grid-template-columns: 1fr 1.1fr;
     align-items: center;
     gap: var(--space-6);
+  }
+}
+
+/* Quatre destinations (M9) : une seule rangée quand la largeur le permet. */
+@media (min-width: 1100px) {
+  .home-destinations {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1197,6 +1204,83 @@ select:focus-visible {
 .level-card[data-level-tier='elegant'],
 .level-card[data-level-tier='minimal'] {
   border-color: var(--success);
+}
+
+/* Mes niveaux (M9) : mêmes cartes que la campagne, sans numéro. */
+.my-levels {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.my-levels-section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.my-levels-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--night-line);
+}
+
+.my-levels-heading h2 {
+  color: var(--on-night);
+  font-size: clamp(var(--text-l), 4.5vw, var(--text-xl));
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.my-levels-empty {
+  color: var(--on-night-muted);
+  font-size: var(--text-s);
+  line-height: 1.5;
+}
+
+.my-levels-notice {
+  color: var(--on-night);
+}
+
+.my-level-card::before {
+  content: none;
+}
+
+.my-level-card .panel-header {
+  padding-left: var(--space-3);
+}
+
+.my-level-card .panel-title {
+  overflow-wrap: anywhere;
+}
+
+.my-level-attribution {
+  display: grid;
+  gap: 2px;
+  color: var(--muted-ink);
+  font-size: var(--text-s);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.my-level-record {
+  color: var(--ink);
+  font-size: var(--text-s);
+  font-weight: 800;
+}
+
+.my-level-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.my-level-actions > .btn:first-child,
+.my-level-actions > .btn:only-child {
+  grid-column: 1 / -1;
 }
 
 .level-card[data-level-tier='resolved']::before {
