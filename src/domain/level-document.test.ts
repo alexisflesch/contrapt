@@ -1226,3 +1226,78 @@ describe('objets à placer et solution de référence (U22, ADR 0013)', () => {
     ).toBe(true);
   });
 });
+
+describe('auteur et sources d’un niveau (M1, ADR 0016)', () => {
+  const withMetadata = (metadata: Record<string, unknown>): unknown => ({
+    ...validLevel,
+    metadata: { ...validLevel.metadata, ...metadata },
+  });
+  const attributed: LevelDocument = {
+    ...validLevel,
+    metadata: {
+      ...validLevel.metadata,
+      author: 'Mira',
+      basedOn: [{ title: 'Le sonneur (remix)', author: 'Zed' }, { title: 'Le sonneur' }],
+    },
+  };
+
+  it('relit à l’identique un document sans auteur ni sources, sans les ajouter', () => {
+    const parsed = levelDocumentSchema.safeParse(validLevel);
+
+    expect(parsed.success && parsed.data).toEqual(validLevel);
+    expect(parsed.success && 'author' in parsed.data.metadata).toBe(false);
+    expect(parsed.success && 'basedOn' in parsed.data.metadata).toBe(false);
+  });
+
+  it('accepte un auteur et des sources et les relit à l’identique', () => {
+    const parsed = levelDocumentSchema.safeParse(attributed);
+
+    expect(parsed.success && parsed.data).toEqual(attributed);
+  });
+
+  it('accepte un pseudo de 40 caractères, entouré d’espaces de bord', () => {
+    expect(issuePaths(withMetadata({ author: 'a'.repeat(40) }))).toEqual([]);
+    expect(issuePaths(withMetadata({ author: `  ${'a'.repeat(40)}  ` }))).toEqual([]);
+  });
+
+  it('refuse un pseudo vide après suppression des espaces de bord', () => {
+    expect(issuePaths(withMetadata({ author: '' }))).toEqual(['metadata.author']);
+    expect(issuePaths(withMetadata({ author: '   ' }))).toEqual(['metadata.author']);
+  });
+
+  it('refuse un pseudo de plus de 40 caractères', () => {
+    expect(issuePaths(withMetadata({ author: 'a'.repeat(41) }))).toEqual(['metadata.author']);
+  });
+
+  it('refuse un pseudo avec un saut de ligne ou un caractère de contrôle', () => {
+    for (const author of ['Mi\nra', 'Mi\r\nra', 'Mi ra', 'Mi\tra', 'Mi\u0000ra', 'Mi\u007fra']) {
+      expect(issuePaths(withMetadata({ author }))).toEqual(['metadata.author']);
+    }
+  });
+
+  it('applique à une source la règle du titre et celle du pseudo', () => {
+    expect(issuePaths(withMetadata({ basedOn: [{ title: '' }] }))).toEqual([
+      'metadata.basedOn.0.title',
+    ]);
+    expect(issuePaths(withMetadata({ basedOn: [{ title: 't'.repeat(161) }] }))).toEqual([
+      'metadata.basedOn.0.title',
+    ]);
+    expect(issuePaths(withMetadata({ basedOn: [{ title: 'Source', author: ' ' }] }))).toEqual([
+      'metadata.basedOn.0.author',
+    ]);
+    expect(issuePaths(withMetadata({ basedOn: [{ title: 'Source', author: 'Mi\nra' }] }))).toEqual([
+      'metadata.basedOn.0.author',
+    ]);
+    expect(
+      issuePaths(withMetadata({ basedOn: [{ title: 'Source', link: 'https://exemple.org' }] })),
+    ).toEqual(['metadata.basedOn.0']);
+  });
+
+  it('accepte 16 sources et refuse la dix-septième', () => {
+    const sources = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({ title: `Source ${String(index + 1)}` }));
+
+    expect(issuePaths(withMetadata({ basedOn: sources(16) }))).toEqual([]);
+    expect(issuePaths(withMetadata({ basedOn: sources(17) }))).toEqual(['metadata.basedOn']);
+  });
+});

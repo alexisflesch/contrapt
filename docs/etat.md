@@ -39,6 +39,13 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   masse, levier, convoyeur, bouton, ventilateur, barrière, tremplin), inventaire, zones de construction, objectif panier
   unique, fils de commande `wires` facultatifs (ADR 0009). Migration v1 → v2
   (`migrateLevelDocumentV1ToV2`) testée.
+- Attribution M1 (ADR 0016) : `metadata.author` (pseudo de 1 à 40 caractères
+  espaces de bord exclus, sans saut de ligne ni caractère de contrôle) et
+  `metadata.basedOn` (au plus 16 sources `{ title, author? }`), facultatifs en
+  v2, absents de v1. Un document sans ces champs se relit à l’identique ; avec,
+  il fait l’aller-retour par le codec de fichier et le codec URL, et
+  `puzzleFromWorkshop` les conserve. Aucune interface ne les renseigne ni ne
+  les affiche encore (M6, M10, M14).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -361,6 +368,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M1 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 750 tests Vitest (59 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après G2 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 737 tests Vitest (59 fichiers),

@@ -154,6 +154,34 @@ describe('codec de fichier de niveau', () => {
     expect(decodeLevelFile(text)).toEqual({ status: 'ok', document });
   });
 
+  it('fait un aller-retour identique d’un niveau sans auteur ni sources (M1)', () => {
+    const document = getChallengeAndWiresLevel();
+
+    const result = decodeLevelFile(encodeLevelFile(document));
+
+    expect(result).toEqual({ status: 'ok', document });
+    if (result.status !== 'ok') return;
+    expect(result.document.metadata).not.toHaveProperty('author');
+    expect(result.document.metadata).not.toHaveProperty('basedOn');
+  });
+
+  it('fait un aller-retour identique d’un niveau avec auteur et sources (M1)', () => {
+    const level = getChallengeAndWiresLevel();
+    const document: LevelDocument = {
+      ...level,
+      metadata: {
+        ...level.metadata,
+        author: 'Mira',
+        basedOn: [{ title: 'Le sonneur (remix)', author: 'Zed' }, { title: 'Le sonneur' }],
+      },
+    };
+
+    const text = encodeLevelFile(document);
+
+    expect(text).toContain('"basedOn"');
+    expect(decodeLevelFile(text)).toEqual({ status: 'ok', document });
+  });
+
   it('valide puis migre un document v1 vers un document v2 utilisable', () => {
     const result = decodeLevelFile(JSON.stringify(legacyDocument));
 

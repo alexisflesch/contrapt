@@ -527,3 +527,38 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier :
   scrim.
 - Pour l'auteur : rien à valider à l’écran (aucun changement visible) ; le
   tiroir ne se referme plus de lui-même juste après un toucher sur un objet.
+
+### M1 — Auteur et sources dans le format — fait — commit de cette entrée
+
+- Tests ajoutés : `src/domain/level-document.test.ts` › « auteur et sources
+  d’un niveau (M1, ADR 0016) » (8 tests : relecture sans les champs, relecture
+  avec, 40 caractères et espaces de bord acceptés, pseudo vide ou blanc refusé,
+  41 caractères refusé, saut de ligne / `\r\n` / U+2028 / tabulation / NUL /
+  DEL refusés, règles du titre et du pseudo dans une source et champ inconnu
+  refusé, 16 sources acceptées et 17 refusées) ;
+  `level-file-codec.test.ts` › « fait un aller-retour identique d’un niveau
+  sans auteur ni sources (M1) », « … avec auteur et sources (M1) » ;
+  `level-share-codec.test.ts` › « encode et décode un niveau sans auteur ni
+  sources, sans les ajouter (M1) », « … avec auteur et sources (M1) » ;
+  `puzzle-workshop.test.ts` › « conserve l’auteur et les sources de l’atelier
+  (M1, ADR 0016) ».
+- Échec initial constaté : `expected [ 'metadata' ] to deeply equal
+  [ 'metadata.author' ]` et, dans les codecs, `ZodError: "code":
+  "unrecognized_keys", "keys": ["author", "basedOn"], "path": ["metadata"]` ;
+  `puzzleFromWorkshop` renvoyait `{ status: 'refused' }`. Les tests de
+  relecture sans les champs passaient déjà (non-régression attendue).
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : aucun.
+- Choix d’implémentation : le pseudo est vérifié, jamais réécrit (pas de
+  `trim()` stocké), pour que le document se relise à l’identique ; la longueur
+  compte les unités UTF-16, comme `title`. « Saut de ligne » couvre aussi
+  U+2028 et U+2029. Les métadonnées v1 restent figées (`metadataV1Schema`) :
+  l’ADR ne place les champs qu’en v2. `puzzleFromWorkshop` conservait déjà
+  `metadata` ; seul le schéma bloquait.
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : comportement d’une ancienne version de la PWA face à un
+  fichier portant ces champs (refus attendu par l’ADR, non testé).
+- Pour l'auteur : rien à valider à l’écran. Question : faut-il refuser un
+  pseudo entouré d’espaces (il est aujourd’hui accepté et conservé tel quel) ?
+  M14 pourra le normaliser à la saisie.

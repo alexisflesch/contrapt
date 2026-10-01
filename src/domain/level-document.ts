@@ -27,6 +27,10 @@ const LEVEL_DOCUMENT_V1_SCHEMA_VERSION = 1 as const;
 const MAX_IDENTIFIER_LENGTH = 128;
 const MAX_TITLE_LENGTH = 160;
 const MAX_DESCRIPTION_LENGTH = 2_000;
+/** ADR 0016 - Champs du format: a pseudonym, measured once edge spaces are removed. */
+const MAX_AUTHOR_LENGTH = 40;
+/** ADR 0016 - Champs du format: sources kept, the most recent first. */
+const MAX_BASED_ON_ENTRIES = 16;
 const MAX_OBJECTS = 512;
 const MAX_INVENTORY_ENTRIES = 128;
 const MAX_BUILD_ZONES = 64;
@@ -320,13 +324,52 @@ const sceneSchema = z
     }
   });
 
+const titleSchema = z.string().min(1).max(MAX_TITLE_LENGTH);
+
+/** Control characters and the Unicode line and paragraph separators. */
+const CONTROL_OR_LINE_BREAK = /[\p{Cc}\u2028\u2029]/u;
+
+/**
+ * ADR 0016: a pseudonym of 1 to 40 characters once edge spaces are removed,
+ * on one line. The value is checked, never rewritten, so that a document
+ * reads back identically.
+ */
+const authorSchema = z.string().superRefine((author, context) => {
+  const length = author.trim().length;
+  if (length < 1 || length > MAX_AUTHOR_LENGTH) {
+    context.addIssue({
+      code: 'custom',
+      message: `Le pseudo doit compter de 1 à ${String(MAX_AUTHOR_LENGTH)} caractères, espaces de bord exclus.`,
+    });
+  }
+  if (CONTROL_OR_LINE_BREAK.test(author)) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Le pseudo ne doit contenir ni saut de ligne ni caractère de contrôle.',
+    });
+  }
+});
+
+/** v1 metadata, frozen: attribution only exists in v2 (ADR 0016). */
+const metadataV1Schema = z.strictObject({
+  title: titleSchema,
+  description: z.string().max(MAX_DESCRIPTION_LENGTH).optional(),
+});
+
+/** ADR 0016 - Champs du format: optional, so a v2 document without them stays valid as is. */
+const metadataSchema = z.strictObject({
+  ...metadataV1Schema.shape,
+  author: authorSchema.optional(),
+  basedOn: z
+    .array(z.strictObject({ title: titleSchema, author: authorSchema.optional() }))
+    .max(MAX_BASED_ON_ENTRIES)
+    .optional(),
+});
+
 /** Fields shared by every schema version, independent of `schemaVersion` and `scene`. */
 const sharedDocumentFields = {
   id: identifierSchema,
-  metadata: z.strictObject({
-    title: z.string().min(1).max(MAX_TITLE_LENGTH),
-    description: z.string().max(MAX_DESCRIPTION_LENGTH).optional(),
-  }),
+  metadata: metadataV1Schema,
   objects: z.array(objectPlacementSchema).max(MAX_OBJECTS),
   inventory: z.array(inventoryEntrySchema).max(MAX_INVENTORY_ENTRIES),
   goal: basketGoalSchema,
@@ -345,6 +388,7 @@ const levelDocumentV1StructureSchema = z.strictObject({
 const levelDocumentV2StructureSchema = z.strictObject({
   schemaVersion: z.literal(LEVEL_DOCUMENT_SCHEMA_VERSION),
   ...sharedDocumentFields,
+  metadata: metadataSchema,
   scene: sceneSchema,
   /** Optional on input so that documents written before ADR 0009 stay valid v2. */
   wires: z.array(controlWireSchema).max(MAX_WIRES).default([]),

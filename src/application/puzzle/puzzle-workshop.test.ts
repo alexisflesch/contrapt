@@ -165,6 +165,18 @@ describe('passage de l’atelier au puzzle (U22, ADR 0013)', () => {
     expect(result.status === 'ok' ? result.puzzle.challenge : undefined).toBeUndefined();
   });
 
+  it('conserve l’auteur et les sources de l’atelier (M1, ADR 0016)', () => {
+    const metadata = {
+      title: 'Atelier U22 (remix)',
+      author: 'Mira',
+      basedOn: [{ title: 'Atelier U22', author: 'Zed' }],
+    };
+
+    const result = puzzleFromWorkshop(workshop({ metadata }));
+
+    expect(result).toEqual({ status: 'ok', puzzle: { ...expectedPuzzle, metadata } });
+  });
+
   it('conserve les zones de construction existantes et les fils du décor', () => {
     const zone = { min: { x: 0, y: 1 }, max: { x: 8, y: 5 } };
     const wire = { id: 'wire-1', sourceId: 'lever-1', targetId: 'conveyor-1' };

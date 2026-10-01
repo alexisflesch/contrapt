@@ -102,6 +102,33 @@ describe('codec de partage par URL', () => {
     expect(result).toEqual({ status: 'ok', document });
   });
 
+  it('encode et décode un niveau sans auteur ni sources, sans les ajouter (M1)', async () => {
+    const document = levelTwelve();
+
+    const result = await decodeShareFragment(await encodeShareFragment(document));
+
+    expect(result).toEqual({ status: 'ok', document });
+    if (result.status !== 'ok') return;
+    expect(result.document.metadata).not.toHaveProperty('author');
+    expect(result.document.metadata).not.toHaveProperty('basedOn');
+  });
+
+  it('encode et décode un niveau avec auteur et sources (M1)', async () => {
+    const level = levelTwelve();
+    const document: LevelDocument = {
+      ...level,
+      metadata: {
+        ...level.metadata,
+        author: 'Mira',
+        basedOn: [{ title: 'Le sonneur (remix)', author: 'Zed' }, { title: 'Le sonneur' }],
+      },
+    };
+
+    const result = await decodeShareFragment(await encodeShareFragment(document));
+
+    expect(result).toEqual({ status: 'ok', document });
+  });
+
   it('calcule le CRC-32 IEEE de référence', () => {
     expect(crc32Ieee(new TextEncoder().encode('123456789')).toString(16)).toBe('cbf43926');
   });
