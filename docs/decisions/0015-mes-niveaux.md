@@ -194,7 +194,7 @@ d'origine, marqués `toPlace`, au document courant, sans rien retirer : c'est un
 commande d'auteur annulable, une seule entrée d'historique. Identifiants
 dédoublonnés ; un fil dont une extrémité n'existe plus (objet du décor supprimé
 par le remixeur) n'est pas restauré, ni un fil qui viserait un appareil déjà
-commandé ; la boîte de résultat dit combien de fils ont été ignorés. La
+commandé ; un message discret (`role="status"`) dit combien de fils ont été ignorés. La
 révélation n'est jamais refusée en bloc : une pose hors d'une scène réduite par
 le remixeur agrandit la scène, comme une pose d'auteur (`addAuthoredPlacement`).
 
