@@ -80,6 +80,16 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   (sauvegarde `tinkerbolt:backup:draft:<id>` puis avertissement). L’éditeur
   conserve la `source` chargée à chaque enregistrement ; aucun appelant n’en
   crée encore (M6).
+- Solution d’une tentative gagnante M5 (ADR 0015 § Victoire sur un niveau
+  reçu) : `solutionFromAttempt(attempt)` (`src/application/puzzle/player-solution.ts`,
+  pure) dérive de la provenance (ADR 0005) les poses issues de l’inventaire
+  (`inventoryId`, `transform`, `placementId` quand un fil du joueur touche la
+  pose) et les fils du joueur, à la forme `solution` de l’ADR 0013 ; un objet
+  du décor déplacé n’y figure pas. `playSolution(level, solution)` est extraite
+  et exportée de `puzzle-workshop.ts` (rend la tentative, `verifyPuzzle`
+  inchangé). Rejouer la solution sur le niveau d’origine redonne la même
+  tentative et gagne en simulation headless (fixture locale). Aucun appelant en
+  production avant M10 (seuls ses tests l’importent).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -402,6 +412,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M5 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 816 tests Vitest (63 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré).
 
 `pnpm check` après M4b (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 810 tests Vitest (61 fichiers),

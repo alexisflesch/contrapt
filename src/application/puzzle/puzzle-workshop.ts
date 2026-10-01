@@ -1,5 +1,15 @@
-import { levelDocumentSchema, rotationMode, type LevelDocument } from '../../domain/level-document';
-import { connectControlWire, createConstructionAttempt, placeFromInventory } from '../construction';
+import {
+  levelDocumentSchema,
+  rotationMode,
+  type LevelDocument,
+  type Solution,
+} from '../../domain/level-document';
+import {
+  connectControlWire,
+  createConstructionAttempt,
+  placeFromInventory,
+  type ConstructionAttempt,
+} from '../construction';
 
 type Placement = LevelDocument['objects'][number];
 type InventoryEntry = LevelDocument['inventory'][number];
@@ -202,15 +212,22 @@ export const workshopFromPuzzle = (puzzle: LevelDocument): LevelDocument => {
   return validation.success ? validation.data : puzzle;
 };
 
-/** Poses the reference solution with the player's own command, build zones included. */
-const playSolution = (puzzle: LevelDocument): LevelDocument | null => {
+/**
+ * Poses `solution` on `level` with the player's own commands, build zones
+ * included (ADR 0013): the reference solution of a puzzle, or a player's
+ * winning solution (ADR 0015). `null` when one command is refused.
+ */
+export const playSolution = (
+  level: LevelDocument,
+  solution: Solution,
+): ConstructionAttempt | null => {
   const usedIds = new Set([
-    ...puzzle.objects.map(({ id }) => id),
-    ...puzzle.wires.map(({ id }) => id),
+    ...level.objects.map(({ id }) => id),
+    ...level.wires.map(({ id }) => id),
   ]);
   const placementIdsByReference = new Map<string, string>();
-  let attempt = createConstructionAttempt(puzzle);
-  for (const pose of puzzle.solution?.placements ?? []) {
+  let attempt = createConstructionAttempt(level);
+  for (const pose of solution.placements) {
     const placementId = uniqueIdentifier('solution', usedIds);
     const outcome = placeFromInventory({
       context: 'player',
@@ -224,7 +241,7 @@ const playSolution = (puzzle: LevelDocument): LevelDocument | null => {
       placementIdsByReference.set(pose.placementId, placementId);
     }
   }
-  for (const wire of puzzle.solution?.wires ?? []) {
+  for (const wire of solution.wires ?? []) {
     const outcome = connectControlWire({
       context: 'player',
       wireId: wire.id,
@@ -235,7 +252,7 @@ const playSolution = (puzzle: LevelDocument): LevelDocument | null => {
     if (outcome.status === 'rejected') return null;
     attempt = outcome.state;
   }
-  return attempt.document;
+  return attempt;
 };
 
 /**
@@ -248,9 +265,9 @@ export const verifyPuzzle = (workshop: LevelDocument, run: PuzzleRunner): Puzzle
   if (conversion.status === 'refused') return conversion;
 
   const { puzzle } = conversion;
-  const solved = playSolution(puzzle);
+  const solved = playSolution(puzzle, puzzle.solution ?? { placements: [] });
   if (solved === null) return { status: 'refused', reason: 'solution-not-playable' };
-  if (run(solved) !== 'won') return { status: 'refused', reason: 'solution-does-not-win' };
+  if (run(solved.document) !== 'won') return { status: 'refused', reason: 'solution-does-not-win' };
   if (run(puzzle) === 'won') return { status: 'refused', reason: 'wins-without-player' };
   return { status: 'verified', puzzle };
 };

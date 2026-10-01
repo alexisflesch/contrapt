@@ -736,3 +736,49 @@ file exist?` (module absent ; les 5 tests ne se chargent pas).
 - Non vérifié : un vrai `localStorage` de navigateur ; deux onglets lisant une
   même v1 en même temps (la dernière écriture gagne, chacune est une v2 valide).
 - Pour l'auteur : rien à valider à l'écran.
+
+### M5 — Solution d’une tentative gagnante — fait — commit de cette entrée
+
+- Tests ajoutés : `src/application/puzzle/player-solution.test.ts` ›
+  « solution d’une tentative gagnante (M5, ADR 0015) » (5 tests) : un objet du
+  décor déplacé n’apparaît pas ; les fils du joueur apparaissent avec leurs
+  extrémités, et la pose reliée porte son `placementId` (un fil entre deux
+  objets du décor n’en ajoute aucun) ; la solution est valide pour
+  `solutionSchema` et pour `levelDocumentSchema` posée sur le niveau joué ; un
+  objet posé puis retiré n’apparaît pas ; rejouée par `playSolution` sur le
+  niveau d’origine, elle redonne la même tentative (document et provenance, aux
+  identifiants des objets du joueur près). `src/app/player-solution-replay.test.ts`
+  › « rejouée sur le niveau d’origine, redonne la même tentative et gagne en
+  simulation » : fixture locale (balle, panier, une poutre à poser) qui perd
+  sans le joueur et gagne avec `runLevelOutcome`, avant et après rejeu.
+- Échec initial constaté : `Failed to load url ./player-solution … Does the
+file exist?` ; puis, avec une fonction vide, `expected { placements: [] } to
+deeply equal { placements: [ { …(2) } ] }` et, au rejeu, `expected [ { id:
+'beams', quantity: 1, …(3) } ] to deeply equal [ { id: 'beams', quantity: +0,
+…(3) } ]` (4 échecs sur 6 ; les tests de validité et de l’objet retiré
+  passaient déjà avec une solution vide, non-régression).
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : `src/application/puzzle/puzzle-workshop.ts`
+  — `playSolution` extraite et exportée sous la forme `playSolution(level,
+solution)` qui rend la tentative (et non plus le document), demandée par la
+  tâche ; `verifyPuzzle` l’appelle avec `puzzle.solution`, comportement
+  inchangé (16 tests existants verts). `src/app/player-solution-replay.test.ts` :
+  la couche `application` ne peut pas importer `simulation` (règle ESLint des
+  frontières, tests compris) ; le test headless vit donc dans `src/app/`, qui
+  compose les deux.
+- Choix d’implémentation : poses dans l’ordre des objets du plateau, fils dans
+  l’ordre des fils ; une pose ne porte `placementId` (l’identifiant de l’objet
+  du joueur) que si un fil du joueur la touche, comme l’export de l’ADR 0013 ;
+  `wires` absent sans fil du joueur. Seuls les objets et fils présents dans la
+  provenance comptent ; l’entrée d’inventaire n’est pas revérifiée (le joueur
+  ne peut pas retirer une entrée).
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : une victoire obtenue en déplaçant un objet du décor
+  (`permissions.move`) n’est pas reproduite par la solution, qui ne retient
+  pas ce déplacement (ADR 0015 : « poses issues de l’inventaire et fils du
+  joueur ») ; son rejeu peut alors perdre. Aucun appelant en production avant
+  M10 (Knip passe : les tests servent de point d’entrée, comme M2 et M3).
+- Pour l'auteur : rien à valider à l’écran. Question : faut-il inclure dans la
+  solution du joueur les déplacements d’objets du décor, pour que « Révéler »
+  et le rejeu restent fidèles quand le niveau autorise à les déplacer ?
