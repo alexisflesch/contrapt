@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 2,
+  "id": "tuto-3",
+  "metadata": {
+    "title": "tuto-3",
+    "description": "Le point de départ de la création libre : une scène 16 × 9 avec un sol, une balle et un panier de démonstration, et un inventaire abondant de toutes les familles."
+  },
+  "objects": [
+    {
+      "id": "workshop-floor",
+      "transform": {
+        "position": {
+          "x": 6.614738974603378,
+          "y": 4.202640109201936
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "beam",
+      "props": {
+        "size": "long"
+      }
+    },
+    {
+      "id": "goal-ball",
+      "transform": {
+        "position": {
+          "x": 5.802437521880974,
+          "y": 3.7674792569607023
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "ball",
+      "props": {}
+    },
+    {
+      "id": "goal-basket",
+      "transform": {
+        "position": {
+          "x": 10.589208390541343,
+          "y": 4.739338643033471
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "basket",
+      "props": {}
+    },
+    {
+      "id": "placement-2",
+      "transform": {
+        "position": {
+          "x": 1.20423570845553,
+          "y": 1.8962865465186405
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "button",
+      "props": {}
+    }
+  ],
+  "inventory": [
+    {
+      "id": "wire-a-placer",
+      "quantity": 1,
+      "type": "wire",
+      "props": {},
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": true
+      }
+    },
+    {
+      "id": "mass-a-placer",
+      "quantity": 1,
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      },
+      "type": "mass",
+      "props": {
+        "weight": "10kg"
+      }
+    },
+    {
+      "id": "fan-a-placer",
+      "quantity": 1,
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      },
+      "type": "fan",
+      "props": {
+        "state": "on"
+      }
+    }
+  ],
+  "goal": {
+    "type": "basket",
+    "ballId": "goal-ball",
+    "basketId": "goal-basket"
+  },
+  "buildZones": [
+    {
+      "min": {
+        "x": 0,
+        "y": 0
+      },
+      "max": {
+        "x": 16,
+        "y": 9
+      }
+    }
+  ],
+  "scene": {
+    "min": {
+      "x": 0,
+      "y": 0
+    },
+    "max": {
+      "x": 16,
+      "y": 9
+    }
+  },
+  "wires": [],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "mass-a-placer",
+        "transform": {
+          "position": {
+            "x": 1.20423570845553,
+            "y": 0.9824491552138597
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "inventoryId": "fan-a-placer",
+        "transform": {
+          "position": {
+            "x": 4.2358578562098135,
+            "y": 3.6079198296035453
+          },
+          "rotation": 0
+        },
+        "placementId": "placement-3"
+      }
+    ],
+    "wires": [
+      {
+        "id": "wire-1",
+        "inventoryId": "wire-a-placer",
+        "sourceId": "placement-2",
+        "targetId": "placement-3"
+      }
+    ]
+  }
+}

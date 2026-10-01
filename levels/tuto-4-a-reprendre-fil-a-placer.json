@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 2,
+  "id": "tuto-3",
+  "metadata": {
+    "title": "tuto-3",
+    "description": "Le point de départ de la création libre : une scène 16 × 9 avec un sol, une balle et un panier de démonstration, et un inventaire abondant de toutes les familles."
+  },
+  "objects": [
+    {
+      "id": "workshop-floor",
+      "transform": {
+        "position": {
+          "x": 1.015666653220605,
+          "y": 4.652306273384319
+        },
+        "rotation": 1.5707963267948966
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "beam",
+      "props": {
+        "size": "short"
+      }
+    },
+    {
+      "id": "goal-ball",
+      "transform": {
+        "position": {
+          "x": 11.880185635323897,
+          "y": 4.985929942037517
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "ball",
+      "props": {}
+    },
+    {
+      "id": "goal-basket",
+      "transform": {
+        "position": {
+          "x": 11.981724312918725,
+          "y": 6.712069035065833
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "basket",
+      "props": {}
+    },
+    {
+      "id": "placement-1",
+      "transform": {
+        "position": {
+          "x": 2.9738902393050273,
+          "y": 1.9107918584597887
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "conveyor",
+      "props": {
+        "direction": "stopped"
+      }
+    },
+    {
+      "id": "placement-2",
+      "transform": {
+        "position": {
+          "x": 1.9440096054676657,
+          "y": 1.3595880126871056
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "mass",
+      "props": {
+        "weight": "10kg"
+      }
+    },
+    {
+      "id": "placement-3",
+      "transform": {
+        "position": {
+          "x": 5.077167442803194,
+          "y": 1.9252976684032006
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "button",
+      "props": {}
+    },
+    {
+      "id": "placement-4",
+      "transform": {
+        "position": {
+          "x": 10.908326249251129,
+          "y": 5.580650221635907
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "barrier",
+      "props": {
+        "state": "closed"
+      }
+    },
+    {
+      "id": "placement-5",
+      "transform": {
+        "position": {
+          "x": 1.2767627661635346,
+          "y": 5.20351111516153
+        },
+        "rotation": 1.5707963267948966
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "lever",
+      "props": {
+        "position": "center"
+      }
+    },
+    {
+      "id": "placement-6",
+      "transform": {
+        "position": {
+          "x": 3.7136631403126352,
+          "y": 3.027705359948566
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "ball",
+      "props": {}
+    }
+  ],
+  "inventory": [
+    {
+      "id": "beam-a-placer",
+      "quantity": 1,
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      },
+      "type": "beam",
+      "props": {
+        "size": "short"
+      }
+    }
+  ],
+  "goal": {
+    "type": "basket",
+    "ballId": "goal-ball",
+    "basketId": "goal-basket"
+  },
+  "buildZones": [
+    {
+      "min": {
+        "x": 0,
+        "y": 0
+      },
+      "max": {
+        "x": 16,
+        "y": 9
+      }
+    }
+  ],
+  "scene": {
+    "min": {
+      "x": 0,
+      "y": 0
+    },
+    "max": {
+      "x": 16,
+      "y": 9
+    }
+  },
+  "wires": [
+    {
+      "id": "wire-2",
+      "sourceId": "placement-5",
+      "targetId": "placement-1"
+    },
+    {
+      "id": "wire-1",
+      "sourceId": "placement-3",
+      "targetId": "placement-4"
+    }
+  ],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "beam-a-placer",
+        "transform": {
+          "position": {
+            "x": 3.147955476605596,
+            "y": 3.9415434982567428
+          },
+          "rotation": -0.5235987755982988
+        }
+      }
+    ]
+  }
+}

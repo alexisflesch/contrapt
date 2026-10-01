@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 2,
+  "id": "free-workshop",
+  "metadata": {
+    "title": "Atelier de niveau",
+    "description": "Le point de départ de la création libre : une scène 16 × 9 avec un sol, une balle et un panier de démonstration, et un inventaire abondant de toutes les familles."
+  },
+  "objects": [
+    {
+      "id": "goal-ball",
+      "transform": {
+        "position": {
+          "x": 3.2349868502502206,
+          "y": 2.592544507707332
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "ball",
+      "props": {}
+    },
+    {
+      "id": "goal-basket",
+      "transform": {
+        "position": {
+          "x": 9.64635962835087,
+          "y": 4.826371012682624
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "basket",
+      "props": {}
+    },
+    {
+      "id": "placement-1",
+      "transform": {
+        "position": {
+          "x": 4.787061701982497,
+          "y": 3.535393269897805
+        },
+        "rotation": 0.2617993877991494
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "beam",
+      "props": {
+        "size": "medium"
+      }
+    }
+  ],
+  "inventory": [
+    {
+      "id": "beam-a-placer",
+      "quantity": 1,
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      },
+      "type": "beam",
+      "props": {
+        "size": "short"
+      }
+    }
+  ],
+  "goal": {
+    "type": "basket",
+    "ballId": "goal-ball",
+    "basketId": "goal-basket"
+  },
+  "buildZones": [
+    {
+      "min": {
+        "x": 0,
+        "y": 0
+      },
+      "max": {
+        "x": 16,
+        "y": 9
+      }
+    }
+  ],
+  "scene": {
+    "min": {
+      "x": 0,
+      "y": 0
+    },
+    "max": {
+      "x": 16,
+      "y": 9
+    }
+  },
+  "wires": [],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "beam-a-placer",
+        "transform": {
+          "position": {
+            "x": 7.804177541791104,
+            "y": 4.115607739552784
+          },
+          "rotation": 0
+        }
+      }
+    ]
+  }
+}
