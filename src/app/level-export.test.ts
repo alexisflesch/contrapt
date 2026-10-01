@@ -5,7 +5,12 @@ import type { LevelDocument } from '../domain/level-document';
 import { decodeLevelFile } from '../infrastructure/level-file/level-file-codec';
 import { decodeShareFragment } from '../infrastructure/level-share/level-share-codec';
 
-import { buildShareUrl, createShareLink, prepareLevelExport } from './level-export';
+import {
+  buildShareUrl,
+  createShareLink,
+  nameExportedLevel,
+  prepareLevelExport,
+} from './level-export';
 
 const levelFour = embeddedLevels.find(({ id }) => id === 'campaign-04-retour-a-l-expediteur');
 if (levelFour === undefined) throw new Error('Niveau 4 embarqué introuvable.');
@@ -63,6 +68,29 @@ describe('export d’un niveau (U16, U22)', () => {
         },
       ],
     });
+  });
+
+  it('nomme le niveau exporté : titre, identifiant et fichier suivent le nom choisi', () => {
+    const preparation = prepareLevelExport(levelOneWorkshop, successfulExportRun);
+    if (preparation.status !== 'ready') throw new Error('Le puzzle du niveau 1 est refusé.');
+
+    const named = nameExportedLevel(preparation.puzzle, '  Le Grand Saut de l’été !  ');
+
+    expect(named).not.toBeNull();
+    if (named === null) return;
+    expect(named.puzzle.metadata.title).toBe('Le Grand Saut de l’été !');
+    expect(named.puzzle.id).toBe('le-grand-saut-de-l-ete');
+    expect(named.fileName).toBe('le-grand-saut-de-l-ete.json');
+    expect(decodeLevelFile(named.fileText)).toEqual({ status: 'ok', document: named.puzzle });
+    expect(named.puzzle.objects).toEqual(preparation.puzzle.objects);
+  });
+
+  it('refuse un nom vide et garde l’identifiant quand le nom n’a ni lettre ni chiffre', () => {
+    const preparation = prepareLevelExport(levelOneWorkshop, successfulExportRun);
+    if (preparation.status !== 'ready') throw new Error('Le puzzle du niveau 1 est refusé.');
+
+    expect(nameExportedLevel(preparation.puzzle, '   ')).toBeNull();
+    expect(nameExportedLevel(preparation.puzzle, '!?')?.puzzle.id).toBe(preparation.puzzle.id);
   });
 
   it('refuse un atelier sans objet à placer et invite à toucher ceux à retirer', () => {

@@ -429,7 +429,7 @@ describe('ConstructionAttempt', () => {
     });
   });
 
-  it('turns a fan by quarter turns only', () => {
+  it('turns a fan by fifteen degrees, like every other rotatable family', () => {
     const level = createLevel();
     const attempt = createConstructionAttempt({
       ...level,
@@ -448,7 +448,7 @@ describe('ConstructionAttempt', () => {
       rotatePlacement({ context: 'author', placementId: 'fan-1', rotation }).execute(attempt);
 
     expect(turn(Math.PI / 2).status).toBe('accepted');
-    expect(turn(Math.PI / 12)).toEqual({ status: 'rejected', reason: 'invalid-level-document' });
+    expect(turn(Math.PI / 12).status).toBe('accepted');
   });
 
   it('restores the exact source entry and removes provenance atomically for the player', () => {

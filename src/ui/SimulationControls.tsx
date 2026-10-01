@@ -101,7 +101,7 @@ export function SimulationControls({
           </Button>
           <Button tone="go" className="toolbar-primary" onClick={onLaunchSimulation}>
             <Play size={18} aria-hidden="true" />
-            Tester
+            Lancer
           </Button>
         </>
       )}

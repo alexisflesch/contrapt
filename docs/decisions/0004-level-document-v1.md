@@ -62,6 +62,11 @@ Une zone de construction est un rectangle en unités du monde, avec des bornes
 strictement croissantes sur chaque axe. Les conventions visuelles d'orientation du
 monde restent indépendantes de cette représentation par minima et maxima.
 
+Amendement du 1er octobre 2026 : restreindre la pose par une zone plus petite que
+la scène est écarté pour le contenu. Sauf mention contraire de l'auteur, un niveau
+déclare une seule zone égale à sa scène (voir `docs/levels/conception-niveaux.md`
+§ 1). Le mécanisme reste dans le schéma et le code.
+
 ### Limites techniques v1
 
 Ces plafonds bornent les entrées non fiables et l'allocation de l'application. Ils

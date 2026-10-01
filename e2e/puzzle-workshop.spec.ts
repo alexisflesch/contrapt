@@ -11,12 +11,12 @@ test('marque un objet à placer puis résout le puzzle comme un joueur, au touch
   await openMachineDraft(page);
   await markBeamToPlace(page);
 
-  await page.getByRole('button', { name: 'Jouer le puzzle' }).tap();
+  await page.getByRole('button', { name: 'Essayer en joueur' }).tap();
   await expect(page.getByText('Mode joueur')).toBeVisible();
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
   await page.getByRole('button', { name: /^Poutre courte/u }).tap();
   await tapWorldPoint(page, machineBeam.x, machineBeam.y);
-  await page.getByRole('button', { name: 'Tester', exact: true }).tap();
+  await page.getByRole('button', { name: 'Lancer', exact: true }).tap();
 
   const result = page.getByRole('region', { name: 'Résultat du niveau' });
   await expect(result).toContainText('Victoire', { timeout: 15_000 });

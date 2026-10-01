@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CircleQuestionMark, Play, Upload } from 'lucide-react';
+import { ArrowLeft, CircleQuestionMark, Gamepad2, Upload } from 'lucide-react';
 
 import { createConstructionAttempt } from '../application/construction/construction-attempt';
 import {
@@ -125,6 +125,21 @@ export function BoardShell({
   });
   const isSideLayout = useIsSideLayout();
 
+  // Escape drops the active placement tool, like « Annuler le placement ».
+  const isPlacementActive = pointers.placementTool !== null;
+  const cancelPlacementRef = useRef(pointers.cancelPlacement);
+  cancelPlacementRef.current = pointers.cancelPlacement;
+  useEffect(() => {
+    if (!isPlacementActive) return undefined;
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') cancelPlacementRef.current();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isPlacementActive]);
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
@@ -240,19 +255,19 @@ export function BoardShell({
             </button>
           )}
           {onPlayAsPlayer !== undefined && (
-            // U22: « Tester comme un joueur » — the author solves the puzzle as the player will. The
-            // accessible name avoids « Tester », the launch button's name.
+            // U22: the author solves the puzzle as the player will. Named apart from « Lancer »,
+            // which only runs the machine.
             <button
               className="icon-button objective-button"
               type="button"
-              aria-label="Jouer le puzzle"
+              aria-label="Essayer en joueur"
               onClick={playAsPlayer}
             >
               <span className="objective-button-glyph" aria-hidden="true">
-                <Play size={18} />
+                <Gamepad2 size={18} />
               </span>
               <span className="objective-button-label" aria-hidden="true">
-                Jouer
+                Essayer en joueur
               </span>
             </button>
           )}
@@ -317,7 +332,17 @@ export function BoardShell({
           }}
           onSelectKind={(kind, source) => {
             wiring.cancelWiring();
-            pointers.activatePlacement(kind, source);
+            // Touching the active card again puts the tool down.
+            const activeTool = pointers.placementTool;
+            if (
+              activeTool !== null &&
+              activeTool.kind === kind &&
+              placementSourceKey(activeTool.source) === placementSourceKey(source)
+            ) {
+              pointers.cancelPlacement();
+            } else {
+              pointers.activatePlacement(kind, source);
+            }
             setIsDrawerOpen(false);
           }}
           isWiringActive={wiring.wiringStep !== null}
@@ -376,6 +401,7 @@ export function BoardShell({
           onZoomIn={boardCamera.zoomIn}
           onZoomOut={boardCamera.zoomOut}
           onFitToScene={boardCamera.fitCameraToCurrentScene}
+          onWheelZoom={boardCamera.zoomWithWheel}
         />
         <div className="status-slot">
           <InspectorDrawer

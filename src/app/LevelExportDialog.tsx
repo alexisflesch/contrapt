@@ -5,7 +5,10 @@ import type { LevelDocument } from '../domain/level-document';
 import type { PuzzleRunner } from '../application/puzzle/puzzle-workshop';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
-import { createShareLink, prepareLevelExport } from './level-export';
+import { createShareLink, nameExportedLevel, prepareLevelExport } from './level-export';
+
+/** Mirrors the level title's length limit (`level-document.ts`). */
+const MAX_LEVEL_NAME_LENGTH = 160;
 
 type DownloadFile = (fileName: string, mimeType: string, fileText: string) => void;
 type WriteClipboard = (text: string) => Promise<void>;
@@ -68,6 +71,8 @@ export function LevelExportDialog({
   run,
 }: LevelExportDialogProps) {
   const [preparation] = useState(() => prepareLevelExport(levelDocument, run));
+  const [name, setName] = useState(levelDocument.metadata.title);
+  const named = preparation.status === 'ready' ? nameExportedLevel(preparation.puzzle, name) : null;
   const [downloadedFileName, setDownloadedFileName] = useState<string | null>(null);
   const [share, setShare] = useState<ShareState>({ status: 'idle' });
 
@@ -115,10 +120,24 @@ export function LevelExportDialog({
             Puzzle vérifié. Envoyez le fichier ou le lien : il ouvre le niveau avec les objets à
             placer dans le tiroir du joueur.
           </p>
+          <label className="export-link">
+            <span className="export-link-label">Nom du niveau</span>
+            <input
+              className="export-link-field export-name-field"
+              type="text"
+              maxLength={MAX_LEVEL_NAME_LENGTH}
+              value={name}
+              onChange={(event) => {
+                setName(event.currentTarget.value);
+              }}
+            />
+          </label>
           <Button
+            disabled={named === null}
             onClick={() => {
-              downloadFile(preparation.fileName, preparation.mimeType, preparation.fileText);
-              setDownloadedFileName(preparation.fileName);
+              if (named === null) return;
+              downloadFile(named.fileName, preparation.mimeType, named.fileText);
+              setDownloadedFileName(named.fileName);
             }}
           >
             <Download size={18} aria-hidden="true" />
@@ -126,9 +145,9 @@ export function LevelExportDialog({
           </Button>
           <Button
             tone="go"
-            disabled={share.status === 'working'}
+            disabled={named === null || share.status === 'working'}
             onClick={() => {
-              void copyShareLink(preparation.puzzle);
+              if (named !== null) void copyShareLink(named.puzzle);
             }}
           >
             <Link2 size={18} aria-hidden="true" />

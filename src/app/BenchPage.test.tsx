@@ -49,6 +49,6 @@ describe('page de mesure de performance (/bench, ADR 0002)', () => {
     expect(screen.getByRole('status', { name: 'Images par seconde' })).toHaveTextContent(
       /Images\/s/,
     );
-    expect(screen.getByRole('button', { name: 'Tester' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeVisible();
   });
 });

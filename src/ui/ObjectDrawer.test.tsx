@@ -61,7 +61,7 @@ describe('ObjectDrawer', () => {
   it('ne propose à l’auteur ni balle rouge ni panier : l’objectif est déjà posé, et unique', () => {
     const drawer = renderDrawer('creation');
 
-    const blue = within(drawer).getByRole('button', { name: 'Balle bleue' });
+    const blue = within(drawer).getByRole('button', { name: 'Balle' });
     expect(thumbnailOf(blue)).toMatch(/\/thumbs\/second-ball\.png$/);
     expect(within(drawer).queryByRole('button', { name: /Balle rouge/ })).toBeNull();
     expect(within(drawer).queryByRole('button', { name: /Panier/ })).toBeNull();

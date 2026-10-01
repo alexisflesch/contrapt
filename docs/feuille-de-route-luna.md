@@ -1,6 +1,8 @@
 # Tableau de bord (27 septembre 2026, fin de session)
 
 Vue d’ensemble en une page ; le détail reste dans § 5, § 6 et le journal (§ 8).
+La demande auteur du 1er octobre 2026 ajoute un accueil à `/`, indépendamment
+de cet ordre de reprise ; la décision de routage est amendée dans l’ADR 0008.
 Un agent qui reprend commence par la liste « Prochaines tâches » ci-dessous,
 dans l’ordre. Ces tâches d’interface sont **autorisées par l’auteur** (l’interdit
 de § 6 ne s’y applique pas) ; captures aux trois formats dans le journal, mais

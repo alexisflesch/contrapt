@@ -221,7 +221,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
     expect(ballColours().red).toBe('ball-red');
     expect(ballColours().blue).toContain('ball-blue');
 
-    placeFromCatalogue('Balle bleue', 3.0, 0.8);
+    placeFromCatalogue('Balle', 3.0, 0.8);
     const blueBallId = storedDraft().objects.at(-1)?.id ?? '';
     expect(storedDraft().goal.ballId).toBe('ball-red');
     expect(ballColours().red).toBe('ball-red');

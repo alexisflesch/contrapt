@@ -250,10 +250,10 @@ export const springboardGeometry = {
 
 type BarrierState = 'closed' | 'open';
 
-const BARRIER_PILLAR_FOOTPRINT: WorldRect = { x: -0.4, y: -0.4248, width: 0.8, height: 0.8496 };
-const BARRIER_BAR_LENGTH = 1.2536;
-const BARRIER_BAR_THICKNESS = 0.28;
-const BARRIER_BAR_CENTER_Y = -0.0368;
+const BARRIER_PILLAR_FOOTPRINT: WorldRect = { x: -0.45, y: -0.4779, width: 0.9, height: 0.9558 };
+const BARRIER_BAR_LENGTH = 1.7013;
+const BARRIER_BAR_THICKNESS = 0.38;
+const BARRIER_BAR_CENTER_Y = -0.0414;
 
 /**
  * A sliding barrier; its origin is the centre of its pillar. Closed, the bar
@@ -264,16 +264,16 @@ export const barrierGeometry = {
   pillar: {
     footprint: BARRIER_PILLAR_FOOTPRINT,
     polygon: polygon([
-      [-0.4, 0.2988],
-      [-0.3009, -0.3427],
-      [-0.2697, -0.388],
-      [0.0333, -0.4248],
-      [0.2782, -0.3455],
-      [0.3972, 0.2336],
-      [0.3604, 0.4234],
-      [-0.3561, 0.4234],
+      [-0.45, 0.3361],
+      [-0.3385, -0.3855],
+      [-0.3035, -0.4365],
+      [0.0374, -0.4779],
+      [0.313, -0.3887],
+      [0.4468, 0.2628],
+      [0.4054, 0.4763],
+      [-0.4006, 0.4763],
     ]),
-    barrelHalfWidth: 0.2867,
+    barrelHalfWidth: 0.3226,
   },
   bar: {
     length: BARRIER_BAR_LENGTH,
@@ -292,7 +292,7 @@ const FAN_FOOTPRINT: WorldRect = { x: -0.6, y: -0.4683, width: 1.2, height: 0.93
 
 /**
  * A fan, drawn blowing right; its origin is the centre of its footprint. Its
- * rotation, by quarter turns, says where it blows (see `quarterTurnPose`).
+ * rotation says where it blows (see `facingPose`).
  * The blades turn behind the body, seen through the ring's opening and
  * squashed horizontally because the ring is seen at an angle.
  */
@@ -319,17 +319,28 @@ export const fanGeometry = {
   mouth: { x: 0.55, y: -0.0765, halfWidth: 0.27 },
 } as const;
 
+/** Below this, `cos(rotation)` is a rounding residue of a vertical turn (±90°). */
+const FACING_TOLERANCE = 1e-9;
+
 /**
- * How a quarter-turn family (fan, barrier) is laid out for a rotation that is
- * a multiple of a quarter turn. The half turn is drawn mirrored rather than
- * turned: a fan blowing left keeps its feet down, a barrier its plinth.
+ * How a family drawn facing right (fan, barrier) is laid out for any
+ * rotation: pointing left of the vertical, it is drawn mirrored and turned
+ * the other way, so a fan blowing left keeps its feet down and a barrier its
+ * plinth. Its rotation is thus the direction it faces.
  */
-export const quarterTurnPose = (
+export const facingPose = (
   rotation: number,
-): Readonly<{ readonly angle: number; readonly mirrored: boolean }> => {
-  const quarter = Math.PI / 2;
-  const turns = ((Math.round(rotation / quarter) % 4) + 4) % 4;
-  return turns === 2
+): Readonly<{ readonly angle: number; readonly mirrored: boolean }> =>
+  Math.cos(rotation) < -FACING_TOLERANCE
     ? { angle: rotation - Math.PI, mirrored: true }
     : { angle: rotation, mirrored: false };
+
+/**
+ * « Retourner »: the rotation that faces the other side, tilted the other
+ * way — a left-right mirror. Kept within (−π, π].
+ */
+export const mirroredRotation = (rotation: number): number => {
+  const turned = (Math.PI - rotation) % (2 * Math.PI);
+  if (turned > Math.PI) return turned - 2 * Math.PI;
+  return turned <= -Math.PI ? turned + 2 * Math.PI : turned;
 };

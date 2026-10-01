@@ -7,8 +7,10 @@ import {
 } from '../application/editor-session/editor-session';
 import type { BoardPointerHandlers, PlacementPreview } from '../app/use-board-pointers';
 import {
+  constrainingBuildZones,
   createBoardRenderer,
   projectLevel,
+  withAuthorRotation,
   type BoardCanvasContext,
   type BoardDeviceView,
   type BoardSimulationView,
@@ -217,6 +219,7 @@ interface BoardViewProps {
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
   readonly onFitToScene: () => void;
+  readonly onWheelZoom: (event: WheelEvent) => void;
 }
 
 /**
@@ -241,6 +244,7 @@ export function BoardView({
   onZoomIn,
   onZoomOut,
   onFitToScene,
+  onWheelZoom,
 }: BoardViewProps) {
   const boardRef = useRef<HTMLDivElement>(null);
   const spriteLoaderRef = useRef<SpriteLoader | null>(null);
@@ -262,6 +266,22 @@ export function BoardView({
       .filter((object) => object.assetKey === assetKey)
       .map(({ id }) => id)
       .join(',');
+
+  // React's `onWheel` is passive: only a native listener can keep the page from scrolling.
+  const onWheelZoomRef = useRef(onWheelZoom);
+  onWheelZoomRef.current = onWheelZoom;
+  useEffect(() => {
+    const board = boardRef.current;
+    if (board === null) return undefined;
+    const onWheel = (event: WheelEvent): void => {
+      event.preventDefault();
+      onWheelZoomRef.current(event);
+    };
+    board.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      board.removeEventListener('wheel', onWheel);
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = boardCanvasRef.current;
@@ -312,12 +332,7 @@ export function BoardView({
             currentSession.mode === 'creation' && selectedPlacementId !== null
               ? {
                   ...projection,
-                  objects: projection.objects.map((object) =>
-                    object.id === selectedPlacementId &&
-                    (object.family === 'beam' || object.family === 'lever')
-                      ? { ...object, rotatable: true }
-                      : object,
-                  ),
+                  objects: withAuthorRotation(projection.objects),
                 }
               : projection;
           const { manipulation } = currentSession;
@@ -326,7 +341,7 @@ export function BoardView({
               ? {
                   ...(selectedPlacementId !== null && { selectedPlacementId }),
                   ...(currentSession.mode === 'resolution' && {
-                    buildZones: displayedDocument.buildZones,
+                    buildZones: constrainingBuildZones(displayedDocument),
                   }),
                   ...(manipulation !== null &&
                     manipulation.invalidReason !== null && {

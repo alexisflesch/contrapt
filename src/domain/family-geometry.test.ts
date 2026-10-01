@@ -8,7 +8,8 @@ import {
   leverFootprint,
   leverGeometry,
   massGeometry,
-  quarterTurnPose,
+  facingPose,
+  mirroredRotation,
   seesawGeometry,
   springboardGeometry,
   type WorldPolygon,
@@ -121,12 +122,27 @@ describe('géométrie des familles', () => {
     expect(springboardGeometry.platform.footprint.y).toBeCloseTo(springboardGeometry.footprint.y);
   });
 
-  it('dessine le demi-tour en miroir, pour ne jamais mettre un ventilateur la tête en bas', () => {
-    expect(quarterTurnPose(0)).toEqual({ angle: 0, mirrored: false });
-    expect(quarterTurnPose(-Math.PI / 2)).toEqual({ angle: -Math.PI / 2, mirrored: false });
-    expect(quarterTurnPose(Math.PI)).toEqual({ angle: 0, mirrored: true });
-    expect(quarterTurnPose(3 * Math.PI).mirrored).toBe(true);
-    expect(quarterTurnPose(-Math.PI).angle).toBeCloseTo(-2 * Math.PI);
+  it('dessine en miroir ce qui pointe vers la gauche, pour ne jamais mettre un ventilateur la tête en bas', () => {
+    expect(facingPose(0)).toEqual({ angle: 0, mirrored: false });
+    expect(facingPose(-Math.PI / 2)).toEqual({ angle: -Math.PI / 2, mirrored: false });
+    expect(facingPose((3 * Math.PI) / 2).mirrored).toBe(false);
+    expect(facingPose(Math.PI)).toEqual({ angle: 0, mirrored: true });
+    expect(facingPose(3 * Math.PI).mirrored).toBe(true);
+    expect(facingPose(-Math.PI).angle).toBeCloseTo(-2 * Math.PI);
+    // Tilted by 15° while pointing left: mirrored, then turned the other way.
+    const tilted = facingPose(Math.PI - Math.PI / 12);
+    expect(tilted.mirrored).toBe(true);
+    expect(tilted.angle).toBeCloseTo(-Math.PI / 12);
+  });
+
+  it('retourne un objet de gauche à droite, en miroir de son inclinaison', () => {
+    expect(mirroredRotation(0)).toBeCloseTo(Math.PI);
+    expect(mirroredRotation(Math.PI)).toBeCloseTo(0);
+    expect(mirroredRotation(Math.PI / 12)).toBeCloseTo((11 * Math.PI) / 12);
+    expect(mirroredRotation(-Math.PI / 2)).toBeCloseTo(-Math.PI / 2);
+    const back = facingPose(mirroredRotation(Math.PI / 12));
+    expect(back.mirrored).toBe(true);
+    expect(back.angle).toBeCloseTo(-Math.PI / 12);
   });
 
   it('étend l’empreinte de la barrière fermée jusqu’au bout de sa barre, et la réduit au poteau ouverte', () => {

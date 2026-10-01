@@ -58,7 +58,7 @@ export function BenchPlayPage() {
         initialDocument={denseBenchDocument}
         mode="resolution"
         title="Mesure · scène dense"
-        subtitle="Appuyez sur Tester et lisez le minimum"
+        subtitle="Appuyez sur Lancer et lisez le minimum"
       />
       <p className="bench-frame-meter" role="status" aria-label="Images par seconde">
         Images/s : {current} · minimum sur 10 s : {lowest ?? '—'}

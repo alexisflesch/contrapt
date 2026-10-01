@@ -397,22 +397,17 @@ const addUniqueIdentifierIssues = (
 };
 
 /**
- * How a family turns: beams and levers at free angles, a fan, barrier or
- * springboard by quarter turns, anything else never. Lever placement is also
- * bounded to ±135° by `MAX_LEVER_ROTATION_RADIANS`.
+ * How a family turns: every family by any angle — the editor steps by
+ * fifteen degrees — except the ball, whose turn shows nothing, and the
+ * basket, whose opening must face up. Lever placement is also bounded to
+ * ±135° by `MAX_LEVER_ROTATION_RADIANS`.
  */
-export const rotationMode = (type: ObjectPlacement['type']): 'free' | 'quarter-turn' | 'fixed' => {
-  if (type === 'beam' || type === 'lever') return 'free';
-  if (type === 'fan' || type === 'barrier' || type === 'springboard') return 'quarter-turn';
-  return 'fixed';
-};
+export const rotationMode = (type: ObjectPlacement['type']): 'free' | 'fixed' =>
+  type === 'ball' || type === 'basket' ? 'fixed' : 'free';
 
-const QUARTER_TURN = Math.PI / 2;
-/** Radians: well under any visible angle, well over the rounding of repeated quarter turns. */
-const QUARTER_TURN_TOLERANCE = 1e-6;
-
-const isQuarterTurn = (rotation: number): boolean =>
-  Math.abs(rotation / QUARTER_TURN - Math.round(rotation / QUARTER_TURN)) < QUARTER_TURN_TOLERANCE;
+/** Families drawn facing one side (fan, barrier): « Retourner » mirrors them left to right. */
+export const isMirrorableFamily = (type: ObjectPlacement['type']): boolean =>
+  type === 'fan' || type === 'barrier';
 
 const addLeverRotationIssues = (
   objects: readonly ObjectPlacement[],
@@ -426,23 +421,6 @@ const addLeverRotationIssues = (
       issues.push({
         path: ['objects', index, 'transform', 'rotation'],
         message: 'La rotation du levier doit rester comprise entre −135° et 135°.',
-      });
-    }
-  });
-};
-
-const addQuarterTurnIssues = (
-  objects: readonly ObjectPlacement[],
-  issues: LevelDocumentValidationIssue[],
-): void => {
-  objects.forEach((placement, index) => {
-    if (
-      rotationMode(placement.type) === 'quarter-turn' &&
-      !isQuarterTurn(placement.transform.rotation)
-    ) {
-      issues.push({
-        path: ['objects', index, 'transform', 'rotation'],
-        message: `La famille « ${placement.type} » ne tourne que par quarts de tour.`,
       });
     }
   });
@@ -713,10 +691,7 @@ const addPuzzleIssues = (
         message: 'Chaque pose de la solution doit être dans la scène sur l’axe y.',
       });
     }
-    const turnedWrongly =
-      (rotationMode(entry.type) === 'quarter-turn' && !isQuarterTurn(rotation)) ||
-      (entry.type === 'lever' && Math.abs(rotation) > MAX_LEVER_ROTATION_RADIANS);
-    if (turnedWrongly) {
+    if (entry.type === 'lever' && Math.abs(rotation) > MAX_LEVER_ROTATION_RADIANS) {
       issues.push({
         path: [...path, 'transform', 'rotation'],
         message: `La pose de la solution ne respecte pas la rotation de la famille « ${entry.type} ».`,
@@ -865,7 +840,6 @@ export const levelDocumentSchema = levelDocumentV2StructureSchema.superRefine(
     addSceneContainmentIssues(document, issues);
     addPuzzleIssues(document, issues, true);
     addLeverRotationIssues(document.objects, issues);
-    addQuarterTurnIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);
     for (const issue of issues) {
       context.addIssue({ code: 'custom', path: [...issue.path], message: issue.message });
@@ -886,7 +860,6 @@ export const levelDocumentAttemptSchema = levelDocumentV2StructureSchema.superRe
     addSceneContainmentIssues(document, issues);
     addPuzzleIssues(document, issues, false, true);
     addLeverRotationIssues(document.objects, issues);
-    addQuarterTurnIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);
     for (const issue of issues) {
       context.addIssue({ code: 'custom', path: [...issue.path], message: issue.message });

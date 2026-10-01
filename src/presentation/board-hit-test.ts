@@ -75,11 +75,10 @@ export const hitTestRotationHandle = (
 ): boolean => {
   if (!object.rotatable) return false;
 
+  // The knob is round: its 44 CSS-px touch target is a disc, which never
+  // reaches back over the object whatever the angle.
   const handle = rotationHandleBounds(object, viewport);
-  return (
-    point.x >= handle.x &&
-    point.x <= handle.x + handle.width &&
-    point.y >= handle.y &&
-    point.y <= handle.y + handle.height
-  );
+  const centerX = handle.x + handle.width / 2;
+  const centerY = handle.y + handle.height / 2;
+  return Math.hypot(point.x - centerX, point.y - centerY) <= handle.width / 2;
 };

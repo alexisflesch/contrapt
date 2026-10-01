@@ -51,6 +51,13 @@ export function AppHeader({ title, subtitle, action }: AppHeaderProps) {
         <nav className="level-menu" aria-label="Menu principal">
           <Button
             onClick={() => {
+              void navigate('/');
+            }}
+          >
+            Accueil
+          </Button>
+          <Button
+            onClick={() => {
               void navigate('/levels');
             }}
           >

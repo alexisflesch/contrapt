@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
 import { projectLevel, type BoardViewport } from './board-renderer';
 import { hitTestBoard, hitTestRotationHandle } from './board-hit-test';
+import {
+  ROTATION_HANDLE_GAP_CSS_PIXELS,
+  ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS,
+} from './rotation-handle-metrics';
 
 const viewport: BoardViewport = {
   cssWidth: 320,
@@ -120,21 +124,43 @@ describe('hit-test pur du plateau', () => {
     );
   });
 
-  it('hit-teste la poignée de rotation à 44 × 44 CSS px séparément de la poutre', () => {
-    const document = createDocument([
-      ball('ball-1', { x: 1, y: 1 }),
-      basket('basket-1', { x: 2, y: 1 }),
-      beam('rotatable-beam', { x: 5, y: 4 }),
-    ]);
-    const selected = projectLevel(document).objects.find(
-      (object) => object.id === 'rotatable-beam',
-    );
-    if (selected === undefined) throw new Error('La poutre sélectionnée est absente.');
+  it('accroche la poignée de rotation au-dessus de l’objet, et la fait tourner avec lui', () => {
+    const selectedBeam = (rotation: number) => {
+      const document = createDocument([
+        ball('ball-1', { x: 1, y: 1 }),
+        basket('basket-1', { x: 2, y: 1 }),
+        {
+          ...beam('rotatable-beam', { x: 5, y: 4 }),
+          transform: { position: { x: 5, y: 4 }, rotation },
+        },
+      ]);
+      const selected = projectLevel(document).objects.find(
+        (object) => object.id === 'rotatable-beam',
+      );
+      if (selected === undefined) throw new Error('La poutre sélectionnée est absente.');
+      return selected;
+    };
 
-    // The beam centre maps to (40, 40); the fixed-distance handle is centred
-    // 32 CSS px above it, with a 44 × 44 CSS-pixel hit area.
-    expect(hitTestRotationHandle({ x: 40, y: 8 }, selected, viewport)).toBe(true);
-    expect(hitTestRotationHandle({ x: 40, y: 40 }, selected, viewport)).toBe(false);
-    expect(hitTestRotationHandle({ x: 64, y: 8 }, selected, viewport)).toBe(false);
+    // The beam centre maps to (40, 40). In the beam's own frame, the knob sits a
+    // stem above its top edge; it turns with the beam, never jumping.
+    const { destination } = selectedBeam(0);
+    const offset =
+      -destination.y * 20 + ROTATION_HANDLE_GAP_CSS_PIXELS + ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS;
+    const knobAt = (rotation: number) => ({
+      x: 40 + offset * Math.sin(rotation),
+      y: 40 - offset * Math.cos(rotation),
+    });
+
+    for (const rotation of [0, Math.PI / 12, Math.PI / 4, Math.PI / 2, -Math.PI / 3]) {
+      const turned = selectedBeam(rotation);
+      const knob = knobAt(rotation);
+      expect(hitTestRotationHandle(knob, turned, viewport)).toBe(true);
+      expect(hitTestRotationHandle({ x: 40, y: 40 }, turned, viewport)).toBe(false);
+    }
+    // Turned a quarter, the knob has left the place it held when flat.
+    expect(hitTestRotationHandle(knobAt(0), selectedBeam(Math.PI / 2), viewport)).toBe(false);
+    expect(hitTestRotationHandle({ x: 40, y: knobAt(0).y - 21 }, selectedBeam(0), viewport)).toBe(
+      true,
+    );
   });
 });

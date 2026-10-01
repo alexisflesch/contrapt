@@ -9,7 +9,10 @@ import {
   type SpriteLoader,
 } from './sprite-loader';
 import { levelDocumentSchema } from '../domain/level-document';
+import { ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS } from './rotation-handle-metrics';
 import {
+  constrainingBuildZones,
+  withAuthorRotation,
   createBoardRenderer,
   projectLevel,
   worldToPixels,
@@ -35,7 +38,7 @@ type Operation =
   | { readonly kind: 'beginPath' }
   | { readonly kind: 'moveTo'; readonly values: readonly number[] }
   | { readonly kind: 'lineTo'; readonly values: readonly number[] }
-  | { readonly kind: 'arc' }
+  | { readonly kind: 'arc'; readonly values: readonly number[] }
   | { readonly kind: 'stroke' }
   | { readonly kind: 'globalAlpha'; readonly values: readonly number[] }
   | { readonly kind: 'fillText'; readonly values: readonly unknown[] }
@@ -217,6 +220,12 @@ const levelDocument = levelDocumentSchema.parse({
   scene: { min: { x: 10, y: 6 }, max: { x: 20, y: 13 } },
 });
 
+/** The rotation handle's knob: a full circle of the knob's radius. */
+const isRotationKnob = (operation: Operation): boolean =>
+  operation.kind === 'arc' &&
+  operation.values[2] === ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS &&
+  operation.values[4] === 2 * Math.PI;
+
 const createContext = (): {
   readonly context: BoardCanvasContext;
   readonly operations: Operation[];
@@ -288,8 +297,8 @@ const createContext = (): {
     lineTo: (...values: [number, number]): void => {
       operations.push({ kind: 'lineTo', values });
     },
-    arc: (): void => {
-      operations.push({ kind: 'arc' });
+    arc: (...values: number[]): void => {
+      operations.push({ kind: 'arc', values });
     },
     stroke: (): void => {
       operations.push({ kind: 'stroke' });
@@ -647,17 +656,17 @@ describe('projection du plateau', () => {
     expect(
       right.objects.map((object) => object.assetKey).filter((key) => key.startsWith('barrier')),
     ).toEqual(['barrier-bar', 'barrier-pillar']);
-    expect(layerOf(right, 'barrier-bar').destination).toMatchObject({ x: 0, width: 1.2536 });
+    expect(layerOf(right, 'barrier-bar').destination).toMatchObject({ x: 0, width: 1.7013 });
     expect(layerOf(right, 'barrier-bar').source).toBeUndefined();
     expect(layerOf(left, 'barrier-bar').mirrored).toBe(true);
     expect(layerOf(left, 'barrier-pillar').mirrored).toBe(true);
-    expect(layerOf(left, 'barrier-bar').destination).toMatchObject({ x: 0, width: 1.2536 });
+    expect(layerOf(left, 'barrier-bar').destination).toMatchObject({ x: 0, width: 1.7013 });
     expect(layerOf(down, 'barrier-bar').rotation).toBeCloseTo(Math.PI / 2);
     expect(layerOf(down, 'barrier-bar').mirrored).toBe(false);
 
     const retracted = layerOf(open, 'barrier-bar');
     expect(retracted.destination.x).toBe(0);
-    expect(retracted.destination.width).toBeCloseTo(0.2867);
+    expect(retracted.destination.width).toBeCloseTo(0.3226);
     // The tip of the bar stays visible: the source keeps its right end, 160 px wide.
     expect(retracted.source?.x).toBeGreaterThan(0);
     expect((retracted.source?.x ?? 0) + (retracted.source?.width ?? 0)).toBeCloseTo(160);
@@ -1127,6 +1136,32 @@ describe('renderer Canvas 2D du plateau', () => {
     expect(zoneFill).toBeLessThan(firstSprite);
   });
 
+  it('rend tournable pour l’auteur tout objet sauf la balle et le panier, quelles que soient ses permissions', () => {
+    const rotatable = withAuthorRotation(projectLevel(levelDocument).objects)
+      .filter(({ rotatable }) => rotatable)
+      .map(({ family }) => family);
+
+    expect(new Set(rotatable)).toEqual(new Set(['beam', 'seesaw']));
+    expect(
+      withAuthorRotation(projectLevel(levelDocument).objects).some(
+        ({ family, rotatable }) => (family === 'ball' || family === 'basket') && rotatable,
+      ),
+    ).toBe(false);
+  });
+
+  it('ne met en évidence aucune zone quand l’une d’elles couvre toute la scène', () => {
+    const sceneZone = { min: { x: 10, y: 6 }, max: { x: 20, y: 13 } };
+    const smallZone = { min: { x: 11, y: 6 }, max: { x: 14, y: 9 } };
+
+    expect(constrainingBuildZones({ ...levelDocument, buildZones: [sceneZone] })).toEqual([]);
+    expect(
+      constrainingBuildZones({ ...levelDocument, buildZones: [smallZone, sceneZone] }),
+    ).toEqual([]);
+    expect(constrainingBuildZones({ ...levelDocument, buildZones: [smallZone] })).toEqual([
+      smallZone,
+    ]);
+  });
+
   it('atténue l’objet dont la position est refusée, et lui seul', async () => {
     const renderWith = async (invalidPlacementId?: string): Promise<readonly Operation[]> => {
       const { context, operations } = createContext();
@@ -1243,19 +1278,15 @@ describe('renderer Canvas 2D du plateau', () => {
     const fourPixelRects = rectangleOperations(atFourPixels);
 
     // The selected medium beam's 4 × 0.25 world-unit footprint is outlined;
-    // the 44 × 44 CSS-pixel rectangle is its separate rotation handle.
+    // its rotation handle is a separate knob of fixed CSS size.
     expect(
       twoPixelRects.some((operation) => {
         const [, , width, height] = operation.values;
         return width === 8 && height === 0.5;
       }),
     ).toBe(true);
-    expect(
-      fourPixelRects.some((operation) => {
-        const [, , width, height] = operation.values;
-        return width === 44 && height === 44;
-      }),
-    ).toBe(true);
+    expect(atTwoPixels.some(isRotationKnob)).toBe(true);
+    expect(atFourPixels.some(isRotationKnob)).toBe(true);
     expect(
       fourPixelRects.some((operation) => {
         const [, , width, height] = operation.values;
@@ -1293,13 +1324,7 @@ describe('renderer Canvas 2D du plateau', () => {
     const projection = { ...projectLevel(levelDocument), selectedPlacementId: 'ball-1' };
     await renderer.render(projection);
 
-    const handle = operations.find(
-      (operation) =>
-        (operation.kind === 'strokeRect' || operation.kind === 'fillRect') &&
-        operation.values[2] === 44 &&
-        operation.values[3] === 44,
-    );
-    expect(handle).toBeUndefined();
+    expect(operations.some(isRotationKnob)).toBe(false);
   });
 
   it('dessine la poignée quand la projection effective rend la rotation disponible', async () => {
@@ -1323,13 +1348,6 @@ describe('renderer Canvas 2D du plateau', () => {
     };
     await renderer.render(projection);
 
-    expect(
-      operations.find(
-        (operation) =>
-          (operation.kind === 'strokeRect' || operation.kind === 'fillRect') &&
-          operation.values[2] === 44 &&
-          operation.values[3] === 44,
-      ),
-    ).toBeDefined();
+    expect(operations.some(isRotationKnob)).toBe(true);
   });
 });

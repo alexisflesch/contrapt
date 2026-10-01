@@ -21,7 +21,12 @@ import {
 import type { Command } from '../application/history';
 import { rotationMode, type LevelDocument } from '../domain/level-document';
 import { hitTestBoard, hitTestRotationHandle } from '../presentation/board-hit-test';
-import { projectLevel, worldToPixels, type BoardViewport } from '../presentation/board-renderer';
+import {
+  projectLevel,
+  withAuthorRotation,
+  worldToPixels,
+  type BoardViewport,
+} from '../presentation/board-renderer';
 import type { AuthorCatalogueEntry, ObjectKind } from './object-catalog';
 import { panCamera, zoomCameraAt, type Camera } from '../presentation/board-camera';
 import type { CanvasSizeInCss } from './use-board-camera';
@@ -86,9 +91,8 @@ const unavailableViewportMessage = 'Placement refusé : le cadrage du plateau es
 /** Guards pinch-zoom against a division by (near) zero when two fingers nearly touch. */
 const MIN_PINCH_DISTANCE_IN_CSS_PIXELS = 1;
 const DIRECT_DRAG_THRESHOLD_CSS_PIXELS = 8;
-/** The handle snaps a beam to fifteen degrees, a fan, barrier or springboard to quarter turns. */
-const rotationSnap = (type: LevelDocument['objects'][number]['type']): number =>
-  rotationMode(type) === 'quarter-turn' ? Math.PI / 2 : Math.PI / 12;
+/** The handle snaps every family to fifteen degrees, like the panel's rotation buttons. */
+const ROTATION_SNAP = Math.PI / 12;
 
 const isRotatableFamily = (type: LevelDocument['objects'][number]['type']): boolean =>
   rotationMode(type) !== 'fixed';
@@ -768,9 +772,7 @@ export function useBoardPointers({
         const projection = projectLevel(currentEditorAttempt(sessionRef.current).document);
         const objects =
           sessionRef.current.mode === 'creation'
-            ? projection.objects.map((object) =>
-                isRotatableFamily(object.family) ? { ...object, rotatable: true } : object,
-              )
+            ? withAuthorRotation(projection.objects)
             : projection.objects;
         const localPoint = { x: point.x - boardRect.left, y: point.y - boardRect.top };
         // A finger added to a pan or pinch stays a camera gesture.
@@ -801,7 +803,7 @@ export function useBoardPointers({
               startPoint: point,
               kind: 'rotation',
               startRotation: placement.transform.rotation,
-              snap: rotationSnap(placement.type),
+              snap: ROTATION_SNAP,
               center: { x: boardRect.left + centerInBoard.x, y: boardRect.top + centerInBoard.y },
               hasDragged: false,
               refusal: null,
@@ -838,7 +840,7 @@ export function useBoardPointers({
               startPoint: point,
               kind: 'move',
               startRotation: placement.transform.rotation,
-              snap: rotationSnap(placement.type),
+              snap: ROTATION_SNAP,
               center: { x: boardRect.left + centerInBoard.x, y: boardRect.top + centerInBoard.y },
               hasDragged: false,
               refusal: null,

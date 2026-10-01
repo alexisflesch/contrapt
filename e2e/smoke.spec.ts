@@ -9,13 +9,12 @@ const openWorkshopFromMenu = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: 'Atelier de construction' }).click();
 };
 
-test('affiche la coque TinkerBolt sur un écran mobile, prête à jouer le niveau 1', async ({
-  page,
-}) => {
+test('lance depuis l’accueil le niveau 1 sur un écran mobile', async ({ page }) => {
   await page.goto('/');
 
   await expect(page).toHaveTitle('TinkerBolt');
   await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
+  await page.getByRole('link', { name: 'Commencer à jouer' }).tap();
   await expect(page.getByText('Niveau 1 · La bille de service')).toBeVisible();
   await expect(page.getByText('Mode joueur')).toBeVisible();
   const board = page.getByRole('region', { name: 'Plateau de jeu' });
@@ -61,7 +60,7 @@ test('ouvre l’atelier depuis le menu et expose les familles du catalogue', asy
 
   await expect(page.getByRole('button', { name: /Balle rouge/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Panier/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Balle' })).toBeVisible();
   for (const objectName of [
     'Poutre',
     'Bascule',
@@ -93,7 +92,7 @@ test.describe('coque sur le petit viewport supporté', () => {
     const board = page.getByRole('region', { name: 'Plateau de jeu' });
     await expect(board).toBeVisible();
 
-    await page.getByRole('button', { name: 'Tester' }).tap();
+    await page.getByRole('button', { name: 'Lancer' }).tap();
 
     const result = page.getByRole('region', { name: 'Résultat du niveau' });
     await expect(result).toBeVisible({ timeout: 15_000 });
@@ -128,7 +127,7 @@ test.describe('coque sur le petit viewport supporté', () => {
       'Ouvrir le menu',
       'Annuler',
       'Rétablir',
-      'Tester',
+      'Lancer',
       'Zoom arrière',
       'Ajuster à la scène',
       'Zoom avant',
@@ -155,7 +154,7 @@ test.describe('coque sur le petit viewport supporté', () => {
 
     const openButton = page.getByRole('button', { name: 'Ouvrir le catalogue' });
     await expect(openButton).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Balle' })).toBeHidden();
 
     const collapsedDrawerBounds = await drawer.boundingBox();
     expect(collapsedDrawerBounds).not.toBeNull();
@@ -174,7 +173,7 @@ test.describe('coque sur le petit viewport supporté', () => {
     await openButton.click();
     const collapseButton = page.getByRole('button', { name: 'Replier le catalogue' });
     await expect(collapseButton).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Balle' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Fermer le catalogue' })).toBeVisible();
 
     const openDrawerBounds = await drawer.boundingBox();
@@ -187,13 +186,13 @@ test.describe('coque sur le petit viewport supporté', () => {
 
     await collapseButton.click();
     await expect(page.getByRole('button', { name: 'Ouvrir le catalogue' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Balle' })).toBeHidden();
 
     for (const actionName of [
       'Ouvrir le menu',
       'Annuler',
       'Rétablir',
-      'Tester',
+      'Lancer',
       'Zoom arrière',
       'Ajuster à la scène',
       'Zoom avant',
@@ -203,7 +202,7 @@ test.describe('coque sur le petit viewport supporté', () => {
 
     await openButton.click();
     await expect(page.getByRole('button', { name: 'Replier le catalogue' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Balle' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Fermer le catalogue' })).toBeVisible();
 
     const workspaceBoundsAfter = await workspace.boundingBox();
@@ -217,7 +216,7 @@ test.describe('coque sur le petit viewport supporté', () => {
 
     await page.locator('.drawer-scrim').click({ position: { x: 160, y: 80 } });
     await expect(page.getByRole('button', { name: 'Ouvrir le catalogue' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Balle bleue' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Balle' })).toBeHidden();
     await expect(page.getByRole('button', { name: 'Fermer le catalogue' })).toBeHidden();
   });
 
@@ -271,7 +270,7 @@ test.describe('coque sur le petit viewport supporté', () => {
   });
 
   test('modifie visiblement le cadrage avec zoom puis ajustement au tactile', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/levels/campaign-01-la-bille-de-service/play');
 
     const renderer = page
       .getByRole('region', { name: 'Plateau de jeu' })

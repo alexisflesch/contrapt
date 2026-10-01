@@ -294,7 +294,7 @@ test('U6 — remet l’atelier à zéro après confirmation au tactile', async (
   await openWorkshop(page);
 
   const reset = page.getByRole('button', { name: 'Remettre l’atelier à zéro' });
-  const tester = page.getByRole('button', { name: 'Tester' });
+  const tester = page.getByRole('button', { name: 'Lancer' });
   await expect(reset).toBeVisible();
   await expect(tester).toBeVisible();
 
@@ -357,7 +357,7 @@ test('U6 — permet de recommencer un puzzle depuis son document initial', async
   await page.goto('/levels/campaign-01-la-bille-de-service/play');
 
   const reset = page.getByRole('button', { name: 'Recommencer le niveau' });
-  const tester = page.getByRole('button', { name: 'Tester' });
+  const tester = page.getByRole('button', { name: 'Lancer' });
   await expect(reset).toBeVisible();
   await expect(tester).toBeVisible();
   await page.setViewportSize({ width: 320, height: 568 });

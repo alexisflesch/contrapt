@@ -67,6 +67,48 @@ export const prepareLevelExport = (
   };
 };
 
+type NamedLevelExport = Readonly<{
+  readonly puzzle: LevelDocument;
+  readonly fileName: string;
+  readonly fileText: string;
+}>;
+
+/** Mirrors the level identifier's length limit (`level-document.ts`). */
+const MAX_LEVEL_ID_LENGTH = 128;
+
+/** « Le Grand Saut de l’été ! » → `le-grand-saut-de-l-ete`: accents dropped, the rest dashed. */
+const levelIdFromName = (name: string): string =>
+  name
+    .normalize('NFD')
+    .replace(/\p{Mark}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .slice(0, MAX_LEVEL_ID_LENGTH)
+    .replace(/^-+|-+$/g, '');
+
+/**
+ * Names the verified puzzle before it leaves the workshop: the name becomes
+ * its title, and its identifier and file name when it holds a letter or a
+ * digit. A blank name is refused (`null`).
+ */
+export const nameExportedLevel = (puzzle: LevelDocument, name: string): NamedLevelExport | null => {
+  const title = name.trim();
+  if (title === '') return null;
+
+  const id = levelIdFromName(title);
+  const validation = levelDocumentSchema.safeParse({
+    ...puzzle,
+    id: id === '' ? puzzle.id : id,
+    metadata: { ...puzzle.metadata, title },
+  });
+  if (!validation.success) return null;
+  return {
+    puzzle: validation.data,
+    fileName: `${validation.data.id}.json`,
+    fileText: encodeLevelFile(validation.data),
+  };
+};
+
 /** `/shared` under the app's base path (ADR 0008 amendment), followed by the L23 fragment. */
 export const buildShareUrl = (fragment: string, origin: string, basePath: string): string =>
   `${origin}${basePath.endsWith('/') ? basePath : `${basePath}/`}shared${fragment}`;

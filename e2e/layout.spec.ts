@@ -5,7 +5,7 @@ const essentialActionNames = [
   'Voir l’objectif',
   'Annuler',
   'Rétablir',
-  'Tester',
+  'Lancer',
   'Zoom arrière',
   'Ajuster à la scène',
   'Zoom avant',
@@ -314,7 +314,7 @@ test.describe('D4 — le mode placement ne déplace pas la scène', () => {
       expect(during.width).toBeCloseTo(before.width, 0);
       expect(during.height).toBeCloseTo(before.height, 0);
 
-      for (const actionName of ['Annuler', 'Rétablir', 'Tester'] as const) {
+      for (const actionName of ['Annuler', 'Rétablir', 'Lancer'] as const) {
         await expectInViewport(
           page.getByRole('button', { name: actionName, exact: true }),
           viewport,
@@ -344,7 +344,7 @@ test.describe('Objectif — boîte de dialogue à la demande', () => {
       page,
     }) => {
       await page.setViewportSize(viewport);
-      await page.goto('/');
+      await page.goto('/levels/campaign-01-la-bille-de-service/play');
 
       const board = page.getByRole('region', { name: 'Plateau de jeu' });
       const before = await bounds(board);

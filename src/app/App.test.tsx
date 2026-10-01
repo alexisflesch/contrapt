@@ -10,7 +10,10 @@ import { embeddedLevels } from '../content/embedded-levels';
 import { levelDocumentSchema } from '../domain/level-document';
 import { encodeShareFragment } from '../infrastructure/level-share/level-share-codec';
 import { fitCameraToScene } from '../presentation/board-camera';
-import { ROTATION_HANDLE_DISTANCE_CSS_PIXELS } from '../presentation/rotation-handle-metrics';
+import {
+  ROTATION_HANDLE_GAP_CSS_PIXELS,
+  ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS,
+} from '../presentation/rotation-handle-metrics';
 import styles from '../ui/styles.css?raw';
 
 import { App } from './App';
@@ -222,7 +225,9 @@ describe('coque TinkerBolt', () => {
     // jsdom keeps across tests in this file — without this reset, a test
     // that navigates away (e.g. `openEmbeddedWorkshop`) leaks its route into
     // whichever test renders `<App />` next.
-    window.history.replaceState(null, '', '/');
+    // Board scenarios address the first level directly; the landing has
+    // its own root-route coverage in HomePage.test.tsx.
+    window.history.replaceState(null, '', '/levels/campaign-01-la-bille-de-service/play');
     window.localStorage.clear();
     vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(boardCanvasRect);
   });
@@ -270,12 +275,10 @@ describe('coque TinkerBolt', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('démarre en mode résolution sur le niveau 1, avec sa poutre et sans édition libre', () => {
-    // B1 (plan-remise-en-jeu.md § 4) : l'application n'ouvre plus l'atelier
-    // par défaut ; elle charge directement le niveau 1 embarqué en session
-    // de résolution. L’inventaire fournit sa poutre, sans ouvrir les
-    // commandes d’édition libre.
+  it('lance depuis l’accueil le niveau 1, avec sa poutre et sans édition libre', () => {
+    window.history.replaceState(null, '', '/');
     render(<App />);
+    fireEvent.click(screen.getByRole('link', { name: 'Commencer à jouer' }));
 
     expect(screen.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
     expect(screen.getByText('Niveau 1 · La bille de service')).toBeVisible();
@@ -292,7 +295,7 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByRole('button', { name: 'Annuler' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Rétablir' })).toBeDisabled();
 
-    for (const actionName of ['Tester', 'Zoom arrière', 'Ajuster à la scène', 'Zoom avant']) {
+    for (const actionName of ['Lancer', 'Zoom arrière', 'Ajuster à la scène', 'Zoom avant']) {
       expect(screen.getByRole('button', { name: actionName })).toBeVisible();
     }
   });
@@ -341,7 +344,7 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
 
     expect(screen.queryByRole('button', { name: /Balle rouge/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Balle' })).toBeVisible();
     expect(screen.queryByRole('button', { name: /Panier/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Poutre/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Bascule/ })).toBeVisible();
@@ -448,20 +451,20 @@ describe('coque TinkerBolt', () => {
 
     const openButton = screen.getByRole('button', { name: 'Ouvrir le catalogue' });
     expect(openButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('button', { name: 'Balle bleue' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Balle' })).not.toBeInTheDocument();
 
     fireEvent.click(openButton);
 
     const collapseButton = screen.getByRole('button', { name: 'Replier le catalogue' });
     expect(collapseButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Balle' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Fermer le catalogue' })).toBeVisible();
 
     fireEvent.click(collapseButton);
 
     const reopenedButton = screen.getByRole('button', { name: 'Ouvrir le catalogue' });
     expect(reopenedButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('button', { name: 'Balle bleue' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Balle' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Fermer le catalogue' })).not.toBeInTheDocument();
 
     fireEvent.click(reopenedButton);
@@ -470,7 +473,7 @@ describe('coque TinkerBolt', () => {
       'aria-expanded',
       'true',
     );
-    expect(screen.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Balle' })).toBeVisible();
   });
 
   it('ferme le tiroir lorsqu’on touche le scrim', () => {
@@ -512,7 +515,7 @@ describe('coque TinkerBolt', () => {
       'Ouvrir le menu',
       'Annuler',
       'Rétablir',
-      'Tester',
+      'Lancer',
       'Zoom arrière',
       'Ajuster à la scène',
       'Zoom avant',
@@ -525,7 +528,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
     openEmbeddedWorkshop();
 
-    const testButton = screen.getByRole('button', { name: 'Tester' });
+    const testButton = screen.getByRole('button', { name: 'Lancer' });
     expect(testButton).toBeEnabled();
 
     fireEvent.click(testButton);
@@ -542,7 +545,7 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(resetButton);
 
     expect(screen.queryByText('Simulation en cours')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeEnabled();
   });
 
   it('conserve la construction après une victoire obtenue dans l’éditeur', () => {
@@ -574,7 +577,7 @@ describe('coque TinkerBolt', () => {
     });
 
     expect(screen.getByRole('region', { name: 'Propriétés de Panier' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     advanceSimulationToResult(animationFrames, 40);
 
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
@@ -587,14 +590,14 @@ describe('coque TinkerBolt', () => {
 
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Propriétés de Panier' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeEnabled();
   });
 
   it('avance la physique par RAF contrôlé et permet de la mettre en pause puis de reprendre', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
 
-    const testButton = screen.getByRole('button', { name: 'Tester' });
+    const testButton = screen.getByRole('button', { name: 'Lancer' });
     expect(testButton).toBeEnabled();
     fireEvent.click(testButton);
 
@@ -651,7 +654,7 @@ describe('coque TinkerBolt', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
@@ -741,12 +744,12 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(within(cardOf(5)).getByRole('button', { name: 'Lancer le niveau 5' }));
     expect(window.location.pathname).toBe('/levels/campaign-05-l-electricien/play');
   });
-  it('place le Ràz atelier avant Tester et demande confirmation avant d’effacer', () => {
+  it('place le Ràz atelier avant Lancer et demande confirmation avant d’effacer', () => {
     render(<App />);
     openEmbeddedWorkshop();
 
     const resetButton = screen.getByRole('button', { name: 'Remettre l’atelier à zéro' });
-    const testButton = screen.getByRole('button', { name: 'Tester' });
+    const testButton = screen.getByRole('button', { name: 'Lancer' });
     expect(
       resetButton.compareDocumentPosition(testButton) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
@@ -784,7 +787,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedLevelOne();
 
     const resetButton = screen.getByRole('button', { name: 'Recommencer le niveau' });
-    const testButton = screen.getByRole('button', { name: 'Tester' });
+    const testButton = screen.getByRole('button', { name: 'Lancer' });
     expect(
       resetButton.compareDocumentPosition(testButton) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
@@ -836,7 +839,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
 
     expect(screen.getByText('Démonstration')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Tester' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Objets disponibles' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
@@ -860,7 +863,7 @@ describe('coque TinkerBolt', () => {
     window.history.replaceState(null, '', '/demo');
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     advanceSimulationToResult(animationFrames, 600);
     act(() => {
       vi.advanceTimersByTime(1_000);
@@ -879,7 +882,7 @@ describe('coque TinkerBolt', () => {
     render(<App progressRepository={repository} />);
 
     expect(screen.getByText('Ce niveau est encore verrouillé.')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Tester' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lancer' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Liste des niveaux' }));
     expect(window.location.pathname).toBe('/levels');
@@ -892,7 +895,7 @@ describe('coque TinkerBolt', () => {
 
     expect(screen.getByText('Niveau 17 · La grande machine')).toBeVisible();
     expect(screen.getByText('Mode joueur')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeEnabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
@@ -907,7 +910,7 @@ describe('coque TinkerBolt', () => {
     window.history.replaceState(null, '', '/demo');
     render(<App progressRepository={repository} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     advanceSimulationToResult(animationFrames, 600);
 
     expect(screen.getByRole('region', { name: 'Résultat du niveau' })).toHaveTextContent(
@@ -925,7 +928,7 @@ describe('coque TinkerBolt', () => {
     const animationFrames = createAnimationFrameHarness();
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     advanceSimulationToResult(animationFrames, 600);
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
@@ -943,7 +946,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
 
     openEmbeddedWorkshop();
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     advanceSimulationToTimeout(animationFrames);
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
@@ -965,7 +968,7 @@ describe('coque TinkerBolt', () => {
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     const ballPositionAtLaunch = canvas.getAttribute('data-simulation-ball-position');
     expect(ballPositionAtLaunch).not.toBeNull();
 
@@ -977,10 +980,10 @@ describe('coque TinkerBolt', () => {
 
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
     expect(canvas).not.toHaveAttribute('data-simulation-step');
-    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeEnabled();
 
     // Relancer depuis le document restitué repart exactement du même état.
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     expect(canvas.getAttribute('data-simulation-ball-position')).toBe(ballPositionAtLaunch);
   });
 
@@ -989,7 +992,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
 
     openEmbeddedLevelOne();
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     advanceSimulationToTimeout(animationFrames);
 
     fireEvent.click(screen.getByRole('button', { name: 'Retour aux niveaux' }));
@@ -1013,29 +1016,29 @@ describe('coque TinkerBolt', () => {
     render(<App />);
 
     placeCampaignBeam(5.0, 2.15);
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     expect(screen.getByText('Simulation en cours')).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('Mode joueur')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeEnabled();
     expect(screen.queryByText('Simulation en cours')).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     expect(screen.getByText('Simulation en cours')).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     expect(screen.getByText('Simulation en cours')).toBeVisible();
 
     advanceSimulationToResult(animationFrames, 320);
     fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Tester' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeEnabled();
   });
 
   it('identifie l’atelier, une fois ouvert depuis le menu, comme éditeur de niveaux', () => {
@@ -1069,7 +1072,7 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByRole('region', { name: 'Objets disponibles' })).not.toHaveClass(
       'object-drawer-collapsed',
     );
-    expect(screen.getByRole('button', { name: 'Balle bleue' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Balle' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Fermer le catalogue' })).not.toBeInTheDocument();
   });
 
@@ -1098,7 +1101,7 @@ describe('coque TinkerBolt', () => {
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
 
-    const ballCard = within(drawer).getByRole('button', { name: 'Balle bleue' });
+    const ballCard = within(drawer).getByRole('button', { name: 'Balle' });
     fireEvent.click(ballCard);
 
     expect(board).toBeVisible();
@@ -1106,6 +1109,26 @@ describe('coque TinkerBolt', () => {
     const cancelButton = screen.getByRole('button', { name: 'Annuler le placement' });
     expect(cancelButton).toBeVisible();
     expect(board).not.toContainElement(cancelButton);
+  });
+
+  it('annule le placement en touchant à nouveau la carte active, ou avec Échap', () => {
+    render(<App />);
+    openEmbeddedWorkshop();
+
+    const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Balle' }));
+    expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Balle' }));
+    expect(screen.queryByRole('button', { name: 'Annuler le placement' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Balle' }));
+    expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeVisible();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: 'Annuler le placement' })).toBeNull();
   });
 
   it('expose les états disponibles d’annuler et de rétablir après un placement', () => {
@@ -1118,7 +1141,7 @@ describe('coque TinkerBolt', () => {
     expect(redoButton).toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     firePointerEvent(board, 'pointerdown', {
@@ -1151,7 +1174,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1197,7 +1220,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     // Avec le canvas simulé 800 × 450 et la scène 16 × 9 de l'atelier, ce
@@ -1227,7 +1250,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle' }));
 
     const drawer = screen.getByRole('region', { name: 'Objets disponibles' });
     expect(drawer).toBeVisible();
@@ -1236,7 +1259,7 @@ describe('coque TinkerBolt', () => {
       'aria-expanded',
       'false',
     );
-    expect(screen.queryByRole('button', { name: 'Balle bleue' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Balle' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Fermer le catalogue' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Annuler le placement' })).toBeVisible();
   });
@@ -1253,7 +1276,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1287,7 +1310,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1319,7 +1342,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1341,7 +1364,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle' }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
@@ -1364,7 +1387,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le catalogue' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Balle bleue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balle' }));
 
     const cancelButton = screen.getByRole('button', { name: 'Annuler le placement' });
     expect(cancelButton).toHaveClass('placement-cancel');
@@ -1416,6 +1439,49 @@ describe('coque TinkerBolt', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ajuster à la scène' }));
     expect(readZoom()).toBe(initialZoom);
+  });
+
+  it('zoome à la molette autour du pointeur, sans faire défiler la page', () => {
+    render(<App />);
+    openEmbeddedWorkshop();
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+    const readCamera = () => {
+      const [x = Number.NaN, y = Number.NaN] = (canvas.getAttribute('data-camera-origin') ?? '')
+        .split(',')
+        .map(Number);
+      return { x, y, zoom: Number(canvas.getAttribute('data-camera-zoom')) };
+    };
+    const worldUnder = (clientX: number, clientY: number) => {
+      const camera = readCamera();
+      return { x: camera.x + clientX / camera.zoom, y: camera.y + clientY / camera.zoom };
+    };
+
+    const before = readCamera();
+    const anchorBefore = worldUnder(200, 150);
+    const zoomIn = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY: -100,
+      clientX: 200,
+      clientY: 150,
+    });
+    act(() => {
+      board.dispatchEvent(zoomIn);
+    });
+
+    expect(zoomIn.defaultPrevented).toBe(true);
+    expect(readCamera().zoom).toBeGreaterThan(before.zoom);
+    expect(worldUnder(200, 150).x).toBeCloseTo(anchorBefore.x, 6);
+    expect(worldUnder(200, 150).y).toBeCloseTo(anchorBefore.y, 6);
+
+    act(() => {
+      board.dispatchEvent(
+        new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 300 }),
+      );
+    });
+    expect(readCamera().zoom).toBeLessThan(before.zoom);
   });
 
   it('réajuste la caméra quand le canvas lui-même change de taille, pas seulement la fenêtre', () => {
@@ -1490,9 +1556,9 @@ describe('coque TinkerBolt', () => {
     // the outcome became known.
     //
     // A first version of this fix only reserved a slot outside
-    // `'construction'` (i.e. from the moment "Tester" is pressed). Playing it
+    // `'construction'` (i.e. from the moment "Lancer" is pressed). Playing it
     // manually showed that this still moved the resize — just to an earlier
-    // moment, from "Tester" onward — rather than removing it. A second
+    // moment, from "Lancer" onward — rather than removing it. A second
     // version reserved unconditionally, but gave `ContextPanel` its *own*
     // separate reservation alongside this one: since the two never have
     // content at the same time (this one only in `'result'`, `ContextPanel`
@@ -1511,7 +1577,7 @@ describe('coque TinkerBolt', () => {
     });
     const zoomAtMount = canvas.getAttribute('data-camera-zoom');
 
-    // Reserved from the very first render, before "Tester" is even pressed —
+    // Reserved from the very first render, before "Lancer" is even pressed —
     // and it is the *only* reserved slot: no leftover per-component wrapper.
     const slotAtMount = workspace.querySelector('.status-slot');
     expect(slotAtMount).not.toBeNull();
@@ -1520,9 +1586,9 @@ describe('coque TinkerBolt', () => {
     expect(styles).not.toMatch(/\.context-panel-slot\s*\{/);
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tester' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
 
-    // The moment a first, incomplete fix still got wrong: clicking "Tester"
+    // The moment a first, incomplete fix still got wrong: clicking "Lancer"
     // must not touch the slot or the camera either.
     expect(workspace.querySelector('.status-slot')).toBe(slotAtMount);
     expect(canvas.getAttribute('data-camera-zoom')).toBe(zoomAtMount);
@@ -1760,7 +1826,9 @@ describe('coque TinkerBolt', () => {
 
     const panel = screen.getByRole('region', { name: 'Propriétés de Masse' });
     expect(within(panel).getByRole('button', { name: /Supprimer la masse/i })).toBeVisible();
-    expect(within(panel).queryByRole('button', { name: /Rotation/ })).not.toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: 'Rotation positive' })).toHaveTextContent(
+      '15°',
+    );
   });
 
   it('pose un fil levier → convoyeur depuis la carte Fil, l’annule, le rétablit et le délie (U15)', () => {
@@ -1873,16 +1941,18 @@ describe('coque TinkerBolt', () => {
     ).toBeVisible();
   });
 
-  it('oriente ventilateur, barrière et tremplin par quarts de tour, et règle leur état de départ', () => {
+  it('tourne chaque objet par pas de 15°, retourne ventilateur et barrière, et règle leur état de départ', () => {
     render(<App />);
     placeWorkshopObject('Ventilateur');
     const fanPanel = screen.getByRole('region', { name: 'Propriétés de Ventilateur' });
     expect(within(fanPanel).queryByRole('combobox', { name: 'Sens du souffle' })).toBeNull();
     expect(within(fanPanel).getByRole('button', { name: 'Rotation positive' })).toHaveTextContent(
-      '90°',
+      '15°',
     );
-    fireEvent.click(within(fanPanel).getByRole('button', { name: 'Rotation positive' }));
-    expect(screen.getByRole('button', { name: 'Annuler' })).toBeEnabled();
+    fireEvent.click(within(fanPanel).getByRole('button', { name: 'Retourner' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(screen.getByRole('button', { name: 'Rétablir' })).toBeEnabled();
+    expect(screen.getByRole('region', { name: 'Propriétés de Ventilateur' })).toBeVisible();
     fireEvent.change(screen.getByRole('combobox', { name: 'État de départ' }), {
       target: { value: 'off' },
     });
@@ -1893,17 +1963,32 @@ describe('coque TinkerBolt', () => {
     expect(within(barrierPanel).queryByRole('combobox', { name: 'Côté de la barre' })).toBeNull();
     expect(
       within(barrierPanel).getByRole('button', { name: 'Rotation négative' }),
-    ).toHaveTextContent('90°');
+    ).toHaveTextContent('15°');
+    expect(within(barrierPanel).getByRole('button', { name: 'Retourner' })).toBeVisible();
     fireEvent.change(screen.getByRole('combobox', { name: 'État de départ' }), {
       target: { value: 'open' },
     });
     expect(screen.getByRole('combobox', { name: 'État de départ' })).toHaveValue('open');
 
-    placeFromCatalogue('Tremplin', 600, 100);
-    const springboardPanel = screen.getByRole('region', { name: 'Propriétés de Tremplin' });
-    expect(
-      within(springboardPanel).getByRole('button', { name: 'Rotation positive' }),
-    ).toHaveTextContent('90°');
+    for (const [card, name, x, y] of [
+      ['Tremplin', 'Tremplin', 600, 100],
+      ['Bouton', 'Bouton', 600, 350],
+      ['Convoyeur', 'Convoyeur', 150, 380],
+    ] as const) {
+      placeFromCatalogue(card, x, y);
+      const panel = screen.getByRole('region', { name: `Propriétés de ${name}` });
+      expect(within(panel).getByRole('button', { name: 'Rotation positive' })).toHaveTextContent(
+        '15°',
+      );
+      expect(within(panel).queryByRole('button', { name: 'Retourner' })).toBeNull();
+    }
+  });
+
+  it('ne propose de tourner ni la balle ni le panier', () => {
+    render(<App />);
+    placeWorkshopObject('Balle');
+    const panel = screen.getByRole('region', { name: 'Propriétés de Balle' });
+    expect(within(panel).queryByRole('button', { name: /Rotation/ })).toBeNull();
   });
 
   it('règle la position de départ d’un levier et le sens d’un convoyeur', () => {
@@ -2111,7 +2196,14 @@ describe('coque TinkerBolt', () => {
     });
 
     const undoButton = screen.getByRole('button', { name: 'Annuler' });
-    const handleY = 384 - ROTATION_HANDLE_DISTANCE_CSS_PIXELS;
+    // The knob sits a stem above the floor's top edge (y = 8 − 0.125 in the world).
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+    const originY = Number((canvas.getAttribute('data-camera-origin') ?? '').split(',')[1]);
+    const zoom = Number(canvas.getAttribute('data-camera-zoom'));
+    const handleY =
+      (8 - 0.125 - originY) * zoom -
+      ROTATION_HANDLE_GAP_CSS_PIXELS -
+      ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS;
     firePointerEvent(board, 'pointerdown', {
       pointerId: 2,
       pointerType: 'touch',

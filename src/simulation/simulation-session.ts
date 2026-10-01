@@ -23,7 +23,7 @@ import {
   leverAngle,
   leverGeometry,
   massGeometry,
-  quarterTurnPose,
+  facingPose,
   seesawGeometry,
   springboardGeometry,
   type LeverPosition,
@@ -288,6 +288,9 @@ const ROLLING_RESISTANCE_COEFFICIENT = 0.1;
 /** The printed weight is the physical mass, in kilograms (the ball weighs about 0,28). */
 const MASS_KILOGRAMS = { '10kg': 10 } as const;
 const MASS_VERTICES = massGeometry.polygon.map(({ x, y }) => new Vec2(x, y));
+
+/** Drops the 1e-17 residues of cos(π/2), so a vertical fan blows exactly as before. */
+const withoutResidue = (value: number): number => (Math.abs(value) < 1e-12 ? 0 : value);
 
 const polygonArea = (polygon: WorldPolygon): number =>
   Math.abs(
@@ -1121,7 +1124,7 @@ class PlanckSimulationSession implements SimulationSession {
     rotation: number,
     ownRunning: boolean,
   ): void {
-    const { angle, mirrored } = quarterTurnPose(rotation);
+    const { angle, mirrored } = facingPose(rotation);
     const body = this.#requireWorld().createBody({
       type: 'static',
       position: new Vec2(position.x, position.y),
@@ -1139,8 +1142,7 @@ class PlanckSimulationSession implements SimulationSession {
       placementId,
       body,
       mouth: { x: mouth.x, y: mouth.y },
-      // Quarter turns only: rounding drops the 1e-17 residues of cos(π/2).
-      axis: { x: Math.round(axis.x), y: Math.round(axis.y) },
+      axis: { x: withoutResidue(axis.x), y: withoutResidue(axis.y) },
       ownRunning,
       sourceId: this.#level.wires.find(({ targetId }) => targetId === placementId)?.sourceId,
       running: ownRunning,
@@ -1155,7 +1157,7 @@ class PlanckSimulationSession implements SimulationSession {
     rotation: number,
     ownOpen: boolean,
   ): void {
-    const { angle, mirrored } = quarterTurnPose(rotation);
+    const { angle, mirrored } = facingPose(rotation);
     const body = this.#requireWorld().createBody({
       type: 'static',
       position: new Vec2(position.x, position.y),

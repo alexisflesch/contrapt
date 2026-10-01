@@ -4,7 +4,7 @@ import type { ButtonHTMLAttributes, Ref } from 'react';
  * The visual intent of a button, shared by every page (design tokens in
  * `styles.css` § Boutons):
  *
- * - `go` — launches or moves the player forward (Tester, Reprendre, Lancer, Recommencer);
+ * - `go` — launches or moves the player forward (Lancer, Reprendre, Recommencer);
  * - `pause` — suspends without losing anything (Mettre en pause);
  * - `reset` — returns to construction or opens a destructive reset (Recommencer, Ràz atelier, Recommencer le niveau);
  * - `neutral` — every other action (navigation, undo/redo, properties).

@@ -105,11 +105,11 @@
       "type": "mass",
       "props": { "weight": "10kg" },
       "quantity": 1,
-      "permissions": { "move": true, "rotate": false, "remove": true }
+      "permissions": { "move": true, "rotate": true, "remove": true }
     }
   ],
   "goal": { "type": "basket", "ballId": "ball-red", "basketId": "basket-goal" },
-  "buildZones": [{ "min": { "x": 0.3, "y": 0.3 }, "max": { "x": 11.7, "y": 7.2 } }],
+  "buildZones": [{ "min": { "x": 0, "y": 0 }, "max": { "x": 12, "y": 7.5 } }],
   "wires": [
     { "id": "wire-button-fan-one", "sourceId": "button-one", "targetId": "fan-one" },
     { "id": "wire-lever-fan-two", "sourceId": "lever-two", "targetId": "fan-two" }

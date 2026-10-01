@@ -104,7 +104,7 @@ const expectedPuzzle: LevelDocument = {
       type: 'mass',
       props: { weight: '10kg' },
       quantity: 2,
-      permissions: { move: true, rotate: false, remove: true },
+      permissions: { move: true, rotate: true, remove: true },
     },
     {
       id: 'fan-a-placer',

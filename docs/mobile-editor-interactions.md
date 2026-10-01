@@ -298,7 +298,7 @@ Pendant une simulation, annuler et rétablir sont inaccessibles. Recommencer
 revient en construction avec l'historique exactement tel qu'il était avant le
 test.
 
-## Tester, mettre en pause et recommencer
+## Lancer, mettre en pause et recommencer
 
 Vocabulaire (décision de l'auteur, 26 septembre 2026) :
 
@@ -315,11 +315,15 @@ Vocabulaire (décision de l'auteur, 26 septembre 2026) :
   présenté sous le libellé « Recommencer le niveau ». Il ne doit pas être confondu
   avec « Recommencer » après le lancement, qui conserve la construction d’avant test.
 - Le mot « Réinitialiser » n'est plus employé dans l'interface.
+- **Lancer** (décision de l'auteur, 1er octobre 2026, ex-« Tester ») : démarre la
+  simulation de la machine. Dans l'atelier, **Essayer en joueur** (ex-« Jouer »)
+  ouvre le puzzle tel que le joueur le verra, objets à placer dans le tiroir. Les
+  deux libellés doivent se distinguer sans essai.
 
 Les phases forment l'automate suivant :
 
 ```text
-construction --tester--> simulation en cours
+construction --lancer--> simulation en cours
 simulation en cours --pause--> simulation en pause
 simulation en pause --reprendre--> simulation en cours
 simulation en cours ou en pause --recommencer--> construction
@@ -327,7 +331,7 @@ simulation en cours --objectif atteint--> resultat
 resultat --recommencer--> construction
 ```
 
-Tester valide d'abord le document. Une erreur bloquante empêche le lancement,
+Lancer valide d'abord le document. Une erreur bloquante empêche le lancement,
 ouvre le panneau pertinent et place le focus sur la première erreur. Un
 avertissement non bloquant permet le test.
 

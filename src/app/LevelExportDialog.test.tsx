@@ -11,7 +11,7 @@ import { decodeShareFragment } from '../infrastructure/level-share/level-share-c
 
 import { App } from './App';
 import { LevelExportDialog } from './LevelExportDialog';
-import { prepareLevelExport } from './level-export';
+import { nameExportedLevel, prepareLevelExport } from './level-export';
 
 const levelFour = embeddedLevels.find(({ id }) => id === 'campaign-04-retour-a-l-expediteur');
 if (levelFour === undefined) throw new Error('Niveau 4 embarqué introuvable.');
@@ -40,10 +40,13 @@ const levelOneWorkshop: LevelDocument = {
 const successfulExportRun = (document: LevelDocument): 'won' | 'lost' =>
   document.objects.length > levelOne.objects.length ? 'won' : 'lost';
 
-const levelOnePuzzle = (): LevelDocument => {
+/** The verified puzzle, named as the dialog proposes by default: after its title. */
+const levelOnePuzzle = (name = 'La bille de service'): LevelDocument => {
   const preparation = prepareLevelExport(levelOneWorkshop, successfulExportRun);
   if (preparation.status !== 'ready') throw new Error('Le puzzle du niveau 1 est refusé.');
-  return preparation.puzzle;
+  const named = nameExportedLevel(preparation.puzzle, name);
+  if (named === null) throw new Error('Nom d’export refusé.');
+  return named.puzzle;
 };
 
 const boardCanvasRect: DOMRect = {
@@ -118,15 +121,35 @@ describe('boîte « Exporter » de l’atelier (U16, U22)', () => {
 
     expect(downloadFile).toHaveBeenCalledTimes(1);
     const [fileName, mimeType, fileText] = downloadFile.mock.calls[0] ?? [];
-    expect(fileName).toBe('campaign-01-la-bille-de-service.json');
+    expect(fileName).toBe('la-bille-de-service.json');
     expect(mimeType).toBe('application/json');
     expect(decodeLevelFile(String(fileText))).toEqual({
       status: 'ok',
       document: levelOnePuzzle(),
     });
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Fichier campaign-01-la-bille-de-service.json téléchargé.',
+      'Fichier la-bille-de-service.json téléchargé.',
     );
+  });
+
+  it('nomme le niveau avant de télécharger, et refuse un nom vide', () => {
+    const { downloadFile } = renderDialog(levelOneWorkshop);
+    const name = screen.getByRole('textbox', { name: 'Nom du niveau' });
+    expect(name).toHaveValue('La bille de service');
+
+    fireEvent.change(name, { target: { value: '   ' } });
+    expect(screen.getByRole('button', { name: 'Télécharger le fichier' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Copier le lien de partage' })).toBeDisabled();
+
+    fireEvent.change(name, { target: { value: 'Ma machine' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+
+    const [fileName, , fileText] = downloadFile.mock.calls[0] ?? [];
+    expect(fileName).toBe('ma-machine.json');
+    expect(decodeLevelFile(String(fileText))).toEqual({
+      status: 'ok',
+      document: levelOnePuzzle('Ma machine'),
+    });
   });
 
   it('copie le lien de partage et affiche « Lien copié »', async () => {

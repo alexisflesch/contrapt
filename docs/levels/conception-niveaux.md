@@ -10,7 +10,7 @@ cas d'écart, c'est le code qui a raison, et ce document doit être corrigé.
 
 Une scène 2D en vue de côté, soumise à la gravité. Le niveau fournit une machine
 déjà en place et un **inventaire** d'objets. Le joueur pose ces objets, les
-déplace et, pour certains, les tourne, puis appuie sur **Tester**. La simulation
+déplace et, pour certains, les tourne, puis appuie sur **Lancer**. La simulation
 est déterministe (pas fixe de 1/60 s) et le joueur peut recommencer autant de
 fois qu'il veut.
 
@@ -27,12 +27,17 @@ fois qu'il veut.
   donne (quand l'objet peut tourner) et, quand l'inventaire contient des fils,
   **quoi relier à quoi** (voir § 4, fil d'inventaire).
 - **Zones de construction** (`buildZones`) : l'objet entier doit tenir dans une
-  zone. Elles sont dessinées sur le plateau. Elles sont rarement utiles : un
-  bon niveau interdit les raccourcis par sa géométrie, pas par une zone.
+  zone. Elles sont dessinées sur le plateau, sauf une zone qui couvre toute la
+  scène (aucune contrainte). **Sauf demande explicite de
+  l'auteur, ne pas restreindre la pose** : un niveau déclare une seule zone
+  égale à sa scène (`min` et `max` identiques à `scene`). Une liste vide
+  interdit toute pose. Le mécanisme est conservé dans le code pour un usage
+  futur, mais il a été testé et écarté : un bon niveau interdit les raccourcis
+  par sa géométrie, pas par une zone.
 
 ## 2. Ce qu'on attend d'un niveau
 
-Un niveau qui se résout en posant une poutre puis en cliquant sur Tester est un
+Un niveau qui se résout en posant une poutre puis en cliquant sur Lancer est un
 échec, même s'il est « pédagogique ». Les niveaux 1 à 14 actuels sont des
 prototypes et ne servent pas de modèle.
 
@@ -76,19 +81,19 @@ prototypes et ne servent pas de modèle.
 
 ## 4. Les objets existants
 
-| Type          | Dimensions (unités)                                    | Physique                                                                                                                                                                        | Propriétés                            | Rotation           |
-| ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------------ |
-| `ball`        | rayon 0,3                                              | dynamique ; masse ≈ 0,28 kg ; frottement 0,35 ; rebond 0,25 ; résistance au roulement (décélère d'environ 0,7 m/s² sur le plat, accélère d'environ 1 m/s² sur une pente de 15°) | —                                     | non                |
-| `basket`      | 1,5 × 1,1                                              | statique : deux parois et un fond, plus un capteur                                                                                                                              | —                                     | non                |
-| `beam`        | 2 / 4 / 6 × 0,25                                       | statique ; frottement 0,4                                                                                                                                                       | `size`: `short` `medium` `long`       | libre (pas de 15°) |
-| `seesaw`      | planche de 3, pivot situé 0,7 au-dessus du bas du pied | planche dynamique autour du pivot, butées à ±30°                                                                                                                                | —                                     | non                |
-| `mass`        | ≈ 0,8 × 0,5                                            | dynamique ; 10 kg, soit 35 balles ; frottement 0,6                                                                                                                              | `weight`: `10kg`                      | non                |
-| `lever`       | socle 0,8 × 0,41, manche de ≈ 1                        | trois crans `left` `center` `right` ; le cran tient à peine, une balle suffit à le basculer                                                                                     | `position`                            | libre (max ±135°)  |
-| `conveyor`    | 3 × 0,58                                               | statique ; surface à 1,5 u/s, donc **2 s pour traverser une bande de 3**                                                                                                        | `direction`: `left` `stopped` `right` | non                |
-| `button`      | 0,8 × 0,48                                             | **momentané** : enfoncé tant qu'un corps dynamique pèse sur le capuchon                                                                                                         | —                                     | non                |
-| `fan`         | 1,2 × 0,94                                             | souffle en cône de ±15°, portée 3 ; force = 9 × largeur exposée × (1 − d/3), **proportionnelle à la surface, pas à la masse** ; ≈ 0,4 s pour atteindre sa pleine puissance      | `state`: `on` `off`                   | quarts de tour     |
-| `barrier`     | pilier 0,8 × 0,85, barre de 1,25 × 0,28                | la barre coulisse à 2,5 u/s (≈ 0,4 s pour s'ouvrir) ; ouverte, elle n'a plus de collision : c'est une **trappe**                                                                | `state`: `closed` `open`              | quarts de tour     |
-| `springboard` | 1 × 0,93                                               | plateau à rebond 1 (ignoré sous 1 m/s) : rend **toute** la vitesse, donc remonte à la hauteur de chute, **jamais plus haut**                                                    | —                                     | quarts de tour     |
+| Type          | Dimensions (unités)                                    | Physique                                                                                                                                                                        | Propriétés                            | Rotation               |
+| ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------- |
+| `ball`        | rayon 0,3                                              | dynamique ; masse ≈ 0,28 kg ; frottement 0,35 ; rebond 0,25 ; résistance au roulement (décélère d'environ 0,7 m/s² sur le plat, accélère d'environ 1 m/s² sur une pente de 15°) | —                                     | non                    |
+| `basket`      | 1,5 × 1,1                                              | statique : deux parois et un fond, plus un capteur                                                                                                                              | —                                     | non                    |
+| `beam`        | 2 / 4 / 6 × 0,25                                       | statique ; frottement 0,4                                                                                                                                                       | `size`: `short` `medium` `long`       | pas de 15°             |
+| `seesaw`      | planche de 3, pivot situé 0,7 au-dessus du bas du pied | planche dynamique autour du pivot, butées à ±30°                                                                                                                                | —                                     | pas de 15°             |
+| `mass`        | ≈ 0,8 × 0,5                                            | dynamique ; 10 kg, soit 35 balles ; frottement 0,6                                                                                                                              | `weight`: `10kg`                      | pas de 15°             |
+| `lever`       | socle 0,8 × 0,41, manche de ≈ 1                        | trois crans `left` `center` `right` ; le cran tient à peine, une balle suffit à le basculer                                                                                     | `position`                            | pas de 15° (max ±135°) |
+| `conveyor`    | 3 × 0,58                                               | statique ; surface à 1,5 u/s, donc **2 s pour traverser une bande de 3**                                                                                                        | `direction`: `left` `stopped` `right` | pas de 15°             |
+| `button`      | 0,8 × 0,48                                             | **momentané** : enfoncé tant qu'un corps dynamique pèse sur le capuchon                                                                                                         | —                                     | pas de 15°             |
+| `fan`         | 1,2 × 0,94                                             | souffle en cône de ±15°, portée 3 ; force = 9 × largeur exposée × (1 − d/3), **proportionnelle à la surface, pas à la masse** ; ≈ 0,4 s pour atteindre sa pleine puissance      | `state`: `on` `off`                   | pas de 15°, miroir     |
+| `barrier`     | pilier 0,9 × 0,96, barre de 1,7 × 0,38                 | la barre coulisse à 2,5 u/s (≈ 0,4 s pour s'ouvrir) ; ouverte, elle n'a plus de collision : c'est une **trappe**                                                                | `state`: `closed` `open`              | pas de 15°, miroir     |
+| `springboard` | 1 × 0,93                                               | plateau à rebond 1 (ignoré sous 1 m/s) : rend **toute** la vitesse, donc remonte à la hauteur de chute, **jamais plus haut**                                                    | —                                     | pas de 15°             |
 
 **Fils** (`wires: [{ id, sourceId, targetId }]`) :
 

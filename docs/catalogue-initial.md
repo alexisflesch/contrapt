@@ -210,9 +210,10 @@ chute.
 ### Modèle
 
 - corps statique de 1,2 × 0,94, dessiné soufflant à droite ;
-- orienté par sa rotation, par quarts de tour : à droite tel que dessiné, vers
-  le bas ou le haut tourné d'un quart ; le demi-tour (vers la gauche) est
-  dessiné et simulé en miroir, pour ne jamais le mettre la tête en bas ;
+- orienté par sa rotation, par pas de 15° : sa rotation est la direction où il
+  souffle ; tourné vers la gauche de la verticale, il est dessiné et simulé en
+  miroir, pour ne jamais le mettre la tête en bas. « Retourner » le met en
+  miroir de gauche à droite (rotation θ → 180° − θ) ;
 - propriété `state` (`on`, `off`) : son état quand aucun contrôleur ne le
   commande ; relié, il tourne quand le levier est d'un côté ou le bouton
   enfoncé ;
@@ -234,9 +235,11 @@ ou un passage qui s'ouvre.
 
 ### Modèle
 
-- poteau statique de 0,8 × 0,85, barre de 1,25 × 0,28 ;
-- orientée par sa rotation, par quarts de tour : barre à droite telle que
-  dessinée, vers le bas ou le haut tournée d'un quart, à gauche en miroir ;
+- poteau statique de 0,9 × 0,96, barre de 1,7 × 0,38 (agrandis le 1er octobre
+  2026) ;
+- orientée par sa rotation, par pas de 15°, comme le ventilateur : tournée vers
+  la gauche de la verticale, elle est dessinée en miroir, barre à gauche ;
+  « Retourner » la met en miroir de gauche à droite ;
 - propriété `state` (`closed`, `open`) : son état quand aucun contrôleur ne la
   commande ; reliée, elle s'ouvre quand le levier est d'un côté ou le bouton
   enfoncé ;
@@ -255,8 +258,7 @@ Renvoie vers le haut ce qui tombe dessus.
 ### Modèle
 
 - socle, ressort et plateau statiques (1 × 0,93 au total), aucune propriété ;
-- orienté par sa rotation, par quarts de tour : plateau vers le haut, sur un
-  côté ou vers le bas ;
+- orienté par sa rotation, par pas de 15° ;
 - le plateau a une restitution de 1 : une balle repart presque à sa hauteur de
   chute ; sous 1 m/s, Box2D n'applique pas de rebond, si bien qu'un objet posé
   reste posé ;
@@ -299,12 +301,11 @@ interface InventoryEntry {
 
 Le schéma concret est une union Zod stricte discriminée afin que les propriétés
 soient typées selon `type` ; il fait autorité (`src/domain/level-document.ts`).
-Balle, panier et bascule n'acceptent aucune propriété. La rotation est libre
-pour les poutres ; le levier peut tourner entre −135° et +135° ; le ventilateur,
-la barrière et le tremplin tournent par quarts de tour (`rotationMode`,
-`src/domain/level-document.ts`). Toute autre rotation de ces trois familles est
-refusée, et `permissions.rotate` doit être `false` pour les familles qui ne
-peuvent pas tourner.
+Balle, panier et bascule n'acceptent aucune propriété. Toutes les familles
+tournent librement — l'éditeur procède par pas de 15° — sauf la balle et le
+panier (décision de l'auteur, 1er octobre 2026 ; `rotationMode`,
+`src/domain/level-document.ts`) ; le levier reste borné entre −135° et +135°.
+`permissions.rotate` doit être `false` pour la balle et le panier.
 
 Les premiers niveaux peuvent n'offrir qu'une ou deux poutres. La balle, le panier
 et la bascule peuvent être placés par l'auteur avec leurs trois permissions à

@@ -32,8 +32,8 @@ const MASS_HALF_FOOTPRINT_HEIGHT = 0.2526;
 const BUTTON_CAP_TOP = -0.2402;
 const BUTTON_CAP_TRAVEL = 0.06;
 /** La barre fermée : de l'axe du poteau à 1,25 de son côté, centrée 0,037 au-dessus de l'origine. */
-const BARRIER_BAR_CENTER_Y = -0.0368;
-const BARRIER_BAR_HALF_THICKNESS = 0.14;
+const BARRIER_BAR_CENTER_Y = -0.0414;
+const BARRIER_BAR_HALF_THICKNESS = 0.19;
 /** Vitesse du tapis d'un convoyeur en marche, en unités monde par seconde. */
 const CONVEYOR_SPEED = 1.5;
 /** Hauteur totale du socle de la bascule, posé sous le pivot. */
@@ -1670,6 +1670,29 @@ describe('port physique candidat-neutre', () => {
     // Le souffle décroît avec la distance : la balle flotte au-dessus de la bouche.
     expect(ballYAfter('on')).toBeLessThan(-1.2);
     expect(ballYAfter('off')).toBeGreaterThan(-0.7);
+  });
+
+  it('souffle dans l’axe d’un ventilateur incliné, pas au quart de tour le plus proche', () => {
+    // Tourné de -60° : il souffle vers le haut et la droite, à 30° de la verticale.
+    // One step from rest: the velocity gained is the fan's push alone, gravity aside.
+    const velocityAfter = (state: string): { readonly x: number; readonly y: number } => {
+      let velocity = { x: 0, y: 0 };
+      withSession(
+        createDeviceLevelDocument([ball({ x: 0.6, y: -1.04 }), fan(-Math.PI / 3, state)]),
+        (session) => {
+          session.advanceFixedSteps(1);
+          velocity = body(session.readState(), 'ball-1', 'primary').linearVelocity;
+        },
+      );
+      return velocity;
+    };
+
+    const blown = velocityAfter('on');
+    const still = velocityAfter('off');
+    const push = { x: blown.x - still.x, y: blown.y - still.y };
+    expect(push.x).toBeGreaterThan(0);
+    // Along the axis (0.5, -0.87): √3 times higher than wide.
+    expectCloseTo(-push.y / push.x, Math.sqrt(3), 0.01);
   });
 
   it('pousse une balle posée devant lui, beaucoup plus qu’une masse de dix kilos', () => {

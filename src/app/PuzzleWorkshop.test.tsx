@@ -78,8 +78,8 @@ const storedDraft = (): LevelDocument | null => {
   return result.status === 'ok' ? result.document : null;
 };
 
-const openMachine = (): void => {
-  createLocalStorageDraftRepository(window.localStorage).save(machine);
+const openMachine = (document: LevelDocument = machine): void => {
+  createLocalStorageDraftRepository(window.localStorage).save(document);
   window.history.replaceState(null, '', '/editor?draft=machine-u22');
   render(<App />);
 };
@@ -134,12 +134,35 @@ describe('atelier créateur de puzzles (U22)', () => {
     expect(screen.queryByRole('button', { name: 'À placer' })).toBeNull();
   });
 
+  it('ne propose pas de supprimer la balle rouge ni le panier de l’objectif', () => {
+    // The red ball rests on the barrier: moved aside so a tap selects it alone.
+    openMachine({
+      ...machine,
+      objects: machine.objects.map((object) =>
+        object.id === 'ball-red'
+          ? { ...object, transform: { ...object.transform, position: { x: 4, y: 3 } } }
+          : object,
+      ),
+    });
+    for (const [x, y, name] of [
+      [6.8, 4.9, 'Panier'],
+      [4, 3, 'Balle'],
+    ] as const) {
+      tapWorldPoint(x, y);
+      const openProperties = screen.queryByRole('button', { name: 'Ouvrir les propriétés' });
+      if (openProperties !== null) fireEvent.click(openProperties);
+
+      const panel = screen.getByRole('region', { name: `Propriétés de ${name}` });
+      expect(within(panel).queryByRole('button', { name: /Supprimer/ })).toBeNull();
+    }
+  });
+
   it('teste comme un joueur, objets à placer dans le tiroir, puis revient à l’atelier', () => {
     openMachine();
     selectBeam();
     fireEvent.click(screen.getByRole('button', { name: 'À placer' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Jouer le puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Essayer en joueur' }));
 
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Exporter le niveau' })).toBeNull();
@@ -161,7 +184,7 @@ describe('atelier créateur de puzzles (U22)', () => {
   it('explique au lieu de tester quand aucun objet n’est à placer', () => {
     openMachine();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Jouer le puzzle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Essayer en joueur' }));
 
     expect(screen.getByText('Mode éditeur')).toBeVisible();
     expect(screen.getByText(/Aucun objet n’est à placer/u)).toBeVisible();

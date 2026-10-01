@@ -38,9 +38,8 @@ bibliothèque.
   gestion de `popstate`, du focus et des cas limites d'historique qu'une
   bibliothèque mature couvre déjà et teste en dehors de ce projet.
 - Schéma d'URL, en anglais comme demandé par l'auteur :
-  - `/` — redirige immédiatement vers `/levels/:id/play` du premier niveau
-    embarqué (conserve le comportement « démarre sur le niveau 1 » déjà
-    décidé) ;
+  - `/` — accueil de l’application, avec accès aux routes publiques et reprise
+    de la campagne (amendement du 1er octobre 2026) ;
   - `/levels` — liste des niveaux de la campagne ;
   - `/levels/:levelId/play` — un niveau joué ; `levelId` est l'`id` du
     `LevelDocument`, jamais un identifiant inventé séparément ;
@@ -109,6 +108,21 @@ bibliothèque.
   valide l’identifiant et décode le document par le codec de fichier ; un
   brouillon absent ou illisible affiche une erreur avec un lien vers la liste.
   Sans paramètre, `/editor` reste l’atelier libre.
+
+## Amendement du 1er octobre 2026 — accueil
+
+À la demande de l’auteur, `/` affiche une landing dans le style de l’application
+au lieu de rediriger vers le premier niveau. Elle donne accès à `/levels`,
+`/editor`, `/demo` et `/settings`. Les routes techniques `/bench` et `/bench/play`
+restent absentes de la navigation publique ; `/shared` nécessite son fragment
+de partage et ne constitue pas une destination autonome de l’accueil.
+
+La commande principale ouvre le premier niveau accessible non résolu, ou la
+liste des niveaux une fois la campagne terminée. Les statistiques de l’accueil
+utilisent la progression déjà validée par le repository et le contexte existants
+(ADR 0010 et ADR 0011), sans nouveau stockage. Le menu partagé propose « Accueil »
+pour revenir à `/` depuis chaque écran. Cette demande explicite autorise la
+mise en page de l’accueil indépendamment de l’ordre de reprise de la feuille de route.
 
 ## Ce qui reste non décidé
 

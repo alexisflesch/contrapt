@@ -88,7 +88,7 @@
     }
   ],
   "goal": { "type": "basket", "ballId": "ball-red", "basketId": "basket-goal" },
-  "buildZones": [{ "min": { "x": 0.3, "y": 0.3 }, "max": { "x": 7.7, "y": 5.2 } }],
+  "buildZones": [{ "min": { "x": 0, "y": 0 }, "max": { "x": 8, "y": 5.5 } }],
   "wires": [{ "id": "wire-lever-curtain", "sourceId": "lever", "targetId": "barrier-curtain" }],
   "solution": {
     "placements": [

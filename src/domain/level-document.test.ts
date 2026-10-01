@@ -341,13 +341,13 @@ describe('LevelDocument v2', () => {
     ).toEqual(['objects.4.props.state', 'objects.5.props.state']);
   });
 
-  it('oriente ventilateur, barrière et tremplin par quarts de tour, jamais entre deux', () => {
-    const oriented = (type: string, rotation: number, rotate = true) => ({
-      id: `${type}-1`,
+  it('tourne tout objet à n’importe quel angle, sauf la balle et le panier', () => {
+    const oriented = (type: string, rotation: number, props: object = {}) => ({
+      id: `${type}-turned`,
       type,
       transform: { position: { x: 1, y: 1 }, rotation },
-      props: type === 'fan' ? { state: 'on' } : type === 'barrier' ? { state: 'open' } : {},
-      permissions: { move: true, rotate, remove: true },
+      props,
+      permissions: { move: true, rotate: true, remove: true },
     });
 
     expect(
@@ -355,22 +355,20 @@ describe('LevelDocument v2', () => {
         ...validLevel,
         objects: [
           ...validLevel.objects,
-          oriented('fan', -Math.PI / 2),
-          oriented('barrier', Math.PI),
-          oriented('springboard', (5 * Math.PI) / 2),
+          oriented('fan', 0.3, { state: 'on' }),
+          oriented('barrier', Math.PI / 12, { state: 'open' }),
+          oriented('springboard', 1),
+          oriented('mass', -Math.PI / 6, { weight: '10kg' }),
+          oriented('button', Math.PI / 4),
+          oriented('conveyor', Math.PI / 12, { direction: 'stopped' }),
+          oriented('seesaw', -Math.PI / 12),
         ],
       }),
     ).toEqual([]);
     expect(
       issuePaths({
         ...validLevel,
-        objects: [...validLevel.objects, oriented('fan', 0.3), oriented('springboard', 1)],
-      }),
-    ).toEqual(['objects.4.transform.rotation', 'objects.5.transform.rotation']);
-    expect(
-      issuePaths({
-        ...validLevel,
-        objects: [...validLevel.objects, { ...oriented('mass', 0), props: { weight: '10kg' } }],
+        objects: [...validLevel.objects, oriented('ball', 0)],
       }),
     ).toEqual(['objects.4.permissions.rotate']);
   });
@@ -1188,17 +1186,27 @@ describe('objets à placer et solution de référence (U22, ADR 0013)', () => {
   });
 
   it('refuse une pose de solution hors scène ou hors de la règle de rotation de sa famille', () => {
+    const leverEntry = {
+      ...fanEntry,
+      id: 'inventory-lever',
+      type: 'lever',
+      props: { position: 'center' },
+    } as const;
     expect(
       issuePaths({
         ...validLevel,
-        inventory: [{ ...beamEntry, quantity: 2 }, fanEntry],
+        inventory: [{ ...beamEntry, quantity: 2 }, fanEntry, leverEntry],
         solution: {
-          placements: [pose('inventory-beam-medium', 40, 5), pose('inventory-fan', 2, 5, 0.3)],
+          placements: [
+            pose('inventory-beam-medium', 40, 5),
+            pose('inventory-fan', 2, 5, 0.3),
+            pose('inventory-lever', 3, 5, (3 * Math.PI) / 4 + 0.1),
+          ],
         },
       }),
     ).toEqual([
       'solution.placements.0.transform.position.x',
-      'solution.placements.1.transform.rotation',
+      'solution.placements.2.transform.rotation',
     ]);
   });
 

@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 28 septembre 2026.
+Dernière mise à jour : 1er octobre 2026.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -73,6 +73,14 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 
 ### Présentation et interface
 
+- **Accueil `/`** : landing avec les couleurs et assets locaux de l’application,
+  scène d’atelier illustrée, accès à la campagne, à l’atelier, à la démonstration
+  et aux paramètres. La commande principale lance le premier niveau accessible
+  non résolu, ou propose de revisiter la campagne terminée. Le carnet de bord
+  affiche les niveaux résolus, accessibles, les chapitres et une jauge de
+  progression, calculés sur la campagne actuelle via le contexte existant.
+  Les erreurs de stockage et sauvegardes illisibles restent signalées.
+  Le menu de chaque écran propose un retour à l’accueil (ADR 0008 amendée).
 - Renderer Canvas 2D (ADR 0006) avec DPR, sprites en calques (balle à motif
   tournant, rouge pour celle de l’objectif et bleue pour les autres, panier avant/arrière, bascule pied + planche, levier, convoyeur à
   tapis défilant, bouton à capuchon qui s’enfonce, ventilateur à pales tournantes
@@ -192,7 +200,7 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
   `/editor`, `/demo` (machine en chaîne qui se résout seule, testée),
   `/settings` (vide) et `/shared` (niveau éphémère décodé depuis le fragment URL).
-  `/` ouvre le niveau 1 en mode joueur.
+  `/` ouvre l’accueil ; le premier niveau reste accessible par son URL directe.
 - Mise en page validée aux six formats du plan (D4) ; objectif dans une boîte de
   dialogue à la demande ; bandeau de résultat dans un emplacement réservé.
 - Atelier libre `src/content/levels/workshop.json` (scène 16 × 9, inventaire de
@@ -339,6 +347,16 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après la landing d’accueil (1er octobre 2026) : passe — typecheck,
+lint, formatage, Knip, validation des 19 documents, 713 tests Vitest, build
+Vite/PWA et 44 tests Playwright mobiles réussis (1 scénario desktop ignoré).
+Une première exécution complète a rencontré l’intermittence U15 déjà documentée ;
+U15 passe en isolation, puis la gate complète relancée passe sans modification
+du câblage. Les trois parcours de l’accueil couvrent les destinations, le retour
+navigateur, la reprise de progression et les quatre formats de capture.
+Captures inspectées : `test-results/home/accueil-{390x844,844x390,1440x900,320x568}.png`.
+La validation visuelle de l’auteur reste attendue.
 
 `pnpm check` après la retouche visuelle de `/levels` (27 septembre 2026) :
 typecheck, lint, formatage, Knip et validation des 19 documents passent ; 705

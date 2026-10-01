@@ -21,13 +21,18 @@ test('exporte le puzzle vérifié en fichier puis en lien de partage au toucher 
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText(/Puzzle vérifié/u)).toBeVisible();
 
+  const name = dialog.getByRole('textbox', { name: 'Nom du niveau' });
+  await expect(name).toHaveValue('Machine U22');
+  await name.fill('Ma machine');
+
   const downloadPromise = page.waitForEvent('download');
   await dialog.getByRole('button', { name: 'Télécharger le fichier' }).tap();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe('machine-u22.json');
+  expect(download.suggestedFilename()).toBe('ma-machine.json');
   const decoded = decodeLevelFile(await readFile(await download.path(), 'utf8'));
   expect(decoded.status).toBe('ok');
   if (decoded.status === 'ok') {
+    expect(decoded.document.metadata.title).toBe('Ma machine');
     expect(decoded.document.objects.map(({ id }) => id)).toEqual(['ball-1', 'slope', 'basket-1']);
     expect(decoded.document.solution?.placements).toHaveLength(1);
   }
@@ -38,6 +43,6 @@ test('exporte le puzzle vérifié en fichier puis en lien de partage au toucher 
   expect(new URL(link).pathname).toBe('/shared');
 
   await page.goto(link);
-  await expect(page.getByText('Partage · Machine U22')).toBeVisible();
+  await expect(page.getByText('Partage · Ma machine')).toBeVisible();
   await expect(page.getByText('Mode joueur')).toBeVisible();
 });

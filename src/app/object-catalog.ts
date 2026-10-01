@@ -83,13 +83,12 @@ const authorEntry = (
 
 /**
  * The goal's red ball and its basket are unique and already on the board
- * (LevelDocument v2 has a single goal): the author only adds blue balls.
+ * (LevelDocument v2 has a single goal): the author only adds blue balls,
+ * listed simply as « Balle ».
  */
 export const authorCatalogue: readonly AuthorCatalogueEntry[] = [
   {
     ...authorEntry('Balle', 'ball'),
-    name: 'Balle bleue',
-    accessibleName: 'Balle bleue',
     description: 'Une pièce de la machine',
   },
   { ...authorEntry('Poutre', 'beam', { size: 'medium' }), accessibleName: 'Poutre moyenne' },

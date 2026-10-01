@@ -11,15 +11,16 @@ import {
   leverFootprint,
   leverGeometry,
   massGeometry,
-  quarterTurnPose,
+  facingPose,
   seesawGeometry,
   springboardGeometry,
 } from '../domain/family-geometry';
-import type { LevelDocument } from '../domain/level-document';
+import { rotationMode, type LevelDocument } from '../domain/level-document';
 import { projectWires, type ProjectedWire } from './control-wires';
 import { drawWireLabels, drawWires, type WireCanvas } from './wire-renderer';
 import {
-  ROTATION_HANDLE_DISTANCE_CSS_PIXELS,
+  ROTATION_HANDLE_GAP_CSS_PIXELS,
+  ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS,
   ROTATION_HANDLE_SIZE_CSS_PIXELS,
 } from './rotation-handle-metrics';
 import {
@@ -393,7 +394,7 @@ const fanLayer = (
   view: BoardSimulationView | undefined,
   destination: BoardDestination,
 ): ProjectedLayer => {
-  const { angle: rotation, mirrored } = quarterTurnPose(object.transform.rotation);
+  const { angle: rotation, mirrored } = facingPose(object.transform.rotation);
   const { position } = object.transform;
   if (asset !== 'fan-blades') {
     return { position: { x: position.x, y: position.y }, rotation, destination, mirrored };
@@ -475,7 +476,7 @@ const projectLayer = (
   };
   if (object.type === 'fan') return fanLayer(object, asset, view, projected.destination);
   if (object.type === 'barrier') {
-    const { angle, mirrored } = quarterTurnPose(object.transform.rotation);
+    const { angle, mirrored } = facingPose(object.transform.rotation);
     const turned = { ...projected, rotation: angle, mirrored };
     return asset === 'barrier-bar' ? { ...turned, ...barrierBarLayer(object, view) } : turned;
   }
@@ -538,6 +539,31 @@ const byDrawOrderThenDocumentOrder = (
 
   const documentDelta = a.documentIndex - b.documentIndex;
   return documentDelta !== 0 ? documentDelta : a.layerIndex - b.layerIndex;
+};
+
+/**
+ * The author may turn any object whose family turns, whatever its saved
+ * permissions say (those bind the player): the projection used for the
+ * creation mode's handle and hit tests.
+ */
+export const withAuthorRotation = (
+  objects: readonly ProjectedBoardObject[],
+): readonly ProjectedBoardObject[] =>
+  objects.map((object) =>
+    rotationMode(object.family) === 'fixed' ? object : { ...object, rotatable: true },
+  );
+
+/**
+ * Build zones worth highlighting: none when one zone covers the whole scene,
+ * since placement is then unconstrained and a tint over the board says nothing.
+ */
+export const constrainingBuildZones = (document: LevelDocument): readonly BoardZone[] => {
+  const { scene } = document;
+  const coversScene = document.buildZones.some(
+    ({ min, max }) =>
+      min.x <= scene.min.x && min.y <= scene.min.y && max.x >= scene.max.x && max.y >= scene.max.y,
+  );
+  return coversScene ? [] : document.buildZones;
 };
 
 /**
@@ -633,6 +659,9 @@ const requiredFamilies = (projection: BoardProjection): readonly SpriteFamily[] 
 ];
 
 const SELECTION_LINE_WIDTH_CSS_PIXELS = 2;
+const ROTATION_HANDLE_COLOUR = '#1e88e5';
+const ROTATION_HANDLE_FILL = '#ffffff';
+const ROTATION_HANDLE_ARROW_WIDTH_CSS_PIXELS = 2.5;
 const ZONE_FILL = 'rgba(30, 136, 229, 0.1)';
 const ZONE_OUTLINE = 'rgba(30, 136, 229, 0.65)';
 const ZONE_DASH_CSS_PIXELS = [8, 6];
@@ -665,15 +694,40 @@ const drawBuildZones = (
   context.restore();
 };
 
+/**
+ * A point `distance` CSS pixels above the object's top edge, in its own
+ * frame: it turns with the object, so the handle never jumps while turning.
+ */
+const pointAboveObject = (
+  object: ProjectedBoardObject,
+  viewport: BoardViewport,
+  distance: number,
+): BoardPoint => {
+  const center = worldToPixels(object.position, viewport);
+  const offset = -destinationToPixels(object.destination, viewport).y + distance;
+  return {
+    x: center.x + offset * Math.sin(object.rotation),
+    y: center.y - offset * Math.cos(object.rotation),
+  };
+};
+
+/** The knob's centre, a stem above the object's top edge, in CSS pixels. */
+const rotationHandleCenter = (object: ProjectedBoardObject, viewport: BoardViewport): BoardPoint =>
+  pointAboveObject(
+    object,
+    viewport,
+    ROTATION_HANDLE_GAP_CSS_PIXELS + ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS,
+  );
+
 export const rotationHandleBounds = (
   object: ProjectedBoardObject,
   viewport: BoardViewport,
 ): BoardDestination => {
-  const center = worldToPixels(object.position, viewport);
+  const center = rotationHandleCenter(object, viewport);
 
   return {
     x: center.x - ROTATION_HANDLE_SIZE_CSS_PIXELS / 2,
-    y: center.y - ROTATION_HANDLE_DISTANCE_CSS_PIXELS - ROTATION_HANDLE_SIZE_CSS_PIXELS / 2,
+    y: center.y - ROTATION_HANDLE_SIZE_CSS_PIXELS / 2,
     width: ROTATION_HANDLE_SIZE_CSS_PIXELS,
     height: ROTATION_HANDLE_SIZE_CSS_PIXELS,
   };
@@ -724,6 +778,61 @@ const drawToPlaceOutlines = (
   }
 };
 
+/**
+ * The rotation handle: a white knob carrying a turning arrow, joined to the
+ * object's top edge by a short stem, so it reads as « tourner » at a glance.
+ * Knob and stem turn with the object; the arrow inside stays upright.
+ */
+const drawRotationHandle = (
+  context: BoardCanvasContext & WireCanvas,
+  object: ProjectedBoardObject,
+  viewport: BoardViewport,
+): void => {
+  const knob = rotationHandleCenter(object, viewport);
+  const radius = ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS;
+  const stemStart = pointAboveObject(object, viewport, 0);
+  const stemEnd = pointAboveObject(object, viewport, ROTATION_HANDLE_GAP_CSS_PIXELS);
+
+  context.save();
+  context.lineCap = 'round';
+  context.strokeStyle = ROTATION_HANDLE_COLOUR;
+  context.lineWidth = SELECTION_LINE_WIDTH_CSS_PIXELS;
+  context.beginPath();
+  context.moveTo(stemStart.x, stemStart.y);
+  context.lineTo(stemEnd.x, stemEnd.y);
+  context.stroke();
+
+  context.fillStyle = ROTATION_HANDLE_FILL;
+  context.beginPath();
+  context.arc(knob.x, knob.y, radius, 0, 2 * Math.PI);
+  context.fill();
+  context.stroke();
+
+  // A three-quarter turn ending in an arrowhead, clockwise.
+  const arrowRadius = radius * 0.5;
+  const start = -0.8 * Math.PI;
+  const end = 0.45 * Math.PI;
+  context.lineWidth = ROTATION_HANDLE_ARROW_WIDTH_CSS_PIXELS;
+  context.beginPath();
+  context.arc(knob.x, knob.y, arrowRadius, start, end);
+  context.stroke();
+  const tip = {
+    x: knob.x + arrowRadius * Math.cos(end),
+    y: knob.y + arrowRadius * Math.sin(end),
+  };
+  const head = radius * 0.32;
+  // The tangent at `end`, clockwise, points along (−sin, cos).
+  const along = { x: -Math.sin(end), y: Math.cos(end) };
+  const across = { x: Math.cos(end), y: Math.sin(end) };
+  context.fillStyle = ROTATION_HANDLE_COLOUR;
+  context.beginPath();
+  context.moveTo(tip.x + along.x * head, tip.y + along.y * head);
+  context.lineTo(tip.x - across.x * head, tip.y - across.y * head);
+  context.lineTo(tip.x + across.x * head, tip.y + across.y * head);
+  context.fill();
+  context.restore();
+};
+
 const drawSelection = (
   context: BoardCanvasContext,
   object: ProjectedBoardObject,
@@ -733,12 +842,8 @@ const drawSelection = (
 
   drawFootprintOutline(context, object, viewport);
 
-  if (!object.rotatable) return;
-
-  const handle = rotationHandleBounds(object, viewport);
-  context.save();
-  context.strokeRect(handle.x, handle.y, handle.width, handle.height);
-  context.restore();
+  if (!object.rotatable || !canDrawWires(context)) return;
+  drawRotationHandle(context, object, viewport);
 };
 
 export const createBoardRenderer = ({

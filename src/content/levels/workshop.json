@@ -113,7 +113,7 @@
       "quantity": 99,
       "permissions": {
         "move": true,
-        "rotate": false,
+        "rotate": true,
         "remove": true
       }
     },
@@ -126,7 +126,7 @@
       "quantity": 99,
       "permissions": {
         "move": true,
-        "rotate": false,
+        "rotate": true,
         "remove": true
       }
     },
@@ -139,7 +139,7 @@
       "quantity": 99,
       "permissions": {
         "move": true,
-        "rotate": false,
+        "rotate": true,
         "remove": true
       }
     },
@@ -152,7 +152,7 @@
       "quantity": 99,
       "permissions": {
         "move": true,
-        "rotate": false,
+        "rotate": true,
         "remove": true
       }
     },
@@ -163,7 +163,7 @@
       "quantity": 99,
       "permissions": {
         "move": true,
-        "rotate": false,
+        "rotate": true,
         "remove": true
       }
     },

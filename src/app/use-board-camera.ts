@@ -9,6 +9,22 @@ import {
 
 /** UI increment for the ± buttons. Not an ADR 0007 bound: those live in board-camera.ts. */
 const CAMERA_BUTTON_ZOOM_FACTOR = 1.25;
+/** A wheel notch (100 px of `deltaY`) zooms by about the ± buttons' factor. */
+const WHEEL_ZOOM_PER_PIXEL = Math.log(CAMERA_BUTTON_ZOOM_FACTOR) / 100;
+/** `WheelEvent.DOM_DELTA_LINE` and `DOM_DELTA_PAGE`, in CSS pixels. */
+const WHEEL_LINE_IN_CSS_PIXELS = 16;
+const WHEEL_PAGE_IN_CSS_PIXELS = 800;
+
+/** Zoom factor for a wheel turn: up zooms in, down zooms out, whatever the delta unit. */
+const wheelZoomFactor = (deltaY: number, deltaMode: number): number => {
+  const pixels =
+    deltaMode === 1
+      ? deltaY * WHEEL_LINE_IN_CSS_PIXELS
+      : deltaMode === 2
+        ? deltaY * WHEEL_PAGE_IN_CSS_PIXELS
+        : deltaY;
+  return Number.isFinite(pixels) ? Math.exp(-pixels * WHEEL_ZOOM_PER_PIXEL) : 1;
+};
 
 export interface CanvasSizeInCss {
   readonly width: number;
@@ -27,6 +43,8 @@ interface BoardCameraController {
   readonly fitCameraToCurrentScene: () => void;
   readonly zoomIn: () => void;
   readonly zoomOut: () => void;
+  /** Mouse wheel: zooms keeping the world point under the pointer in place. */
+  readonly zoomWithWheel: (event: WheelEvent) => void;
 }
 
 /**
@@ -81,6 +99,19 @@ export function useBoardCamera(getScene: () => SceneRect): BoardCameraController
     [readCanvasSizeInCss, updateCamera, getScene],
   );
 
+  const zoomWithWheel = useCallback(
+    (event: WheelEvent): void => {
+      const canvasRect = readCanvasRect();
+      if (canvasRect === null) return;
+
+      const anchor = { x: event.clientX - canvasRect.left, y: event.clientY - canvasRect.top };
+      const factor = wheelZoomFactor(event.deltaY, event.deltaMode);
+      const size = { width: canvasRect.width, height: canvasRect.height };
+      updateCamera(zoomCameraAt(cameraRef.current, factor, anchor, getScene(), size));
+    },
+    [readCanvasRect, updateCamera, getScene],
+  );
+
   const zoomIn = useCallback((): void => {
     zoomByButtonFactor(CAMERA_BUTTON_ZOOM_FACTOR);
   }, [zoomByButtonFactor]);
@@ -131,5 +162,6 @@ export function useBoardCamera(getScene: () => SceneRect): BoardCameraController
     fitCameraToCurrentScene,
     zoomIn,
     zoomOut,
+    zoomWithWheel,
   };
 }

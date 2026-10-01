@@ -9,9 +9,23 @@ import {
   setControlWireToPlace,
   setPlacementToPlace,
 } from '../application/construction/authoring-commands';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, RotateCw, X } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  FlipHorizontal2,
+  RotateCcw,
+  RotateCw,
+  X,
+} from 'lucide-react';
 import { controlCircuits } from '../domain/control-circuits';
-import { MAX_LEVER_ROTATION_RADIANS, rotationMode } from '../domain/level-document';
+import { mirroredRotation } from '../domain/family-geometry';
+import {
+  isMirrorableFamily,
+  MAX_LEVER_ROTATION_RADIANS,
+  rotationMode,
+} from '../domain/level-document';
 import {
   currentEditorAttempt,
   type EditorSession,
@@ -28,11 +42,8 @@ interface ContextPanelProps {
 }
 
 const POSITION_STEP_IN_WORLD_UNITS = 0.25;
-/** A beam turns by fifteen degrees; a fan, barrier or springboard by quarter turns. */
-const rotationSteps = {
-  free: { radians: Math.PI / 12, degrees: 15 },
-  'quarter-turn': { radians: Math.PI / 2, degrees: 90 },
-} as const;
+/** Every rotatable family turns by fifteen degrees, like the board's rotation handle. */
+const ROTATION_STEP = { radians: Math.PI / 12, degrees: 15 } as const;
 type BeamSize = 'short' | 'medium' | 'long';
 
 const beamSizeFromValue = (value: string): BeamSize | null => {
@@ -77,9 +88,9 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
     selectedPlacement.id === goal.ballId || selectedPlacement.id === goal.basketId;
   const canMove = canEdit || selectedPlacement.permissions.move;
   const canRotate = canEdit || selectedPlacement.permissions.rotate;
-  const mode = rotationMode(selectedPlacement.type);
-  const rotationStep = mode === 'fixed' ? null : rotationSteps[mode];
-  const canRemove = canEdit || selectedPlacement.permissions.remove;
+  const rotationStep = rotationMode(selectedPlacement.type) === 'fixed' ? null : ROTATION_STEP;
+  // The goal's ball and basket are unique: removing one would break the level.
+  const canRemove = !isGoalObject && (canEdit || selectedPlacement.permissions.remove);
   const { wires } = displayedAttempt.document;
   const circuits = controlCircuits(wires);
   const circuitLabel = (sourceId: string): string =>
@@ -221,6 +232,22 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
               {rotationStep.degrees}°
             </Button>
           ))}
+          {isMirrorableFamily(selectedPlacement.type) && (
+            <Button
+              onClick={() => {
+                onExecuteCommand(
+                  rotatePlacement({
+                    context: session.mode === 'resolution' ? 'player' : 'author',
+                    placementId: selectedPlacement.id,
+                    rotation: mirroredRotation(selectedPlacement.transform.rotation),
+                  }),
+                );
+              }}
+            >
+              <FlipHorizontal2 size={20} aria-hidden="true" />
+              Retourner
+            </Button>
+          )}
         </div>
       )}
       {selectedPlacement.type === 'beam' && session.mode === 'creation' && (
