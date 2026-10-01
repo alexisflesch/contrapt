@@ -1,5 +1,11 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
+import { leverFootprint } from '../src/domain/family-geometry';
+import {
+  ROTATION_HANDLE_GAP_CSS_PIXELS,
+  ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS,
+} from '../src/presentation/rotation-handle-metrics';
+
 const openWorkshop = async (page: Page): Promise<void> => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Ouvrir le menu' }).click();
@@ -135,18 +141,23 @@ const dragTouchPoints = async (
   }
 };
 
+// Compared at CSS resolution: on a phone viewport a device-pixel capture is
+// several times larger, and under load a single one could outlast the poll
+// budget although the canvas had already reached the expected state (G2).
+const canvasPixels = (canvas: Locator): Promise<Buffer> => canvas.screenshot({ scale: 'css' });
+
 const waitForCanvasToMatch = async (canvas: Locator, expected: Buffer): Promise<void> => {
   await expect
-    .poll(async () => (await canvas.screenshot()).equals(expected), { timeout: 2_000 })
+    .poll(async () => (await canvasPixels(canvas)).equals(expected), { timeout: 2_000 })
     .toBe(true);
 };
 
 const waitForCanvasToDiffer = async (canvas: Locator, expected: Buffer): Promise<Buffer> => {
-  let latest = await canvas.screenshot();
+  let latest = await canvasPixels(canvas);
   await expect
     .poll(
       async () => {
-        latest = await canvas.screenshot();
+        latest = await canvasPixels(canvas);
         return !latest.equals(expected);
       },
       { timeout: 2_000 },
@@ -178,7 +189,7 @@ const runConstructionInteractions = async (page: Page): Promise<void> => {
   await expect(page.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
   await closeCompactProperties(page);
 
-  const beforeDrag = await canvas.screenshot();
+  const beforeDrag = await canvasPixels(canvas);
   const delta = Math.min(80, Math.max(28, beforeMoveBounds.width * 0.15));
   const target = {
     x: Math.min(beforeMoveBounds.x + beforeMoveBounds.width - 16, start.x + delta),
@@ -214,7 +225,7 @@ const runConstructionInteractions = async (page: Page): Promise<void> => {
   const properties = page.getByRole('region', { name: 'Propriétés de Poutre' });
   await expect(properties).toBeVisible();
   const size = properties.getByRole('combobox', { name: 'Longueur de la poutre' });
-  const beforeResize = await canvas.screenshot();
+  const beforeResize = await canvasPixels(canvas);
   await size.selectOption('long');
   await expect(size).toHaveValue('long');
   const afterResize = await waitForCanvasToDiffer(canvas, beforeResize);
@@ -259,14 +270,24 @@ test('L17b — tourne le levier de 90° dans chaque sens au tactile', async ({ p
   await openPropertiesIfCompact(page);
   await expect(page.getByRole('region', { name: 'Propriétés de Levier' })).toBeVisible();
   await closeCompactProperties(page);
-  const initial = await canvas.screenshot();
+  const initial = await canvasPixels(canvas);
   await canvas.screenshot({ path: 'test-results/levels/lever-rotation-0deg.png' });
   const undo = page.getByRole('button', { name: 'Annuler', exact: true });
   const redo = page.getByRole('button', { name: 'Rétablir', exact: true });
 
-  const upperLeft = { x: centre.x - 20, y: centre.y - 20 };
-  const upperRight = { x: centre.x + 20, y: centre.y - 20 };
-  await dragTouchPoints(page, upperLeft, upperRight);
+  // The lever turns only from its round knob, drawn above the footprint;
+  // a drag that starts on the footprint moves the lever instead (G2).
+  const zoom = Number(await canvas.getAttribute('data-camera-zoom'));
+  const knobDistance =
+    -leverFootprint('center').y * zoom +
+    ROTATION_HANDLE_GAP_CSS_PIXELS +
+    ROTATION_HANDLE_KNOB_RADIUS_CSS_PIXELS;
+  const knob = { x: centre.x, y: centre.y - knobDistance };
+  const right = { x: centre.x + knobDistance, y: centre.y };
+  // The angle is read with atan2, which jumps at ±180° on the left
+  // horizontal: stay one pixel above it so the turn reads -90°, not +270°.
+  const left = { x: centre.x - knobDistance, y: centre.y - 1 };
+  await dragTouchPoints(page, knob, right);
   const positiveRotation = await waitForCanvasToDiffer(canvas, initial);
   await canvas.screenshot({ path: 'test-results/levels/lever-rotation-positive-90deg.png' });
   await expect(undo).toBeEnabled();
@@ -274,7 +295,9 @@ test('L17b — tourne le levier de 90° dans chaque sens au tactile', async ({ p
   await expect(redo).toBeEnabled();
   await waitForCanvasToMatch(canvas, initial);
 
-  await dragTouchPoints(page, upperRight, upperLeft);
+  await dragTouchPoints(page, knob, left);
+  // A new committed turn drops the redoable one: the history shows it.
+  await expect(redo).toBeDisabled();
   const negativeRotation = await waitForCanvasToDiffer(canvas, initial);
   await canvas.screenshot({ path: 'test-results/levels/lever-rotation-negative-90deg.png' });
   expect(negativeRotation.equals(positiveRotation)).toBe(false);

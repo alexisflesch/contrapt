@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 
 import { Button } from './Button';
 
@@ -58,15 +58,38 @@ export function InspectorDrawer({
       </aside>
       {showsPropertiesSheet && (
         <>
-          <button
-            className="inspector-scrim"
-            type="button"
-            aria-label="Fermer"
-            onClick={onCloseProperties}
-          />
+          <InspectorScrim onClose={onCloseProperties} />
           {properties}
         </>
       )}
     </>
+  );
+}
+
+/**
+ * Selecting an object opens the compact sheet during the press itself, so the
+ * scrim can appear under the finger: the click the browser sends at the end
+ * of that tap then lands here although the press began on the board (G2).
+ * Only a press that started on the scrim — or a keyboard activation, whose
+ * click has `detail === 0` — closes the sheet. The scrim is remounted at each
+ * opening, so a press never carries over from a previous one.
+ */
+function InspectorScrim({ onClose }: { readonly onClose: () => void }) {
+  const pressStartedHereRef = useRef(false);
+
+  return (
+    <button
+      className="inspector-scrim"
+      type="button"
+      aria-label="Fermer"
+      onPointerDown={() => {
+        pressStartedHereRef.current = true;
+      }}
+      onClick={(event) => {
+        const pressStartedHere = pressStartedHereRef.current;
+        pressStartedHereRef.current = false;
+        if (pressStartedHere || event.detail === 0) onClose();
+      }}
+    />
   );
 }

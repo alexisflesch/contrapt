@@ -474,3 +474,56 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier :
 - Contradictions rencontrées : aucune.
 - Non vérifié : la stabilité sur une machine plus lente ou en CI distante.
 - Pour l'auteur : rien à valider à l'écran.
+
+### G2 — Flakes E2E L17b et U15 — fait — commit de cette entrée
+
+- Reproduction (après `pnpm build`) :
+  `pnpm exec playwright test e2e/editor-interactions.spec.ts --project=mobile -g "L17b|U15" --repeat-each=50 --workers=12`
+  → U15 20/50 en échec, L17b 0/50 ; `-g "L17b" --repeat-each=100 --workers=16`
+  → L17b 5/100 en échec. La suite mobile complète `--repeat-each=4` (6 workers
+  par défaut) passe 180/180 : les flakes n’apparaissent que sous charge.
+- Cause U15 (production) : toucher le levier le sélectionne au `pointerdown`,
+  ce qui ouvre le tiroir de propriétés compact pendant le toucher. Sous
+  charge, le clic émis par le navigateur à la fin du toucher arrive sur le
+  scrim tout juste monté (instrumentation : `click inspector-scrim Fermer`
+  après `pointerdown scene-frame`) et referme le tiroir. Correction : le scrim
+  (`src/ui/InspectorDrawer.tsx`) ne ferme que pour une pression commencée sur
+  lui, ou une activation au clavier (`detail === 0`).
+- Cause L17b (test) : depuis la poignée ronde de `8e9a098`, les deux gestes
+  partaient de l’empreinte élargie du levier, à 35 px de la poignée : ils le
+  déplaçaient au lieu de le tourner (captures `lever-rotation-*` : levier
+  droit, déplacé), et le test passait quand même. Les échecs étaient des
+  attentes `expect.poll` de 2 s dont une seule capture de canvas en pixels
+  physiques (998 × 965) durait 1,5 à 2,5 s sous charge ; l’état attendu était
+  pourtant atteint (capture d’échec identique au pixel à l’état initial).
+  Correction : les gestes partent de la poignée (position calculée depuis
+  `leverFootprint` et `rotation-handle-metrics`) et tournent de ±90° ; les
+  comparaisons de canvas se font en pixels CSS ; le second quart de tour est
+  synchronisé sur l’historique (`Rétablir` désactivé). Délais inchangés, ni
+  `waitForTimeout` ni retry.
+- Vérification : même commande, U15 et L17b 0/50 chacun (12 workers) ; L17b
+  0/100 (16 workers) ; C3 desktop passe (aides de comparaison partagées).
+- Tests ajoutés : `src/ui/InspectorDrawer.test.tsx` › « ignore le clic d’un
+  toucher commencé sur le plateau avant l’ouverture du tiroir », « ferme le
+  tiroir quand le toucher commence et finit sur le scrim », « ferme le tiroir
+  quand le scrim est activé au clavier ».
+- Échec initial constaté : `AssertionError: expected "spy" to not be called at
+  all, but actually been called 1 times`.
+- Tests existants réécrits : L17b — le geste visait l’empreinte et non la
+  poignée, il ne testait plus la rotation ; il la teste désormais (captures
+  `test-results/levels/lever-rotation-{positive,negative}-90deg.png` : levier
+  couché à droite, puis à gauche).
+- Fichiers touchés hors périmètre : `src/ui/InspectorDrawer.tsx` (cause de
+  production de U15).
+- Écarts avec la tâche : la tâche visait une attente manquante dans les tests ;
+  pour U15 la cause était dans le code, pour L17b dans le geste et le coût des
+  captures. Le passage en pixels CSS réduit ce coût, ce n’est pas une
+  synchronisation sur un état.
+- Contradictions rencontrées : aucune.
+- Non vérifié : à 16 workers sur 12 cœurs, U15 échoue encore 8/100 (6 délais
+  de test de 30 s pendant les captures pleine page finales, 2 attentes de 1 s
+  de `waitForCatalogueToCollapse`) : surcharge, consigné en dette dans
+  `etat.md`. Pas de vérification sur un vrai téléphone lent du correctif du
+  scrim.
+- Pour l'auteur : rien à valider à l’écran (aucun changement visible) ; le
+  tiroir ne se referme plus de lui-même juste après un toucher sur un objet.

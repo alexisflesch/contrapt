@@ -86,6 +86,11 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   tapis défilant, bouton à capuchon qui s’enfonce, ventilateur à pales tournantes
   écrasées en perspective et orientable, barrière dont seule la partie sortie du
   poteau est dessinée, tremplin à ressort tassé à l’impact), ordre de dessin déterministe (la balle après le panier).
+- Tiroir de propriétés compact (G2) : son scrim ne ferme le tiroir que pour
+  une pression commencée sur lui (ou une activation au clavier). Le tiroir
+  s’ouvre pendant le toucher qui sélectionne un objet ; le clic que le
+  navigateur émet à la fin de ce toucher pouvait tomber sur le scrim tout juste
+  monté et refermer aussitôt le tiroir.
 - Chargeur des sprites : une requête en cours est partagée, un sprite prêt est
   conservé, et un échec est retenté au rendu suivant, jusqu’à trois tentatives par
   asset.
@@ -321,6 +326,12 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 - **E2E du catalogue** : la transition de hauteur du tiroir pouvait encore
   recouvrir le plateau après sa fermeture logique ; les parcours U15 et niveau 9
   attendent désormais sa hauteur repliée avant le toucher suivant.
+- **E2E sous surcharge (G2)** : les causes des flakes L17b et U15 sont
+  corrigées (voir la dernière gate). Avec 16 workers sur 12 cœurs, U15 échoue
+  encore 8 fois sur 100 sans lien avec ces causes : 6 dépassements du délai de
+  30 s du test pendant les captures pleine page finales, et 2 dépassements de
+  l’attente de 1 s de `waitForCatalogueToCollapse`. Non observé à 12 workers ni
+  dans la gate.
 - **Retest du Xiaomi après L2c** : le vieux téléphone avait exigé un rechargement
   de `/bench/play`. Le chargeur retente maintenant un asset en échec lors des
   rendus suivants, au plus trois fois ; le comportement doit encore être vérifié
@@ -350,6 +361,21 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après G2 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 737 tests Vitest (59 fichiers),
+build Vite/PWA et 46 tests Playwright `mobile` (45 réussis, 1 ignoré). Les
+deux flakes sont reproduits puis corrigés (`--repeat-each`, workers élevés) :
+U15 échouait 20 fois sur 50 (12 workers), L17b 5 fois sur 100 (16 workers) ;
+après correction, 0 sur 50 pour chacun à 12 workers et 0 sur 100 pour L17b à
+16 workers. U15 : le clic qui suit le toucher de sélection tombait sur le scrim
+du tiroir compact, ouvert pendant ce toucher, et le refermait (correction de
+production, voir « Présentation et interface »). L17b : le geste partait de
+l’empreinte du levier et le déplaçait au lieu de le tourner depuis la
+poignée ; ses comparaisons de canvas, en pixels physiques, pouvaient dépasser
+à elles seules le budget de 2 s de leur attente. Le test vise désormais la
+poignée, compare en pixels CSS et attend que l’historique montre le second
+quart de tour.
 
 `pnpm check` après G1 (1er octobre 2026) : passe trois fois de suite —
 typecheck, lint, formatage, Knip, contenu (19 documents), 734 tests Vitest
