@@ -239,6 +239,11 @@ Route `/my-levels` (ADR 0008), dans le menu et sur l'accueil.
 - La création d'un niveau de campagne garde une copie du niveau : une
   correction ultérieure de la campagne ne se propage pas aux créations
   existantes, et c'est voulu.
+- Limite connue (M5) : la solution du joueur ne retient pas le déplacement d'un
+  objet du décor. L'atelier verrouille tout objet qu'il pose (U20) et la
+  campagne verrouille son décor : seul un fichier écrit à la main peut avoir un
+  décor déplaçable. Une telle victoire peut ne pas se rejouer après « Remixer » ;
+  la vérification d'export (ADR 0013) le signale au remixeur.
 - Hors de cette décision : synchronisation entre appareils, comptes, catalogue
   en ligne. Le transfert d'une création vers un autre appareil passe par
   l'export (puzzle), la réception, puis « Modifier » et « Révéler ».
