@@ -19,7 +19,7 @@ Chaque tranche est verticale, commence par ses tests observables et se termine p
 | T5      | ◐ campagne de 17 esquisses (`levels/nouveaux-niveaux.md`) : calibration auteur encore à faire              |
 | T6      | ⬜ progression (ADR 0010), stockage et partage (ADR 0011), PWA (ADR 0012) : L19 à L28 ; interface U1 à U12 |
 
-L'ordre d'exécution courant est dans `feuille-de-route-luna.md`.
+L'ordre d'exécution courant est dans `feuille-de-route.md`.
 
 ## Convention
 

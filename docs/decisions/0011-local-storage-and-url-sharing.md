@@ -105,3 +105,20 @@ comme un nouveau brouillon avec un identifiant généré par l’application, pu
 ouvert dans l’éditeur. Un identifiant source ne peut donc pas écraser un brouillon
 local existant. Les erreurs de lecture, de validation ou de stockage restent sur
 la page d’import, en dehors du plateau ; elles ne modifient aucun brouillon.
+
+## Amendement du 1er octobre 2026 — réception et « Mes niveaux » (ADR 0015)
+
+Remplace l’amendement précédent et la phrase « n’écrase ni ne crée de brouillon
+sans action explicite » de § Partage par fragment URL, à la demande de l’auteur :
+
+- un lien `/shared` valide est **toujours** enregistré comme niveau reçu
+  (`tinkerbolt:received:<id>`), avant d’être joué ; un lien invalide n’enregistre
+  rien ;
+- un fichier importé devient lui aussi un niveau reçu ; il n’ouvre plus
+  l’éditeur et ne crée plus de brouillon ;
+- un niveau reçu reste hors de la campagne et de sa progression ;
+- l’enveloppe des brouillons passe en version 2 (champ `source`, `updatedAt`),
+  avec migration depuis la version 1.
+
+Le détail (empreinte, doublons, refus des documents `toPlace`, saturation du
+stockage) est dans l’ADR 0015.

@@ -390,7 +390,7 @@ L’état réellement livré, la stack en place, les dettes et la dernière exé
 de la gate sont décrits dans [`etat.md`](etat.md), réécrit à chaque fin de
 tranche. Le découpage des tranches est dans [`backlog.md`](backlog.md) et
 l’ordre du travail restant dans
-[`feuille-de-route-luna.md`](feuille-de-route-luna.md).
+[`feuille-de-route.md`](feuille-de-route.md).
 
 ## Décisions réellement encore ouvertes
 
@@ -418,7 +418,7 @@ questions ouvertes.
 - [Carte de lecture du dépôt](index.md)
 - [État du dépôt](etat.md)
 - [Découpage des tranches](backlog.md)
-- [Feuille de route de la reprise](feuille-de-route-luna.md)
+- [Feuille de route](feuille-de-route.md)
 - [Fondations produit](decisions/0001-product-foundations.md)
 - [Sélection du moteur physique](decisions/0002-physics-engine-selection.md)
 - [Bootstrap du projet](decisions/0003-project-bootstrap.md)

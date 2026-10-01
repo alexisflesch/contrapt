@@ -8,8 +8,9 @@ ligne de routage qui correspond à sa tâche.
 
 L'état réellement livré et les dettes sont dans `etat.md`. Le découpage en
 tranches est dans `backlog.md`. **Le travail restant, tâche par tâche et dans
-l'ordre, est dans `feuille-de-route-luna.md`** : c'est le point d'entrée d'un
-agent qui reprend l'implémentation. `plan-remise-en-jeu.md` est l'historique de
+l'ordre, est dans `feuille-de-route.md`** : c'est le point d'entrée d'un
+agent qui reprend l'implémentation. `feuille-de-route-luna.md` est l'historique
+de la reprise précédente (journal L1 à U29) ; on n'y lit que l'entrée citée. `plan-remise-en-jeu.md` est l'historique de
 la remise en jeu (phases A à F) ; on n'y lit que la section qu'une tâche cite.
 
 ## Autorité
@@ -23,7 +24,8 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/backlog.md`                                         | 138     | découpage des tranches, dépendances, tranche courante            |
 | `docs/cahier-des-charges.md`                              | 436     | vision produit, périmètre, hors-périmètre                        |
 | `docs/etat.md`                                            | 133     | ce qui est livré, les dettes, la dernière gate                   |
-| `docs/feuille-de-route-luna.md`                           | 757     | tâches restantes, leur ordre, règles de reprise, journal         |
+| `docs/feuille-de-route.md`                                | 443     | tâches restantes, leur ordre, règles de reprise, journal         |
+| `docs/feuille-de-route-luna.md`                           | 2633    | historique de la reprise précédente (journal L1 à U29)           |
 | `docs/plan-remise-en-jeu.md`                              | 1208    | historique A–F ; spécifications détaillées de C1, C2, D3         |
 | `docs/architecture.md`                                    | 223     | couches, dépendances, états distincts, modèle d'objet            |
 | `docs/qualite.md`                                         | 149     | stratégie de test, niveaux de test, gates                        |
@@ -46,6 +48,8 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/decisions/0012-pwa-service-worker.md`               | 47      | PWA, service worker, mises à jour (accepté)                      |
 | `docs/decisions/0013-puzzle-workshop-solution.md`         | 95      | objets à placer, solution de référence, export vérifié (accepté) |
 | `docs/decisions/0014-icon-library.md`                    | —       | bibliothèque d’icônes de l’interface (accepté)                         |
+| `docs/decisions/0015-mes-niveaux.md`                      | 225     | « Mes niveaux », niveaux reçus, créations, solution cachée (accepté) |
+| `docs/decisions/0016-attribution-licence-niveaux.md`      | 95      | auteur, sources, licence CC BY 4.0 des niveaux (accepté)         |
 | `LICENSE`                                                 | 661     | conditions de licence du code du logiciel (GNU AGPL-3.0-or-later) |
 
 Sources de vérité exécutables, prioritaires sur toute prose :
@@ -69,7 +73,7 @@ Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans rai
 
 | Tâche                                          | Lire                                                                                                              | Écrire dans                                    |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Format de niveau, schéma Zod, migration        | ADR 0004, ADR 0007 § Scène d'un niveau, ADR 0013, `architecture.md` § Enveloppe de niveau, `level-document.ts`              | `src/domain/`                                  |
+| Format de niveau, schéma Zod, migration        | ADR 0004, ADR 0007 § Scène d'un niveau, ADR 0013, ADR 0016, `architecture.md` § Enveloppe de niveau, `level-document.ts`            | `src/domain/`                                  |
 | Commande, historique, undo/redo, tentative     | ADR 0005, `architecture.md` § Commandes et historique                                                             | `src/application/`                             |
 | Nouvelle famille d'objet                       | `catalogue-initial.md`, `architecture.md` § Modèle d'objet, ADR 0004                                              | `src/domain/`, `src/simulation/`               |
 | Port physique, boucle à pas fixe, déterminisme | ADR 0002, `qualite.md` § Déterminisme, `architecture.md` § Simulation                                             | `src/simulation/`, `test/conformance/`         |
@@ -80,9 +84,9 @@ Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans rai
 | Interface tactile, tiroir, gestes              | `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile                                     | `src/ui/`, `src/app/`                          |
 | Routage, navigation, schéma d'URL              | ADR 0008                                                                                                          | `src/app/`                                     |
 | Conception d'un nouveau niveau                 | `levels/conception-niveaux.md` (se suffit à lui-même)                                                             | `src/content/levels/`                          |
-| Contenu d'un niveau                            | `levels/nouveaux-niveaux.md`, `feuille-de-route-luna.md` § 3, ADR 0007 § Scène d'un niveau                     | `src/content/levels/`                          |
+| Contenu d'un niveau                            | `levels/nouveaux-niveaux.md`, `feuille-de-route.md` § 3, ADR 0007 § Scène d'un niveau                     | `src/content/levels/`                          |
 | Parcours end-to-end                            | `mobile-editor-interactions.md` § Scénarios d'acceptation, `qualite.md` § Tests end-to-end                        | `e2e/`                                         |
-| Stockage, import/export, codec URL             | ADR 0011, `architecture.md` § Stockage et partage                                                                 | `src/infrastructure/`, `src/application/`      |
+| Stockage, import/export, codec URL             | ADR 0011, ADR 0015, `architecture.md` § Stockage et partage                                                                 | `src/infrastructure/`, `src/application/`      |
 | Défi d'objets, progression de campagne         | ADR 0010, ADR 0011 § `localStorage`                                                                               | `src/application/progression/`, `src/content/` |
 | PWA, service worker                            | ADR 0012, ADR 0003                                                                                                | racine, `src/app/`                             |
 | Outillage, script, configuration, CI           | ADR 0003, `package.json`                                                                                          | racine                                         |

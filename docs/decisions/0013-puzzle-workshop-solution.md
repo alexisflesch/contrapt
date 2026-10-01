@@ -113,3 +113,16 @@ couche application par un port ; l'application ne dépend pas du moteur.
   est exporté comme une entrée `wire` de l'inventaire et une connexion de la
   solution ; lorsqu'une extrémité est un objet à placer, sa pose conserve une
   référence `placementId` pour que la solution reste rejouable.
+
+## Amendement du 1er octobre 2026 — solution cachée (ADR 0015)
+
+Ouvrir un niveau puzzle dans l’atelier ne pose plus sa solution : le décor est
+repris, l’inventaire et la solution sont retirés, et le niveau d’origine est
+gardé hors du document (`source` de la création). La solution n’est posée que
+par la commande « Révéler la solution de l’auteur », ou d’office sous
+`pnpm dev` pour un niveau de campagne. La transformation inverse décrite plus
+haut sert à cette révélation, appliquée en ajout sur le document courant.
+`workshopFromPuzzle` reste la référence du placement des poses et du remappage
+des fils.
+
+L’export conserve `metadata.author` et `metadata.basedOn` (ADR 0016).

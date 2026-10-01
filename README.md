@@ -46,7 +46,7 @@ Le build de production se lance avec `pnpm build`, puis peut être servi avec
 
 Les décisions d’architecture, l’état livré et les tâches restantes sont
 documentés dans [`docs/`](docs/), notamment [`docs/etat.md`](docs/etat.md) et
-[`docs/feuille-de-route-luna.md`](docs/feuille-de-route-luna.md).
+[`docs/feuille-de-route.md`](docs/feuille-de-route.md).
 
 ## Déploiement
 

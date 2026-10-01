@@ -15,14 +15,16 @@ l'implémentation.
 ## Reprise en cours
 
 Le travail restant est ordonné, tâche par tâche, dans
-`docs/feuille-de-route-luna.md`. Un agent d'implémentation qui reprend le dépôt
+`docs/feuille-de-route.md`. Un agent d'implémentation qui reprend le dépôt
 lit ce fichier juste après `docs/index.md`, suit ses tâches dans l'ordre et tient
 son journal. L'état réellement livré est dans `docs/etat.md`.
+`docs/feuille-de-route-luna.md` est l'historique de la reprise précédente : on
+n'y lit que l'entrée qu'une tâche cite.
 
-Le découpage en tranches est dans `docs/backlog.md`. Le skill `orchestrate`
-(`.codex/skills/orchestrate/`) sert à déléguer à d'autres agents. Pendant la
-reprise pilotée par la feuille de route, seuls des sous-agents `gpt-6-luna` sont
-permis ; `gpt-6-astra` n'est jamais utilisé.
+Le découpage en tranches est dans `docs/backlog.md`. La reprise est conduite par
+Claude Code (Opus) ; il peut déléguer une sous-tâche délimitée à un sous-agent
+Claude Sonnet ou Opus et reste responsable du résultat. `gpt-6-astra` n'est
+jamais utilisé.
 
 Le code, les schémas exécutables et les tests priment sur les exemples narratifs.
 Un exemple obsolète doit être corrigé ou supprimé.

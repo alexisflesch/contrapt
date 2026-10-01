@@ -7,7 +7,7 @@ la dernière exécution de la gate globale. Il est réécrit à chaque fin de t�
 et ne contient ni décision ni spécification ; celles-ci restent dans
 [le cahier des charges](cahier-des-charges.md) et les ADR du dossier
 `decisions/`. Le travail restant et son ordre sont dans
-[la feuille de route](feuille-de-route-luna.md).
+[la feuille de route](feuille-de-route.md).
 
 ## Stack en place
 

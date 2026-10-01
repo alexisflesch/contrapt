@@ -132,6 +132,18 @@ ouvre `/import`. Cette page valide le fichier avant de créer un brouillon ; ell
 ne remplace aucun brouillon existant. Le niveau validé s’ouvre ensuite dans
 `/editor?draft=<id>` selon les règles de l’ADR 0011.
 
+## Amendement du 1er octobre 2026 — « Mes niveaux » (ADR 0015)
+
+- `/my-levels` : page « Mes niveaux », présente dans le menu partagé et sur
+  l’accueil ; sections « Mes créations » et « Niveaux reçus ».
+- `/my-levels/:id/play` : un niveau reçu joué ; `id` vient de l’URL, il est non
+  fiable et ne sert qu’à une lecture du dépôt des niveaux reçus. Un identifiant
+  inconnu affiche une erreur avec un lien vers `/my-levels`.
+- `/import` redirige vers `/my-levels`, qui porte l’import de fichier ;
+  l’entrée « Importer un fichier JSON » du menu disparaît.
+- `/editor` sans paramètre : à la première modification engagée, l’URL est
+  remplacée par `/editor?draft=<id>` de la création enregistrée.
+
 ## Ce qui reste non décidé
 
 - Le contenu réel de `/settings` : cette ADR pose seulement la route et une
