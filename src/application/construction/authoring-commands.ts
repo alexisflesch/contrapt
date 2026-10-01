@@ -127,6 +127,12 @@ interface UpdateLevelTitleInput {
   readonly title: string;
 }
 
+interface UpdateLevelAuthorInput {
+  readonly context: ConstructionContext;
+  /** ADR 0016 § Pseudo; `undefined` removes it. Checked by the schema, never rewritten (M1). */
+  readonly author: string | undefined;
+}
+
 interface UpdateLevelDescriptionInput {
   readonly context: ConstructionContext;
   /** Pass `undefined` to remove the optional description. */
@@ -517,6 +523,17 @@ export const updateLevelTitle = (input: UpdateLevelTitleInput): AuthoringCommand
         metadata: { ...state.document.metadata, title: input.title },
       },
     };
+  });
+
+export const updateLevelAuthor = (input: UpdateLevelAuthorInput): AuthoringCommand =>
+  createAuthoringCommand(input.context, (state) => {
+    const { author, ...metadataWithoutAuthor } = state.document.metadata;
+    if (author === input.author) return { status: 'unchanged' };
+    const metadata =
+      input.author === undefined
+        ? metadataWithoutAuthor
+        : { ...metadataWithoutAuthor, author: input.author };
+    return { status: 'candidate', document: { ...state.document, metadata } };
   });
 
 export const updateLevelDescription = (input: UpdateLevelDescriptionInput): AuthoringCommand =>

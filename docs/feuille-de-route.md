@@ -1445,3 +1445,103 @@ role "button" and name "Révéler la solution de l’auteur"` (5 tests sur 8).
   vérifiée) ; « Remettre l’atelier à zéro » après adoption enregistre
   l’atelier vide sous la même création (non testé séparément).
 - Pour l'auteur : aucune modification visuelle, pas de captures.
+
+### M14 — Partager : titre, pseudo, licence — fait — commit de cette entrée
+
+- Précisions du pilote appliquées : titre et pseudo par commandes d’auteur
+  annulables (`updateLevelTitle`, nouvelle `updateLevelAuthor`), passées par
+  l’historique de l’atelier et enregistrées dans la création ; espaces de
+  bord retirés à la saisie, champ vide = `author` retiré ; pseudo retenu
+  préremplissant seulement une création sans `author` ; erreur des
+  préférences sans effet sur l’export ; mention de licence au texte exact de
+  l’ADR 0016 ; « Partager » d’une création de « Mes niveaux » couvert, celui
+  d’un niveau reçu inchangé ; `/settings` non touché.
+- Tests ajoutés : `src/infrastructure/storage/local-storage-preferences-repository.test.ts`
+  (12 tests : vide sans écriture, aller-retour en enveloppe, pseudo oublié,
+  JSON invalide sauvegardé avec avertissement, quatre valeurs invalides
+  — enveloppe, version, pseudo, champ inconnu — sauvegardées avant
+  remplacement, secours impossible, lecture en erreur, quota, pseudo invalide
+  refusé sans écriture) ; `authoring-commands.test.ts` › « renseigne le
+  pseudo (M14) » et « retire le pseudo (M14) » (annulables, refusés au
+  joueur), « pseudo de l’auteur (M14…) » (3 tests : reste des métadonnées
+  intact, pseudo invalide refusé, rien d’enregistré sans changement) ;
+  `LevelExportDialog.test.tsx` › « titre, pseudo et licence dans la boîte
+  d’export (M14, ADR 0016) » (8 tests : champ, aide et licence ; pseudo
+  rogné dans le fichier et le lien ; pseudo invalide refusé avec message ;
+  `author` du niveau prioritaire et champ vidé qui le retire ; préremplissage
+  et pseudo retenu ; export malgré des préférences en erreur ou qui lèvent ;
+  commandes transmises à l’export) ; `src/app/ShareAttribution.test.tsx`
+  (4 tests App : atelier → création enregistrée puis deux « Annuler » ;
+  préremplissage après rechargement dans une autre création ; « Partager »
+  de « Mes niveaux » → fichier, création avec `source` et `basedOn`
+  conservés, préférences ; niveau reçu sans champs) ;
+  `e2e/share-attribution.spec.ts` (mobile, au toucher : champs, licence,
+  clavier simulé, pseudo U+2028 refusé, téléchargement, rechargement,
+  enveloppe `tinkerbolt:preferences` ; captures).
+- Échec initial constaté : préférences, avec un bouchon : `AssertionError:
+expected { status: 'error', …(1) } to deeply equal { status: 'ok',
+preferences: {} }` (10 sur 12 ; les deux cas d’erreur de stockage
+  passaient sur le bouchon). Commande : `TypeError: (0 , updateLevelAuthor)
+is not a function`. Boîte et App : `Unable to find an accessible element
+with the role "textbox" and name "Pseudo (facultatif)"` (8 sur 8 et 3 sur
+  4 ; le test du niveau reçu passait d’emblée, non-régression). Ensuite,
+  avant le câblage : `expected { title: 'Machine' } to deeply equal { title:
+'Grand saut', author: 'Lili' }`. E2E : `Expected pattern:
+/interactive-widget=resizes-content/u` (méta absente). Un test App
+  attendait la date de l’horloge du test alors que l’App utilise la
+  sienne : attente corrigée dans le test, pas le code. Mutation : sans
+  `onApplyAttribution` dans `BoardShell`, le test de l’atelier échoue.
+- Tests existants réécrits : aucun (`renderDialog` de
+  `LevelExportDialog.test.tsx` enveloppe désormais la boîte dans
+  `PreferencesRepositoryContext`, sans changer les tests U16/U22).
+- Fichiers touchés hors périmètre : `index.html` (méta viewport
+  `interactive-widget=resizes-content` : sans elle, Chrome Android
+  recouvre la boîte avec le clavier au lieu de réduire la fenêtre) ;
+  `src/domain/level-document.ts` (`authorSchema` exporté, règle inchangée,
+  pour les préférences et le message du pseudo) ; `src/ui/styles.css`
+  (`.export-field-error` et bordure `aria-invalid`, jetons existants) ;
+  `docs/cahier-des-charges.md` (tableau « Avancement », règle du pilote).
+  Lecture de `e2e/export.spec.ts`, `e2e/puzzle-machine.ts`,
+  `e2e/reveal.spec.ts`, `MyLevelsPage.test.tsx`,
+  `FreeWorkshopSaving.test.tsx`, `editor-session.ts`, `use-editor-session.ts`,
+  `history.ts`, `Dialog.tsx`, `browser-share.ts` : fixtures, modèle de
+  capture, contrat des commandes et de la boîte.
+- Choix d’implémentation : les commandes sont appliquées **à l’export**
+  (« Télécharger le fichier » ou « Copier le lien de partage »), pas à
+  chaque frappe ni à la sortie du champ : un seul geste au doigt, aucune
+  entrée d’historique par lettre, ce qui est enregistré est exactement ce
+  qui est parti ; fermer la boîte sans exporter ne change rien. L’export
+  lui-même reflète toujours les champs (`nameExportedLevel` reçoit le
+  pseudo, sans revérifier le puzzle). L’identifiant de la création ne
+  change pas, seul le puzzle exporté prend l’identifiant tiré du nom
+  (U16). Deux commandes, donc au plus deux entrées d’historique (titre puis
+  pseudo), chacune absente si la valeur ne change pas. La boîte reçoit
+  `onApplyAttribution(commandes)` : l’atelier les exécute par
+  `executeCommand` ; « Mes niveaux » les applique à une tentative de la
+  création puis l’enregistre avec sa `source` (alerte de stockage existante
+  en cas d’échec). Préférences : lues une fois à l’ouverture, écrites à
+  chaque export (`{}` quand le champ est vide), toute erreur ou exception
+  ignorée. `maxLength` 40 sur le champ, comme le titre (160) ; le refus
+  reste atteignable par une tabulation, un caractère de contrôle ou
+  U+2028 collés. Clavier : la boîte tient en 390 × 508 (844 moins un
+  clavier de 336 px) avec champ et boutons visibles, vérifié par l’E2E
+  après réduction de la fenêtre, ce que la méta `resizes-content` produit
+  sur Android ; iOS ne réduit pas la fenêtre mais fait défiler jusqu’au
+  champ.
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune. Constaté : `updateLevelDescription`
+  avec `undefined` perd `author` et `basedOn` (dette notée dans `etat.md`,
+  non corrigée : hors périmètre, commande non exposée).
+- Non vérifié : un vrai téléphone et son clavier (Android et iOS) ; l’effet
+  de `resizes-content` sur les autres écrans (seule la boîte d’export a des
+  champs de saisie) ; un export pendant une simulation (dette notée).
+- Pour l'auteur : validation visuelle — captures inspectées
+  `test-results/share/share-fields-{390x844,844x390,1440x900}.png` (nom,
+  pseudo, aide atténuée, mention de licence, boutons ; en 844 × 390 la boîte
+  défile comme avant), `share-invalid-pseudo-{…}.png` (message rouge sous
+  l’aide, boutons grisés ; la bordure rouge n’apparaît qu’hors focus, le
+  champ focalisé garde l’anneau de focus) et `share-keyboard-390x508.png`
+  (boîte entière au-dessus du clavier simulé). Questions : le texte de la
+  boîte mélange « vous » (U16) et « tu » (licence, aide) — faut-il
+  harmoniser ? Un champ vidé fait oublier le pseudo retenu : est-ce le
+  comportement voulu ?

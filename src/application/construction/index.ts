@@ -14,6 +14,7 @@ export {
   updateInventoryPermissions,
   updateInventoryProperties,
   updateInventoryQuantity,
+  updateLevelAuthor,
   updateLevelDescription,
   updateLevelGoal,
   updateLevelTitle,

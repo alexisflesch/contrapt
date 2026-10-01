@@ -409,7 +409,7 @@ phase ; le détail reste dans `etat.md` et le journal de la feuille de route).
 | Phase de la feuille de route      | État au 1er octobre 2026                                                  |
 | --------------------------------- | ------------------------------------------------------------------------- |
 | 0 — Gate verte                    | faite (G1, G2)                                                            |
-| 1 — « Mes niveaux » et communauté | en cours : M1 à M13 livrées ; M14 (partage, pseudo, licence), M15 restent |
+| 1 — « Mes niveaux » et communauté | en cours : M1 à M14 livrées ; M15 reste                                   |
 | 2 — Interface en attente          | à faire                                                                   |
 | 3 — Atelier complet               | à faire                                                                   |
 | 4 — Outillage et mesures          | à faire                                                                   |

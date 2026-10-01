@@ -627,6 +627,10 @@ export function BoardShell({
           onClose={() => {
             setIsExportOpen(false);
           }}
+          // M14: the exported title and pseudonym go through the workshop's history.
+          onApplyAttribution={(commands) => {
+            for (const command of commands) executeCommand(command);
+          }}
         />
       )}
     </AppFrame>

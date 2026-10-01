@@ -4,6 +4,12 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createConstructionAttempt, type ConstructionAttempt } from '../application/construction';
+import type { Command } from '../application/history';
+import type {
+  Preferences,
+  PreferencesRepository,
+} from '../application/preferences/preferences-repository';
 import { embeddedLevels } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
 import { decodeLevelFile } from '../infrastructure/level-file/level-file-codec';
@@ -12,6 +18,7 @@ import { decodeShareFragment } from '../infrastructure/level-share/level-share-c
 import { App } from './App';
 import { LevelExportDialog } from './LevelExportDialog';
 import { nameExportedLevel, prepareLevelExport } from './level-export';
+import { PreferencesRepositoryContext } from './preferences-repository-context';
 
 const levelFour = embeddedLevels.find(({ id }) => id === 'campaign-04-retour-a-l-expediteur');
 if (levelFour === undefined) throw new Error('Niveau 4 embarqué introuvable.');
@@ -63,27 +70,57 @@ const boardCanvasRect: DOMRect = {
   },
 };
 
+/** An in-memory `PreferencesRepository` that records what it is asked to keep. */
+const memoryPreferences = (initial: Preferences = {}) => {
+  let stored = initial;
+  const saved: Preferences[] = [];
+  const repository: PreferencesRepository = {
+    load: () => ({ status: 'ok', preferences: stored }),
+    save: (preferences) => {
+      saved.push(preferences);
+      stored = preferences;
+      return { status: 'ok' };
+    },
+  };
+  return { repository, saved };
+};
+
 const renderDialog = (
   document: LevelDocument,
   overrides: Partial<Parameters<typeof LevelExportDialog>[0]> = {},
+  preferences: PreferencesRepository = memoryPreferences().repository,
 ) => {
   const onClose = vi.fn();
   const downloadFile = vi.fn<(fileName: string, mimeType: string, fileText: string) => void>();
   const writeClipboard = vi.fn<(text: string) => Promise<void>>(() => Promise.resolve());
   render(
-    <LevelExportDialog
-      document={document}
-      run={successfulExportRun}
-      onClose={onClose}
-      origin="https://exemple.test"
-      basePath="/"
-      downloadFile={downloadFile}
-      writeClipboard={writeClipboard}
-      {...overrides}
-    />,
+    <PreferencesRepositoryContext value={preferences}>
+      <LevelExportDialog
+        document={document}
+        run={successfulExportRun}
+        onClose={onClose}
+        origin="https://exemple.test"
+        basePath="/"
+        downloadFile={downloadFile}
+        writeClipboard={writeClipboard}
+        {...overrides}
+      />
+    </PreferencesRepositoryContext>,
   );
   return { onClose, downloadFile, writeClipboard };
 };
+
+const downloadedDocument = (
+  downloadFile: ReturnType<typeof renderDialog>['downloadFile'],
+): LevelDocument => {
+  const fileText = downloadFile.mock.calls.at(-1)?.[2];
+  const decoded = decodeLevelFile(String(fileText));
+  if (decoded.status !== 'ok') throw new Error('Fichier exporté illisible.');
+  return decoded.document;
+};
+
+const licenceNotice =
+  'En partageant ce niveau, tu le places sous licence CC BY 4.0 : d’autres pourront le modifier et le republier en te citant.';
 
 describe('boîte « Exporter » de l’atelier (U16, U22)', () => {
   beforeEach(() => {
@@ -209,5 +246,155 @@ describe('boîte « Exporter » de l’atelier (U16, U22)', () => {
     expect(screen.getByRole('dialog', { name: 'Exporter le niveau' })).toBeVisible();
     expect(screen.getByRole('alert')).toHaveTextContent('Aucun objet n’est à placer');
     expect(screen.queryByRole('button', { name: 'Télécharger le fichier' })).toBeNull();
+  });
+});
+
+describe('titre, pseudo et licence dans la boîte d’export (M14, ADR 0016)', () => {
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/');
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it('propose un pseudo facultatif avec son aide, et rappelle la licence CC BY 4.0', () => {
+    renderDialog(levelOneWorkshop);
+
+    const pseudo = screen.getByRole('textbox', { name: 'Pseudo (facultatif)' });
+    expect(pseudo).toHaveValue('');
+    expect(pseudo).toHaveAccessibleDescription('Un pseudo, pas ton vrai nom');
+    expect(screen.getByText(licenceNotice)).toBeVisible();
+  });
+
+  it('met le pseudo saisi, sans ses espaces de bord, dans le fichier et dans le lien', async () => {
+    const { downloadFile, writeClipboard } = renderDialog(levelOneWorkshop);
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Pseudo (facultatif)' }), {
+      target: { value: '  Lili  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+    expect(downloadedDocument(downloadFile).metadata.author).toBe('Lili');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copier le lien de partage' }));
+    expect(await screen.findByText('Lien copié')).toBeVisible();
+    const link = new URL(String(writeClipboard.mock.calls[0]?.[0]));
+    const decoded = await decodeShareFragment(link.hash);
+    expect(decoded.status === 'ok' && decoded.document.metadata.author).toBe('Lili');
+  });
+
+  it('refuse un pseudo invalide avec un message, sans rien exporter', () => {
+    const { downloadFile } = renderDialog(levelOneWorkshop);
+    const pseudo = screen.getByRole('textbox', { name: 'Pseudo (facultatif)' });
+
+    fireEvent.change(pseudo, { target: { value: 'Li\tli' } });
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Le pseudo ne doit contenir ni saut de ligne ni caractère de contrôle.',
+    );
+    expect(pseudo).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('button', { name: 'Télécharger le fichier' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Copier le lien de partage' })).toBeDisabled();
+    expect(downloadFile).not.toHaveBeenCalled();
+
+    fireEvent.change(pseudo, { target: { value: 'Lili' } });
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Télécharger le fichier' })).toBeEnabled();
+  });
+
+  it('garde le pseudo du niveau plutôt que celui retenu, et un champ vidé retire l’auteur', () => {
+    const { downloadFile } = renderDialog(
+      { ...levelOneWorkshop, metadata: { ...levelOneWorkshop.metadata, author: 'Max' } },
+      {},
+      memoryPreferences({ author: 'Lili' }).repository,
+    );
+    const pseudo = screen.getByRole('textbox', { name: 'Pseudo (facultatif)' });
+    expect(pseudo).toHaveValue('Max');
+
+    fireEvent.change(pseudo, { target: { value: '   ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+
+    expect(downloadedDocument(downloadFile).metadata).not.toHaveProperty('author');
+  });
+
+  it('préremplit le dernier pseudo retenu quand le niveau n’a pas d’auteur, et retient celui exporté', () => {
+    const preferences = memoryPreferences({ author: 'Lili' });
+    const { downloadFile } = renderDialog(levelOneWorkshop, {}, preferences.repository);
+    const pseudo = screen.getByRole('textbox', { name: 'Pseudo (facultatif)' });
+    expect(pseudo).toHaveValue('Lili');
+
+    fireEvent.change(pseudo, { target: { value: ' Noé ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+    expect(downloadedDocument(downloadFile).metadata.author).toBe('Noé');
+    expect(preferences.saved).toEqual([{ author: 'Noé' }]);
+
+    fireEvent.change(pseudo, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+    expect(preferences.saved).toEqual([{ author: 'Noé' }, {}]);
+  });
+
+  it.each<[string, PreferencesRepository]>([
+    [
+      'renvoie une erreur',
+      {
+        load: () => ({ status: 'error', code: 'storage-unavailable' }),
+        save: () => ({ status: 'error', code: 'quota-exceeded' }),
+      },
+    ],
+    [
+      'lève une exception',
+      {
+        load: () => {
+          throw new Error('stockage bloqué');
+        },
+        save: () => {
+          throw new Error('stockage bloqué');
+        },
+      },
+    ],
+  ])('exporte quand le stockage des préférences %s', async (_description, preferences) => {
+    const { downloadFile, writeClipboard } = renderDialog(levelOneWorkshop, {}, preferences);
+    const pseudo = screen.getByRole('textbox', { name: 'Pseudo (facultatif)' });
+    expect(pseudo).toHaveValue('');
+
+    fireEvent.change(pseudo, { target: { value: 'Lili' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+    expect(downloadedDocument(downloadFile).metadata.author).toBe('Lili');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copier le lien de partage' }));
+    expect(await screen.findByText('Lien copié')).toBeVisible();
+    expect(writeClipboard).toHaveBeenCalledTimes(1);
+  });
+
+  it('applique à l’export le titre et le pseudo saisis par des commandes d’auteur', () => {
+    const applied: (readonly Command<ConstructionAttempt>[])[] = [];
+    renderDialog(levelOneWorkshop, {
+      onApplyAttribution: (commands) => {
+        applied.push(commands);
+      },
+    });
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Nom du niveau' }), {
+      target: { value: '  Ma machine ' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Pseudo (facultatif)' }), {
+      target: { value: ' Lili ' },
+    });
+    expect(applied).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+
+    expect(applied).toHaveLength(1);
+    const document = (applied[0] ?? []).reduce<ConstructionAttempt>((attempt, command) => {
+      const outcome = command.execute(attempt);
+      if (outcome.status !== 'accepted') throw new Error(`refusé : ${outcome.reason}`);
+      return outcome.state;
+    }, createConstructionAttempt(levelOneWorkshop)).document;
+    // The workshop keeps its identifier: only the exported puzzle is renamed.
+    expect(document).toEqual({
+      ...levelOneWorkshop,
+      metadata: { ...levelOneWorkshop.metadata, title: 'Ma machine', author: 'Lili' },
+    });
   });
 });

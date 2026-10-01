@@ -3,7 +3,7 @@ import {
   type PuzzleRefusalReason,
   type PuzzleRunner,
 } from '../application/puzzle/puzzle-workshop';
-import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
+import { authorSchema, levelDocumentSchema, type LevelDocument } from '../domain/level-document';
 import { encodeLevelFile } from '../infrastructure/level-file/level-file-codec';
 import { encodeShareFragment } from '../infrastructure/level-share/level-share-codec';
 import { runLevelOutcome } from '../simulation/level-outcome';
@@ -87,11 +87,41 @@ const levelIdFromName = (name: string): string =>
     .replace(/^-+|-+$/g, '');
 
 /**
+ * M14 (ADR 0016 § Pseudo): why the pseudonym typed in the export dialog is
+ * refused, in the schema's words, once its edge spaces are removed; `null`
+ * when it is accepted. A blank field means no author, which is accepted.
+ */
+export const pseudoRefusal = (pseudo: string): string | null => {
+  const author = pseudo.trim();
+  if (author === '') return null;
+  const validation = authorSchema.safeParse(author);
+  return validation.success ? null : (validation.error.issues[0]?.message ?? null);
+};
+
+/** The metadata once the typed pseudonym is applied: trimmed, and removed when blank (M14). */
+const withPseudo = (
+  metadata: LevelDocument['metadata'],
+  pseudo: string | undefined,
+): LevelDocument['metadata'] => {
+  if (pseudo === undefined) return metadata;
+  const { author: ignoredAuthor, ...metadataWithoutAuthor } = metadata;
+  void ignoredAuthor;
+  const author = pseudo.trim();
+  return author === '' ? metadataWithoutAuthor : { ...metadataWithoutAuthor, author };
+};
+
+/**
  * Names the verified puzzle before it leaves the workshop: the name becomes
  * its title, and its identifier and file name when it holds a letter or a
- * digit. A blank name is refused (`null`).
+ * digit. A blank name is refused (`null`). When `pseudo` is given, it becomes
+ * the author, edge spaces removed, or removes it when blank (M14); an invalid
+ * pseudonym is refused (`null`).
  */
-export const nameExportedLevel = (puzzle: LevelDocument, name: string): NamedLevelExport | null => {
+export const nameExportedLevel = (
+  puzzle: LevelDocument,
+  name: string,
+  pseudo?: string,
+): NamedLevelExport | null => {
   const title = name.trim();
   if (title === '') return null;
 
@@ -99,7 +129,7 @@ export const nameExportedLevel = (puzzle: LevelDocument, name: string): NamedLev
   const validation = levelDocumentSchema.safeParse({
     ...puzzle,
     id: id === '' ? puzzle.id : id,
-    metadata: { ...puzzle.metadata, title },
+    metadata: withPseudo({ ...puzzle.metadata, title }, pseudo),
   });
   if (!validation.success) return null;
   return {

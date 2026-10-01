@@ -1,6 +1,13 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Download, Link2 } from 'lucide-react';
 
+import {
+  updateLevelAuthor,
+  updateLevelTitle,
+  type ConstructionAttempt,
+} from '../application/construction';
+import type { Command } from '../application/history';
+import type { PreferencesRepository } from '../application/preferences/preferences-repository';
 import type { LevelDocument } from '../domain/level-document';
 import type { PuzzleRunner } from '../application/puzzle/puzzle-workshop';
 import { Button } from '../ui/Button';
@@ -11,10 +18,41 @@ import {
   type DownloadFile,
   type WriteClipboard,
 } from './browser-share';
-import { createShareLink, nameExportedLevel, prepareLevelExport } from './level-export';
+import {
+  createShareLink,
+  nameExportedLevel,
+  prepareLevelExport,
+  pseudoRefusal,
+} from './level-export';
+import { usePreferencesRepository } from './preferences-repository-context';
 
 /** Mirrors the level title's length limit (`level-document.ts`). */
 const MAX_LEVEL_NAME_LENGTH = 160;
+
+/** ADR 0016 § Licence: the exact notice shown when sharing. */
+const LICENCE_NOTICE =
+  'En partageant ce niveau, tu le places sous licence CC BY 4.0 : d’autres pourront le modifier et le republier en te citant.';
+
+/**
+ * ADR 0016 § Pseudo: the last pseudonym kept on this device. A storage
+ * failure only means no suggestion: it never stands in the way of an export.
+ */
+const rememberedPseudo = (preferences: PreferencesRepository): string => {
+  try {
+    const loaded = preferences.load();
+    return loaded.status === 'ok' ? (loaded.preferences.author ?? '') : '';
+  } catch {
+    return '';
+  }
+};
+
+const rememberPseudo = (preferences: PreferencesRepository, author: string | undefined): void => {
+  try {
+    preferences.save(author === undefined ? {} : { author });
+  } catch {
+    // Best effort, like the result it would have returned: the export already happened.
+  }
+};
 
 interface LevelExportDialogProps {
   /** The author's committed document: never a simulation snapshot or a gesture preview. */
@@ -27,6 +65,11 @@ interface LevelExportDialogProps {
   /** Injected for tests; defaults to `navigator.clipboard.writeText` when it exists. */
   readonly writeClipboard?: WriteClipboard | undefined;
   readonly run?: PuzzleRunner;
+  /**
+   * M14: called once per export with the author commands that record the
+   * exported title and pseudonym in the creation (undoable in the workshop).
+   */
+  readonly onApplyAttribution?: (commands: readonly Command<ConstructionAttempt>[]) => void;
 }
 
 type ShareState =
@@ -49,12 +92,31 @@ export function LevelExportDialog({
   downloadFile = downloadWithTemporaryLink,
   writeClipboard = browserClipboard(),
   run,
+  onApplyAttribution,
 }: LevelExportDialogProps) {
+  const preferences = usePreferencesRepository();
   const [preparation] = useState(() => prepareLevelExport(levelDocument, run));
   const [name, setName] = useState(levelDocument.metadata.title);
-  const named = preparation.status === 'ready' ? nameExportedLevel(preparation.puzzle, name) : null;
+  // A level that already names its author keeps it; otherwise the last pseudonym is offered.
+  const [pseudo, setPseudo] = useState(
+    () => levelDocument.metadata.author ?? rememberedPseudo(preferences),
+  );
+  const pseudoError = pseudoRefusal(pseudo);
+  const named =
+    preparation.status === 'ready' ? nameExportedLevel(preparation.puzzle, name, pseudo) : null;
+  const pseudoHelpId = useId();
+  const pseudoErrorId = useId();
   const [downloadedFileName, setDownloadedFileName] = useState<string | null>(null);
   const [share, setShare] = useState<ShareState>({ status: 'idle' });
+
+  /** M14: the exported title and pseudonym become the creation's, and the pseudonym is kept. */
+  const recordAttribution = ({ metadata }: LevelDocument): void => {
+    onApplyAttribution?.([
+      updateLevelTitle({ context: 'author', title: metadata.title }),
+      updateLevelAuthor({ context: 'author', author: metadata.author }),
+    ]);
+    rememberPseudo(preferences, metadata.author);
+  };
 
   const copyShareLink = async (puzzle: LevelDocument): Promise<void> => {
     setShare({ status: 'working' });
@@ -112,12 +174,39 @@ export function LevelExportDialog({
               }}
             />
           </label>
+          <label className="export-link">
+            <span className="export-link-label">Pseudo (facultatif)</span>
+            <input
+              className="export-link-field export-name-field"
+              type="text"
+              autoComplete="nickname"
+              maxLength={40}
+              value={pseudo}
+              aria-invalid={pseudoError !== null}
+              aria-describedby={
+                pseudoError === null ? pseudoHelpId : `${pseudoHelpId} ${pseudoErrorId}`
+              }
+              onChange={(event) => {
+                setPseudo(event.currentTarget.value);
+              }}
+            />
+          </label>
+          <p className="panel-note" id={pseudoHelpId}>
+            Un pseudo, pas ton vrai nom
+          </p>
+          {pseudoError !== null && (
+            <p className="export-field-error" id={pseudoErrorId} role="alert">
+              {pseudoError}
+            </p>
+          )}
+          <p className="panel-note">{LICENCE_NOTICE}</p>
           <Button
             disabled={named === null}
             onClick={() => {
               if (named === null) return;
               downloadFile(named.fileName, preparation.mimeType, named.fileText);
               setDownloadedFileName(named.fileName);
+              recordAttribution(named.puzzle);
             }}
           >
             <Download size={18} aria-hidden="true" />
@@ -127,7 +216,9 @@ export function LevelExportDialog({
             tone="go"
             disabled={named === null || share.status === 'working'}
             onClick={() => {
-              if (named !== null) void copyShareLink(named.puzzle);
+              if (named === null) return;
+              void copyShareLink(named.puzzle);
+              recordAttribution(named.puzzle);
             }}
           >
             <Link2 size={18} aria-hidden="true" />

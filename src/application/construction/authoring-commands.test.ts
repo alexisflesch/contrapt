@@ -20,6 +20,7 @@ import {
   updateInventoryPermissions,
   updateInventoryProperties,
   updateInventoryQuantity,
+  updateLevelAuthor,
   updateLevelDescription,
   updateLevelGoal,
   updateLevelTitle,
@@ -193,6 +194,17 @@ const authoringCommands: readonly {
   },
   { label: 'change le titre', command: updateLevelTitle({ context: 'author', title: 'Nouveau' }) },
   {
+    label: 'renseigne le pseudo (M14)',
+    command: updateLevelAuthor({ context: 'author', author: 'Lili' }),
+  },
+  {
+    label: 'retire le pseudo (M14)',
+    command: updateLevelAuthor({ context: 'author', author: undefined }),
+    document: createLevel({
+      metadata: { title: 'Authoring test', description: 'Description', author: 'Lili' },
+    }),
+  },
+  {
     label: 'change la description',
     command: updateLevelDescription({ context: 'author', description: 'Nouvelle description' }),
   },
@@ -241,6 +253,7 @@ const playerCommands: readonly Command<ConstructionAttempt>[] = [
   }),
   updateLevelGoal({ context: 'player', ballId: 'ball-2', basketId: 'basket-2' }),
   updateLevelTitle({ context: 'player', title: 'Nouveau' }),
+  updateLevelAuthor({ context: 'player', author: 'Lili' }),
   updateLevelDescription({ context: 'player', description: 'Nouvelle' }),
   setLevelChallenge({
     context: 'player',
@@ -364,6 +377,65 @@ describe('commandes d’auteur', () => {
     );
 
     expect(unchanged).toEqual({ status: 'accepted', history, recorded: false });
+  });
+
+  describe('pseudo de l’auteur (M14, ADR 0016 § Pseudo)', () => {
+    const attributed = createLevel({
+      metadata: {
+        title: 'Authoring test',
+        description: 'Description',
+        author: 'Lili',
+        basedOn: [{ title: 'Origine', author: 'Max' }],
+      },
+    });
+
+    it('change ou retire le pseudo sans toucher au reste des métadonnées', () => {
+      const changed = updateLevelAuthor({ context: 'author', author: 'Noé' }).execute({
+        document: attributed,
+        provenance: {},
+      });
+      expect(changed.status === 'accepted' && changed.state.document.metadata).toEqual({
+        ...attributed.metadata,
+        author: 'Noé',
+      });
+
+      const removed = updateLevelAuthor({ context: 'author', author: undefined }).execute({
+        document: attributed,
+        provenance: {},
+      });
+      expect(removed.status === 'accepted' && removed.state.document.metadata).toEqual({
+        title: 'Authoring test',
+        description: 'Description',
+        basedOn: [{ title: 'Origine', author: 'Max' }],
+      });
+    });
+
+    it('refuse un pseudo que le schéma refuse, sans rien réécrire', () => {
+      const state = { document: attributed, provenance: {} };
+
+      for (const author of ['Li\tli', 'Li\nli', 'x'.repeat(41), '   ']) {
+        expect(updateLevelAuthor({ context: 'author', author }).execute(state)).toEqual({
+          status: 'rejected',
+          reason: 'invalid-level-document',
+        });
+      }
+      expect(state.document).toEqual(attributed);
+    });
+
+    it('n’enregistre rien quand le pseudo ne change pas', () => {
+      const history = createHistory<ConstructionAttempt>({ document: attributed, provenance: {} });
+
+      expect(
+        executeCommand(history, updateLevelAuthor({ context: 'author', author: 'Lili' })),
+      ).toEqual({ status: 'accepted', history, recorded: false });
+      const withoutAuthor = createHistory<ConstructionAttempt>({
+        document: createLevel(),
+        provenance: {},
+      });
+      expect(
+        executeCommand(withoutAuthor, updateLevelAuthor({ context: 'author', author: undefined })),
+      ).toEqual({ status: 'accepted', history: withoutAuthor, recorded: false });
+    });
   });
 
   describe('ajout d’un objet par l’auteur', () => {

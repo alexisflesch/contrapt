@@ -335,7 +335,7 @@ const CONTROL_OR_LINE_BREAK = /[\p{Cc}\u2028\u2029]/u;
  * on one line. The value is checked, never rewritten, so that a document
  * reads back identically.
  */
-const authorSchema = z.string().superRefine((author, context) => {
+export const authorSchema = z.string().superRefine((author, context) => {
   const length = author.trim().length;
   if (length < 1 || length > MAX_AUTHOR_LENGTH) {
     context.addIssue({

@@ -2368,6 +2368,17 @@ select:focus-visible {
   word-break: normal;
 }
 
+.export-name-field[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+/* M14 : pseudo refusé, dit sous le champ. */
+.export-field-error {
+  color: var(--danger);
+  font-size: var(--text-s);
+  font-weight: 700;
+}
+
 /* 6h. Catalogue */
 
 .object-drawer {

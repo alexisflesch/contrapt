@@ -46,7 +46,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   il fait l’aller-retour par le codec de fichier et le codec URL, et
   `puzzleFromWorkshop` les conserve. Affichés en texte brut sur les cartes de
   « Mes niveaux » (M9) et dans l’en-tête de jeu d’un niveau reçu (M10) ;
-  aucune interface ne les renseigne encore (M14).
+  le titre et le pseudo se renseignent dans la boîte d’export depuis M14,
+  `basedOn` n’est jamais édité.
 - Empreinte M2 (ADR 0015) : `levelFingerprint(document)`
   (`src/infrastructure/level-file/level-fingerprint.ts`, asynchrone) renvoie les
   16 premiers chiffres hexadécimaux du SHA-256 (`crypto.subtle`) du texte du
@@ -231,6 +232,34 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   désormais quand il dépasse la hauteur de l’écran (téléphone en paysage).
   Validation visuelle attendue (captures
   `test-results/reveal/{reveal-menu,reveal-confirm,reveal-workshop}-{390x844,844x390,1440x900}.png`).
+- Partager M14 (ADR 0016 § Licence, § Pseudo) : la boîte d’export (U16) d’une
+  création propose « Nom du niveau » et « Pseudo (facultatif) », avec l’aide
+  « Un pseudo, pas ton vrai nom » et la mention exacte de licence CC BY 4.0.
+  Les espaces de bord sont retirés à la saisie ; un pseudo vide retire
+  `author` ; un pseudo refusé par le schéma (caractère de contrôle, saut de
+  ligne, U+2028) est dit sous le champ (`role="alert"`, `aria-invalid`) et
+  désactive les deux exports. Le fichier et le lien portent les valeurs
+  saisies. À chaque export, la boîte transmet deux commandes d’auteur,
+  `updateLevelTitle` et la nouvelle `updateLevelAuthor` (annulables,
+  revalidées par le schéma) : dans l’atelier, elles passent par son
+  historique (deux entrées au plus, « Annuler » les retire) et la création
+  est enregistrée comme toute modification engagée ; depuis « Partager »
+  de « Mes niveaux », elles sont appliquées à la création, enregistrée avec
+  sa `source`. Le « Partager » d’un niveau reçu est inchangé. Port
+  `PreferencesRepository` (`src/application/preferences/`) et adaptateur
+  `localStorage` (`local-storage-preferences-repository.ts`) : enveloppe
+  `{ kind: "preferences", version: 1, data: { author? } }` sous
+  `tinkerbolt:preferences`, pseudo validé par la règle `metadata.author`
+  (`authorSchema`, désormais exporté), valeur illisible sauvegardée sous
+  `tinkerbolt:backup:preferences`, quota et stockage indisponible en
+  résultats d’erreur ; fourni par `PreferencesRepositoryContext`. Le pseudo
+  exporté y est retenu (un champ vidé l’oublie) et préremplit l’export d’une
+  création sans `author` ; une erreur de lecture ou d’écriture n’empêche
+  jamais l’export. `index.html` déclare `interactive-widget=resizes-content`
+  pour que le clavier virtuel d’Android réduise la fenêtre au lieu de
+  recouvrir la boîte. Validation visuelle attendue (captures
+  `test-results/share/{share-fields,share-invalid-pseudo}-{390x844,844x390,1440x900}.png`,
+  `share-keyboard-390x508.png`).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -483,6 +512,16 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   rien dire à l’auteur. Les enregistrements suivants d’une création échouent
   de même en silence (comme ceux de tout brouillon). Un message discret reste à
   décider.
+- **Partage pendant une simulation (M14).** La boîte d’export reste ouverte
+  pendant qu’une machine tourne ; un export à ce moment produit bien le
+  fichier et le lien, mais l’atelier refuse les commandes de titre et de
+  pseudo (refus `editing-unavailable-during-simulation`, signalé par le
+  retour habituel de l’atelier) : la création garde son ancien titre. Non
+  testé, cas jugé rare.
+- **`updateLevelDescription` retire l’attribution.** Retirer la description
+  reconstruit `metadata` à partir du seul titre et perd `author` et
+  `basedOn`. Aucune interface n’expose cette commande ; constaté pendant M14,
+  non corrigé (hors périmètre).
 - **Niveau reçu (M10).** En 390 px, l’en-tête de `/my-levels/:id/play`
   (bouton « Mes niveaux », objectif, menu) ne laisse que « par <auteur> ·
   d’a… » de l’attribution, tronquée par une ellipse (accepté par le pilote
@@ -595,6 +634,11 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M14 (1er octobre 2026) : passe du premier coup —
+typecheck, lint, formatage, Knip, contenu (19 documents), 951 tests Vitest
+(77 fichiers), build Vite/PWA et 54 tests Playwright `mobile` (53 réussis,
+1 ignoré).
 
 `pnpm check` après M13 (1er octobre 2026) : passe du premier coup —
 typecheck, lint, formatage, Knip, contenu (19 documents), 921 tests Vitest

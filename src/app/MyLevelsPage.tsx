@@ -13,11 +13,13 @@ import {
   Trash2,
 } from 'lucide-react';
 
+import { createConstructionAttempt, type ConstructionAttempt } from '../application/construction';
 import { campaignDraftId } from '../application/drafts/campaign-draft';
 import type { DraftCreation } from '../application/drafts/draft-repository';
 import { duplicateCreation } from '../application/drafts/duplicate-creation';
 import { listCreations } from '../application/drafts/list-creations';
 import { saveCreationFromLevel } from '../application/drafts/save-creation-from-level';
+import type { Command } from '../application/history';
 import { puzzleFromWorkshop } from '../application/puzzle/puzzle-workshop';
 import { listReceivedLevels } from '../application/received/list-received-levels';
 import { receiveLevel } from '../application/received/receive-level';
@@ -48,7 +50,7 @@ type PendingDeletion =
   | { readonly kind: 'received'; readonly id: string; readonly title: string };
 
 type Sharing =
-  | { readonly kind: 'creation'; readonly document: LevelDocument }
+  | { readonly kind: 'creation'; readonly creation: DraftCreation }
   | { readonly kind: 'received'; readonly document: LevelDocument };
 
 type Notice = { readonly tone: 'status' | 'alert'; readonly message: string } | null;
@@ -145,6 +147,38 @@ export function MyLevelsPage() {
         : { tone: 'alert', message: `${storageMessage(result.code)} Rien n’a été supprimé.` },
     );
     setPendingDeletion(null);
+    refresh();
+  };
+
+  /**
+   * M14: « Partager » outside the workshop records the exported title and
+   * pseudonym in the creation, as the workshop would, with its source kept.
+   */
+  const applyToCreation = (
+    creation: DraftCreation,
+    commands: readonly Command<ConstructionAttempt>[],
+  ): void => {
+    let attempt = createConstructionAttempt(creation.document);
+    let changed = false;
+    for (const command of commands) {
+      const outcome = command.execute(attempt);
+      if (outcome.status !== 'accepted' || outcome.state === attempt) continue;
+      attempt = outcome.state;
+      changed = true;
+    }
+    if (!changed) return;
+    const result = drafts.save({
+      document: attempt.document,
+      ...(creation.source === undefined ? {} : { source: creation.source }),
+    });
+    setCreationNotice(
+      result.status === 'ok'
+        ? null
+        : {
+            tone: 'alert',
+            message: `${storageMessage(result.code)} Le titre et le pseudo n’ont pas été enregistrés.`,
+          },
+    );
     refresh();
   };
 
@@ -272,7 +306,7 @@ export function MyLevelsPage() {
             </Button>
             <Button
               onClick={() => {
-                setSharing({ kind: 'creation', document: creation.document });
+                setSharing({ kind: 'creation', creation });
               }}
             >
               <Share2 size={18} aria-hidden="true" />
@@ -495,9 +529,12 @@ export function MyLevelsPage() {
       )}
       {sharing?.kind === 'creation' && (
         <LevelExportDialog
-          document={sharing.document}
+          document={sharing.creation.document}
           onClose={() => {
             setSharing(null);
+          }}
+          onApplyAttribution={(commands) => {
+            applyToCreation(sharing.creation, commands);
           }}
         />
       )}
