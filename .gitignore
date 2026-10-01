@@ -12,3 +12,6 @@ test-results/
 
 .pnpm-store/
 .claude/worktrees/
+
+# Scripts jetables du banc d’essai
+tmp/
