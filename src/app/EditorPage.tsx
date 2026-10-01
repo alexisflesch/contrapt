@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import type { DraftCreation } from '../application/drafts/draft-repository';
 import { campaignDraftId } from '../application/drafts/campaign-draft';
+import { saveFreeCreation, startFreeCreation } from '../application/drafts/save-free-creation';
 import { puzzleFromWorkshop } from '../application/puzzle/puzzle-workshop';
 import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
@@ -12,7 +13,21 @@ import { BoardShell } from './BoardShell';
 import { useDevelopmentMode } from './development-mode-context';
 import { useDraftRepository } from './draft-repository-context';
 import { LockedLevelPage } from './LockedLevelPage';
+import { randomIdPart } from './random-id-part';
 import { useCampaignProgress } from './use-campaign-progress';
+
+/**
+ * The free workshop's life on `/editor`. Its first committed change stores it
+ * as a creation and replaces the URL by `?draft=<id>` (ADR 0015 § Atelier
+ * libre): the same workshop then stays mounted under that URL, with its undo
+ * history and selection. `fromKey` is the router location it started on,
+ * which the replacement has not yet reached when the creation is adopted.
+ */
+interface FreeSession {
+  /** Changes when a new free workshop begins, so that it mounts afresh. */
+  readonly generation: number;
+  readonly adopted: { readonly draftId: string; readonly fromKey: string } | null;
+}
 
 /**
  * `/editor` (ADR 0008): the free-creation workshop, or with `?draft=<id>` an
@@ -21,13 +36,64 @@ import { useCampaignProgress } from './use-campaign-progress';
  */
 export function EditorPage() {
   const [searchParams] = useSearchParams();
+  const locationKey = useLocation().key;
   const draftId = searchParams.get('draft');
+  const [freeSession, setFreeSession] = useState<FreeSession>({ generation: 0, adopted: null });
+  const { adopted } = freeSession;
 
-  if (draftId === null) {
-    return <Workshop initialDocument={embeddedWorkshopDocument} title="" />;
+  // The free workshop keeps the URL it created; going anywhere else, even
+  // back to a bare `/editor` from the menu, ends it.
+  const ownsUrl =
+    adopted !== null &&
+    (draftId === adopted.draftId || (draftId === null && locationKey === adopted.fromKey));
+  if (adopted !== null && !ownsUrl) {
+    setFreeSession({ generation: freeSession.generation + 1, adopted: null });
+  }
+
+  if (draftId === null || ownsUrl) {
+    return (
+      <FreeEditor
+        key={freeSession.generation}
+        onCreated={(createdId) => {
+          setFreeSession((current) => ({
+            ...current,
+            adopted: { draftId: createdId, fromKey: locationKey },
+          }));
+        }}
+      />
+    );
   }
 
   return <DraftEditor key={draftId} draftId={draftId} />;
+}
+
+/**
+ * ADR 0015 § Atelier libre: nothing is stored until a first change is
+ * committed. A failed save changes nothing, the URL included, and the next
+ * committed change tries again (like a draft's, a failure never blocks editing).
+ */
+function FreeEditor({ onCreated }: { readonly onCreated: (draftId: string) => void }) {
+  const drafts = useDraftRepository();
+  const navigate = useNavigate();
+  const createdIdRef = useRef<string | null>(null);
+
+  return (
+    <Workshop
+      initialDocument={embeddedWorkshopDocument}
+      title=""
+      onDocumentCommitted={(document) => {
+        if (createdIdRef.current !== null) {
+          saveFreeCreation(drafts, createdIdRef.current, document);
+          return;
+        }
+        const started = startFreeCreation(drafts, document, randomIdPart);
+        if (started.status === 'error') return;
+        createdIdRef.current = started.draftId;
+        onCreated(started.draftId);
+        void navigate(`/editor?draft=${encodeURIComponent(started.draftId)}`, { replace: true });
+      }}
+    />
+  );
 }
 
 interface WorkshopProps {

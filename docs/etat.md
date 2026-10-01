@@ -209,7 +209,7 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   `developmentMode` (`import.meta.env.DEV` passé par `main.tsx`, contexte
   `DevelopmentModeContext`) : une création de campagne **neuve** s’ouvre
   solution révélée par la commande M7 (`openCampaignDraft(…, { revealSolution
-  })`), une création existante est rouverte telle quelle ; la fiche de
+})`), une création existante est rouverte telle quelle ; la fiche de
   calibrage U28 n’est affichée qu’en développement. Une victoire sur un niveau
   reçu qui ne peut pas être écrite affiche le statut discret « Ta victoire
   n’a pas pu être enregistrée sur cet appareil. ». Validation visuelle
@@ -405,6 +405,16 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   dialogue à la demande ; bandeau de résultat dans un emplacement réservé.
 - Atelier libre `src/content/levels/workshop.json` (scène 16 × 9, inventaire de
   99 par famille, contexte auteur).
+  Depuis M13, il est enregistré à sa première modification engagée : une
+  création `creation-<aléa>` (aléa du composition point
+  `src/app/random-id-part.ts`, date de l’horloge du dépôt), sans `source`, et
+  l’URL `/editor` est remplacée par `/editor?draft=<id>` (`replace`, pas
+  d’entrée d’historique en plus). Le même atelier reste monté sous la nouvelle
+  URL : historique « Annuler »/« Rétablir » et sélection sont conservés ; les
+  modifications suivantes l’enregistrent sous le même identifiant
+  (`src/application/drafts/save-free-creation.ts`, `EditorPage.tsx`). Ouvrir
+  l’atelier sans rien faire n’écrit rien ; « Atelier de construction » depuis
+  une création ouvre un atelier neuf.
 - Export U16 : en mode auteur, le bouton « Exporter » de l’en-tête ouvre une
   boîte qui télécharge le document engagé de l’auteur (`<id>.json`, codec L22,
   `application/json`) ou copie le lien `/shared#level=…` (codec L23) avec le
@@ -467,6 +477,12 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 
 ## Dettes et limites explicites
 
+- **Atelier libre sans message d’échec (M13).** Si l’enregistrement de la
+  première modification échoue (quota, stockage indisponible), l’atelier
+  continue sans changer d’URL et retente à la modification suivante, sans
+  rien dire à l’auteur. Les enregistrements suivants d’une création échouent
+  de même en silence (comme ceux de tout brouillon). Un message discret reste à
+  décider.
 - **Niveau reçu (M10).** En 390 px, l’en-tête de `/my-levels/:id/play`
   (bouton « Mes niveaux », objectif, menu) ne laisse que « par <auteur> ·
   d’a… » de l’attribution, tronquée par une ellipse (accepté par le pilote
@@ -514,7 +530,9 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   avant remplacement. La fonction pure
   `decideDraftAutosave` limite les essais d’enregistrement à une fois par seconde
   pendant l’édition et autorise un enregistrement immédiat au lancement d’un test ;
-  elle n’est pas encore reliée à une interface.
+  elle n’est toujours pas reliée : chaque état engagé est enregistré, et une
+  limitation sans enregistrement final perdrait la dernière modification (M13
+  ne l’a pas branchée).
 - **PWA L28** : `vite-plugin-pwa` 1.3.0 et Workbox 7.4.1 produisent le manifeste,
   les icônes provisoires, le précache (environ 10 Mio) et le service worker de
   production. Le test E2E confirme l’ouverture du niveau 1 après rechargement hors
@@ -577,6 +595,11 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M13 (1er octobre 2026) : passe du premier coup —
+typecheck, lint, formatage, Knip, contenu (19 documents), 921 tests Vitest
+(75 fichiers), build Vite/PWA et 53 tests Playwright `mobile` (52 réussis,
+1 ignoré).
 
 `pnpm check` après M12 (1er octobre 2026) : passe du premier coup —
 typecheck, lint, formatage, Knip, contenu (19 documents), 907 tests Vitest

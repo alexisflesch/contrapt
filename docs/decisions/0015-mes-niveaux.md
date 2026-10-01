@@ -209,7 +209,9 @@ n'est affichée qu'en développement.
 **première modification engagée**, l'atelier est enregistré comme une création
 `creation-<aléa>` et l'URL devient `/editor?draft=<id>` (remplacement, sans
 nouvelle entrée d'historique du navigateur). Ouvrir l'atelier sans rien faire
-ne crée pas d'entrée vide.
+ne crée pas d'entrée vide. Si cette première écriture échoue (quota, stockage
+indisponible), l'atelier continue sans changer d'URL et réessaie à la
+modification suivante.
 
 ### Page « Mes niveaux »
 

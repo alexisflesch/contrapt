@@ -1253,11 +1253,11 @@ accessible element with the role "button" and name "Jouer quand même"`
   directe refusée ; captures).
 - Échec initial constaté : `Failed to load url ./save-creation-from-level`
   et `AssertionError: expected [ { id: 'ball-red', …(4) }, …(7) ] to deeply
-  equal [ { id: 'ball-red', …(4) }, …(9) ]` (révélation) ; App : `Unable to
-  find an accessible element with the role "button" and name "Modifier"`,
+equal [ { id: 'ball-red', …(4) }, …(9) ]` (révélation) ; App : `Unable to
+find an accessible element with the role "button" and name "Modifier"`,
   `… name "Remixer"`, `… name "Modifier le niveau 2"`, `Unable to find an
-  element with the text: Ce niveau est encore verrouillé.`, `… Ta victoire
-  n’a pas pu être enregistrée sur cet appareil.` (10 sur 10, et 1 sur 1 pour
+element with the text: Ce niveau est encore verrouillé.`, `… Ta victoire
+n’a pas pu être enregistrée sur cet appareil.` (10 sur 10, et 1 sur 1 pour
   la campagne) ; dialogue : `… name "Remixer"`, `Unable to find role="alert"`.
   « rouvre telle quelle une création existante… » passait déjà
   (non-régression). Les fixtures App ont d’abord échoué faute de zone de
@@ -1388,3 +1388,58 @@ role "button" and name "Révéler la solution de l’auteur"` (5 tests sur 8).
   pu être posé. » au-dessus du plateau). Questions : l’entrée doit-elle être
   séparée visuellement des destinations du menu ? Le bouton de confirmation
   en vert (`go`) convient-il, ou le veut-on neutre ?
+
+### M13 — Atelier libre enregistré — fait — commit de cette entrée
+
+- Précisions du pilote appliquées : aléa par le point de composition existant
+  `randomIdPart` (comme `useRemix` et `MyLevelsPage`), horloge par celle du
+  dépôt de brouillons (déjà injectée) ; URL remplacée (`replace: true`) ;
+  l’atelier reste monté sous la nouvelle URL ; échec de la première écriture :
+  pas de changement d’URL, nouvel essai à la modification suivante, aucun
+  message (dette notée dans `etat.md`) ; `decideDraftAutosave` laissé tel quel.
+- Tests ajoutés : `src/application/drafts/save-free-creation.test.ts` (5 tests :
+  `creation-<aléa>` sans source, identifiant de l’atelier remplacé ; nouvel
+  aléa si pris ; dépôt illisible ; quota ; enregistrements suivants sous le
+  même identifiant) ; `src/app/FreeWorkshopSaving.test.tsx` (9 tests App :
+  ouvrir sans rien faire ne crée rien ; poser un objet crée la création et
+  change l’URL, date de l’horloge injectée ; l’historique du navigateur ne
+  gagne pas d’entrée ; recharger retrouve l’objet ; « Annuler » retire
+  encore l’objet après le changement d’URL (pas de remontage) ; modifications
+  suivantes dans la même création ; « Atelier de construction » depuis une
+  création ouvre un atelier neuf sans modifier la création ; échec
+  d’enregistrement sans changement d’URL puis reprise ; stockage indisponible) ;
+  `e2e/free-workshop.spec.ts` (mobile : `/editor`, rien écrit, pose d’une
+  poutre au toucher, URL `?draft=creation-…`, longueur d’historique inchangée,
+  « Annuler » actif, rechargement).
+- Échec initial constaté : `Failed to load url ./save-free-creation` (5 tests) ;
+  App : `Aucune création dans l’URL.` (6 tests sur 9) et `expected '' to be
+'placement-1'` au rechargement ; les deux cas « sans rien faire » et
+  « stockage indisponible » passaient d’emblée (garde-fous de non-régression).
+  Un test de date a échoué ensuite (`expected '2026-10-01T18:25…' to be
+'2026-10-01T12:00:00.000Z'`) : le test n’injectait pas le dépôt, corrigé dans
+  le test. Mutations vérifiées : `replace: false` fait échouer le test de
+  l’historique du navigateur ; une clé de montage suivant l’URL fait échouer
+  « Annuler » après le changement d’URL.
+- Tests existants réécrits : aucun (les parcours de l’atelier libre existants,
+  dont U6, passent inchangés).
+- Fichiers touchés hors périmètre : `docs/decisions/0015-mes-niveaux.md`
+  (§ Atelier libre : une phrase sur l’échec de la première écriture, décision
+  du pilote).
+- Choix d’implémentation : `EditorPage` garde une « session libre »
+  (`generation`, création adoptée et clé de la localisation de départ du
+  routeur). Tant que l’URL est celle de la création adoptée — ou la
+  localisation de départ, que `navigate` n’a pas encore atteinte au rendu
+  suivant l’adoption —, le même `FreeEditor` reste monté (même type, même
+  clé) ; toute autre navigation, y compris `/editor` nu depuis le menu, clôt la
+  session et le prochain atelier libre est neuf. Le document de l’atelier
+  (`free-workshop`) est enregistré sous l’identifiant de la création, comme
+  `duplicateCreation`. `decideDraftAutosave` : non branché, chaque état engagé
+  est déjà enregistré, et une limite d’une écriture par seconde sans
+  enregistrement final perdrait la dernière modification.
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : un vrai téléphone ; le comportement du bouton « retour » du
+  navigateur dans un vrai navigateur (seule la longueur d’historique est
+  vérifiée) ; « Remettre l’atelier à zéro » après adoption enregistre
+  l’atelier vide sous la même création (non testé séparément).
+- Pour l'auteur : aucune modification visuelle, pas de captures.
