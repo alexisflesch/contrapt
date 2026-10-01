@@ -24,7 +24,7 @@
     {
       "id": "fan",
       "type": "fan",
-      "props": { "state": "on" },
+      "props": { "state": "off" },
       "transform": { "position": { "x": 3.5, "y": 5 }, "rotation": -1.570796 },
       "permissions": { "move": false, "rotate": false, "remove": false }
     },

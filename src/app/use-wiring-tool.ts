@@ -14,20 +14,26 @@ import {
 
 type Placement = LevelDocument['objects'][number];
 
-/** Where the "Fil" card's gesture stands: pick a controller, then its devices. */
+/**
+ * Where the "Fil" card's gesture stands: a first object, then the one it
+ * links to — a controller (lever, button) and a device, in either order.
+ */
 export type WiringStep =
-  | { readonly kind: 'source' }
+  | { readonly kind: 'first' }
   | {
-      readonly kind: 'target';
-      readonly sourceId: string;
-      /** Wires made from this source during the gesture. */
-      readonly linkedCount: number;
+      readonly kind: 'second';
+      readonly firstId: string;
+      /** The wire's end the first object takes. */
+      readonly first: 'source' | 'target';
     };
 
 type WiringTapOutcome =
   | { readonly kind: 'next'; readonly step: WiringStep }
   | { readonly kind: 'refused'; readonly message: string }
   | { readonly kind: 'connect'; readonly sourceId: string; readonly targetId: string };
+
+const unlinkableMessage =
+  'Un fil relie un levier ou un bouton à un convoyeur, un ventilateur ou une barrière.';
 
 /**
  * What a tap on `placementId` does at `step`. The rules and their wording
@@ -44,19 +50,28 @@ export const wiringTap = (
     objects.find((object) => object.id === id)?.type;
   const tapped = typeOf(placementId);
 
-  if (step.kind === 'source') {
-    const issue = controlWireSourceIssue(tapped);
-    return issue === null
-      ? { kind: 'next', step: { kind: 'target', sourceId: placementId, linkedCount: 0 } }
-      : { kind: 'refused', message: issue };
+  if (step.kind === 'first') {
+    if (controlWireSourceIssue(tapped) === null) {
+      return { kind: 'next', step: { kind: 'second', firstId: placementId, first: 'source' } };
+    }
+    if (controlWireTargetIssue(undefined, tapped) === null) {
+      return { kind: 'next', step: { kind: 'second', firstId: placementId, first: 'target' } };
+    }
+    return { kind: 'refused', message: unlinkableMessage };
   }
 
-  const source = typeOf(step.sourceId);
-  // An undo can take the source away mid-gesture: start over from it.
-  if (controlWireSourceIssue(source) !== null) return { kind: 'next', step: { kind: 'source' } };
-  const issue = controlWireTargetIssue(source, tapped);
+  const first = typeOf(step.firstId);
+  // An undo can take the first object away mid-gesture: start over.
+  if (first === undefined) return { kind: 'next', step: { kind: 'first' } };
+  if (step.first === 'source') {
+    const issue = controlWireTargetIssue(first, tapped);
+    return issue === null
+      ? { kind: 'connect', sourceId: step.firstId, targetId: placementId }
+      : { kind: 'refused', message: issue };
+  }
+  const issue = controlWireSourceIssue(tapped) ?? controlWireTargetIssue(tapped, first);
   return issue === null
-    ? { kind: 'connect', sourceId: step.sourceId, targetId: placementId }
+    ? { kind: 'connect', sourceId: placementId, targetId: step.firstId }
     : { kind: 'refused', message: issue };
 };
 
@@ -64,26 +79,14 @@ export const wiringTap = (
 export const wiringGuide = (
   step: WiringStep,
 ): { readonly prompt: string; readonly exitLabel: string } => {
-  if (step.kind === 'source') {
-    return { prompt: 'Touchez un levier ou un bouton', exitLabel: 'Annuler le fil' };
-  }
-  return step.linkedCount === 0
-    ? { prompt: 'Touchez l’appareil à commander', exitLabel: 'Annuler le fil' }
-    : {
-        prompt: 'Fil posé. Touchez un autre appareil à commander',
-        exitLabel: 'Terminer les fils',
-      };
+  const prompt =
+    step.kind === 'first'
+      ? 'Touchez une commande ou l’appareil à relier'
+      : step.first === 'source'
+        ? 'Touchez l’appareil à commander'
+        : 'Touchez le levier ou le bouton qui le commande';
+  return { prompt, exitLabel: 'Annuler le fil' };
 };
-
-/**
- * The step after a wire is laid: the gesture stays on its source, unless the
- * player has no wire left (U21). `wiresLeft` is `null` for the author, whose
- * wires come from no inventory.
- */
-export const wiringStepAfterWire = (
-  step: Extract<WiringStep, { kind: 'target' }>,
-  wiresLeft: number | null,
-): WiringStep | null => (wiresLeft === 0 ? null : { ...step, linkedCount: step.linkedCount + 1 });
 
 /** Wire ids stay apart from object ids: an attempt's provenance keys both (U21). */
 const nextWireId = (document: LevelDocument): string => {
@@ -99,10 +102,10 @@ interface UseWiringToolOptions {
     command: Parameters<typeof executeEditorCommand>[1],
   ) => ReturnType<typeof executeEditorCommand>;
   readonly setFeedback: (message: string | null) => void;
-  /** The chosen source is selected, so the board shows it and its circuit. */
-  readonly onSourceChosen: (sourceId: string) => void;
-  /** The player's last wire is laid and the gesture has ended (U21). */
-  readonly onWiresExhausted: () => void;
+  /** The first object is selected, so the board shows it and, once linked, its circuit. */
+  readonly onFirstChosen: (placementId: string) => void;
+  /** The wire is laid and the gesture has ended. */
+  readonly onWireLaid: () => void;
 }
 
 interface WiringTool {
@@ -118,19 +121,18 @@ interface WiringTool {
 }
 
 /**
- * U15: the "Fil" card. Touch it, then a lever or a button, then each device
- * it should command; the tool stays on that source so one controller
- * commands several devices in a row, until "Terminer les fils". Every wire
- * goes through `connectControlWire`, so undo and redo cover it. U21: the
- * player's card takes each wire from an inventory entry, and the gesture
- * ends when that entry runs out.
+ * U15: the "Fil" card. Touch it, then a controller and the device it
+ * commands, in either order: the wire is laid on the second touch and the
+ * gesture ends there. Every wire goes through `connectControlWire`, so undo
+ * and redo cover it. U21: the player's card takes the wire from an
+ * inventory entry.
  */
 export function useWiringTool({
   sessionRef,
   executeCommand,
   setFeedback,
-  onSourceChosen,
-  onWiresExhausted,
+  onFirstChosen,
+  onWireLaid,
 }: UseWiringToolOptions): WiringTool {
   const [wiringStep, setWiringStep] = useState<WiringStep | null>(null);
   const stepRef = useRef<WiringStep | null>(null);
@@ -146,7 +148,7 @@ export function useWiringTool({
   const startWiring = useCallback(
     (inventoryEntryId?: string): void => {
       inventoryEntryIdRef.current = inventoryEntryId;
-      updateStep({ kind: 'source' });
+      updateStep({ kind: 'first' });
       setFeedback(null);
     },
     [updateStep, setFeedback],
@@ -172,7 +174,7 @@ export function useWiringTool({
       }
       if (outcome.kind === 'next') {
         updateStep(outcome.step);
-        if (outcome.step.kind === 'target') onSourceChosen(outcome.step.sourceId);
+        if (outcome.step.kind === 'second') onFirstChosen(outcome.step.firstId);
         setFeedback(null);
         return;
       }
@@ -188,21 +190,14 @@ export function useWiringTool({
         }),
       );
       // A refusal is already reported by `executeCommand`; the gesture stays
-      // on its source either way.
-      if (result.status === 'accepted' && step.kind === 'target') {
-        const wiresLeft =
-          session.mode === 'resolution'
-            ? (currentEditorAttempt(result.session).document.inventory.find(
-                ({ id }) => id === inventoryEntryId,
-              )?.quantity ?? 0)
-            : null;
-        const next = wiringStepAfterWire(step, wiresLeft);
-        updateStep(next);
-        setFeedback(next === null ? 'Fil posé. Il ne reste plus de fil.' : null);
-        if (next === null) onWiresExhausted();
+      // on its first object then. A laid wire ends the gesture.
+      if (result.status === 'accepted') {
+        updateStep(null);
+        setFeedback('Fil posé.');
+        onWireLaid();
       }
     },
-    [sessionRef, executeCommand, setFeedback, updateStep, onSourceChosen, onWiresExhausted],
+    [sessionRef, executeCommand, setFeedback, updateStep, onFirstChosen, onWireLaid],
   );
 
   return { wiringStep, isWiringRef, startWiring, cancelWiring, handleWiringTap };

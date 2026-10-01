@@ -245,7 +245,7 @@ describe('LevelDocument v2', () => {
     expect(levelDocumentSchema.safeParse(candidate).success).toBe(true);
   });
 
-  it('autorise la rotation libre du levier jusqu’à ±135° et refuse les angles qui croisent la butée physique', () => {
+  it('autorise la rotation du levier dans tous les sens, comme les autres familles', () => {
     const rotated = (rotation: number) => ({
       ...validLevel,
       objects: [
@@ -254,10 +254,9 @@ describe('LevelDocument v2', () => {
       ],
     });
 
-    expect(levelDocumentSchema.safeParse(rotated((-135 * Math.PI) / 180)).success).toBe(true);
-    expect(levelDocumentSchema.safeParse(rotated((135 * Math.PI) / 180)).success).toBe(true);
-    expect(issuePaths(rotated((136 * Math.PI) / 180))).toEqual(['objects.4.transform.rotation']);
-    expect(issuePaths(rotated((-136 * Math.PI) / 180))).toEqual(['objects.4.transform.rotation']);
+    for (const degrees of [-180, -135, 135, 150, 180, 270]) {
+      expect(issuePaths(rotated((degrees * Math.PI) / 180))).toEqual([]);
+    }
   });
 
   it('accepte un levier relié à un convoyeur, chacun avec son état initial', () => {
@@ -1185,7 +1184,7 @@ describe('objets à placer et solution de référence (U22, ADR 0013)', () => {
     ]);
   });
 
-  it('refuse une pose de solution hors scène ou hors de la règle de rotation de sa famille', () => {
+  it('refuse une pose de solution hors scène, à n’importe quel angle de sa famille', () => {
     const leverEntry = {
       ...fanEntry,
       id: 'inventory-lever',
@@ -1204,10 +1203,7 @@ describe('objets à placer et solution de référence (U22, ADR 0013)', () => {
           ],
         },
       }),
-    ).toEqual([
-      'solution.placements.0.transform.position.x',
-      'solution.placements.2.transform.rotation',
-    ]);
+    ).toEqual(['solution.placements.0.transform.position.x']);
   });
 
   it('refuse un document qui porte à la fois des objets à placer et une solution', () => {

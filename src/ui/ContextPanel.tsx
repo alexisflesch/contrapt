@@ -21,11 +21,7 @@ import {
 } from 'lucide-react';
 import { controlCircuits } from '../domain/control-circuits';
 import { mirroredRotation } from '../domain/family-geometry';
-import {
-  isMirrorableFamily,
-  MAX_LEVER_ROTATION_RADIANS,
-  rotationMode,
-} from '../domain/level-document';
+import { isMirrorableFamily, rotationMode } from '../domain/level-document';
 import {
   currentEditorAttempt,
   type EditorSession,
@@ -196,22 +192,12 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
           ))}
         </div>
       )}
-      {selectedPlacement.type === 'lever' && canRotate && (
-        <p className="context-restriction">Rotation limitée à ±135°.</p>
-      )}
       {rotationStep !== null && canRotate && (
         <div className="context-rotation-controls">
           {(['négative', 'positive'] as const).map((direction) => (
             <Button
               key={direction}
               aria-label={`Rotation ${direction}`}
-              disabled={
-                selectedPlacement.type === 'lever' &&
-                Math.abs(
-                  selectedPlacement.transform.rotation +
-                    (direction === 'positive' ? rotationStep.radians : -rotationStep.radians),
-                ) > MAX_LEVER_ROTATION_RADIANS
-              }
               onClick={() => {
                 onExecuteCommand(
                   rotatePlacement({
@@ -322,7 +308,7 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
           </select>
         </label>
       )}
-      {selectedPlacement.type === 'fan' && canEdit && connectedWires.length === 0 && (
+      {selectedPlacement.type === 'fan' && canEdit && (
         <label className="context-size-control">
           État de départ
           <select
@@ -345,7 +331,7 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
           </select>
         </label>
       )}
-      {selectedPlacement.type === 'barrier' && canEdit && connectedWires.length === 0 && (
+      {selectedPlacement.type === 'barrier' && canEdit && (
         <label className="context-size-control">
           État de départ
           <select
@@ -378,8 +364,10 @@ export function ContextPanel({ session, onExecuteCommand, onClose }: ContextPane
                 : `Délier le circuit ${label} (fil ${String(index + 1)})`;
             return (
               <li key={wire.id}>
-                <span>Circuit {label}</span>
-                {wire.targetId === selectedPlacement.id && <span> : commandé</span>}
+                <span className="context-circuit-title">
+                  Fil du circuit {label}
+                  {wire.targetId === selectedPlacement.id ? ' (commandé)' : ''}
+                </span>
                 {canEdit && (
                   <div
                     className="context-role"

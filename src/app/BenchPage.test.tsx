@@ -17,14 +17,24 @@ describe('page de mesure de performance (/bench, ADR 0002)', () => {
       clock += 0.5;
       return clock;
     };
+    // The dense scene's physics is covered by its own tests; here a stand-in
+    // session keeps the page's timing logic fast and stable under load.
+    let advanced = 0;
+    const createSession = () => ({
+      advanceFixedSteps: (count: number): void => {
+        advanced += count;
+      },
+      destroy: (): void => undefined,
+    });
     render(
       <MemoryRouter initialEntries={['/bench']}>
-        <BenchPage now={now} />
+        <BenchPage now={now} createSession={createSession} />
       </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Mesurer la physique' }));
 
+    expect(advanced).toBe(1200);
     const result = screen.getByRole('region', { name: 'Résultat de la mesure' });
     expect(within(result).getByText(/1200 pas/)).toBeVisible();
     expect(within(result).getByText(/95e centile : 0,50 ms/)).toBeVisible();

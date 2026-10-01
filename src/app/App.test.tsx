@@ -1844,30 +1844,26 @@ describe('coque TinkerBolt', () => {
     expect(canvas).toHaveAttribute('data-wires', '');
 
     selectWireCard();
-    expect(screen.getByText('Touchez un levier ou un bouton')).toBeVisible();
+    expect(screen.getByText('Touchez une commande ou l’appareil à relier')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Annuler le fil' })).toBeVisible();
     // La carte ne pose rien et ferme le panneau : le plateau reste dégagé.
     expect(screen.queryByRole('region', { name: 'Propriétés de Levier' })).toBeNull();
 
-    tapBoard(board, 600, 225);
-    expect(screen.getByText('Un fil doit partir d’un levier ou d’un bouton placé.')).toBeVisible();
-    expect(screen.getByText('Touchez un levier ou un bouton')).toBeVisible();
-
     // Toucher le vide ne sort pas du geste : il reste libre pour déplacer la vue.
     tapBoard(board, 100, 50);
-    expect(screen.getByText('Touchez un levier ou un bouton')).toBeVisible();
+    expect(screen.getByText('Touchez une commande ou l’appareil à relier')).toBeVisible();
 
-    tapBoard(board, 200, 225);
-    expect(screen.getByText('Touchez l’appareil à commander')).toBeVisible();
-    // La source choisie est sélectionnée : le plateau la montre.
-    expect(screen.getByRole('region', { name: 'Propriétés de Levier' })).toBeInTheDocument();
+    // L’appareil d’abord, la commande ensuite : l’ordre est libre.
     tapBoard(board, 600, 225);
+    expect(screen.getByText('Touchez le levier ou le bouton qui le commande')).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Propriétés de Convoyeur' })).toBeInTheDocument();
+    tapBoard(board, 200, 225);
 
     const [wired] = (canvas.getAttribute('data-wires') ?? '').split(' ');
     expect(wired).toMatch(/^placement-\d+>placement-\d+$/u);
-    expect(screen.getByText('Fil posé. Touchez un autre appareil à commander')).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Terminer les fils' }));
-    expect(screen.queryByRole('group', { name: 'Pose d’un fil' })).toBeNull();
+    // Le fil posé termine le geste, sans bouton à presser.
+    expect(screen.getByText('Fil posé.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Annuler le fil' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
     expect(canvas).toHaveAttribute('data-wires', '');
@@ -1876,7 +1872,7 @@ describe('coque TinkerBolt', () => {
 
     tapBoard(board, 200, 225);
     const wiredPanel = screen.getByRole('region', { name: 'Propriétés de Levier' });
-    expect(within(wiredPanel).getByText('Circuit A')).toBeVisible();
+    expect(within(wiredPanel).getByText(/^Fil du circuit A/)).toBeVisible();
     const wireRole = within(wiredPanel).getByRole('group', { name: /Pour le joueur · fil/ });
     expect(within(wireRole).getByRole('button', { name: 'À placer' })).toHaveAttribute(
       'aria-pressed',
@@ -1912,13 +1908,14 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByText('Touchez l’appareil à commander')).toBeVisible();
     expect(wires()).toHaveLength(0);
 
-    // Une source commande plusieurs appareils : le geste reste sur elle.
+    // Un fil par geste : le bouton commande le ventilateur, puis la barrière.
     tapBoard(board, 600, 225);
+    selectWireCard();
     tapBoard(board, 600, 350);
+    tapBoard(board, 200, 225);
     expect(wires()).toHaveLength(2);
     const [first, second] = wires();
     expect(first?.split('>')[0]).toBe(second?.split('>')[0]);
-    fireEvent.click(screen.getByRole('button', { name: 'Terminer les fils' }));
 
     selectWireCard();
     tapBoard(board, 200, 350);
@@ -1934,11 +1931,13 @@ describe('coque TinkerBolt', () => {
     expect(screen.queryByRole('group', { name: 'Pose d’un fil' })).toBeNull();
     expect(wires()).toHaveLength(2);
     tapBoard(board, 600, 225);
-    expect(
-      within(screen.getByRole('region', { name: 'Propriétés de Ventilateur' })).getByText(
-        'Circuit A',
-      ),
-    ).toBeVisible();
+    const fanPanel = screen.getByRole('region', { name: 'Propriétés de Ventilateur' });
+    expect(within(fanPanel).getByText(/^Fil du circuit A/)).toBeVisible();
+    // Relié, il garde son état de départ : la commande le fait basculer.
+    fireEvent.change(within(fanPanel).getByRole('combobox', { name: 'État de départ' }), {
+      target: { value: 'off' },
+    });
+    expect(within(fanPanel).getByRole('combobox', { name: 'État de départ' })).toHaveValue('off');
   });
 
   it('tourne chaque objet par pas de 15°, retourne ventilateur et barrière, et règle leur état de départ', () => {
@@ -2228,6 +2227,22 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByRole('region', { name: 'Propriétés de Poutre' })).toBeVisible();
   });
 
+  it('ne réagit qu’à la poignée de l’objet sélectionné : une masse posée dessus reste saisissable', () => {
+    render(<App />);
+    // Atelier 16 × 9 ajusté au canvas 800 × 450 : 50 px par unité monde.
+    const board = placeWorkshopBeam();
+    // La masse se pose là où serait la poignée de la poutre, juste au-dessus d’elle.
+    placeFromCatalogue('Masse', 400, 190);
+    // Rien n’est plus sélectionné.
+    tapBoard(board, 700, 60);
+    expect(screen.queryByRole('region', { name: /Propriétés de/ })).toBeNull();
+
+    tapBoard(board, 400, 190);
+
+    expect(screen.getByRole('region', { name: 'Propriétés de Masse' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).toBeNull();
+  });
+
   it('annule atomiquement un drag lorsqu’un second pointeur arrive sur l’objet', () => {
     render(<App />);
     const board = placeWorkshopBeam();
@@ -2272,22 +2287,17 @@ describe('coque TinkerBolt', () => {
     expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).not.toBeInTheDocument();
   });
 
-  it('arrête les boutons de rotation aux deux limites du levier', () => {
+  it('tourne un levier sur un tour complet aux boutons, sans butée', () => {
     render(<App />);
     placeWorkshopObject('Levier');
     const panel = screen.getByRole('region', { name: 'Propriétés de Levier' });
 
-    for (let step = 0; step < 9; step += 1) {
+    for (let step = 0; step < 24; step += 1) {
       fireEvent.click(within(panel).getByRole('button', { name: 'Rotation positive' }));
     }
-    expect(within(panel).getByRole('button', { name: 'Rotation positive' })).toBeDisabled();
-    expect(within(panel).getByRole('button', { name: 'Rotation négative' })).toBeEnabled();
-
-    for (let step = 0; step < 18; step += 1) {
-      fireEvent.click(within(panel).getByRole('button', { name: 'Rotation négative' }));
-    }
-    expect(within(panel).getByRole('button', { name: 'Rotation négative' })).toBeDisabled();
     expect(within(panel).getByRole('button', { name: 'Rotation positive' })).toBeEnabled();
+    expect(within(panel).getByRole('button', { name: 'Rotation négative' })).toBeEnabled();
+    expect(panel).not.toHaveTextContent('Rotation limitée');
   });
 
   it('tourne un levier par sa poignée en une seule entrée d’historique', () => {
@@ -2299,7 +2309,6 @@ describe('coque TinkerBolt', () => {
     expect(within(leverPanel).getByRole('button', { name: 'Rotation positive' })).toHaveTextContent(
       '15°',
     );
-    expect(leverPanel).toHaveTextContent('Rotation limitée à ±135°.');
 
     // Start outside the lever sprite but inside the rendered rotation handle,
     // so this gesture cannot be mistaken for a direct object move.
@@ -2378,7 +2387,7 @@ describe('coque TinkerBolt', () => {
 
     openCatalogue();
     fireEvent.click(screen.getByRole('button', { name: 'Fil de commande, quantité : 1' }));
-    expect(screen.getByText('Touchez un levier ou un bouton')).toBeVisible();
+    expect(screen.getByText('Touchez une commande ou l’appareil à relier')).toBeVisible();
     tapWorldPoint(2, 3);
     expect(screen.getByText('Touchez l’appareil à commander')).toBeVisible();
     // Mêmes règles que l’auteur : l’appareil du niveau a déjà son contrôleur.
@@ -2391,7 +2400,7 @@ describe('coque TinkerBolt', () => {
     tapWorldPoint(5.5, 3);
 
     expect(canvas).toHaveAttribute('data-wires', 'button-1>fan-1 lever-1>conveyor-1');
-    // Plus de fil : le geste s’arrête et la carte est désactivée.
+    // Le fil posé termine le geste ; plus de fil, la carte est désactivée.
     expect(screen.queryByRole('group', { name: 'Pose d’un fil' })).toBeNull();
     openCatalogue();
     expect(screen.getByRole('button', { name: 'Fil de commande, quantité : 0' })).toBeDisabled();
@@ -2400,7 +2409,7 @@ describe('coque TinkerBolt', () => {
     // Le fil du niveau ne se délie pas.
     tapWorldPoint(2, 1.2);
     const buttonPanel = screen.getByRole('region', { name: 'Propriétés de Bouton' });
-    expect(within(buttonPanel).getByText('Circuit A')).toBeVisible();
+    expect(within(buttonPanel).getByText(/^Fil du circuit A/)).toBeVisible();
     expect(within(buttonPanel).queryByRole('button', { name: /Délier/ })).toBeNull();
 
     // Le joueur délie le sien et le retrouve dans l’inventaire.

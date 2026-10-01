@@ -274,6 +274,62 @@ describe('ConstructionAttempt', () => {
     expect(result.status).toBe('accepted');
   });
 
+  it('lets the player place like the author when a zone covers the whole scene', () => {
+    const level = createLevel();
+    const scene = { min: { x: -3, y: -1 }, max: { x: 10, y: 10 } };
+    const attempt = createConstructionAttempt({ ...level, scene, buildZones: [scene] });
+
+    // Centre in the scene, footprint past its edge: no zone is really drawn.
+    const moved = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'short-beams',
+      placementId: 'edge-beam',
+      transform: { position: { x: 9.5, y: 5 }, rotation: 0 },
+    }).execute(attempt);
+    expect(moved.status).toBe('accepted');
+
+    // The scene still bounds the player.
+    const outside = placeFromInventory({
+      context: 'player',
+      inventoryEntryId: 'short-beams',
+      placementId: 'outside-beam',
+      transform: { position: { x: 11, y: 5 }, rotation: 0 },
+    }).execute(attempt);
+    expect(outside.status).toBe('rejected');
+  });
+
+  it('grows the scene, and a zone covering it, when the author moves an object past its edge', () => {
+    const level = createLevel();
+    const scene = { min: { x: -3, y: -1 }, max: { x: 10, y: 10 } };
+    const attempt = createConstructionAttempt({ ...level, scene, buildZones: [scene] });
+
+    const moved = movePlacement({
+      context: 'author',
+      placementId: 'fixed-beam',
+      position: { x: 13.4, y: -2.5 },
+    }).execute(attempt);
+
+    expect(moved.status).toBe('accepted');
+    if (moved.status !== 'accepted') return;
+    const grown = { min: { x: -3, y: -4 }, max: { x: 15, y: 10 } };
+    expect(moved.state.document.scene).toEqual(grown);
+    expect(moved.state.document.buildZones).toEqual([grown]);
+
+    const tooFar = movePlacement({
+      context: 'author',
+      placementId: 'fixed-beam',
+      position: { x: 80, y: 5 },
+    }).execute(attempt);
+    expect(tooFar).toEqual({ status: 'rejected', reason: 'invalid-level-document' });
+
+    const byPlayer = movePlacement({
+      context: 'player',
+      placementId: 'fixed-beam',
+      position: { x: 13.4, y: -2.5 },
+    }).execute(attempt);
+    expect(byPlayer.status).toBe('rejected');
+  });
+
   it('rejects a player move when the centre stays in-zone but the beam footprint leaves it', () => {
     const attempt = createConstructionAttempt(createLevel());
     const placed = placeBeam().execute(attempt);
@@ -423,10 +479,7 @@ describe('ConstructionAttempt', () => {
         rotated.state.document.objects.find(({ id }) => id === 'lever-1')?.transform.rotation,
       ).toBe(Math.PI / 2);
     }
-    expect(rotate((136 * Math.PI) / 180)).toEqual({
-      status: 'rejected',
-      reason: 'invalid-level-document',
-    });
+    expect(rotate(Math.PI).status).toBe('accepted');
   });
 
   it('turns a fan by fifteen degrees, like every other rotatable family', () => {

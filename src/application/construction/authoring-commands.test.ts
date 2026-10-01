@@ -390,6 +390,19 @@ describe('commandes d’auteur', () => {
       expect(state.document.goal.ballId).toBe('ball-1');
     });
 
+    it('agrandit la scène pour accueillir un objet posé au-delà de son bord', () => {
+      const state = accepted(
+        addAuthoredPlacement({
+          ...addedMass,
+          transform: { position: { x: 22.5, y: 4 }, rotation: 0 },
+        }),
+        createLevel(),
+      );
+
+      expect(state.document.scene).toEqual({ min: { x: 0, y: 0 }, max: { x: 24, y: 20 } });
+      expect(state.document.objects.at(-1)?.transform.position).toEqual({ x: 22.5, y: 4 });
+    });
+
     it('ignore les zones de construction : elles ne contraignent que le joueur', () => {
       const state = accepted(
         addAuthoredPlacement({

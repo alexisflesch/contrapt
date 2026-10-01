@@ -35,8 +35,6 @@ const MAX_INVENTORY_QUANTITY = 999;
 const MAX_CHALLENGE_OBJECT_COUNT = 999;
 const MAX_WORLD_COORDINATE = 1_000_000;
 const MAX_ROTATION_RADIANS = 100_000;
-/** Planck wraps body angles at ±π; beyond ±135° a lever notch crosses that seam. */
-export const MAX_LEVER_ROTATION_RADIANS = (3 * Math.PI) / 4;
 
 /** ADR 0007 - Scène d'un niveau: world-unit bounds a scene rectangle must fit within. */
 const MIN_SCENE_SIZE = 4;
@@ -399,32 +397,68 @@ const addUniqueIdentifierIssues = (
 /**
  * How a family turns: every family by any angle — the editor steps by
  * fifteen degrees — except the ball, whose turn shows nothing, and the
- * basket, whose opening must face up. Lever placement is also bounded to
- * ±135° by `MAX_LEVER_ROTATION_RADIANS`.
+ * basket, whose opening must face up.
  */
 export const rotationMode = (type: ObjectPlacement['type']): 'free' | 'fixed' =>
   type === 'ball' || type === 'basket' ? 'fixed' : 'free';
 
+type SceneRectangle = LevelDocument['scene'];
+
+const covers = (zone: SceneRectangle, scene: SceneRectangle): boolean =>
+  zone.min.x <= scene.min.x &&
+  zone.min.y <= scene.min.y &&
+  zone.max.x >= scene.max.x &&
+  zone.max.y >= scene.max.y;
+
+/**
+ * A zone covering the whole scene restricts nothing (the default since the
+ * 1st October 2026 decision): the player then places like the author, the
+ * scene alone bounding each object's centre.
+ */
+export const isPlacementUnconstrained = (document: LevelDocument): boolean =>
+  document.buildZones.some((zone) => covers(zone, document.scene));
+
+/** Room left around an object the author lays past the scene's edge, in world units. */
+const SCENE_GROWTH_MARGIN = 1;
+
+/**
+ * The author lays an object at `point`: past the scene's edge, the scene
+ * grows to whole units around it, and a zone that covered the old scene
+ * follows. Beyond `MAX_SCENE_SIZE`, validation still refuses the document.
+ */
+export const withSceneIncluding = (
+  document: LevelDocument,
+  point: Readonly<{ readonly x: number; readonly y: number }>,
+): LevelDocument => {
+  const { scene } = document;
+  if (
+    point.x >= scene.min.x &&
+    point.x <= scene.max.x &&
+    point.y >= scene.min.y &&
+    point.y <= scene.max.y
+  ) {
+    return document;
+  }
+  const grown = {
+    min: {
+      x: Math.min(scene.min.x, Math.floor(point.x - SCENE_GROWTH_MARGIN)),
+      y: Math.min(scene.min.y, Math.floor(point.y - SCENE_GROWTH_MARGIN)),
+    },
+    max: {
+      x: Math.max(scene.max.x, Math.ceil(point.x + SCENE_GROWTH_MARGIN)),
+      y: Math.max(scene.max.y, Math.ceil(point.y + SCENE_GROWTH_MARGIN)),
+    },
+  };
+  return {
+    ...document,
+    scene: grown,
+    buildZones: document.buildZones.map((zone) => (covers(zone, scene) ? grown : zone)),
+  };
+};
+
 /** Families drawn facing one side (fan, barrier): « Retourner » mirrors them left to right. */
 export const isMirrorableFamily = (type: ObjectPlacement['type']): boolean =>
   type === 'fan' || type === 'barrier';
-
-const addLeverRotationIssues = (
-  objects: readonly ObjectPlacement[],
-  issues: LevelDocumentValidationIssue[],
-): void => {
-  objects.forEach((placement, index) => {
-    if (
-      placement.type === 'lever' &&
-      Math.abs(placement.transform.rotation) > MAX_LEVER_ROTATION_RADIANS
-    ) {
-      issues.push({
-        path: ['objects', index, 'transform', 'rotation'],
-        message: 'La rotation du levier doit rester comprise entre −135° et 135°.',
-      });
-    }
-  });
-};
 
 const addRotationPermissionIssues = (
   entries: readonly (ObjectPlacement | InventoryEntry)[],
@@ -678,7 +712,7 @@ const addPuzzleIssues = (
       });
     }
 
-    const { position, rotation } = pose.transform;
+    const { position } = pose.transform;
     if (!isInsideRange(position.x, document.scene.min.x, document.scene.max.x)) {
       issues.push({
         path: [...path, 'transform', 'position', 'x'],
@@ -689,12 +723,6 @@ const addPuzzleIssues = (
       issues.push({
         path: [...path, 'transform', 'position', 'y'],
         message: 'Chaque pose de la solution doit être dans la scène sur l’axe y.',
-      });
-    }
-    if (entry.type === 'lever' && Math.abs(rotation) > MAX_LEVER_ROTATION_RADIANS) {
-      issues.push({
-        path: [...path, 'transform', 'rotation'],
-        message: `La pose de la solution ne respecte pas la rotation de la famille « ${entry.type} ».`,
       });
     }
   });
@@ -839,7 +867,6 @@ export const levelDocumentSchema = levelDocumentV2StructureSchema.superRefine(
     addLevelDocumentRelationIssues(document, issues);
     addSceneContainmentIssues(document, issues);
     addPuzzleIssues(document, issues, true);
-    addLeverRotationIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);
     for (const issue of issues) {
       context.addIssue({ code: 'custom', path: [...issue.path], message: issue.message });
@@ -859,7 +886,6 @@ export const levelDocumentAttemptSchema = levelDocumentV2StructureSchema.superRe
     addLevelDocumentRelationIssues(document, issues, false);
     addSceneContainmentIssues(document, issues);
     addPuzzleIssues(document, issues, false, true);
-    addLeverRotationIssues(document.objects, issues);
     addControlWireIssues(document.objects, document.wires, issues);
     for (const issue of issues) {
       context.addIssue({ code: 'custom', path: [...issue.path], message: issue.message });

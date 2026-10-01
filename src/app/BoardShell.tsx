@@ -98,9 +98,9 @@ export function BoardShell({
     sessionRef,
     executeCommand,
     setFeedback,
-    onSourceChosen: selectPlacement,
-    // The source was only marked for the gesture: the next tap opens its object.
-    onWiresExhausted: clearSelection,
+    onFirstChosen: selectPlacement,
+    // The first object was only marked for the gesture: the next tap opens an object.
+    onWireLaid: clearSelection,
   });
   const pointers = useBoardPointers({
     sessionRef,

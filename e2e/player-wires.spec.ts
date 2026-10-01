@@ -81,7 +81,7 @@ test('U21 — le joueur relie avec le fil de son inventaire, puis le délie, au 
   await openCatalogue.tap();
   await page.getByRole('button', { name: 'Fil de commande, quantité : 1' }).tap();
   const guide = page.getByRole('group', { name: 'Pose d’un fil' });
-  await expect(guide).toContainText('Touchez un levier ou un bouton');
+  await expect(guide).toContainText('Touchez une commande ou l’appareil à relier');
   await tapWorld(1.8, 3.4);
   await expect(guide).toContainText('Touchez l’appareil à commander');
   await tapWorld(5.4, 3.4);
@@ -96,7 +96,7 @@ test('U21 — le joueur relie avec le fil de son inventaire, puis le délie, au 
   // Un fil du niveau ne se délie pas.
   await tapWorld(1.8, 1.6);
   const buttonPanel = page.getByRole('region', { name: 'Propriétés de Bouton' });
-  await expect(buttonPanel.getByText('Circuit A')).toBeVisible();
+  await expect(buttonPanel.getByText(/^Fil du circuit A/)).toBeVisible();
   await expect(buttonPanel.getByRole('button', { name: /Délier/ })).toHaveCount(0);
 
   // L’inspecteur compact couvre le bas du plateau : le fermer, toucher le

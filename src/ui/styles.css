@@ -1814,16 +1814,21 @@ select:focus-visible {
 
 .context-circuits li {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  padding: var(--space-2);
+  border: 2px solid var(--panel-line);
+  border-radius: var(--radius-m);
 }
 
-.context-circuits li > span:first-child {
+.context-circuit-title {
+  flex-basis: 100%;
   font-weight: 700;
 }
 
-.context-circuits button {
-  margin-left: auto;
+.context-circuits .context-role {
+  flex: 1 1 auto;
 }
 
 .context-wiring {

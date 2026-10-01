@@ -1,9 +1,11 @@
 import { initialObjectFamilyRegistry } from '../../domain/object-family-registry';
 import { placementFootprintCorners } from '../../domain/placement-footprint';
 import {
+  isPlacementUnconstrained,
   levelDocumentAttemptSchema,
   levelDocumentSchema,
   rotationMode,
+  withSceneIncluding,
   type LevelDocument,
 } from '../../domain/level-document';
 import type { Command, CommandState } from '../history';
@@ -149,11 +151,15 @@ const coordinateTolerance = (left: number, right: number): number =>
 const isCoordinateInside = (value: number, min: number, max: number): boolean =>
   value + coordinateTolerance(value, min) >= min && value - coordinateTolerance(value, max) <= max;
 
-/** A full object footprint must fit in one build zone; shared edges are inclusive. */
+/**
+ * A full object footprint must fit in one build zone; shared edges are
+ * inclusive. A zone covering the whole scene restricts nothing.
+ */
 const isFootprintInsideBuildZone = (
   document: LevelDocument,
   corners: ReturnType<typeof placementFootprintCorners>,
 ): boolean =>
+  isPlacementUnconstrained(document) ||
   document.buildZones.some(({ min, max }) =>
     corners.every(
       ({ x, y }) => isCoordinateInside(x, min.x, max.x) && isCoordinateInside(y, min.y, max.y),
@@ -276,9 +282,13 @@ export const placeFromInventory = (input: PlaceFromInventoryInput): Construction
       },
       permissions: { ...inventoryEntry.permissions },
     };
+    const document =
+      input.context === 'author'
+        ? withSceneIncluding(state.document, input.transform.position)
+        : state.document;
     const documentCandidate = {
-      ...state.document,
-      objects: [...state.document.objects, placementCandidate],
+      ...document,
+      objects: [...document.objects, placementCandidate],
       inventory: state.document.inventory.map((entry) =>
         entry.id === inventoryEntry.id ? { ...entry, quantity: entry.quantity - 1 } : entry,
       ),
@@ -317,9 +327,14 @@ export const movePlacement = (input: MovePlacementInput): ConstructionCommand =>
       return { status: 'accepted', state };
     }
 
+    // The author's board has no edge: the scene grows to take the object.
+    const document =
+      input.context === 'author'
+        ? withSceneIncluding(state.document, input.position)
+        : state.document;
     const documentCandidate = {
-      ...state.document,
-      objects: state.document.objects.map((entry) =>
+      ...document,
+      objects: document.objects.map((entry) =>
         entry.id === placement.id
           ? {
               ...entry,

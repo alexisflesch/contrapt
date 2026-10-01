@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { embeddedLevels } from '../content/embedded-levels';
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
 import {
   createSimulationSession,
@@ -847,6 +848,43 @@ describe('port physique candidat-neutre', () => {
     });
   });
 
+  it('joue la même machine de la même façon, quels que soient l’ordre des objets et leurs identifiants', () => {
+    // The player lays the inventory in any order, and an exported puzzle renames
+    // the objects to place: the outcome must depend on the machine alone.
+    const level = embeddedLevels.find(({ id }) => id === 'campaign-17-la-grande-machine');
+    if (level === undefined) throw new Error('Niveau 17 embarqué introuvable.');
+    const { solution: ignoredSolution, ...machine } = level;
+    void ignoredSolution;
+    const goalIds = new Set([machine.goal.ballId, machine.goal.basketId]);
+    const reordered: LevelDocument = {
+      ...machine,
+      objects: [...machine.objects].reverse(),
+    };
+    const renamed: LevelDocument = {
+      ...machine,
+      objects: machine.objects.map((object) =>
+        goalIds.has(object.id) ? object : { ...object, id: `zz-${object.id}` },
+      ),
+      wires: machine.wires.map((wire) => ({
+        ...wire,
+        sourceId: goalIds.has(wire.sourceId) ? wire.sourceId : `zz-${wire.sourceId}`,
+        targetId: goalIds.has(wire.targetId) ? wire.targetId : `zz-${wire.targetId}`,
+      })),
+    };
+    const ballAfter = (document: LevelDocument) => {
+      let ballState: SimulationBodyState | undefined;
+      withSession(document, (session) => {
+        session.advanceFixedSteps(600);
+        ballState = body(session.readState(), machine.goal.ballId, 'primary');
+      });
+      return ballState;
+    };
+
+    const reference = ballAfter(machine);
+    expect(ballAfter(reordered)).toEqual(reference);
+    expect(ballAfter(renamed)).toEqual(reference);
+  });
+
   it('progresse par nombre de pas fixes et reste déterministe sans horloge implicite', () => {
     const level = createLevelDocument();
     const first = createSimulationSession(level, { fixedStepSeconds: FIXED_STEP_SECONDS });
@@ -1493,11 +1531,12 @@ describe('port physique candidat-neutre', () => {
     }
   });
 
-  it('tient les trois crans tous les 15° dans la plage d’orientation ±135°', () => {
+  it('tient les trois crans tous les 15°, sur le tour complet', () => {
     const rotations = Array.from(
-      { length: 19 },
-      (_, index) => ((index * 15 - 135) * Math.PI) / 180,
+      { length: 24 },
+      (_, index) => ((index * 15 - 165) * Math.PI) / 180,
     );
+    const turn = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
     const failures: string[] = [];
 
     for (const rotation of rotations) {
@@ -1521,9 +1560,9 @@ describe('port physique candidat-neutre', () => {
                 `${String(degrees)}° ${position}: cran ${actual.kind === 'lever' ? actual.position : actual.kind}`,
               );
             }
-            if (Math.abs(handle.rotation - rotation - expectedAngle) > 0.05) {
+            if (Math.abs(turn(handle.rotation - rotation - expectedAngle)) > 0.05) {
               failures.push(
-                `${String(degrees)}° ${position}: angle ${String(handle.rotation - rotation)}`,
+                `${String(degrees)}° ${position}: angle ${String(turn(handle.rotation - rotation))}`,
               );
             }
           },
@@ -1736,6 +1775,31 @@ describe('port physique candidat-neutre', () => {
     expect(running([lever('right')], 'lever-1')).toBe(true);
     expect(running([button], 'button-1')).toBe(false);
     expect(running([button, mass('mass-1', { x: 0, y: -1 })], 'button-1')).toBe(true);
+  });
+
+  it('fait basculer un appareil relié à l’opposé de son état de départ quand sa commande est active', () => {
+    const lever = (position: string) => placed('lever-1', 'lever', { x: 0, y: 0 }, { position });
+    const deviceAfter = (target: unknown, position: string) => {
+      let result: ReturnType<typeof device> | undefined;
+      withSession(
+        createDeviceLevelDocument(
+          [target, lever(position)],
+          [{ id: 'wire-1', sourceId: 'lever-1', targetId: 'device-1' }],
+        ),
+        (session) => {
+          session.advanceFixedSteps(SETTLING_FIXED_STEPS);
+          result = device(session.readState(), 'device-1');
+        },
+      );
+      return result;
+    };
+    const runningFan = placed('device-1', 'fan', { x: 6, y: 0 }, { state: 'on' });
+    const openBarrier = placed('device-1', 'barrier', { x: 6, y: 0 }, { state: 'open' });
+
+    expect(deviceAfter(runningFan, 'center')).toMatchObject({ kind: 'fan', running: true });
+    expect(deviceAfter(runningFan, 'left')).toMatchObject({ kind: 'fan', running: false });
+    expect(deviceAfter(openBarrier, 'center')).toMatchObject({ kind: 'barrier', retraction: 1 });
+    expect(deviceAfter(openBarrier, 'right')).toMatchObject({ kind: 'barrier', retraction: 0 });
   });
 
   it('fait tourner les pales d’un ventilateur en marche, et d’un angle remis à zéro au reset', () => {

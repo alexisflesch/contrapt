@@ -158,6 +158,21 @@ d'auteur » ci-dessus est caduque pour les fils d'inventaire.
 - Défi : un fil posé par le joueur compte comme un objet (ADR 0010), et la
   quantité de fils compte dans le total opposé à `minimalObjectCount`.
 
+## Amendement du 1er octobre 2026 — état de départ et geste du fil
+
+À la demande de l'auteur :
+
+- un ventilateur ou une barrière relié garde son état de départ (`state`) : la
+  commande active (levier d'un côté, bouton enfoncé) le fait passer à l'état
+  inverse, puis il y revient. Une barrière ouverte au départ se ferme donc à
+  l'appui. Le convoyeur relié reste mené par la position du levier. Les niveaux
+  embarqués dont un ventilateur relié valait `on` passent à `off`, ce qui garde
+  leur comportement ; aucune migration n'est prévue pour les autres documents ;
+- le geste de la carte Fil se fait dans les deux ordres, commande puis appareil
+  ou l'inverse, et se termine dès que le fil est posé, sans bouton « Terminer » ;
+- le réglage « Fixe / À placer » de chaque fil reste dans le panneau de l'objet
+  relié, sous le titre « Fil du circuit … ».
+
 ## Conséquences
 
 - Aucune dépendance ajoutée ; le port physique gagne des « dispositifs » dans

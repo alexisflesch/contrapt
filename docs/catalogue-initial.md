@@ -156,7 +156,7 @@ reliés.
 
 ### Modèle
 
-- socle polygonal orientable par l'auteur de −135° à +135° ; poignée dynamique
+- socle polygonal orientable dans tous les sens, par pas de 15° ; poignée dynamique
   sur pivot, limitée à ±45° par rapport au socle ;
 - trois crans — gauche, centre, droite — tenus par un moteur à couple limité et
   compensés pour que la gravité due à l'orientation du socle ne change pas le
@@ -304,8 +304,7 @@ soient typées selon `type` ; il fait autorité (`src/domain/level-document.ts`)
 Balle, panier et bascule n'acceptent aucune propriété. Toutes les familles
 tournent librement — l'éditeur procède par pas de 15° — sauf la balle et le
 panier (décision de l'auteur, 1er octobre 2026 ; `rotationMode`,
-`src/domain/level-document.ts`) ; le levier reste borné entre −135° et +135°.
-`permissions.rotate` doit être `false` pour la balle et le panier.
+`src/domain/level-document.ts`), levier compris. `permissions.rotate` doit être `false` pour la balle et le panier.
 
 Les premiers niveaux peuvent n'offrir qu'une ou deux poutres. La balle, le panier
 et la bascule peuvent être placés par l'auteur avec leurs trois permissions à

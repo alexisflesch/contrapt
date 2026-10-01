@@ -15,7 +15,11 @@ import {
   seesawGeometry,
   springboardGeometry,
 } from '../domain/family-geometry';
-import { rotationMode, type LevelDocument } from '../domain/level-document';
+import {
+  isPlacementUnconstrained,
+  rotationMode,
+  type LevelDocument,
+} from '../domain/level-document';
 import { projectWires, type ProjectedWire } from './control-wires';
 import { drawWireLabels, drawWires, type WireCanvas } from './wire-renderer';
 import {
@@ -557,14 +561,8 @@ export const withAuthorRotation = (
  * Build zones worth highlighting: none when one zone covers the whole scene,
  * since placement is then unconstrained and a tint over the board says nothing.
  */
-export const constrainingBuildZones = (document: LevelDocument): readonly BoardZone[] => {
-  const { scene } = document;
-  const coversScene = document.buildZones.some(
-    ({ min, max }) =>
-      min.x <= scene.min.x && min.y <= scene.min.y && max.x >= scene.max.x && max.y >= scene.max.y,
-  );
-  return coversScene ? [] : document.buildZones;
-};
+export const constrainingBuildZones = (document: LevelDocument): readonly BoardZone[] =>
+  isPlacementUnconstrained(document) ? [] : document.buildZones;
 
 /**
  * Projects a document on the board. `simulation` is given while a

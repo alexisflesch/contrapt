@@ -289,6 +289,40 @@ const ROLLING_RESISTANCE_COEFFICIENT = 0.1;
 const MASS_KILOGRAMS = { '10kg': 10 } as const;
 const MASS_VERTICES = massGeometry.polygon.map(({ x, y }) => new Vec2(x, y));
 
+type ObjectPlacement = LevelDocument['objects'][number];
+
+/** What a placement is, ids aside: two placements with the same key are the same piece. */
+const machineKey = ({ type, transform, props }: ObjectPlacement): readonly (string | number)[] => [
+  type,
+  transform.position.x,
+  transform.position.y,
+  transform.rotation,
+  JSON.stringify(Object.entries(props).sort(([a], [b]) => a.localeCompare(b))),
+];
+
+const compareKeys = (
+  left: readonly (string | number)[],
+  right: readonly (string | number)[],
+): number => {
+  for (let index = 0; index < left.length; index += 1) {
+    const a = left[index];
+    const b = right[index];
+    if (a === b) continue;
+    if (typeof a === 'number' && typeof b === 'number') return a - b;
+    return String(a) < String(b) ? -1 : 1;
+  }
+  return 0;
+};
+
+/**
+ * Bodies are created in an order fixed by the machine itself, never by the
+ * document's order or ids: Box2D solves contacts in creation order, so a
+ * player laying the same pieces in another order, or an exported puzzle that
+ * renames them, would otherwise see the same machine end differently.
+ */
+const inMachineOrder = (objects: readonly ObjectPlacement[]): readonly ObjectPlacement[] =>
+  [...objects].sort((left, right) => compareKeys(machineKey(left), machineKey(right)));
+
 /** Drops the 1e-17 residues of cos(π/2), so a vertical fan blows exactly as before. */
 const withoutResidue = (value: number): number => (Math.abs(value) < 1e-12 ? 0 : value);
 
@@ -679,7 +713,7 @@ class PlanckSimulationSession implements SimulationSession {
     world.on('end-contact', this.#onEndContact);
     world.on('pre-solve', this.#onPreSolve);
 
-    for (const placement of this.#level.objects) {
+    for (const placement of inMachineOrder(this.#level.objects)) {
       switch (placement.type) {
         case 'ball':
           this.#createBall(
@@ -916,12 +950,12 @@ class PlanckSimulationSession implements SimulationSession {
     const pivot = new Vec2(position.x, position.y);
     const base = world.createBody({ type: 'static', position: pivot, angle: rotation });
     // The handle's origin is the pivot too, so its angle is the lever's
-    // reading. It is created upright: the joint measures its limits from the
-    // angle the bodies have when it is made, and they must frame the vertical.
+    // reading. It starts on its notch.
+    const startAngle = leverAngle(startPosition);
     const handle = world.createBody({
       type: 'dynamic',
       position: pivot,
-      angle: rotation,
+      angle: rotation + startAngle,
       allowSleep: true,
     });
     this.#bodies.push(
@@ -943,25 +977,28 @@ class PlanckSimulationSession implements SimulationSession {
     });
 
     const joint = world.createJoint(
-      new RevoluteJoint(
-        {
-          enableLimit: true,
-          lowerAngle: -leverGeometry.tilt,
-          upperAngle: leverGeometry.tilt,
-          enableMotor: true,
-          motorSpeed: 0,
-          maxMotorTorque: LEVER_NOTCH_TORQUE,
-          collideConnected: false,
-        },
-        base,
-        handle,
-        pivot,
-      ),
+      new RevoluteJoint({
+        enableLimit: true,
+        lowerAngle: -leverGeometry.tilt,
+        upperAngle: leverGeometry.tilt,
+        enableMotor: true,
+        motorSpeed: 0,
+        maxMotorTorque: LEVER_NOTCH_TORQUE,
+        collideConnected: false,
+        // Planck stores a body's starting angle within ±π: near a half turn,
+        // base and handle may land a whole turn apart. The reference is taken
+        // from the stored angles, so the limits still frame the vertical.
+        referenceAngle: handle.getAngle() - base.getAngle() - startAngle,
+        // Both bodies have their origin on the pivot.
+        bodyA: base,
+        bodyB: handle,
+        localAnchorA: new Vec2(0, 0),
+        localAnchorB: new Vec2(0, 0),
+      }),
     );
     if (joint === null) {
       throw new Error(`Impossible de créer le pivot du levier « ${placementId} ».`);
     }
-    handle.setTransform(pivot, rotation + leverAngle(startPosition));
     this.#joints.push({ placementId, handle: joint, moving: 'handle' });
     this.#levers.push({ placementId, base, handle, joint });
   }
@@ -1021,9 +1058,8 @@ class PlanckSimulationSession implements SimulationSession {
   }
 
   /**
-   * ADR 0009: a two-state device (fan, barrier) is active while its lever
-   * stands to either side — centre means stop, as for a conveyor — or while
-   * its button is pressed.
+   * ADR 0009: a controller is active while its lever stands to either side —
+   * centre means rest, as for a conveyor — or while its button is pressed.
    */
   #controllerActive(sourceId: string): boolean {
     const lever = this.#levers.find(({ placementId }) => placementId === sourceId);
@@ -1035,13 +1071,15 @@ class PlanckSimulationSession implements SimulationSession {
   /** Reads every controller and sets the state of the devices it commands. */
   #commandDevices(): void {
     this.#commandConveyors();
+    // A commanded device starts in its own state and switches to the other
+    // while its controller is active (decision of 1st October 2026).
     for (const fan of this.#fans) {
-      fan.running =
-        fan.sourceId === undefined ? fan.ownRunning : this.#controllerActive(fan.sourceId);
+      const active = fan.sourceId !== undefined && this.#controllerActive(fan.sourceId);
+      fan.running = fan.ownRunning !== active;
     }
     for (const barrier of this.#barriers) {
-      barrier.open =
-        barrier.sourceId === undefined ? barrier.ownOpen : this.#controllerActive(barrier.sourceId);
+      const active = barrier.sourceId !== undefined && this.#controllerActive(barrier.sourceId);
+      barrier.open = barrier.ownOpen !== active;
     }
   }
 

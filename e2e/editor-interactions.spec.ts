@@ -439,22 +439,17 @@ test('U15 — relie un levier à un convoyeur par la carte Fil, au tactile', asy
 
   await pick('Fil de commande');
   const guide = page.getByRole('group', { name: 'Pose d’un fil' });
-  await expect(guide).toContainText('Touchez un levier ou un bouton');
+  await expect(guide).toContainText('Touchez une commande ou l’appareil à relier');
 
-  // Refus : un convoyeur ne commande rien.
+  // L’appareil d’abord : l’ordre est libre.
   await tapWorld(11, 4.5);
-  await expect(guide).toContainText('Un fil doit partir d’un levier ou d’un bouton placé.');
-  await expect(canvas).toHaveAttribute('data-wires', '');
-
-  await tapWorld(4, 4.5);
-  await expect(guide).toContainText('Touchez l’appareil à commander');
-  // La source est sélectionnée sans ouvrir l’inspecteur compact sur le plateau.
+  await expect(guide).toContainText('Touchez le levier ou le bouton qui le commande');
+  // Le premier objet est sélectionné sans ouvrir l’inspecteur compact sur le plateau.
   await expect(page.getByRole('button', { name: 'Fermer les propriétés' })).toBeHidden();
-  await tapWorld(11, 4.5);
+  await tapWorld(4, 4.5);
   await expect(canvas).toHaveAttribute('data-wires', /^placement-\d+>placement-\d+$/u);
   const wired = await canvas.getAttribute('data-wires');
-  await expect(guide).toContainText('Fil posé');
-  await guide.getByRole('button', { name: 'Terminer les fils' }).tap();
+  // Le fil posé termine le geste.
   await expect(guide).toBeHidden();
 
   await page.getByRole('button', { name: 'Annuler', exact: true }).tap();
@@ -469,7 +464,7 @@ test('U15 — relie un levier à un convoyeur par la carte Fil, au tactile', asy
   await expect(canvas).toHaveAttribute('data-wires', wired ?? '');
   await tapWorld(4, 4.5);
   const wiredPanel = page.getByRole('region', { name: 'Propriétés de Levier' });
-  await expect(wiredPanel.getByText('Circuit A')).toBeVisible();
+  await expect(wiredPanel.getByText(/^Fil du circuit A/)).toBeVisible();
   const wireRole = wiredPanel.getByRole('group', { name: /Pour le joueur · fil/ });
   await wireRole.getByRole('button', { name: 'À placer' }).tap();
   for (const viewport of [

@@ -783,8 +783,11 @@ export function useBoardPointers({
             return;
           }
         }
+        // Only the selected object shows its handle, so only it answers there:
+        // anything else under that spot stays reachable.
         const rotationTarget = objects.find(
           (object) =>
+            object.id === sessionRef.current.selectedPlacementId &&
             isRotatableFamily(object.family) &&
             object.rotatable &&
             hitTestRotationHandle(localPoint, object, viewport),

@@ -1,5 +1,5 @@
 import { initialObjectFamilyRegistry } from '../../domain/object-family-registry';
-import type { LevelDocument } from '../../domain/level-document';
+import { withSceneIncluding, type LevelDocument } from '../../domain/level-document';
 import type { Command, CommandOutcome, CommandState } from '../history';
 import {
   acceptAuthoringCandidate,
@@ -462,12 +462,11 @@ export const addAuthoredPlacement = (input: AddAuthoredPlacementInput): Authorin
       },
       permissions: startingObjectPermissions,
     };
+    // The author's board has no edge: the scene grows to take the object.
+    const document = withSceneIncluding(state.document, input.transform.position);
     return {
       status: 'candidate',
-      document: {
-        ...state.document,
-        objects: [...state.document.objects, placement],
-      },
+      document: { ...document, objects: [...document.objects, placement] },
     };
   });
 

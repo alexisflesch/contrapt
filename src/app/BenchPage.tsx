@@ -14,11 +14,21 @@ const MEASURED_STEPS = 1_200;
 
 const milliseconds = (value: number): string => `${value.toFixed(2).replace('.', ',')} ms`;
 
+/** What the measure needs of a simulation session. */
+interface SteppedSession {
+  readonly advanceFixedSteps: (count: number) => void;
+  readonly destroy: () => void;
+}
+
+const createDenseSession = (): SteppedSession =>
+  createSimulationSession(denseBenchDocument, { fixedStepSeconds: FIXED_STEP_SECONDS });
+
 /** Physics alone, one fixed step at a time, timed by the injected clock. */
-const measurePhysics = (now: () => number): DurationSummary => {
-  const session = createSimulationSession(denseBenchDocument, {
-    fixedStepSeconds: FIXED_STEP_SECONDS,
-  });
+const measurePhysics = (
+  now: () => number,
+  createSession: () => SteppedSession,
+): DurationSummary => {
+  const session = createSession();
   const durations: number[] = [];
   try {
     for (let step = 0; step < MEASURED_STEPS; step += 1) {
@@ -35,6 +45,8 @@ const measurePhysics = (now: () => number): DurationSummary => {
 interface BenchPageProps {
   /** Wall clock in milliseconds; the app reads it here, never inside `src/simulation/`. */
   readonly now?: () => number;
+  /** Injected for tests; defaults to the dense scene's real simulation. */
+  readonly createSession?: () => SteppedSession;
 }
 
 /**
@@ -42,7 +54,10 @@ interface BenchPageProps {
  * physics of the densest provisional scene, then offers to play that scene on
  * the real board with a frame-rate meter (`/bench/play`).
  */
-export function BenchPage({ now = () => performance.now() }: BenchPageProps) {
+export function BenchPage({
+  now = () => performance.now(),
+  createSession = createDenseSession,
+}: BenchPageProps) {
   const navigate = useNavigate();
   const [summary, setSummary] = useState<DurationSummary | null>(null);
 
@@ -57,7 +72,7 @@ export function BenchPage({ now = () => performance.now() }: BenchPageProps) {
           <Button
             tone="go"
             onClick={() => {
-              setSummary(measurePhysics(now));
+              setSummary(measurePhysics(now, createSession));
             }}
           >
             Mesurer la physique
