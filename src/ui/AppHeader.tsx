@@ -72,6 +72,13 @@ export function AppHeader({ title, subtitle, action }: AppHeaderProps) {
           </Button>
           <Button
             onClick={() => {
+              void navigate('/import');
+            }}
+          >
+            Importer un fichier JSON
+          </Button>
+          <Button
+            onClick={() => {
               void navigate('/demo');
             }}
           >

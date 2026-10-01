@@ -294,15 +294,18 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
 - **Fichiers et partage** : L22 encode et décode les documents avec validation
   et migration ; L23 sérialise les fragments URL avec CRC-32 et décompression
   bornée ; L24 valide location.hash, puis ouvre le document en mode joueur ou
-  affiche une erreur avec un lien vers la liste.
+  affiche une erreur avec un lien vers la liste. La page `/import` valide un
+  fichier JSON avec L22, l’enregistre comme un nouveau brouillon et l’ouvre dans
+  l’éditeur sans remplacer les brouillons existants.
 - **Brouillons L26** : `DraftRepository` et son adaptateur `localStorage` stockent
   un document par identifiant sous `tinkerbolt:draft:<id>`, avec l’index
   `tinkerbolt:drafts`. Les enveloppes versionnées sont validées, les documents
   passent par le codec de fichier L22, et les valeurs corrompues sont sauvegardées
-  avant remplacement. La fonction pure `decideDraftAutosave` limite les essais
-  d’enregistrement à une fois par seconde pendant l’édition et autorise un
-  enregistrement immédiat au lancement d’un test ; elle n’est pas encore reliée
-  à une interface.
+  avant remplacement. L’import depuis `/import` choisit un identifiant neuf et
+  sauvegarde le document validé comme brouillon séparé. La fonction pure
+  `decideDraftAutosave` limite les essais d’enregistrement à une fois par seconde
+  pendant l’édition et autorise un enregistrement immédiat au lancement d’un test ;
+  elle n’est pas encore reliée à une interface.
 - **PWA L28** : `vite-plugin-pwa` 1.3.0 et Workbox 7.4.1 produisent le manifeste,
   les icônes provisoires, le précache (environ 10 Mio) et le service worker de
   production. Le test E2E confirme l’ouverture du niveau 1 après rechargement hors
@@ -329,8 +332,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   est revalidé par le schéma. Seul l’ajout d’objet est exposé (catalogue, U20).
 - **Mode auteur incomplet** : l’atelier ne permet pas encore de créer et gérer
   ces commandes dans l’interface (scène, zones, inventaire, objectif,
-  métadonnées), ni d’importer un fichier. Depuis U22, l’export remplace
-  l’inventaire de l’atelier par les objets à placer.
+  métadonnées). Depuis U22, l’export remplace l’inventaire de l’atelier par les
+  objets à placer.
 - **Atelier U22/U25** : revenir de « Jouer le puzzle » remonte l’atelier sur son
   dernier document, l’historique annuler/rétablir repart de là ; les fils à
   placer sont exportables et rouverts avec leur marquage ; le brouillon du
@@ -347,6 +350,16 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après l’import JSON (1er octobre 2026) : deux tentatives passent
+typecheck, lint, formatage, Knip et validation des 19 niveaux ; chacune échoue
+ensuite sur le timeout à 5 s du test préexistant
+`src/app/BenchPage.test.tsx` (729 tests sur 730). Ce test passe seul (3/3).
+`pnpm build` passe. La suite Playwright mobile séparée donne 43 réussites,
+1 scénario ignoré et deux échecs intermittents préexistants (L17b et U15) ; les
+deux passent lorsqu’ils sont rejoués seuls. Le nouveau test E2E d’import passe
+dans la suite complète et isolément. Captures :
+`test-results/import/import-{390x844,844x390,1440x900}.png`.
 
 `pnpm check` après la landing d’accueil (1er octobre 2026) : passe — typecheck,
 lint, formatage, Knip, validation des 19 documents, 713 tests Vitest, build

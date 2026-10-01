@@ -44,6 +44,7 @@ bibliothèque.
   - `/levels/:levelId/play` — un niveau joué ; `levelId` est l'`id` du
     `LevelDocument`, jamais un identifiant inventé séparément ;
   - `/editor` — l'atelier de création libre (`embeddedWorkshopDocument`) ;
+  - `/import` — import d'un fichier JSON de niveau vers un nouveau brouillon ;
   - `/demo` — une machine en chaîne qui se résout seule
     (`embeddedDemoDocument`, ajoutée le 26 septembre 2026), en mode joueur
     sans inventaire : elle montre le concept en une pression sur « Tester » ;
@@ -123,6 +124,13 @@ utilisent la progression déjà validée par le repository et le contexte exista
 (ADR 0010 et ADR 0011), sans nouveau stockage. Le menu partagé propose « Accueil »
 pour revenir à `/` depuis chaque écran. Cette demande explicite autorise la
 mise en page de l’accueil indépendamment de l’ordre de reprise de la feuille de route.
+
+## Amendement du 1er octobre 2026 — import de niveau
+
+À la demande de l’auteur, le menu partagé propose « Importer un fichier JSON » et
+ouvre `/import`. Cette page valide le fichier avant de créer un brouillon ; elle
+ne remplace aucun brouillon existant. Le niveau validé s’ouvre ensuite dans
+`/editor?draft=<id>` selon les règles de l’ADR 0011.
 
 ## Ce qui reste non décidé
 

@@ -96,3 +96,12 @@ de l'utilisateur. Un fragment invalide affiche une erreur et n'altère rien.
 - Le codec URL est asynchrone ; le codec de fichier reste synchrone.
 - Un niveau de 3 Ko de JSON donne une charge d'environ 1 à 1,5 Ko : l'URL reste
   partageable par messagerie.
+
+## Amendement du 1er octobre 2026 — import de fichier
+
+La page `/import` lit les fichiers JSON avec le codec de fichier ci-dessus
+(limite 256 Kio, migrations puis validation Zod). Un fichier valide est enregistré
+comme un nouveau brouillon avec un identifiant généré par l’application, puis
+ouvert dans l’éditeur. Un identifiant source ne peut donc pas écraser un brouillon
+local existant. Les erreurs de lecture, de validation ou de stockage restent sur
+la page d’import, en dehors du plateau ; elles ne modifient aucun brouillon.

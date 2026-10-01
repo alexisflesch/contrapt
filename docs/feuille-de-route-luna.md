@@ -3,6 +3,8 @@
 Vue d’ensemble en une page ; le détail reste dans § 5, § 6 et le journal (§ 8).
 La demande auteur du 1er octobre 2026 ajoute un accueil à `/`, indépendamment
 de cet ordre de reprise ; la décision de routage est amendée dans l’ADR 0008.
+Elle ajoute aussi U29 : l’import de fichier JSON dans un nouveau brouillon, avec
+une page `/import` hors plateau ; cette tâche indépendante est livrée ci-dessous.
 Un agent qui reprend commence par la liste « Prochaines tâches » ci-dessous,
 dans l’ordre. Ces tâches d’interface sont **autorisées par l’auteur** (l’interdit
 de § 6 ne s’y applique pas) ; captures aux trois formats dans le journal, mais
@@ -2601,3 +2603,31 @@ Une entrée par tâche, ajoutée en bas, la plus récente en dernier. Format :
   n’a été appliqué (L2 reste bloquée).
 - Pour l’auteur : AGPL v3 ou ultérieure, suivant la recommandation GNU pour les
   licences copyleft ; le dépôt source est public à l’adresse citée dans le README.
+
+### U29 — Importer un fichier JSON dans un nouveau brouillon — fait
+
+- Demande auteur du 1er octobre 2026, traitée indépendamment de l’ordre U12/U1…
+  Une page `/import`, accessible depuis le menu partagé, accepte les fichiers
+  `.json` jusqu’à 256 Kio. Le codec L22 applique les migrations et la validation
+  Zod ; un document accepté devient un brouillon d’identifiant neuf, sans
+  remplacer un brouillon existant, puis s’ouvre dans l’éditeur. Les erreurs
+  restent hors du plateau.
+- Test rouge : avant l’ajout de la route, `/import` redirigeait vers `/levels` ;
+  le panneau accessible « Importer un niveau JSON » était absent.
+- Tests : quatre tests du cas d’usage couvrent l’identifiant neuf, la collision
+  et les erreurs du repository ; trois tests d’interface couvrent le nouveau
+  brouillon, le JSON invalide et la taille maximale. `pnpm check:fast` passe
+  (730 tests Vitest). L’E2E mobile d’import passe seul et dans la suite complète.
+- Échec initial du test navigateur lié au banc d’essai : `embedded-levels.ts`
+  importe le JSON avec une assertion propre à Vite ; le test E2E lit maintenant
+  directement un niveau JSON comme fichier, comme le ferait l’utilisateur.
+- Gate globale : deux tentatives de `pnpm check` échouent sur le timeout
+  préexistant de `BenchPage.test.tsx` (729/730 ; ses 3 tests passent isolément).
+  `pnpm build` passe. La suite E2E mobile donne 43 réussites, 1 scénario ignoré
+  et deux flakes préexistants (L17b et U15), qui passent en isolation.
+- Fichiers touchés hors périmètre : ADR 0008 (route `/import`) et ADR 0011
+  (sauvegarde comme nouveau brouillon), `docs/etat.md` et ce journal.
+- Captures de la page d’import, inspectées aux trois formats :
+  `test-results/import/import-{390x844,844x390,1440x900}.png`. Validation
+  visuelle finale attendue de l’auteur.
+- Commit : `feat(editor): importe un JSON dans un nouveau brouillon (U29)`.

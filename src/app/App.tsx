@@ -11,6 +11,7 @@ import { BenchPlayPage } from './BenchPlayPage';
 import { DemoPage } from './DemoPage';
 import { EditorPage } from './EditorPage';
 import { HomePage } from './HomePage';
+import { LevelImportPage } from './LevelImportPage';
 import { LevelsPage } from './LevelsPage';
 import { PlayLevelPage } from './PlayLevelPage';
 import { SettingsPage } from './SettingsPage';
@@ -82,6 +83,7 @@ export function App({
               <Route path="/levels" element={<LevelsPage />} />
               <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
               <Route path="/editor" element={<EditorPage />} />
+              <Route path="/import" element={<LevelImportPage />} />
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/shared" element={<SharedLevelPage />} />
