@@ -347,6 +347,27 @@ préremplit l'export suivant après rechargement ; un pseudo invalide est refus�
 avec un message ; la mention de licence est présente ; une erreur de stockage
 des préférences n'empêche pas l'export. Captures.
 
+#### M14b — Description du niveau ●●
+
+Décision de l'auteur du 1er octobre 2026 : la description qu'aucun auteur n'a
+écrite est celle de l'atelier libre (`src/content/levels/workshop.json`),
+recopiée dans chaque création et exportée. Elle devient un champ de l'auteur.
+
+1. Corriger d'abord `updateLevelDescription` : appelée avec `undefined`, elle
+   efface `author` et `basedOn` (dette notée en M14). Test rouge.
+2. Retirer la description par défaut de l'atelier libre : une création partie
+   de zéro n'en a pas. Une création issue d'un niveau garde la description de
+   celui-ci, modifiable.
+3. Boîte d'export d'une création : champ « Description (facultatif) », appliqué
+   à l'export comme le titre et le pseudo (M14), vidé = retiré, bornes du
+   schéma. Remplace la tâche A4 de la phase 3.
+4. Cartes des niveaux reçus dans « Mes niveaux » : la description en texte brut,
+   comme sur `/levels`.
+
+Tests : ancien document avec description relu à l'identique ; export avec,
+sans, et description vidée ; carte d'un niveau reçu. Captures de la boîte et de
+la carte.
+
 #### M15 — Documentation de la phase ●
 
 README : licence CC BY 4.0 du contenu de niveau à côté de l'AGPL du code, et
@@ -393,8 +414,7 @@ et historique. Une tâche par point, captures pour chacune.
 2. **A2 — Zones de construction** : ajouter, déplacer, redimensionner, retirer.
 3. **A3 — Objectif** : déplacer la balle rouge et le panier (aujourd'hui uniques
    et déjà posés) ; `updateLevelGoal` si le modèle l'exige.
-4. **A4 — Description du niveau** dans la boîte d'export, à côté du titre
-   (`updateLevelDescription`).
+4. ~~A4 — Description du niveau~~ : avancée en M14b.
 
 ### Phase 4 — Outillage et mesures
 
