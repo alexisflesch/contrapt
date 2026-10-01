@@ -3,8 +3,10 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import type { DraftRepository } from '../application/drafts/draft-repository';
 import type { ProgressRepository } from '../application/progression/progress-repository';
+import type { ReceivedLevelRepository } from '../application/received/received-level-repository';
 import { createLocalStorageDraftRepository } from '../infrastructure/storage/local-storage-draft-repository';
 import { createLocalStorageProgressRepository } from '../infrastructure/storage/local-storage-progress-repository';
+import { createLocalStorageReceivedLevelRepository } from '../infrastructure/storage/local-storage-received-level-repository';
 
 import { BenchPage } from './BenchPage';
 import { BenchPlayPage } from './BenchPlayPage';
@@ -19,6 +21,10 @@ import { SharedLevelPage } from './SharedLevelPage';
 import { CampaignProgressProvider } from './CampaignProgressProvider';
 import { DraftRepositoryContext, unavailableDraftRepository } from './draft-repository-context';
 import { PwaUpdateProvider } from './PwaUpdateProvider';
+import {
+  ReceivedLevelRepositoryContext,
+  unavailableReceivedLevelRepository,
+} from './received-level-repository-context';
 
 /** Route declarations only (ADR 0008); each route's screen lives in its own page module. */
 interface AppProps {
@@ -26,6 +32,8 @@ interface AppProps {
   readonly progressRepository?: ProgressRepository;
   /** Injectable local draft port (L26); defaults to `localStorage`. */
   readonly draftRepository?: DraftRepository;
+  /** Injectable local port for received levels (ADR 0015); defaults to `localStorage`. */
+  readonly receivedLevelRepository?: ReceivedLevelRepository;
   /**
    * Dev-mode override (U5b): `main.tsx` passes `import.meta.env.DEV` here so
    * every level is unlocked under `pnpm dev`, in the list and by direct URL.
@@ -59,13 +67,28 @@ const createBrowserDraftRepository = (): DraftRepository => {
   }
 };
 
+const createBrowserReceivedLevelRepository = (): ReceivedLevelRepository => {
+  try {
+    if (typeof window === 'undefined') return unavailableReceivedLevelRepository;
+    return createLocalStorageReceivedLevelRepository(window.localStorage);
+  } catch {
+    return unavailableReceivedLevelRepository;
+  }
+};
+
 export function App({
   progressRepository,
   draftRepository,
+  receivedLevelRepository,
   unlockAllLevels = false,
 }: AppProps = {}) {
   const [browserDraftRepository] = useState(() =>
     draftRepository === undefined ? createBrowserDraftRepository() : unavailableDraftRepository,
+  );
+  const [browserReceivedLevelRepository] = useState(() =>
+    receivedLevelRepository === undefined
+      ? createBrowserReceivedLevelRepository()
+      : unavailableReceivedLevelRepository,
   );
   const [browserProgressRepository] = useState(() =>
     progressRepository === undefined
@@ -78,21 +101,25 @@ export function App({
     <PwaUpdateProvider>
       <CampaignProgressProvider repository={repository} unlockAllLevels={unlockAllLevels}>
         <DraftRepositoryContext value={draftRepository ?? browserDraftRepository}>
-          <BrowserRouter basename={import.meta.env.BASE_URL}>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/levels" element={<LevelsPage />} />
-              <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
-              <Route path="/editor" element={<EditorPage />} />
-              <Route path="/import" element={<LevelImportPage />} />
-              <Route path="/demo" element={<DemoPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/shared" element={<SharedLevelPage />} />
-              <Route path="/bench" element={<BenchPage />} />
-              <Route path="/bench/play" element={<BenchPlayPage />} />
-              <Route path="*" element={<Navigate to="/levels" replace />} />
-            </Routes>
-          </BrowserRouter>
+          <ReceivedLevelRepositoryContext
+            value={receivedLevelRepository ?? browserReceivedLevelRepository}
+          >
+            <BrowserRouter basename={import.meta.env.BASE_URL}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/levels" element={<LevelsPage />} />
+                <Route path="/levels/:levelId/play" element={<PlayLevelPage />} />
+                <Route path="/editor" element={<EditorPage />} />
+                <Route path="/import" element={<LevelImportPage />} />
+                <Route path="/demo" element={<DemoPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/shared" element={<SharedLevelPage />} />
+                <Route path="/bench" element={<BenchPage />} />
+                <Route path="/bench/play" element={<BenchPlayPage />} />
+                <Route path="*" element={<Navigate to="/levels" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </ReceivedLevelRepositoryContext>
         </DraftRepositoryContext>
       </CampaignProgressProvider>
     </PwaUpdateProvider>

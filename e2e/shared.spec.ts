@@ -19,6 +19,11 @@ test('ouvre un lien partagé fabriqué par le codec sur mobile', async ({ page }
   await expect(page.getByText('Partage · Par-dessus le mur')).toBeVisible();
   await expect(page.getByText('Mode joueur')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+  // M8 : le lien valide est gardé comme niveau reçu avant d’être joué.
+  const receivedIndex = await page.evaluate(() =>
+    window.localStorage.getItem('tinkerbolt:received'),
+  );
+  expect(receivedIndex).toMatch(/"recu-[0-9a-f]{16}"/);
 
   await mkdir('test-results/shared', { recursive: true });
   await page.screenshot({
@@ -50,4 +55,47 @@ test('affiche un message utile pour un partage invalide sur mobile', async ({ pa
     fullPage: true,
     scale: 'css',
   });
+});
+
+test('joue un lien partagé et dit discrètement qu’il n’a pas été gardé quand le stockage est plein (M8)', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Le parcours de partage est validé sur mobile.');
+
+  const fileResult = decodeLevelFile(JSON.stringify(sharedLevel));
+  expect(fileResult.status).toBe('ok');
+  if (fileResult.status !== 'ok') return;
+  const fragment = await encodeShareFragment(fileResult.document);
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException('Quota dépassé', 'QuotaExceededError');
+    };
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/shared${fragment}`);
+
+  await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+  const notice = page.getByRole('status').filter({
+    hasText: 'Ce niveau n’a pas été gardé sur cet appareil.',
+  });
+  await expect(notice).toBeVisible();
+
+  await mkdir('test-results/shared', { recursive: true });
+  for (const [width, height] of [
+    [390, 844],
+    [844, 390],
+    [1440, 900],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    await expect(notice).toBeVisible();
+    await page.screenshot({
+      path: `test-results/shared/shared-not-kept-${String(width)}x${String(height)}.png`,
+      fullPage: true,
+      scale: 'css',
+    });
+  }
+
+  await page.getByRole('button', { name: 'Masquer le message' }).click();
+  await expect(notice).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
 });

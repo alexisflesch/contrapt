@@ -10,6 +10,8 @@ interface SimulationControlsProps {
   readonly session: EditorSession;
   readonly isCreation: boolean;
   readonly feedback: string | null;
+  /** A discreet, dismissable status (M8: a shared level not kept), shown when no feedback is. */
+  readonly notice?: { readonly message: string; readonly onDismiss: () => void } | undefined;
   readonly activePlacementKind: ObjectKind | null;
   /** The "Fil" card's guidance (U15), or `null` when no wire is being made. */
   readonly wiringGuide: { readonly prompt: string; readonly exitLabel: string } | null;
@@ -28,6 +30,7 @@ interface SimulationControlsProps {
 export function SimulationControls({
   session,
   feedback,
+  notice,
   isCreation,
   activePlacementKind,
   wiringGuide,
@@ -155,11 +158,23 @@ export function SimulationControls({
             {wiringGuide.exitLabel}
           </Button>
         </div>
+      ) : feedback !== null ? (
+        <p className="toolbar-feedback" aria-live="assertive">
+          {feedback}
+        </p>
       ) : (
-        feedback !== null && (
-          <p className="toolbar-feedback" aria-live="assertive">
-            {feedback}
-          </p>
+        notice !== undefined && (
+          <div className="toolbar-notice">
+            <p role="status">{notice.message}</p>
+            <button
+              className="toolbar-notice-dismiss"
+              type="button"
+              aria-label="Masquer le message"
+              onClick={notice.onDismiss}
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
         )
       )}
     </div>

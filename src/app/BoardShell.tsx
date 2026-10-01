@@ -53,6 +53,8 @@ interface BoardShellProps {
   readonly exit?: { readonly label: string; readonly onExit: () => void };
   /** U28: the pristine campaign document used as the author calibration brief. */
   readonly calibrationDocument?: LevelDocument;
+  /** A discreet status over the board until dismissed (M8: a shared level not kept). */
+  readonly notice?: string;
 }
 
 /**
@@ -75,8 +77,10 @@ export function BoardShell({
   onPlayAsPlayer,
   exit,
   calibrationDocument,
+  notice,
 }: BoardShellProps) {
   const navigate = useNavigate();
+  const [isNoticeDismissed, setIsNoticeDismissed] = useState(false);
   const {
     session,
     sessionRef,
@@ -374,6 +378,16 @@ export function BoardShell({
           isCreation={mode === 'creation'}
           session={session}
           feedback={feedback}
+          notice={
+            notice === undefined || isNoticeDismissed
+              ? undefined
+              : {
+                  message: notice,
+                  onDismiss: () => {
+                    setIsNoticeDismissed(true);
+                  },
+                }
+          }
           activePlacementKind={pointers.placementTool?.kind ?? null}
           wiringGuide={wiring.wiringStep === null ? null : wiringGuide(wiring.wiringStep)}
           onExitWiring={wiring.cancelWiring}

@@ -50,8 +50,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   (`src/infrastructure/level-file/level-fingerprint.ts`, asynchrone) renvoie les
   16 premiers chiffres hexadécimaux du SHA-256 (`crypto.subtle`) du texte du
   codec de fichier ; deux documents égaux ont la même empreinte et
-  `recu-<empreinte>` respecte le schéma d’identifiant. Aucun appelant en
-  production avant M8 (seul son test l’importe, ce que Knip accepte).
+  `recu-<empreinte>` respecte le schéma d’identifiant. Appelée par `/shared`
+  depuis M8.
 - Dépôt des niveaux reçus M3 (ADR 0015 § Stockage local) : port
   `ReceivedLevelRepository` (`src/application/received/`, list, load, save,
   delete) et adaptateur `localStorage`
@@ -63,8 +63,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   l’appelant, `playerSolution` validée par le schéma `solution` du domaine
   (désormais exporté), ni record ni solution du joueur sur une entrée non
   résolue. Valeur illisible sauvegardée sous `tinkerbolt:backup:` avant
-  écrasement, quota et stockage indisponible en résultats d’erreur. Aucun
-  appelant en production avant M8.
+  écrasement, quota et stockage indisponible en résultats d’erreur. Fourni à
+  l’app par `ReceivedLevelRepositoryContext` depuis M8.
 - Enveloppe des créations v2 M4 (ADR 0015 § Stockage local) : le port
   `DraftRepository` lit et écrit une création entière (`DraftCreation` :
   `document`, `source?`, `updatedAt`) ; `save` reçoit `document` et `source?`
@@ -117,6 +117,26 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   `solution-not-found` pour une source sans solution. Sur une création
   intacte, le résultat égale `workshopFromPuzzle` de la source. Aucun appelant
   en production avant M12 (menu et confirmation).
+- Réception d’un niveau M8 (ADR 0015 § Réception) : cas d’usage pur
+  `receiveLevel(repository, document, origin, fingerprint, clock)`
+  (`src/application/received/receive-level.ts`) ; l’empreinte (ou
+  `unavailable`) et l’horloge sont fournies par l’appelant. Un nouveau
+  document est enregistré `recu-<empreinte>`, non résolu, daté par l’horloge ;
+  un document déjà reçu est rendu tel qu’enregistré, sans écriture (ni
+  `solved`, ni record, ni solution du joueur réinitialisés) ; un objet ou un
+  fil `toPlace` est refusé (`workshop-document`) ; empreinte indisponible ou
+  erreur du dépôt sont un résultat `not-kept`. `/shared` décode, calcule
+  l’empreinte (`crypto.subtle` absent → non gardé), reçoit, puis joue ; un
+  niveau non gardé affiche au-dessus du plateau un statut discret
+  (`role="status"`, « Ce niveau n’a pas été gardé sur cet appareil. »), à
+  masquer d’un toucher ; un lien d’atelier affiche « Ce lien est un atelier, pas
+  un niveau à jouer. » sans plateau ; un lien invalide n’enregistre rien. Le
+  dépôt est fourni par `ReceivedLevelRepositoryContext`
+  (`src/app/received-level-repository-context.ts`), branché dans `App`
+  (`localStorage` par défaut, prop `receivedLevelRepository` pour les tests).
+  Les victoires sur `/shared` ne sont pas encore enregistrées (M10) ; aucune
+  page ne liste les niveaux reçus (M9). Validation visuelle attendue (statut
+  discret, captures `test-results/shared/shared-not-kept-*.png`).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -282,7 +302,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   n’est plus rouge, et la balle du tiroir du joueur est bleue.
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
   `/editor`, `/demo` (machine en chaîne qui se résout seule, testée),
-  `/settings` (vide) et `/shared` (niveau éphémère décodé depuis le fragment URL).
+  `/settings` (vide) et `/shared` (niveau décodé depuis le fragment URL,
+  enregistré comme niveau reçu avant d’être joué depuis M8).
   `/` ouvre l’accueil ; le premier niveau reste accessible par son URL directe.
 - Mise en page validée aux six formats du plan (D4) ; objectif dans une boîte de
   dialogue à la demande ; bandeau de résultat dans un emplacement réservé.
@@ -376,7 +397,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   `useCampaignProgress()` sans ajout visuel. La demande de stockage persistant est
   faite une seule fois après la première victoire. Le codec L23 et la route
   `/shared` L24 sont livrés ; les niveaux partagés restent hors campagne et ne
-  créent ni progression ni brouillon. La PWA L28 est livrée selon l’ADR 0012.
+  créent ni progression ni brouillon ; depuis M8, ils sont gardés comme
+  niveaux reçus. La PWA L28 est livrée selon l’ADR 0012.
   Les esquisses actuelles ne portent aucun défi : les paliers restent réservés
   aux niveaux calibrés qui en définissent explicitement un.
 - **Fichiers et partage** : L22 encode et décode les documents avec validation
@@ -447,6 +469,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M8 (1er octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 842 tests Vitest (66 fichiers),
+build Vite/PWA et 47 tests Playwright `mobile` (46 réussis, 1 ignoré).
 
 `pnpm check` après M7b (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 833 tests Vitest (65 fichiers),

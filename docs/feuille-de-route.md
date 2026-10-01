@@ -970,3 +970,73 @@ invalid-level-document`) ; sans le dédoublonnage des fils, « ajoute sans
   l’ADR 0007 (scène qui deviendrait trop grande) reste refusée par le schéma,
   comme pour `addAuthoredPlacement`.
 - Pour l'auteur : rien à valider à l’écran.
+
+### M8 — Recevoir un niveau — fait — commit de cette entrée
+
+- Tests ajoutés : `src/application/received/receive-level.test.ts` ›
+  « recevoir un niveau (M8, ADR 0015 § Réception) » (6 tests) : nouveau
+  document enregistré `recu-<empreinte>`, non résolu, `receivedAt` de
+  l’horloge ; même document reçu deux fois (par fichier puis par lien) : une
+  seule entrée, aucune écriture, `solved`, record et `playerSolution`
+  intacts ; objet ou fil `toPlace` refusé (`workshop-document`) sans
+  écriture ; quota dépassé en résultat `not-kept` ; lecture du dépôt
+  impossible en résultat, sans écriture ; empreinte indisponible : rien
+  gardé. `src/app/App.test.tsx` › « joue le niveau d’un lien et dit
+  discrètement qu’il n’a pas été gardé quand le stockage échoue (M8) »,
+  « joue le niveau d’un lien sans le garder quand l’empreinte ne peut pas être
+  calculée (M8) » (`crypto` remplacé par un objet sans `subtle`), « refuse un
+  lien qui porte un atelier, sans le jouer ni l’enregistrer (M8) ».
+  `e2e/shared.spec.ts` › « joue un lien partagé et dit discrètement qu’il n’a
+  pas été gardé quand le stockage est plein (M8) » (`setItem` qui lève
+  `QuotaExceededError`, captures aux trois formats, masquage au doigt) ; le
+  parcours mobile existant vérifie en plus l’index `tinkerbolt:received`.
+- Échec initial constaté : `receive-level.test.ts` : `Failed to load url
+./receive-level … Does the file exist?`, puis avec une fonction vide
+  `AssertionError: expected { status: 'stub' } to deeply equal { status:
+'received', …(2) }` (6 échecs sur 6). App : `expected { status: 'ok', ids:
+[] } to deeply equal { status: 'ok', …(1) }` (lien valide),
+  `Unable to find an element with the text: Ce niveau n’a pas été gardé sur
+cet appareil.` (dépôt en erreur, empreinte indisponible), `Unable to find
+role="alert"` (atelier). « affiche une erreur de partage invalide… » passait
+  déjà (non-régression, assertion `saves` ajoutée).
+- Tests existants réécrits : `App.test.tsx` › « ouvre une esquisse partagée
+  comme niveau joueur éphémère » devient « enregistre comme niveau reçu le
+  niveau d’un lien valide, hors progression, avant de le jouer (M8) » :
+  l’assertion `window.localStorage.length).toBe(0)` décrivait le partage
+  éphémère, remplacé par l’amendement « réception » de l’ADR 0011 ; elle
+  devient la lecture de l’entrée `recu-<empreinte>` par l’adaptateur réel.
+  Titre, mode joueur, plateau et progression non sollicitée restent vérifiés.
+- Fichiers touchés hors périmètre : `src/app/BoardShell.tsx` (prop
+  `notice`), `src/ui/SimulationControls.tsx` (statut discret à côté du
+  toast), `src/ui/styles.css` (`.toolbar-notice`, hors flux comme le toast,
+  jetons existants), `e2e/shared.spec.ts` ; lecture de
+  `src/infrastructure/storage/local-storage-received-level-repository.ts`
+  (nom de la fabrique) et de `BoardShell`/`SimulationControls` (où loger le
+  message) : raisons de l’affichage du statut.
+- Choix d’implémentation : l’empreinte arrive en
+  `LevelFingerprintResult` (`ok` + empreinte ou `unavailable`) ; `/shared`
+  la calcule en attrapant toute exception de `levelFingerprint`. Un document
+  déjà reçu n’est pas réécrit (ni `origin` ni `receivedAt` changés). L’horloge
+  `() => new Date()` est posée dans `SharedLevelPage` (point de composition,
+  comme `App` pour les brouillons). L’enregistrement se fait avant le
+  montage du plateau ; un échec (`not-kept`) monte quand même le plateau avec
+  le statut. Le statut se masque par un bouton « Masquer le message » (44 px)
+  pour ne pas couvrir durablement le haut du plateau ; il cède la place à un
+  refus éventuel (toast) puis revient. Le refus d’un lien d’atelier (ADR 0015 :
+  « refusé à la réception ») n’ouvre pas le plateau : la page affiche le
+  message en `role="alert"` à la place de « Lien invalide », adapté au lien
+  (« Ce lien est un atelier, pas un niveau à jouer. ») là où l’ADR cite le
+  fichier.
+- Écarts avec la tâche : aucun. Hors tâche, comme demandé : victoires sur
+  `/shared` (M10), page « Mes niveaux » (M9).
+- Contradictions rencontrées : aucune.
+- Non vérifié : un vrai déploiement en HTTP sur une IP locale (simulé par
+  `crypto` sans `subtle`) ; StrictMode en développement double l’effet, le
+  premier passage annulé n’écrit pas.
+- Pour l'auteur : validation visuelle du statut discret, captures
+  `test-results/shared/shared-not-kept-390x844.png`, `-844x390.png`,
+  `-1440x900.png` (inspectées : bandeau sombre sous la barre d’actions, sur
+  le haut du plateau, croix de fermeture à droite, aucun décalage du
+  plateau). Questions : recevoir à nouveau un niveau déjà gardé doit-il le
+  remettre en tête (rafraîchir `receivedAt`) pour M9 ? Le libellé « Ce lien
+  est un atelier, pas un niveau à jouer. » convient-il ?

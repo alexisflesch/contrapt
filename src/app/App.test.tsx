@@ -8,7 +8,14 @@ import type { CampaignProgress } from '../application/progression';
 import type { ProgressRepository } from '../application/progression/progress-repository';
 import { embeddedLevels } from '../content/embedded-levels';
 import { levelDocumentSchema } from '../domain/level-document';
+import type {
+  ReceivedLevel,
+  ReceivedLevelRepository,
+  ReceivedLevelWriteResult,
+} from '../application/received/received-level-repository';
+import { levelFingerprint } from '../infrastructure/level-file/level-fingerprint';
 import { encodeShareFragment } from '../infrastructure/level-share/level-share-codec';
+import { createLocalStorageReceivedLevelRepository } from '../infrastructure/storage/local-storage-received-level-repository';
 import { fitCameraToScene } from '../presentation/board-camera';
 import {
   ROTATION_HANDLE_GAP_CSS_PIXELS,
@@ -85,6 +92,49 @@ const createProgressRepository = (progress: CampaignProgress = {}) => {
   };
   return { repository, save };
 };
+
+/** M8: an in-memory received-level port whose writes all answer `saveResult`. */
+const createReceivedLevelRepository = (saveResult: ReceivedLevelWriteResult = { status: 'ok' }) => {
+  const saves: ReceivedLevel[] = [];
+  const repository: ReceivedLevelRepository = {
+    list: () => ({ status: 'ok', ids: [] }),
+    load: () => ({ status: 'ok', level: null }),
+    save: (level) => {
+      saves.push(level);
+      return saveResult;
+    },
+    delete: () => ({ status: 'ok' }),
+  };
+  return { repository, saves };
+};
+
+const sharedLevelNotKeptMessage = 'Ce niveau n’a pas été gardé sur cet appareil.';
+
+const sharedM8Level = levelDocumentSchema.parse({
+  schemaVersion: 2,
+  id: 'niveau-recu-m8',
+  metadata: { title: 'Niveau reçu M8' },
+  objects: [
+    {
+      id: 'ball-1',
+      type: 'ball',
+      props: {},
+      transform: { position: { x: 1, y: 1 }, rotation: 0 },
+      permissions: { move: false, rotate: false, remove: false },
+    },
+    {
+      id: 'basket-1',
+      type: 'basket',
+      props: {},
+      transform: { position: { x: 7, y: 4.5 }, rotation: 0 },
+      permissions: { move: false, rotate: false, remove: false },
+    },
+  ],
+  inventory: [],
+  goal: { type: 'basket', ballId: 'ball-1', basketId: 'basket-1' },
+  buildZones: [],
+  scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
+});
 
 const tapWorldPoint = (x: number, y: number): void => {
   const board = screen.getByRole('region', { name: 'Plateau de jeu' });
@@ -2421,7 +2471,7 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByRole('button', { name: 'Fil de commande, quantité : 1' })).toBeEnabled();
   });
 
-  it('ouvre une esquisse partagée comme niveau joueur éphémère', async () => {
+  it('enregistre comme niveau reçu le niveau d’un lien valide, hors progression, avant de le jouer (M8)', async () => {
     const sharedLevel = embeddedLevels.find(
       (level) => level.id === 'campaign-01-la-bille-de-service',
     );
@@ -2436,17 +2486,93 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByText('Mode joueur')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
     expect(save).not.toHaveBeenCalled();
-    expect(window.localStorage.length).toBe(0);
+    const received = createLocalStorageReceivedLevelRepository(window.localStorage);
+    const id = `recu-${await levelFingerprint(sharedLevel)}`;
+    expect(received.list()).toEqual({ status: 'ok', ids: [id] });
+    const stored = received.load(id);
+    expect(stored.status === 'ok' && stored.level).toMatchObject({
+      id,
+      document: sharedLevel,
+      origin: 'link',
+      solved: false,
+    });
+    expect(screen.queryByText(sharedLevelNotKeptMessage)).toBeNull();
   });
+
+  it('joue le niveau d’un lien et dit discrètement qu’il n’a pas été gardé quand le stockage échoue (M8)', async () => {
+    window.history.replaceState(null, '', '/shared' + (await encodeShareFragment(sharedM8Level)));
+    const { repository, saves } = createReceivedLevelRepository({
+      status: 'error',
+      code: 'quota-exceeded',
+    });
+
+    render(<App receivedLevelRepository={repository} />);
+
+    expect(await screen.findByText('Partage · Niveau reçu M8')).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+    expect(screen.getByText(sharedLevelNotKeptMessage)).toHaveAttribute('role', 'status');
+    expect(saves).toHaveLength(1);
+  });
+
+  it('joue le niveau d’un lien sans le garder quand l’empreinte ne peut pas être calculée (M8)', async () => {
+    window.history.replaceState(null, '', '/shared' + (await encodeShareFragment(sharedM8Level)));
+    // Hors contexte sécurisé (HTTP sur une IP locale), `crypto.subtle` n’existe pas.
+    const secureCrypto = globalThis.crypto;
+    vi.stubGlobal('crypto', {
+      getRandomValues: (array: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> => {
+        secureCrypto.getRandomValues(array);
+        return array;
+      },
+    });
+    const { repository, saves } = createReceivedLevelRepository();
+
+    render(<App receivedLevelRepository={repository} />);
+
+    expect(await screen.findByText('Partage · Niveau reçu M8')).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+    expect(screen.getByText(sharedLevelNotKeptMessage)).toHaveAttribute('role', 'status');
+    expect(saves).toHaveLength(0);
+  });
+
+  it('refuse un lien qui porte un atelier, sans le jouer ni l’enregistrer (M8)', async () => {
+    const workshop = levelDocumentSchema.parse({
+      ...sharedM8Level,
+      objects: [
+        ...sharedM8Level.objects,
+        {
+          id: 'beam-a-placer',
+          type: 'beam',
+          props: { size: 'short' },
+          transform: { position: { x: 4, y: 3 }, rotation: 0 },
+          permissions: { move: false, rotate: false, remove: false },
+          toPlace: true,
+        },
+      ],
+    });
+    window.history.replaceState(null, '', '/shared' + (await encodeShareFragment(workshop)));
+    const { repository, saves } = createReceivedLevelRepository();
+
+    render(<App receivedLevelRepository={repository} />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Ce lien est un atelier, pas un niveau à jouer.',
+    );
+    expect(screen.queryByRole('region', { name: 'Plateau de jeu' })).not.toBeInTheDocument();
+    expect(saves).toHaveLength(0);
+  });
+
   it('affiche une erreur de partage invalide sans modifier la progression', async () => {
     window.history.replaceState(null, '', '/shared#level=bad');
     const { repository, save } = createProgressRepository();
 
-    render(<App progressRepository={repository} />);
+    const received = createReceivedLevelRepository();
+
+    render(<App progressRepository={repository} receivedLevelRepository={received.repository} />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Ce lien de partage est invalide ou ne peut plus être ouvert.',
     );
+    expect(received.saves).toHaveLength(0);
     expect(screen.getByRole('link', { name: 'Liste des niveaux' })).toHaveAttribute(
       'href',
       '/levels',
