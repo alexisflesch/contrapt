@@ -1317,3 +1317,74 @@ accessible element with the role "button" and name "Jouer quand même"`
   `creation-<aléa>` remixée d’un niveau de campagne doit-elle être
   verrouillée si la progression est réinitialisée (l’ADR ne verrouille que
   `<id>-brouillon`) ? L’icône `Shuffle` convient-elle à « Remixer » ?
+
+### M12 — Révéler dans l’atelier (interface) — fait — commit de cette entrée
+
+- Précisions du pilote appliquées : entrée dans un menu existant, ici le menu
+  d’en-tête — l’atelier n’a pas d’autre menu (seuls existent la barre
+  d’actions et les boutons d’en-tête, où l’ADR 0015 ne veut pas la commande
+  « en évidence ») ; elle y est listée en premier, au-dessus des
+  destinations. Ajout par l’historique de l’atelier (une entrée, annulée par
+  « Annuler »), création enregistrée par l’autosauvegarde existante ; fils
+  ignorés dits par le statut discret existant (`role="status"`, même
+  composant que M8) ; entrée absente sans `source`, sans solution et en
+  « Essayer en joueur ».
+- Tests ajoutés : `src/app/RevealAuthorSolution.test.tsx` (8 tests App) ›
+  « n’offre pas l’entrée dans l’atelier libre, créé de zéro », « … pour une
+  création sans source », « … quand la source n’a pas de solution », « pose la
+  solution « à placer » après confirmation, et l’enregistre » (fils au
+  `data-wires` du canevas, poutre et bouton `toPlace` dans la création
+  enregistrée, `source` intacte, aucun statut), « « Annuler » dans la boîte de
+  confirmation ne change rien » (« Annuler » ciblé à l’ouverture, historique
+  vide), « s’annule d’un seul « Annuler » de l’historique », « dit
+  discrètement combien de fils ont été ignorés » (ventilateur du décor
+  supprimé), « n’offre pas l’entrée en jouant le puzzle » ;
+  `e2e/reveal.spec.ts` (mobile, au toucher : menu, cible ≥ 44 px, menu
+  contenu dans un écran 844 × 390 et défilant, confirmation, statut « 1 fil
+  … », annulation ; captures).
+- Échec initial constaté : `Unable to find an accessible element with the
+role "button" and name "Révéler la solution de l’auteur"` (5 tests sur 8).
+  Les trois tests d’absence passaient d’emblée (garde-fous de non-régression ;
+  le jeu en « Essayer en joueur » échouait, lui, faute d’entrée à révéler
+  avant). Une attente du test était fausse (`auteur-bouton>decor-fan`) :
+  `restoreSolution` nomme la pose d’après l’entrée d’inventaire
+  (`buttons-2`), comme `workshopFromPuzzle` ; l’attente a été corrigée, pas
+  le code. Mutation : sans le statut, « dit discrètement… » échoue. E2E : sans
+  la règle CSS, `Expected: <= 390, Received: 436` (bas du menu en paysage).
+- Tests existants réécrits : aucun.
+- Fichiers touchés hors périmètre : `src/ui/AppHeader.tsx` et
+  `src/ui/AppFrame.tsx` (prop `menuActions` : commandes propres à l’écran,
+  qui ferment le menu) ; `src/ui/styles.css` (`.level-menu` borné à la
+  hauteur de l’écran et défilant : avec une septième entrée, « Paramètres »
+  sortait d’un téléphone en paysage). Lecture d’`e2e/remix.spec.ts`,
+  `e2e/puzzle-machine.ts`, `SimulationControls.tsx`, `use-editor-session.ts`,
+  `editor-session.ts`, `history.ts`, `BoardView.tsx`, `Button.tsx`,
+  `EditAndRemix.test.tsx`, `level-regression.test.ts` et
+  `authoring-commands.test.ts` : fixtures, libellés, modèle de capture et
+  idiome du champ retiré.
+- Choix d’implémentation : `BoardShell` reçoit `authorSource` et n’offre
+  l’entrée qu’en mode création, en phase de construction, si la source a une
+  solution ; à la confirmation, il annule fil et placement en cours, lit
+  `ignoredWireCount` sur l’état courant puis exécute la commande par
+  `executeCommand`. Le statut des fils ignorés reste jusqu’à ce qu’on le
+  masque (il n’est pas retiré par « Annuler »). Texte de la boîte : « La
+  solution de l’auteur sera posée sur le plateau, en objets à placer, à côté
+  de ce qui s’y trouve déjà. « Annuler » dans l’atelier la retire. »
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : l’ADR 0015 dit « la boîte de résultat dit
+  combien de fils ont été ignorés » ; la précision du pilote demande un
+  message discret `role="status"`. Appliqué tel que le pilote le précise (pas
+  de seconde boîte) ; l’ADR pourrait dire « un message ».
+- Non vérifié : un vrai téléphone ; le défilement du menu au doigt (vérifié
+  par la hauteur et `overflow-y: auto`, pas par un geste).
+- Pour l'auteur : validation visuelle — captures inspectées
+  `test-results/reveal/reveal-menu-{390x844,844x390,1440x900}.png` (entrée
+  avec l’icône œil en tête du menu ; en paysage, le menu s’arrête au bas de
+  l’écran et défile), `reveal-confirm-{…}.png` (boîte « Révéler la solution
+  de l’auteur », « Annuler » puis « Révéler la solution » en vert, côte à
+  côte en portrait et en grand format, empilés en paysage),
+  `reveal-workshop-{…}.png` (poutre et bouton en pointillés violets, fil
+  levier → convoyeur posé, statut « 1 fil de la solution de l’auteur n’a pas
+  pu être posé. » au-dessus du plateau). Questions : l’entrée doit-elle être
+  séparée visuellement des destinations du menu ? Le bouton de confirmation
+  en vert (`go`) convient-il, ou le veut-on neutre ?

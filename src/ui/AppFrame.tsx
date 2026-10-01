@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { AppHeader } from './AppHeader';
+import { AppHeader, type MenuAction } from './AppHeader';
 
 interface AppFrameProps {
   readonly title: string;
@@ -11,6 +11,8 @@ interface AppFrameProps {
   readonly variant: 'board' | 'page';
   /** Optional screen-specific control shown in the header, before the menu. */
   readonly headerAction?: ReactNode;
+  /** Screen-specific commands listed first in the header menu. */
+  readonly menuActions?: readonly MenuAction[];
   readonly children: ReactNode;
 }
 
@@ -25,6 +27,7 @@ export function AppFrame({
   attribution,
   variant,
   headerAction,
+  menuActions,
   children,
 }: AppFrameProps) {
   return (
@@ -34,6 +37,7 @@ export function AppFrame({
         subtitle={subtitle}
         attribution={attribution}
         action={headerAction}
+        {...(menuActions === undefined ? {} : { menuActions })}
       />
       <main className="app-main">{children}</main>
     </div>

@@ -446,8 +446,14 @@ select:focus-visible {
   right: max(var(--space-3), env(safe-area-inset-right));
   display: flex;
   width: min(280px, calc(100vw - 2 * var(--space-3)));
+  /* Un téléphone en paysage n'a pas la hauteur de toutes les entrées (M12) : le menu défile. */
+  max-height: calc(
+    100dvh - var(--header-height) - env(safe-area-inset-top, 0px) - 2 * var(--space-2)
+  );
   flex-direction: column;
   gap: var(--space-2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-2);
   border: 2px solid var(--night-950);
   border-radius: var(--radius-l);
@@ -456,6 +462,7 @@ select:focus-visible {
 }
 
 .level-menu .btn {
+  flex: 0 0 auto;
   justify-content: flex-start;
 }
 

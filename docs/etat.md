@@ -116,8 +116,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   (M7b : la révélation n’est jamais refusée en bloc). La commande expose `ignoredWireCount(state)` (nombre de fils ignorés
   pour l’état donné) ; refus `authoring-only` en contexte joueur,
   `solution-not-found` pour une source sans solution. Sur une création
-  intacte, le résultat égale `workshopFromPuzzle` de la source. Aucun appelant
-  en production avant M12 (menu et confirmation).
+  intacte, le résultat égale `workshopFromPuzzle` de la source. Appelée par
+  l’atelier depuis M12.
 - Réception d’un niveau M8 (ADR 0015 § Réception) : cas d’usage pur
   `receiveLevel(repository, document, origin, fingerprint, clock)`
   (`src/application/received/receive-level.ts`) ; l’empreinte (ou
@@ -215,6 +215,22 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   n’a pas pu être enregistrée sur cet appareil. ». Validation visuelle
   attendue (captures `test-results/remix/{levels-locked,remix-victory,remix-workshop,locked-draft}-{390x844,844x390,1440x900}.png`,
   `test-results/my-levels/my-levels-filled-*.png`).
+- Révéler dans l’atelier M12 (ADR 0015 § Révéler) : dans l’atelier d’une
+  création dont la `source` porte une solution, le menu d’en-tête propose en
+  premier « Révéler la solution de l’auteur » (icône `Eye` ; prop
+  `menuActions` d’`AppHeader`/`AppFrame`, prop `authorSource` de
+  `BoardShell`, passée par `EditorPage` à l’atelier seulement). Une boîte de
+  confirmation (`Dialog`, « Annuler » ciblé, « Révéler la solution »)
+  exécute la commande M7 dans l’historique de l’atelier : une entrée, annulée
+  par « Annuler », création enregistrée comme toute modification engagée. Si
+  des fils sont ignorés, un statut discret (`role="status"`, à masquer d’un
+  toucher) dit « 1 fil de la solution de l’auteur n’a pas pu être posé. » /
+  « N fils … n’ont pas pu être posés. ». Entrée absente de l’atelier libre,
+  d’une création sans `source` ou dont la `source` n’a pas de solution, hors
+  construction et en « Essayer en joueur ». Le menu d’en-tête défile
+  désormais quand il dépasse la hauteur de l’écran (téléphone en paysage).
+  Validation visuelle attendue (captures
+  `test-results/reveal/{reveal-menu,reveal-confirm,reveal-workshop}-{390x844,844x390,1440x900}.png`).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -539,8 +555,8 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   niveau 1 n’a plus d’inventaire (M6) mais garde son catalogue auteur (U26).
   Les brouillons de campagne créés avant M6 gardent leur solution posée et
   leur inventaire (ADR 0015) ; sous `pnpm dev`, une création neuve s’ouvre
-  solution révélée (M11) ; la commande « Révéler » dans l’atelier arrive avec
-  M12.
+  solution révélée (M11) ; la commande « Révéler » est dans le menu de
+  l’atelier depuis M12.
 - **Brouillons U17** : aucun moyen de repartir du niveau d’origine une fois le
   brouillon créé (le supprimer depuis « Mes niveaux » puis « Modifier le
   niveau » en recrée un). Une création `creation-<aléa>` remixée d’un niveau
@@ -561,6 +577,11 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M12 (1er octobre 2026) : passe du premier coup —
+typecheck, lint, formatage, Knip, contenu (19 documents), 907 tests Vitest
+(73 fichiers), build Vite/PWA et 52 tests Playwright `mobile` (51 réussis,
+1 ignoré).
 
 `pnpm check` après M11 (1er octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 899 tests Vitest (72 fichiers),

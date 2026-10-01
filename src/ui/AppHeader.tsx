@@ -14,6 +14,18 @@ interface AppHeaderProps {
   readonly attribution?: string | undefined;
   /** Optional screen-specific control placed before the menu button. */
   readonly action?: ReactNode;
+  /**
+   * Screen-specific commands listed first in the menu (M12: an author command
+   * kept out of the action bar). Choosing one closes the menu.
+   */
+  readonly menuActions?: readonly MenuAction[];
+}
+
+export interface MenuAction {
+  readonly label: string;
+  /** A decorative `lucide-react` icon, `aria-hidden`: the label names the command. */
+  readonly icon: ReactNode;
+  readonly onSelect: () => void;
 }
 
 /**
@@ -22,7 +34,13 @@ interface AppHeaderProps {
  * away, which unmounts this component along with its own open/closed state
  * — no explicit "close the menu" step is needed after a selection.
  */
-export function AppHeader({ title, subtitle, attribution, action }: AppHeaderProps) {
+export function AppHeader({
+  title,
+  subtitle,
+  attribution,
+  action,
+  menuActions = [],
+}: AppHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -58,6 +76,18 @@ export function AppHeader({ title, subtitle, attribution, action }: AppHeaderPro
       </div>
       {isMenuOpen && (
         <nav className="level-menu" aria-label="Menu principal">
+          {menuActions.map(({ label, icon, onSelect }) => (
+            <Button
+              key={label}
+              onClick={() => {
+                setIsMenuOpen(false);
+                onSelect();
+              }}
+            >
+              {icon}
+              {label}
+            </Button>
+          ))}
           <Button
             onClick={() => {
               void navigate('/');

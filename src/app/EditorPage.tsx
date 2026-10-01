@@ -37,6 +37,8 @@ interface WorkshopProps {
   readonly calibrationDocument?: LevelDocument;
   /** « Jouer » from « Mes niveaux » (M9): open on the puzzle when there is one. */
   readonly startPlaying?: boolean;
+  /** ADR 0015 § Révéler: the creation's source, offered to the workshop only. */
+  readonly authorSource?: LevelDocument | undefined;
 }
 
 /** Navigation state is untrusted: only a literal `{ playPuzzle: true }` asks to play. */
@@ -54,6 +56,7 @@ function Workshop({
   onDocumentCommitted,
   calibrationDocument,
   startPlaying = false,
+  authorSource,
 }: WorkshopProps) {
   const [workshopDocument, setWorkshopDocument] = useState(initialDocument);
   const [playtest, setPlaytest] = useState<LevelDocument | null>(() => {
@@ -93,6 +96,7 @@ function Workshop({
         onDocumentCommitted?.(document);
       }}
       onPlayAsPlayer={setPlaytest}
+      authorSource={authorSource}
       {...(calibrationDocument === undefined ? {} : { calibrationDocument })}
     />
   );
@@ -160,6 +164,7 @@ function StoredDraftEditor({ draftId, campaignLevel }: StoredDraftEditorProps) {
       initialDocument={draft.document}
       title=""
       startPlaying={asksToPlayPuzzle(navigationState)}
+      authorSource={draft.source}
       {...(calibrationDocument === undefined ? {} : { calibrationDocument })}
       onDocumentCommitted={(document) => {
         // Best effort, like progress (ADR 0011): a failed save never blocks editing.

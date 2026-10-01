@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CircleQuestionMark, Gamepad2, Upload } from 'lucide-react';
+import { ArrowLeft, CircleQuestionMark, Eye, Gamepad2, Upload } from 'lucide-react';
 
+import { revealAuthorSolution } from '../application/construction/authoring-commands';
 import { createConstructionAttempt } from '../application/construction/construction-attempt';
 import {
   createEditorSession,
@@ -64,7 +65,20 @@ interface BoardShellProps {
   readonly calibrationDocument?: LevelDocument;
   /** A discreet status over the board until dismissed (M8: a shared level not kept). */
   readonly notice?: string;
+  /**
+   * ADR 0015 § Révéler: the level a creation comes from. When it carries a
+   * solution, the workshop's menu offers to reveal it.
+   */
+  readonly authorSource?: LevelDocument | undefined;
 }
+
+const revealLabel = 'Révéler la solution de l’auteur';
+
+/** ADR 0015 § Révéler: how many of the author's wires could not be laid again. */
+const ignoredWiresNotice = (count: number): string =>
+  count === 1
+    ? '1 fil de la solution de l’auteur n’a pas pu être posé.'
+    : `${String(count)} fils de la solution de l’auteur n’ont pas pu être posés.`;
 
 /**
  * The shared plateau screen: header, catalogue drawer, board and
@@ -88,9 +102,11 @@ export function BoardShell({
   exit,
   calibrationDocument,
   notice,
+  authorSource,
 }: BoardShellProps) {
   const navigate = useNavigate();
   const [isNoticeDismissed, setIsNoticeDismissed] = useState(false);
+  const [revealNotice, setRevealNotice] = useState<string | null>(null);
   const {
     session,
     sessionRef,
@@ -160,6 +176,8 @@ export function BoardShell({
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const resetDialogCancelRef = useRef<HTMLButtonElement>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isRevealDialogOpen, setIsRevealDialogOpen] = useState(false);
+  const revealDialogCancelRef = useRef<HTMLButtonElement>(null);
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(calibrationDocument !== undefined);
   const shownCampaignVictory =
     simulation.attemptOutcome?.outcome === 'won' ? campaignVictory : null;
@@ -230,6 +248,30 @@ export function BoardShell({
     boardCamera.fitCameraToCurrentScene();
   };
 
+  // ADR 0015 § Révéler: an author command, in the menu rather than the action bar.
+  const revealSource =
+    mode === 'creation' && session.phase === 'construction' && authorSource?.solution !== undefined
+      ? authorSource
+      : undefined;
+
+  const revealSolution = (): void => {
+    setIsRevealDialogOpen(false);
+    if (revealSource === undefined) return;
+    wiring.cancelWiring();
+    pointers.cancelPlacement();
+    const command = revealAuthorSolution({ context: 'author', source: revealSource });
+    // Counted on the state the command is about to run on (M7).
+    const ignoredWireCount = command.ignoredWireCount(sessionRef.current.history.state);
+    const result = executeCommand(command);
+    setRevealNotice(
+      result.status === 'accepted' && ignoredWireCount > 0
+        ? ignoredWiresNotice(ignoredWireCount)
+        : null,
+    );
+  };
+
+  const shownNotice = revealNotice ?? (isNoticeDismissed ? undefined : notice);
+
   const returnToLevels = (): void => {
     if (exit !== undefined) {
       exit.onExit();
@@ -255,6 +297,19 @@ export function BoardShell({
       subtitle={subtitle}
       attribution={attribution}
       variant="board"
+      {...(revealSource === undefined
+        ? {}
+        : {
+            menuActions: [
+              {
+                label: revealLabel,
+                icon: <Eye size={18} aria-hidden="true" />,
+                onSelect: () => {
+                  setIsRevealDialogOpen(true);
+                },
+              },
+            ],
+          })}
       headerAction={
         <>
           {exit !== undefined && (
@@ -390,12 +445,13 @@ export function BoardShell({
           session={session}
           feedback={feedback}
           notice={
-            notice === undefined || isNoticeDismissed
+            shownNotice === undefined
               ? undefined
               : {
-                  message: notice,
+                  message: shownNotice,
                   onDismiss: () => {
-                    setIsNoticeDismissed(true);
+                    if (revealNotice === null) setIsNoticeDismissed(true);
+                    else setRevealNotice(null);
                   },
                 }
           }
@@ -524,6 +580,34 @@ export function BoardShell({
             </Button>
             <Button tone="reset" onClick={resetToInitialAttempt}>
               {resetDialogCopy.confirmLabel}
+            </Button>
+          </div>
+        </Dialog>
+      )}
+      {isRevealDialogOpen && revealSource !== undefined && (
+        <Dialog
+          title={revealLabel}
+          closeLabel="Fermer la révélation"
+          initialFocusRef={revealDialogCancelRef}
+          onClose={() => {
+            setIsRevealDialogOpen(false);
+          }}
+        >
+          <p className="dialog-text">
+            La solution de l’auteur sera posée sur le plateau, en objets à placer, à côté de ce qui
+            s’y trouve déjà. «&nbsp;Annuler&nbsp;» dans l’atelier la retire.
+          </p>
+          <div className="level-result-actions">
+            <Button
+              ref={revealDialogCancelRef}
+              onClick={() => {
+                setIsRevealDialogOpen(false);
+              }}
+            >
+              Annuler
+            </Button>
+            <Button tone="go" onClick={revealSolution}>
+              Révéler la solution
             </Button>
           </div>
         </Dialog>
