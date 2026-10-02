@@ -211,6 +211,15 @@ de la scrollbar, et la police Nunito (journal V4). Captures aux deux formats.
   ≈ 7,8 Mo) ; laisser les fichiers en place (assets de l'auteur). Relevé en
   V2b.
 - La grille de l'accueil passée à 3 colonnes en V2a disparaît avec la refonte.
+- Relevé en V3, tranché par la décision 3 (tutoiement partout) : passer au
+  tutoiement et à une formulation neutre souris/toucher les textes de
+  `LevelExportDialog`, `ReceivedLevelShareDialog` et `level-export.ts`
+  (« sélectionnez », « téléchargez », « touchez chaque objet », « gardez-les »).
+  `BenchPlayPage` (outil interne) n'est pas concerné.
+- Le titre de l'atelier libre (`workshop.json`, « Atelier de niveau ») devient
+  « Nouveau niveau » : l'en-tête affichait « Atelier de niveau · Atelier ».
+  Vérifier que les brouillons existants ne sont pas affectés (le titre d'une
+  création enregistrée vient de son document, pas de `workshop.json`).
 
 ### V8 — Parcours beta-testeur ●●● (Opus)
 
