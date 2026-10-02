@@ -152,6 +152,9 @@ Trois commits distincts :
   « Atelier », sans encadré. Mettre à jour les tests qui cherchent « Mode
   éditeur » ou « Liste des niveaux » (réécriture motivée, pas suppression).
 - Ordre du menu : Accueil, Campagne, Atelier, Mes niveaux, Paramètres.
+- `/import` (redirection vers `/my-levels`) est ajouté au repli hors ligne
+  (`scripts/navigate-fallback-allowlist.ts`, test rouge d'abord ; relevé en
+  V2c).
 - Pas de restylage dans cette tâche : seulement liens et mots.
 
 ### V4 — Maquettes ●●● (Opus, session principale)
@@ -200,7 +203,14 @@ creuses ; textes courts et concrets.
 ### V7 — Accueil, éditeur, scrollbar ●● (Opus, après V4)
 
 Implémenter les maquettes validées de l'accueil, du bandeau de l'éditeur et
-de la scrollbar. Captures aux deux formats.
+de la scrollbar, et la police Nunito (journal V4). Captures aux deux formats.
+
+- L'accueil n'utilise plus `board-workshop-day-v1.png` (la maquette montre un
+  aperçu réel de niveau). Plus aucun fond de `public/assets/backgrounds/`
+  n'étant utilisé, les exclure du précache du service worker (`globIgnores`,
+  ≈ 7,8 Mo) ; laisser les fichiers en place (assets de l'auteur). Relevé en
+  V2b.
+- La grille de l'accueil passée à 3 colonnes en V2a disparaît avec la refonte.
 
 ### V8 — Parcours beta-testeur ●●● (Opus)
 
