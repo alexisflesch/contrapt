@@ -21,15 +21,19 @@ const captureFormats = async (page: Page, name: string): Promise<void> => {
   await page.setViewportSize({ width: 390, height: 844 });
 };
 
-/** The demo machine wins on its own; it is given an author and a source (ADR 0016). */
-const attributedDemo = async (): Promise<Buffer> => {
-  const demo: unknown = JSON.parse(await readFile('src/content/levels/demo.json', 'utf8'));
-  if (typeof demo !== 'object' || demo === null) throw new Error('demo.json illisible');
+/** The self-solving test machine wins on its own; it is given an author and a source (ADR 0016). */
+const attributedMachine = async (): Promise<Buffer> => {
+  const machine: unknown = JSON.parse(
+    await readFile('test/fixtures/self-solving-level.json', 'utf8'),
+  );
+  if (typeof machine !== 'object' || machine === null) {
+    throw new Error('self-solving-level.json illisible');
+  }
   return Buffer.from(
     JSON.stringify({
-      ...demo,
+      ...machine,
       metadata: {
-        title: 'Démonstration',
+        title: 'Machine en chaîne',
         author: 'Lili',
         basedOn: [{ title: 'La chute', author: 'Max' }],
       },
@@ -37,11 +41,11 @@ const attributedDemo = async (): Promise<Buffer> => {
   );
 };
 
-const importDemo = async (page: Page): Promise<void> => {
+const importMachine = async (page: Page): Promise<void> => {
   await page.locator('input[type="file"]').setInputFiles({
-    name: 'demo.json',
+    name: 'self-solving-level.json',
     mimeType: 'application/json',
-    buffer: await attributedDemo(),
+    buffer: await attributedMachine(),
   });
 };
 
@@ -54,9 +58,9 @@ test('joue un niveau reçu, montre son auteur et enregistre la victoire (M10)', 
   );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/my-levels');
-  await importDemo(page);
+  await importMachine(page);
   const received = page.getByRole('region', { name: 'Niveaux reçus' });
-  const card = received.getByRole('region', { name: 'Démonstration' });
+  const card = received.getByRole('region', { name: 'Machine en chaîne' });
   await expect(card.getByText('Pas encore résolu')).toBeVisible();
 
   await card.getByRole('button', { name: 'Jouer' }).tap();
@@ -90,7 +94,7 @@ test('joue quand même un fichier importé que le stockage plein n’a pas gard�
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/my-levels');
-  await importDemo(page);
+  await importMachine(page);
 
   await expect(page.getByRole('alert')).toContainText('Ce niveau n’a pas été gardé.');
   const playAnyway = page.getByRole('button', { name: 'Jouer quand même' });

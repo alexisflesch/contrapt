@@ -38,25 +38,25 @@ test('importe un fichier depuis « Mes niveaux » et le retrouve dans la liste (
   await expect(received.getByText(/aucun niveau reçu/u)).toBeVisible();
   await captureFormats(page, 'my-levels-empty');
 
-  const document = await readFile('src/content/levels/demo.json', 'utf8');
+  const document = await readFile('test/fixtures/self-solving-level.json', 'utf8');
   await expect(received.getByRole('button', { name: 'Importer un fichier' })).toBeVisible();
   await page.locator('input[type="file"]').setInputFiles({
-    name: 'demo.json',
+    name: 'self-solving-level.json',
     mimeType: 'application/json',
     buffer: Buffer.from(document),
   });
 
   await expect(received.getByRole('status')).toHaveText(
-    '« Démonstration » est dans tes niveaux reçus.',
+    '« Machine en chaîne » est dans tes niveaux reçus.',
   );
   await expect(page).toHaveURL(/\/my-levels$/u);
-  const card = received.getByRole('region', { name: 'Démonstration' });
+  const card = received.getByRole('region', { name: 'Machine en chaîne' });
   await expect(card).toBeVisible();
   await expect(card.getByText('Pas encore résolu')).toBeVisible();
   // M14b: the received level's description, as plain text, like `/levels`.
   await expect(
     card.getByText(
-      'Une machine en chaîne qui montre toutes les familles d’objets : appuyez sur Tester et regardez.',
+      'Une machine en chaîne qui montre toutes les familles d’objets : appuyez sur Lancer et regardez.',
     ),
   ).toBeVisible();
   await captureFormats(page, 'my-levels-received-description');
@@ -71,11 +71,11 @@ test('importe un fichier depuis « Mes niveaux » et le retrouve dans la liste (
       .getByRole('region', { name: 'Mes créations' })
       .getByRole('region', { name: 'Le petit pont (remix)' }),
   ).toBeVisible();
-  await expect(received.getByRole('region', { name: 'Démonstration' })).toBeVisible();
+  await expect(received.getByRole('region', { name: 'Machine en chaîne' })).toBeVisible();
   await captureFormats(page, 'my-levels-filled');
 
   await received
-    .getByRole('region', { name: 'Démonstration' })
+    .getByRole('region', { name: 'Machine en chaîne' })
     .getByRole('button', {
       name: 'Supprimer',
     })

@@ -12,7 +12,6 @@ import { createLocalStorageReceivedLevelRepository } from '../infrastructure/sto
 
 import { BenchPage } from './BenchPage';
 import { BenchPlayPage } from './BenchPlayPage';
-import { DemoPage } from './DemoPage';
 import { EditorPage } from './EditorPage';
 import { HomePage } from './HomePage';
 import { LevelsPage } from './LevelsPage';
@@ -153,7 +152,6 @@ export function App({
                     <Route path="/my-levels" element={<MyLevelsPage />} />
                     <Route path="/my-levels/:id/play" element={<ReceivedLevelPlayPage />} />
                     <Route path="/import" element={<Navigate to="/my-levels" replace />} />
-                    <Route path="/demo" element={<DemoPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/shared" element={<SharedLevelPage />} />
                     <Route path="/bench" element={<BenchPage />} />

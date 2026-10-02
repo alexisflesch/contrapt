@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { embeddedDemoDocument } from '../../content/embedded-levels';
+import { selfSolvingLevel } from '../../../test/fixtures/self-solving-level';
 import {
   levelDocumentSchema,
   type LevelDocument,
@@ -35,7 +35,7 @@ const legacyDocument: LevelDocumentV1 = {
 
 const getChallengeAndWiresLevel = () =>
   levelDocumentSchema.parse({
-    ...embeddedDemoDocument,
+    ...selfSolvingLevel,
     inventory: [
       {
         id: 'inventory-beam',

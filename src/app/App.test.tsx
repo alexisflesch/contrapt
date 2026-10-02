@@ -21,6 +21,7 @@ import type {
 import { levelFingerprint } from '../infrastructure/level-file/level-fingerprint';
 import { encodeShareFragment } from '../infrastructure/level-share/level-share-codec';
 import { createLocalStorageReceivedLevelRepository } from '../infrastructure/storage/local-storage-received-level-repository';
+import { selfSolvingLevel } from '../../test/fixtures/self-solving-level';
 import { fitCameraToScene } from '../presentation/board-camera';
 import {
   ROTATION_HANDLE_GAP_CSS_PIXELS,
@@ -170,6 +171,35 @@ const createReceivedLevelRepository = (saveResult: ReceivedLevelWriteResult = { 
     delete: () => ({ status: 'ok' }),
   };
   return { repository, saves };
+};
+
+/**
+ * A non-campaign level that wins on its own (V2a): the stored received level
+ * `selfSolvingLevel`, played on `/my-levels/<id>/play`, stands in for what the
+ * removed `/demo` route offered to the tests below.
+ */
+const SELF_SOLVING_ENTRY_ID = 'recu-0123456789abcdef';
+const openSelfSolvingReceivedLevel = (progressRepository?: ProgressRepository): void => {
+  const level: ReceivedLevel = {
+    id: SELF_SOLVING_ENTRY_ID,
+    document: selfSolvingLevel,
+    origin: 'file',
+    receivedAt: '2026-10-02T12:00:00.000Z',
+    solved: false,
+  };
+  const repository: ReceivedLevelRepository = {
+    list: () => ({ status: 'ok', ids: [level.id] }),
+    load: () => ({ status: 'ok', level }),
+    save: () => ({ status: 'ok' }),
+    delete: () => ({ status: 'ok' }),
+  };
+  window.history.replaceState(null, '', `/my-levels/${SELF_SOLVING_ENTRY_ID}/play`);
+  render(
+    <App
+      receivedLevelRepository={repository}
+      {...(progressRepository === undefined ? {} : { progressRepository })}
+    />,
+  );
 };
 
 const sharedLevelNotKeptMessage = 'Ce niveau n’a pas été gardé sur cet appareil.';
@@ -964,19 +994,15 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByText('Mode éditeur')).toBeVisible();
   });
 
-  it('ouvre la démonstration sur /demo, en mode joueur sans rien à construire', () => {
+  it('redirige /demo, route supprimée, vers la liste des niveaux (V2a)', () => {
     window.history.replaceState(null, '', '/demo');
     render(<App />);
 
-    expect(screen.getByText('Démonstration')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Lancer' })).toBeVisible();
-    expect(screen.queryByRole('region', { name: 'Objets disponibles' })).not.toBeInTheDocument();
+    expect(window.location.pathname).toBe('/levels');
+    expect(screen.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Démonstration' }));
-    expect(window.location.pathname).toBe('/demo');
+    expect(screen.queryByRole('button', { name: 'Démonstration' })).not.toBeInTheDocument();
   });
 
   it('redirige une route inconnue vers la liste des niveaux (ADR 0008)', () => {
@@ -987,11 +1013,10 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
   });
 
-  it('n’affiche ni bandeau ni modale de campagne hors campagne (U4, U4b)', () => {
+  it('n’affiche ni palier de défi ni niveau suivant sur un niveau hors campagne (U4, U4b)', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const animationFrames = createAnimationFrameHarness();
-    window.history.replaceState(null, '', '/demo');
-    render(<App />);
+    openSelfSolvingReceivedLevel();
 
     fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     advanceSimulationToResult(animationFrames, 600);
@@ -999,11 +1024,13 @@ describe('coque TinkerBolt', () => {
       vi.advanceTimersByTime(1_000);
     });
 
+    // Un niveau reçu n'a que le palier « Résolu » (pas de défi), jamais de suite.
     const result = screen.getByRole('region', { name: 'Résultat du niveau' });
     expect(result).toHaveTextContent('Victoire');
-    expect(result).not.toHaveAttribute('data-level-tier');
+    expect(result).toHaveAttribute('data-level-tier', 'resolved');
     expect(within(result).queryByRole('button', { name: 'Niveau suivant' })).toBeNull();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).queryByRole('button', { name: /Niveau suivant/u })).toBeNull();
   });
 
   it('bloque l’accès direct à un niveau verrouillé et propose la liste des niveaux (U5b)', () => {
@@ -1037,8 +1064,7 @@ describe('coque TinkerBolt', () => {
   it('ne persiste pas les victoires hors campagne', () => {
     const animationFrames = createAnimationFrameHarness();
     const { repository, save } = createProgressRepository();
-    window.history.replaceState(null, '', '/demo');
-    render(<App progressRepository={repository} />);
+    openSelfSolvingReceivedLevel(repository);
 
     fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     advanceSimulationToResult(animationFrames, 600);
@@ -1050,13 +1076,12 @@ describe('coque TinkerBolt', () => {
   });
 
   it('affiche le bandeau de victoire après le plateau dans le flux normal, jamais en overlay', () => {
-    window.history.replaceState(null, '', '/demo');
     // B1 (plan-remise-en-jeu.md § 4) : le bandeau de victoire recouvrait le
     // bas du plateau (position absolue par-dessus le canvas), ce qui pouvait
     // cacher la balle et le panier. Il s'affiche désormais après le plateau
     // dans le DOM, dans le flux normal du document.
     const animationFrames = createAnimationFrameHarness();
-    render(<App />);
+    openSelfSolvingReceivedLevel();
 
     fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
     advanceSimulationToResult(animationFrames, 600);
@@ -1678,7 +1703,6 @@ describe('coque TinkerBolt', () => {
   });
 
   it('réserve en permanence un unique emplacement partagé pour le résultat, dès le tout premier rendu, pour qu’aucune phase ne redimensionne le plateau', () => {
-    window.history.replaceState(null, '', '/demo');
     // B5 (plan-remise-en-jeu.md § 4 bis): the ResizeObserver B1 added (see
     // the test above) refits the camera on *any* CSS size change of the
     // canvas — including the reflow the victory/failure banner used to cause
@@ -1699,7 +1723,7 @@ describe('coque TinkerBolt', () => {
     // exact same DOM node exists for the whole lifetime of the app, and only
     // one reservation exists, sized to the larger of the two contents.
     const animationFrames = createAnimationFrameHarness();
-    render(<App />);
+    openSelfSolvingReceivedLevel();
 
     const workspace = screen.getByRole('region', { name: 'Espace de construction' });
     const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {

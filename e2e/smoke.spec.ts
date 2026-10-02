@@ -89,15 +89,26 @@ test.describe('coque sur le petit viewport supporté', () => {
     // B1 (plan-remise-en-jeu.md § 4) : le bandeau de victoire recouvrait le
     // bas du plateau en overlay, cachant potentiellement la balle et le
     // panier. Il doit maintenant s'afficher entièrement sous le plateau.
-    await page.goto('/demo');
+    // A level that wins on its own, received from a file (V2a: the demo is gone).
+    await page.goto('/my-levels');
+    await page.locator('input[type="file"]').setInputFiles('test/fixtures/self-solving-level.json');
+    await page
+      .getByRole('region', { name: 'Niveaux reçus' })
+      .getByRole('region', { name: 'Machine en chaîne' })
+      .getByRole('button', { name: 'Jouer' })
+      .tap();
 
     const board = page.getByRole('region', { name: 'Plateau de jeu' });
     await expect(board).toBeVisible();
 
     await page.getByRole('button', { name: 'Lancer' }).tap();
 
+    const victory = page.getByRole('dialog', { name: 'Bravo !' });
+    await expect(victory).toBeVisible({ timeout: 30_000 });
+    await victory.getByRole('button', { name: 'Voir la scène' }).tap();
+
     const result = page.getByRole('region', { name: 'Résultat du niveau' });
-    await expect(result).toBeVisible({ timeout: 15_000 });
+    await expect(result).toBeVisible();
 
     const boardBounds = await board.boundingBox();
     const resultBounds = await result.boundingBox();
@@ -111,7 +122,7 @@ test.describe('coque sur le petit viewport supporté', () => {
     }
 
     await expect(page.getByRole('button', { name: 'Recommencer' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Retour aux niveaux' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Retour à Mes niveaux' })).toBeVisible();
   });
 
   test('conserve les actions essentielles et un tiroir contrôlable dans l’atelier', async ({

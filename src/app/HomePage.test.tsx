@@ -37,7 +37,6 @@ describe('Accueil TinkerBolt', () => {
     for (const { name, path } of [
       { name: 'La campagne', path: '/levels' },
       { name: 'L’atelier', path: '/editor' },
-      { name: 'La démonstration', path: '/demo' },
       { name: 'Paramètres', path: '/settings' },
     ]) {
       expect(within(destinations).getByRole('link', { name: new RegExp(name) })).toHaveAttribute(

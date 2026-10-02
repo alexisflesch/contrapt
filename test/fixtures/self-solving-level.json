@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "id": "demo",
+  "id": "self-solving",
   "metadata": {
-    "title": "Démonstration",
-    "description": "Une machine en chaîne qui montre toutes les familles d’objets : appuyez sur Tester et regardez."
+    "title": "Machine en chaîne",
+    "description": "Une machine en chaîne qui montre toutes les familles d’objets : appuyez sur Lancer et regardez."
   },
   "scene": {
     "min": {

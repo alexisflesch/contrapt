@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0 et V1 (fin de N2) livrées, gate globale verte ; prochaine tâche : V2. U3 reste abandonnée.
+Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0, V1 (fin de N2) et V2a (démo supprimée) livrées, gate globale verte ; prochaine tâche : V2b. U3 reste abandonnée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -13,9 +13,11 @@ et ne contient ni décision ni spécification ; celles-ci restent dans
 
 La feuille de route v1 (desktop d’abord) est dans
 [la feuille de route](feuille-de-route.md). **V0** (règle mobile-first suspendue,
-archives, projet Playwright `v1`) et **V1** (fin de N2 : Knip, test d’export,
-copies des tutoriels vérifiées) sont livrées, gate globale verte. Prochaine
-tâche : **V2** (nettoyage : démo, bordure, repli hors ligne de `/my-levels`).
+archives, projet Playwright `v1`), **V1** (fin de N2 : Knip, test d’export,
+copies des tutoriels vérifiées) et **V2a** (route, page, contenu et tests de la
+démonstration supprimés) sont livrées, gate globale verte. Prochaine tâche :
+**V2b** (pas de bordure, pas de perte par le haut), puis V2c (repli hors ligne
+de `/my-levels`).
 Les sources auteur et son fichier d’essai restent intacts ; rien n’est poussé.
 
 ## Stack en place
@@ -326,7 +328,7 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   `developmentMode` (`import.meta.env.DEV` passé par `main.tsx`, contexte
   `DevelopmentModeContext`) : une création de campagne **neuve** s’ouvre
   solution révélée par la commande M7 (`openCampaignDraft(…, { revealSolution
-  })`), une création existante est rouverte telle quelle ; la fiche de
+})`), une création existante est rouverte telle quelle ; la fiche de
   calibrage U28 n’est affichée qu’en développement. Validation visuelle
   attendue (captures `test-results/remix/{levels-locked,remix-victory,remix-workshop,locked-draft}-{390x844,844x390,1440x900}.png`,
   `test-results/my-levels/my-levels-filled-*.png`).
@@ -425,9 +427,8 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   avec le fond projeté, puisque le canvas est opaque. Captures aux trois
   formats dans `test-results/board-background/`, validation de l’auteur attendue.
 
-
 - **Accueil `/`** : landing avec les couleurs et assets locaux de l’application,
-  scène d’atelier illustrée, accès à la campagne, à l’atelier, à la démonstration
+  scène d’atelier illustrée, accès à la campagne, à l’atelier
   et aux paramètres (et à « Mes niveaux », M9). La commande principale lance le
   premier niveau accessible non résolu, ou propose de revisiter la campagne
   terminée. Le carnet de bord affiche les niveaux résolus, accessibles, les
@@ -437,8 +438,7 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   amendée).
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
   `/my-levels`, `/my-levels/:id/play`, `/import` (redirige vers `/my-levels`),
-  `/editor`, `/demo` (machine en chaîne qui se résout seule, testée),
-  `/settings` (paramètres, U11) et `/shared` (niveau décodé depuis le fragment URL,
+  `/editor`, `/settings` (paramètres, U11) et `/shared` (niveau décodé depuis le fragment URL,
   enregistré comme niveau reçu avant d’être joué depuis M8).
   `/` ouvre l’accueil ; le premier niveau reste accessible par son URL directe.
 - Renderer Canvas 2D (ADR 0006) avec DPR, sprites en calques (balle à motif
@@ -631,7 +631,7 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   « Record à battre : avec N objets. », rien après le palier Minimal ; « Nouveau record »
   sous le minimum connu). « Niveau suivant » ouvre le niveau suivant de la
   campagne s’il existe et est débloqué ; une seule commande « Recommencer ».
-  L’atelier et la démonstration gardent le bandeau simple ; les niveaux
+  L’atelier garde le bandeau simple ; les niveaux
   reçus ou partagés ont la boîte de victoire à palier « Résolu » seul (M10).
 - **U4b — modale de victoire** (campagne) : « Bravo ! », paliers allumés ou
   estompés (le palier Résolu seul sans défi), « Niveau suivant », « Recommencer », « Voir la
@@ -723,8 +723,8 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pour les tests de gestes, d’export et de déterminisme : elles ne sont plus
   embarquées. La progression compte seulement les cinq identifiants actuels ;
   les anciennes victoires et créations locales restent stockées.
-- `pnpm content:check` valide les sept documents embarqués : cinq tutoriels,
-  démonstration et atelier. Les copies `src/content/levels/tuto-{1..5}.json`
+- `pnpm content:check` valide les six documents embarqués : cinq tutoriels
+  et atelier. Les copies `src/content/levels/tuto-{1..5}.json`
   ne diffèrent de `levels/` que par id, titre, description, auteur et, pour le
   tutoriel 3, l’état initial du ventilateur (vérifié en V1).
 - **Fiche de calibrage U28** : ouvrir une création de campagne en développement
@@ -882,6 +882,14 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après V2a (2 octobre 2026) : passe — typecheck, lint, formatage,
+Knip, contenu (6 documents embarqués), 1096 tests Vitest (83 fichiers), build et
+86 tests Playwright du projet `v1` (0 ignoré). Une première exécution avait
+échoué sur `smoke.spec.ts` « place au tactile puis annule le placement » (capture
+du plateau avant pose ≠ après annulation) ; réussie 3 fois isolée puis à la gate
+suivante : intermittence préexistante, sans lien avec la démo. `tmp/check-levels.ts`
+écarté puis remis identique.
 
 `pnpm check` après V1 (2 octobre 2026) : passe — typecheck, lint, formatage,
 Knip, contenu (7 documents embarqués), 1096 tests Vitest (83 fichiers), build et

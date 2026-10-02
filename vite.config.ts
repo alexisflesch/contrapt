@@ -9,7 +9,7 @@ const basePathPrefix = basePath === '/' ? '' : basePath.replace(/\/$/, '');
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const routeBasePattern = escapeRegExp(basePathPrefix);
 const navigateFallbackAllowlist = new RegExp(
-  `^${routeBasePattern}/(?:levels(?:/.*)?|editor|demo|settings|shared|bench(?:/.*)?)/?$|^${routeBasePattern}/?$`,
+  `^${routeBasePattern}/(?:levels(?:/.*)?|editor|settings|shared|bench(?:/.*)?)/?$|^${routeBasePattern}/?$`,
 );
 
 export default defineConfig({

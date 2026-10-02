@@ -45,9 +45,6 @@ bibliothèque.
     `LevelDocument`, jamais un identifiant inventé séparément ;
   - `/editor` — l'atelier de création libre (`embeddedWorkshopDocument`) ;
   - `/import` — import d'un fichier JSON de niveau vers un nouveau brouillon ;
-  - `/demo` — une machine en chaîne qui se résout seule
-    (`embeddedDemoDocument`, ajoutée le 26 septembre 2026), en mode joueur
-    sans inventaire : elle montre le concept en une pression sur « Tester » ;
   - `/settings` — réglages ; page provisoire tant qu'aucun réglage réel
     n'existe (depuis U11 : pseudo retenu et remise à zéro de la progression,
     amendement du 2 octobre 2026) ;
@@ -115,7 +112,7 @@ bibliothèque.
 
 À la demande de l’auteur, `/` affiche une landing dans le style de l’application
 au lieu de rediriger vers le premier niveau. Elle donne accès à `/levels`,
-`/editor`, `/demo` et `/settings`. Les routes techniques `/bench` et `/bench/play`
+`/editor`, `/demo` (supprimée le 2 octobre 2026) et `/settings`. Les routes techniques `/bench` et `/bench/play`
 restent absentes de la navigation publique ; `/shared` nécessite son fragment
 de partage et ne constitue pas une destination autonome de l’accueil.
 
@@ -164,3 +161,10 @@ le pseudo retenu (ADR 0016 § Pseudo), à voir, modifier ou effacer, et
 ## Références officielles consultées
 
 - [Documentation react-router-dom (v7)](https://reactrouter.com/)
+
+## Amendement du 2 octobre 2026 — suppression de `/demo`
+
+La route `/demo`, sa page et son niveau embarqué sont supprimés (feuille de route
+v1, décision 4). Une URL `/demo` retombe sur le repli `*` et redirige vers
+`/levels`. L'accueil et le menu ne la proposent plus, et le repli hors ligne de
+la PWA ne la liste plus. `/bench` et `/bench/play` restent, hors menu.

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { embeddedDemoDocument } from '../../content/embedded-levels';
+import { selfSolvingLevel } from '../../../test/fixtures/self-solving-level';
 import { levelDocumentSchema } from '../../domain/level-document';
 import type { LevelDocument } from '../../domain/level-document';
 import { encodeLevelFile } from '../level-file/level-file-codec';
@@ -27,7 +27,7 @@ const compress = async (bytes: Uint8Array): Promise<Uint8Array> => {
 
 const levelTwelve = () =>
   levelDocumentSchema.parse({
-    ...embeddedDemoDocument,
+    ...selfSolvingLevel,
     inventory: [
       {
         id: 'inventory-beam',

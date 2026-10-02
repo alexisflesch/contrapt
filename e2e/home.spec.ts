@@ -52,7 +52,6 @@ test('ouvre chaque destination et revient à l’accueil depuis le menu', async 
   for (const { name, path } of [
     { name: 'La campagne', path: '/levels' },
     { name: 'L’atelier', path: '/editor' },
-    { name: 'La démonstration', path: '/demo' },
     { name: 'Paramètres', path: '/settings' },
   ]) {
     const destinations = page.getByRole('navigation', { name: 'Explorer TinkerBolt' });

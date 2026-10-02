@@ -913,10 +913,10 @@ select:focus-visible {
   }
 }
 
-/* Quatre destinations (M9) : une seule rangée quand la largeur le permet. */
+/* Trois destinations : une seule rangée quand la largeur le permet. */
 @media (min-width: 1100px) {
   .home-destinations {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

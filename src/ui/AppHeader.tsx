@@ -118,13 +118,6 @@ export function AppHeader({
           </Button>
           <Button
             onClick={() => {
-              void navigate('/demo');
-            }}
-          >
-            Démonstration
-          </Button>
-          <Button
-            onClick={() => {
               void navigate('/settings');
             }}
           >

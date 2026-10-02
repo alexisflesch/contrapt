@@ -346,3 +346,48 @@ test/fixtures/sketch-campaign.ts:23:14` ; Vitest `src/app/level-export.test.ts`
     piste transparente, pour toutes les zones qui défilent.
 - La maquette de l'Atelier ne couvre que le bandeau, le catalogue et la
   scrollbar : le reste de l'agencement de jeu et d'édition est reporté en v2.
+
+### V2a — Supprimer la démo — fait — commit V2a (2 octobre 2026)
+
+- Supprimés : route `/demo` (une URL `/demo` retombe sur `*` → `/levels`),
+  `src/app/DemoPage.tsx`, `src/content/levels/demo.json`, `embeddedDemoDocument`,
+  la carte « La démonstration » de l'accueil (la grille de l'accueil passe de 4 à
+  3 colonnes à partir de 1100 px, sinon la quatrième restait vide : seul ajustement
+  de mise en page, le reste de l'accueil est inchangé), l'entrée « Démonstration » du
+  menu, le motif `demo` de `navigateFallbackAllowlist`. ADR 0008 amendée,
+  `etat.md` corrigé (contenu : six documents embarqués). `/bench` est gardé.
+- Test rouge (sur une copie propre de HEAD) : `App.test.tsx` « redirige /demo,
+  route supprimée, vers la liste des niveaux (V2a) » — `AssertionError: expected
+'/demo' to be '/levels'`.
+- Tests qui disparaissent avec la démo : `App.test.tsx` « ouvre la démonstration
+  sur /demo, en mode joueur sans rien à construire » (remplacé par le test de
+  redirection ci-dessus, qui vérifie aussi l'absence de l'entrée de menu) ; les
+  entrées « La démonstration » des parcours « ouvre chaque destination » de
+  `HomePage.test.tsx` et `e2e/home.spec.ts` (les trois autres destinations restent
+  vérifiées) ; `src/content/demo.test.ts` (la démo se résout seule) est devenu
+  `test/conformance/self-solving-level.test.ts`, même assertion sur le niveau de test
+  ci-dessous : il garde honnête le fichier que les E2E importent.
+- Tests qui utilisaient la démo comme outil et sont conservés : la machine en chaîne
+  est déplacée en fixture de test (`test/fixtures/self-solving-level.{json,ts}`,
+  id `self-solving`, titre « Machine en chaîne », texte « Lancer » au lieu de
+  « Tester »), jamais embarquée dans l'application. Elle remplace
+  `embeddedDemoDocument` dans `level-outcome`, `level-fingerprint`,
+  `level-file-codec` et `level-share-codec` (tests inchangés). Les E2E
+  `received-play.spec.ts`, `my-levels.spec.ts` (import d'un niveau reçu) et
+  `smoke.spec.ts` (bandeau de victoire sous le plateau, 320 × 568) la lisent ou
+  l'importent via « Mes niveaux » ; le titre attendu devient « Machine en chaîne ».
+- Tests réécrits (App.test.tsx), `/demo` étant remplacé par un niveau reçu qui se
+  résout seul (`/my-levels/<id>/play`, dépôt de niveaux reçus injecté) : B1
+  (bandeau après le plateau), B5 (emplacement de résultat unique), « ne persiste
+  pas les victoires hors campagne » — assertions inchangées. U4/U4b (« ni bandeau
+  ni modale de campagne hors campagne ») est réécrit : un niveau reçu montre
+  légitimement une modale « Bravo ! » et le palier « Résolu » (M10, U24), ce que
+  la démo ne faisait pas ; le test vérifie désormais l'absence de « Niveau suivant »
+  et de palier de défi (palier `resolved` seul), et non plus l'absence de modale.
+- Gate `pnpm check` verte : 1096 tests Vitest (83 fichiers), 6 documents de
+  contenu, 86 tests Playwright `v1`. Première exécution : un échec intermittent
+  de `smoke.spec.ts` « place au tactile puis annule le placement » (comparaison de
+  deux captures du plateau), sans lien avec la démo ; trois exécutions isolées
+  et la gate suivante passent.
+- Pour l'auteur : la grille d'accueil à trois destinations (4 colonnes avant)
+  sera redessinée par V7.

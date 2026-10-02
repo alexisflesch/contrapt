@@ -161,20 +161,6 @@ export function HomePage() {
                 Ouvrir mes niveaux <ArrowRight size={16} aria-hidden="true" />
               </span>
             </Link>
-            <Link className="home-destination" to="/demo">
-              <div className="home-destination-top">
-                <span className="home-destination-icon">
-                  <Play size={24} aria-hidden="true" />
-                </span>
-                <span className="home-destination-tag">Un peu d’inspiration</span>
-                <ArrowRight size={20} aria-hidden="true" />
-              </div>
-              <h3>La démonstration</h3>
-              <p>Une machine, une bille… découvre le plaisir des réactions en chaîne.</p>
-              <span className="home-destination-action">
-                Voir la machine <ArrowRight size={16} aria-hidden="true" />
-              </span>
-            </Link>
           </div>
           <div className="home-utilities">
             <p>Les essais font aussi partie de l’invention.</p>

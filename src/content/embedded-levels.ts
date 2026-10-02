@@ -1,4 +1,3 @@
-import demo from './levels/demo.json';
 import tutorial1 from './levels/tuto-1.json';
 import tutorial2 from './levels/tuto-2.json';
 import tutorial3 from './levels/tuto-3.json';
@@ -64,8 +63,8 @@ export const flattenCampaignLevels = (
 ): readonly LevelDocument[] => chapters.flatMap(({ levels }) => levels);
 
 /**
- * Compatibility list derived from the ordered chapters. The workshop and demo
- * are validated embedded documents, but neither belongs to the campaign.
+ * Compatibility list derived from the ordered chapters. The workshop is a
+ * validated embedded document, but it does not belong to the campaign.
  */
 export const embeddedLevels: readonly LevelDocument[] = flattenCampaignLevels(campaignChapters);
 
@@ -86,9 +85,3 @@ export const nextCampaignLevel = (
  * workshop" from `id` string matching elsewhere.
  */
 export const embeddedWorkshopDocument: LevelDocument = parseEmbeddedLevel(workshop);
-
-/**
- * `/demo`: a chain-reaction machine that solves itself, to show the concept
- * at a glance. Like the workshop, it is not campaign content.
- */
-export const embeddedDemoDocument: LevelDocument = parseEmbeddedLevel(demo);

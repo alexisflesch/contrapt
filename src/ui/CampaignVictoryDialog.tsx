@@ -15,7 +15,7 @@ import { Dialog } from './Dialog';
 
 /**
  * U4: what a campaign victory tells the player (ADR 0010). Absent for the
- * workshop, the demo and shared levels, which only say « Victoire ».
+ * workshop and the technical bench, which only say « Victoire ».
  */
 export interface CampaignVictory {
   /** Tier earned by this attempt, from the objects counted at launch. */
