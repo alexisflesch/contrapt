@@ -15,7 +15,7 @@ export interface AttemptFailureRule {
   /** Placement identifier of the ball the goal targets; other bodies may leave freely. */
   readonly ballId: string;
   readonly scene: SceneBounds;
-  /** How far past the scene the ball centre may still travel before the attempt is lost. */
+  /** How far past the scene (left, right, bottom) the ball centre may still travel before the attempt is lost. */
   readonly outOfSceneMarginInWorldUnits: number;
   /**
    * Budget of the attempt, counted in fixed steps. Seconds never reach this
@@ -96,9 +96,11 @@ const fail = (
 ): AttemptFailureEvaluation => ({ status: 'failed', reason, failedAtFixedStep });
 
 /**
- * The scene rectangle, widened by the tolerated margin on every side. A ball
- * exactly on that widened border is still in play: only crossing it loses the
- * attempt.
+ * The scene rectangle, widened by the tolerated margin on the left, right and
+ * bottom. A ball exactly on that widened border is still in play: only
+ * crossing it loses the attempt. The top is open (V2b): a ball thrown above
+ * the scene stays in play and gravity brings it back, or the time budget ends
+ * the attempt. `y` grows downwards (ADR 0007), so the top is `scene.min.y`.
  */
 const isOutOfScene = (position: WorldPoint, rule: AttemptFailureRule): boolean => {
   assertNonNegativeFinite(rule.outOfSceneMarginInWorldUnits, 'La marge hors scène');
@@ -109,7 +111,6 @@ const isOutOfScene = (position: WorldPoint, rule: AttemptFailureRule): boolean =
   return (
     position.x < rule.scene.min.x - margin ||
     position.x > rule.scene.max.x + margin ||
-    position.y < rule.scene.min.y - margin ||
     position.y > rule.scene.max.y + margin
   );
 };

@@ -234,8 +234,12 @@ const isRotationKnob = (operation: Operation): boolean =>
 const createContext = (): {
   readonly context: BoardCanvasContext;
   readonly operations: Operation[];
+  /** The `fillStyle` in force at each `fillRect`, in call order. */
+  readonly fillRectStyles: unknown[];
 } => {
   const operations: Operation[] = [];
+  const fillRectStyles: unknown[] = [];
+  let fillStyle: string | CanvasGradient = '';
   let lineWidth = 1;
   let globalAlpha = 1;
   let strokeStyle = '';
@@ -273,6 +277,7 @@ const createContext = (): {
       operations.push({ kind: 'setLineDash', values });
     },
     fillRect: (...values: [number, number, number, number]): void => {
+      fillRectStyles.push(fillStyle);
       operations.push({ kind: 'fillRect', values });
     },
     drawImage: (...values: readonly unknown[]): void => {
@@ -295,7 +300,12 @@ const createContext = (): {
       strokeStyle = value;
       operations.push({ kind: 'strokeStyle', values: [value] });
     },
-    fillStyle: '',
+    get fillStyle(): string | CanvasGradient {
+      return fillStyle;
+    },
+    set fillStyle(value: string | CanvasGradient) {
+      fillStyle = value;
+    },
     lineCap: 'butt',
     font: '',
     textAlign: 'start',
@@ -334,7 +344,7 @@ const createContext = (): {
     },
   } satisfies BoardCanvasContext;
 
-  return { context, operations };
+  return { context, operations, fillRectStyles };
 };
 
 /** A decoded sprite whose bitmap is a marker object, so a draw names its asset. */
@@ -1128,7 +1138,9 @@ describe('renderer Canvas 2D du plateau', () => {
     const { operations } = await renderWired();
 
     const firstSprite = operations.findIndex((operation) => operation.kind === 'drawImage');
-    const underSprites = operations.slice(0, firstSprite);
+    // V2b: the world grid is the first stroke and covers the viewport; the wires come after it.
+    const gridStroke = operations.findIndex((operation) => operation.kind === 'stroke');
+    const underSprites = operations.slice(gridStroke + 1, firstSprite);
     const start = worldToPixels({ x: 2.4, y: 4.05 }, viewport);
     // The lever's port faces sideways: the wire leaves horizontally first,
     // then turns once down to the conveyor's port (U14b).
@@ -1918,11 +1930,9 @@ describe('ombre portée (U3)', () => {
   });
 });
 
-describe('fond et grille qui suivent la caméra (U2)', () => {
-  const background = { width: 1600, height: 900, source: { background: true } };
-
-  const renderBackground = async (renderViewport: BoardViewport) => {
-    const { context, operations } = createContext();
+describe('fond uni et grille sur tout le viewport (V2b)', () => {
+  const renderBoard = async (renderViewport: BoardViewport) => {
+    const { context, operations, fillRectStyles } = createContext();
     const spriteLoader = createPendingSpriteLoader();
     spriteLoader.setReady();
     await createBoardRenderer({
@@ -1930,115 +1940,85 @@ describe('fond et grille qui suivent la caméra (U2)', () => {
       context,
       viewport: renderViewport,
       spriteLoader: spriteLoader.loader,
-      loadBackground: () => Promise.resolve(background),
     }).render(projectLevel(levelDocument));
-    return { operations };
+    return { operations, fillRectStyles };
   };
+  const gridPaths = (operations: readonly Operation[]) =>
+    operations.filter((operation) => operation.kind === 'moveTo' || operation.kind === 'lineTo');
 
-  it('projette le fond dans la scène, avant les objets, au zoom et au panoramique', async () => {
-    for (const [camera, rectangle] of [
-      [viewport, [0, 4, 40, 28]],
-      [{ ...viewport, pixelsPerWorldUnit: 8, origin: { x: 9, y: 4 } }, [8, 16, 80, 56]],
-    ] as const) {
-      const { operations } = await renderBackground(camera);
-      const images = operations.filter((operation) => operation.kind === 'drawImage');
-      expect(images[0]?.values).toEqual([background.source, ...rectangle]);
-      expect(images[1]?.values[0]).not.toBe(background.source);
-    }
-  });
+  it('peint tout le viewport d’une couleur parchemin unie, sans image de fond ni démarcation de la scène', async () => {
+    const { operations, fillRectStyles } = await renderBoard(viewport);
 
-  it('peint tout le viewport hors scène avec une couleur unie avant le fond', async () => {
-    const { operations } = await renderBackground(viewport);
-    expect(operations.find((operation) => operation.kind === 'fillRect')?.values).toEqual([
-      0, 0, 320, 240,
+    expect(operations.filter((operation) => operation.kind === 'fillRect')).toEqual([
+      { kind: 'fillRect', values: [0, 0, 320, 240] },
     ]);
-    expect(operations.findIndex(({ kind }) => kind === 'fillRect')).toBeLessThan(
-      operations.findIndex(({ kind }) => kind === 'drawImage'),
-    );
-  });
-
-  it('attend le décodage du fond avant tout dessin', async () => {
-    const { context, operations } = createContext();
-    const spriteLoader = createPendingSpriteLoader();
-    spriteLoader.setReady();
-    let release: (sprite: DecodedSprite) => void = () => {
-      throw new Error('Le décodage doit être initialisé.');
-    };
-    const loading = new Promise<DecodedSprite>((resolve) => {
-      release = resolve;
-    });
-    const rendering = createBoardRenderer({
-      canvas: { width: 0, height: 0 },
-      context,
-      viewport,
-      spriteLoader: spriteLoader.loader,
-      loadBackground: () => loading,
-    }).render(projectLevel(levelDocument));
-    await Promise.resolve();
-    expect(operations).toEqual([]);
-    release(background);
-    await rendering;
-    expect(operations.find((operation) => operation.kind === 'drawImage')?.values[0]).toBe(
-      background.source,
-    );
-  });
-
-  it('garde les objets et un fond uni si l’image de fond ne peut pas être chargée', async () => {
-    const { context, operations } = createContext();
-    const spriteLoader = createPendingSpriteLoader();
-    spriteLoader.setReady();
-    await createBoardRenderer({
-      canvas: { width: 0, height: 0 },
-      context,
-      viewport,
-      spriteLoader: spriteLoader.loader,
-      loadBackground: () => Promise.reject(new Error('Image indisponible')),
-    }).render(projectLevel(levelDocument));
-    expect(
-      operations.filter((operation) => operation.kind === 'fillRect').map(({ values }) => values),
-    ).toEqual([
-      [0, 0, 320, 240],
-      [0, 4, 40, 28],
-    ]);
+    expect(fillRectStyles).toEqual(['#f6ead3']);
+    expect(operations.filter(({ kind }) => kind === 'strokeRect')).toEqual([]);
+    // Seuls les sprites des objets sont des images : le fond n'en est plus une.
     expect(operations.filter((operation) => operation.kind === 'drawImage').length).toBe(
       projectLevel(levelDocument).objects.length,
     );
   });
 
-  it('trace une grille d’un mètre limitée à la scène visible, en pixels CSS', async () => {
+  it('dessine la couleur, puis la grille, puis les objets', async () => {
+    const { operations } = await renderBoard({ ...viewport, pixelsPerWorldUnit: 40 });
+    const fill = operations.findIndex(({ kind }) => kind === 'fillRect');
+    const grid = operations.findIndex(({ kind }) => kind === 'stroke');
+    const firstImage = operations.findIndex(({ kind }) => kind === 'drawImage');
+
+    expect(fill).toBeGreaterThanOrEqual(0);
+    expect(fill).toBeLessThan(grid);
+    expect(grid).toBeLessThan(firstImage);
+  });
+
+  it('trace une grille d’un mètre sur tout le viewport, scène comprise ou non, en pixels CSS', async () => {
+    // La scène du niveau va de (10, 6) à (20, 13) : à ce cadrage elle déborde à
+    // droite et s'arrête 20 px avant le bas, et la grille continue au-delà.
     const camera = { ...viewport, pixelsPerWorldUnit: 40, origin: { x: 11.5, y: 7.5 } };
-    const { operations } = await renderBackground(camera);
-    const paths = operations.filter(
-      (operation) => operation.kind === 'moveTo' || operation.kind === 'lineTo',
-    );
+    const { operations } = await renderBoard(camera);
+    const paths = gridPaths(operations);
+
     expect(paths.slice(0, 4)).toEqual([
       { kind: 'moveTo', values: [20, 0] },
-      { kind: 'lineTo', values: [20, 220] },
+      { kind: 'lineTo', values: [20, 240] },
       { kind: 'moveTo', values: [60, 0] },
-      { kind: 'lineTo', values: [60, 220] },
+      { kind: 'lineTo', values: [60, 240] },
     ]);
+    // x = 12 à 19 (huit lignes), y = 8 à 13 (six lignes), chacune sur tout le viewport.
+    expect(paths).toHaveLength((8 + 6) * 2);
     expect(paths).toContainEqual({ kind: 'moveTo', values: [0, 20] });
     expect(paths).toContainEqual({ kind: 'lineTo', values: [320, 20] });
+    expect(paths).toContainEqual({ kind: 'moveTo', values: [0, 260 - 40] });
     expect(operations.filter(({ kind }) => kind === 'lineWidth')).toEqual([
       { kind: 'lineWidth', values: [1] },
     ]);
-    for (const { values } of paths) {
-      expect(values[0]).toBeGreaterThanOrEqual(0);
-      expect(values[0]).toBeLessThanOrEqual(320);
-      expect(values[1]).toBeGreaterThanOrEqual(0);
-      expect(values[1]).toBeLessThanOrEqual(220);
-    }
   });
 
-  it('atténue la grille au faible zoom et ne la trace pas hors scène', async () => {
-    const at = async (zoom: number, origin = { x: 10, y: 6 }) =>
-      (await renderBackground({ ...viewport, pixelsPerWorldUnit: zoom, origin })).operations;
-    const colours = (operations: readonly Operation[]) =>
-      operations
+  it('trace la grille même quand la scène est entièrement hors du viewport, et la suit au panoramique', async () => {
+    const at = async (origin: { x: number; y: number }) =>
+      gridPaths(
+        (await renderBoard({ ...viewport, pixelsPerWorldUnit: 40, origin })).operations,
+      ).slice(0, 2);
+
+    expect(await at({ x: 0.5, y: 0.5 })).toEqual([
+      { kind: 'moveTo', values: [20, 0] },
+      { kind: 'lineTo', values: [20, 240] },
+    ]);
+    expect(await at({ x: -30.25, y: 90 })).toEqual([
+      { kind: 'moveTo', values: [10, 0] },
+      { kind: 'lineTo', values: [10, 240] },
+    ]);
+  });
+
+  it('atténue la grille au faible zoom', async () => {
+    const colours = async (zoom: number) =>
+      (
+        await renderBoard({ ...viewport, pixelsPerWorldUnit: zoom, origin: { x: 10, y: 6 } })
+      ).operations
         .filter((operation) => operation.kind === 'strokeStyle')
         .map(({ values }) => values[0]);
-    expect(colours(await at(24))).toEqual(['rgba(78, 68, 51, 0.06)']);
-    expect(colours(await at(64))).toEqual(['rgba(78, 68, 51, 0.16)']);
-    expect((await at(40, { x: 30, y: 30 })).filter(({ kind }) => kind === 'stroke')).toEqual([]);
+
+    expect(await colours(24)).toEqual(['rgba(78, 68, 51, 0.06)']);
+    expect(await colours(64)).toEqual(['rgba(78, 68, 51, 0.16)']);
   });
 });

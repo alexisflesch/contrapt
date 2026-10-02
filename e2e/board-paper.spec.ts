@@ -4,6 +4,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { levelDocumentSchema } from '../src/domain/level-document';
 import { encodeShareFragment } from '../src/infrastructure/level-share/level-share-codec';
+import { canvasPixelAt, expectedPaperPixel } from './board-paper';
 
 const formats = [
   { width: 390, height: 844 },
@@ -13,8 +14,8 @@ const formats = [
 
 const level = levelDocumentSchema.parse({
   schemaVersion: 2,
-  id: 'u2-background',
-  metadata: { title: 'Le fond suit la caméra' },
+  id: 'v2b-paper',
+  metadata: { title: 'Le parchemin suit la caméra' },
   scene: { min: { x: 0, y: 0 }, max: { x: 8, y: 5.5 } },
   objects: [
     {
@@ -37,49 +38,64 @@ const level = levelDocumentSchema.parse({
   goal: { type: 'basket', ballId: 'ball', basketId: 'basket' },
 });
 
-/** Compares real pixels with the existing image projected in the scene, at empty off-grid points. */
-const backgroundMatchesCamera = (canvas: Locator): Promise<boolean> =>
-  canvas.evaluate(async (element) => {
-    if (!(element instanceof HTMLCanvasElement)) return false;
-    const actual = element.getContext('2d');
-    if (actual === null) return false;
-    const [ox, oy] = (element.dataset.cameraOrigin ?? '').split(',').map(Number);
-    const zoom = Number(element.dataset.cameraZoom);
-    if (ox === undefined || oy === undefined || !(zoom > 0)) return false;
-    const image = new Image();
-    image.src = '/assets/backgrounds/board-generic-v0.png';
-    await image.decode();
-    const expected = document.createElement('canvas');
-    expected.width = element.width;
-    expected.height = element.height;
-    const context = expected.getContext('2d');
-    if (context === null) return false;
-    const bounds = element.getBoundingClientRect();
-    const dpr = element.width / bounds.width;
-    context.setTransform(dpr, 0, 0, element.height / bounds.height, 0, 0);
-    context.fillStyle = '#d9d2c7';
-    context.fillRect(0, 0, bounds.width, bounds.height);
-    context.drawImage(image, -ox * zoom, -oy * zoom, 8 * zoom, 5.5 * zoom);
-    const points = [
-      { x: 3.3, y: 2.3 },
-      { x: 4.6, y: 3.4 },
-    ];
+interface PaperCheck {
+  /** Points whose pixel differs from the plain parchment and grid by more than the tolerance. */
+  readonly mismatches: number;
+  readonly insideScene: number;
+  readonly outsideScene: number;
+}
+
+/**
+ * Compares real pixels with the repainted parchment and grid at empty, off-grid
+ * points inside the scene and just outside its four edges: nothing, not even a
+ * change of colour, may mark where the scene ends (V2b).
+ */
+const checkPaper = async (canvas: Locator): Promise<PaperCheck> => {
+  const [ox, oy] = ((await canvas.getAttribute('data-camera-origin')) ?? '').split(',').map(Number);
+  const zoom = Number(await canvas.getAttribute('data-camera-zoom'));
+  if (ox === undefined || oy === undefined || !(zoom > 0)) {
+    throw new Error('Le repère caméra doit être disponible.');
+  }
+  const inside = [
+    { x: 3.3, y: 2.3 },
+    { x: 4.6, y: 3.4 },
+    { x: 0.3, y: 0.3 },
+    { x: 7.7, y: 5.2 },
+  ];
+  const outside = [
+    { x: -0.3, y: 2.3 },
+    { x: 8.3, y: 3.4 },
+    { x: 4.3, y: -0.4 },
+    { x: 3.7, y: 5.9 },
+  ];
+  let mismatches = 0;
+  let insideScene = 0;
+  let outsideScene = 0;
+  for (const [points, isInside] of [
+    [inside, true],
+    [outside, false],
+  ] as const) {
     for (const point of points) {
-      const x = Math.round((point.x - ox) * zoom * dpr);
-      const y = Math.round((point.y - oy) * zoom * dpr);
-      if (x < 0 || y < 0 || x >= element.width || y >= element.height) return false;
-      const a = actual.getImageData(x, y, 1, 1).data;
-      const b = context.getImageData(x, y, 1, 1).data;
-      if (![0, 1, 2, 3].every((channel) => Math.abs((a[channel] ?? 0) - (b[channel] ?? 0)) <= 3))
-        return false;
+      const local = { x: (point.x - ox) * zoom, y: (point.y - oy) * zoom };
+      const actual = await canvasPixelAt(canvas, local);
+      if (actual === null) continue;
+      // Only empty spots: the ball and the basket stand at the scene's corners.
+      if (isInside && (point.x < 1 || point.x > 7)) continue;
+      if (isInside) insideScene += 1;
+      else outsideScene += 1;
+      const expected = await expectedPaperPixel(canvas, local);
+      if (![0, 1, 2, 3].every((c) => Math.abs((actual[c] ?? 0) - (expected[c] ?? 0)) <= 3)) {
+        mismatches += 1;
+      }
     }
-    // The top-left corner is outside the scene after fitting: it is opaque and neutral.
-    if (ox < 0 && oy < 0) {
-      const pixel = actual.getImageData(2, 2, 1, 1).data;
-      if (Array.from(pixel).join(',') !== '217,210,199,255') return false;
-    }
-    return true;
-  });
+  }
+  return { mismatches, insideScene, outsideScene };
+};
+
+const paperMatchesCamera = async (canvas: Locator): Promise<boolean> => {
+  const { mismatches, insideScene } = await checkPaper(canvas);
+  return insideScene > 0 && mismatches === 0;
+};
 
 const pan = async (page: Page, canvas: Locator) => {
   const bounds = await canvas.boundingBox();
@@ -105,21 +121,26 @@ const pan = async (page: Page, canvas: Locator) => {
 };
 
 for (const viewport of formats) {
-  test(`U2 — fond projeté, grille et panoramique tactile à ${String(viewport.width)} × ${String(viewport.height)}`, async ({
+  test(`V2b — parchemin uni et grille sur tout le viewport, sans bordure, avec zoom et panoramique à ${String(viewport.width)} × ${String(viewport.height)}`, async ({
     page,
   }) => {
-    await mkdir('test-results/board-background', { recursive: true });
+    await mkdir('test-results/board-paper', { recursive: true });
     await page.setViewportSize(viewport);
     await page.goto(`/shared${await encodeShareFragment(level)}`);
     const board = page.getByRole('region', { name: 'Plateau de jeu' });
     const canvas = board.getByRole('img', { name: 'Rendu du plateau' });
     await expect(canvas).toBeVisible();
     await expect(board).toHaveCSS('background-image', 'none');
-    await expect.poll(() => backgroundMatchesCamera(canvas)).toBe(true);
+    await expect.poll(() => paperMatchesCamera(canvas)).toBe(true);
+    // At the default fit the scene never fills the canvas exactly: at least one
+    // point just outside it is checked, and it shows the same parchment.
+    const fitted = await checkPaper(canvas);
+    expect(fitted.outsideScene).toBeGreaterThan(0);
+    expect(fitted.mismatches).toBe(0);
     const size = `${String(viewport.width)}x${String(viewport.height)}`;
     const shot = (name: string) =>
       page.screenshot({
-        path: `test-results/board-background/${name}-${size}.png`,
+        path: `test-results/board-paper/${name}-${size}.png`,
         fullPage: true,
         scale: 'css',
       });
@@ -129,17 +150,17 @@ for (const viewport of formats) {
     await expect
       .poll(async () => Number(await canvas.getAttribute('data-camera-zoom')))
       .toBeGreaterThan(zoom);
-    await expect.poll(() => backgroundMatchesCamera(canvas)).toBe(true);
+    await expect.poll(() => paperMatchesCamera(canvas)).toBe(true);
     await shot('zoom');
     const origin = await canvas.getAttribute('data-camera-origin');
     await pan(page, canvas);
     await expect(canvas).not.toHaveAttribute('data-camera-origin', origin ?? '');
-    await expect.poll(() => backgroundMatchesCamera(canvas)).toBe(true);
+    await expect.poll(() => paperMatchesCamera(canvas)).toBe(true);
     await shot('panoramique');
     await page.getByRole('button', { name: 'Ajuster à la scène', exact: true }).tap();
     await expect
       .poll(async () => Number(await canvas.getAttribute('data-camera-zoom')))
       .toBeCloseTo(zoom);
-    await expect.poll(() => backgroundMatchesCamera(canvas)).toBe(true);
+    await expect.poll(() => paperMatchesCamera(canvas)).toBe(true);
   });
 }

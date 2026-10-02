@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0, V1 (fin de N2) et V2a (démo supprimée) livrées, gate globale verte ; prochaine tâche : V2b. U3 reste abandonnée.
+Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0, V1 (fin de N2), V2a (démo supprimée) et V2b (pas de bordure, pas de perte par le haut ; validation visuelle attendue) livrées, gate globale verte ; prochaine tâche : V2c. U3 reste abandonnée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -14,10 +14,11 @@ et ne contient ni décision ni spécification ; celles-ci restent dans
 La feuille de route v1 (desktop d’abord) est dans
 [la feuille de route](feuille-de-route.md). **V0** (règle mobile-first suspendue,
 archives, projet Playwright `v1`), **V1** (fin de N2 : Knip, test d’export,
-copies des tutoriels vérifiées) et **V2a** (route, page, contenu et tests de la
-démonstration supprimés) sont livrées, gate globale verte. Prochaine tâche :
-**V2b** (pas de bordure, pas de perte par le haut), puis V2c (repli hors ligne
-de `/my-levels`).
+copies des tutoriels vérifiées), **V2a** (route, page, contenu et tests de la
+démonstration supprimés) et **V2b** (parchemin et grille sur tout le viewport,
+plus de perte par le haut ; validation visuelle de l’auteur attendue) sont
+livrées, gate globale verte. Prochaine tâche : **V2c** (repli hors ligne de
+`/my-levels`).
 Les sources auteur et son fichier d’essai restent intacts ; rien n’est poussé.
 
 ## Stack en place
@@ -97,7 +98,8 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 - `EditorSession` : tentative, historique, sélection, manipulation groupée,
   phases construction/simulation/pause/résultat, reset exact.
 - Évaluateurs purs : objectif panier (durée de maintien injectée) et échec de
-  tentative (hors scène élargie de 2 unités, temps écoulé à 20 s simulées).
+  tentative (hors scène élargie de 2 unités à gauche, à droite et en bas — le
+  haut est ouvert depuis V2b —, temps écoulé à 20 s simulées).
 - Commandes auteur L25 : `src/application/construction/authoring-commands.ts`
   fournit les commandes annulables pour la scène, les zones, l’inventaire, les
   permissions, l’objectif, les métadonnées (titre, description M14b, pseudo
@@ -415,17 +417,16 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ### Présentation et interface
 
-- Fond et grille U2 (ADR 0007, spécification D3) : `projectLevel` porte le
-  rectangle de scène. Le renderer peint d’abord le viewport en gris uni, puis
-  `board-generic-v0.png` dans la scène projetée ; zoom et panoramique suivent
-  la même caméra que les objets. Une grille d’un mètre, limitée à la scène
-  visible, garde un trait de 1 px CSS et s’atténue au faible zoom. `BoardView`
-  décode et garde le fond avec le pipeline des sprites (chemin sous le
-  sous-répertoire de déploiement) ; le premier dessin attend les assets. Si
-  l’image manque, les objets restent dessinés sur un fond crème uni. Le fond
-  CSS fixe est retiré. Les tests U13 comparent désormais la teinte des zones
-  avec le fond projeté, puisque le canvas est opaque. Captures aux trois
-  formats dans `test-results/board-background/`, validation de l’auteur attendue.
+- Fond et grille (U2, refondus par V2b ; ADR 0007 amendée le 2 octobre 2026) :
+  le renderer peint tout le viewport d’un parchemin uni (`#f6ead3`), puis une
+  grille d’un mètre sur **tout** le viewport (trait de 1 px CSS, atténuée au
+  faible zoom) ; zoom et panoramique suivent la même caméra que les objets.
+  Aucune démarcation de la scène, aucune image de fond : `loadBackground` et son
+  décodage dans `BoardView` n’existent plus, et `board-generic-v0.png` n’est plus
+  chargé (le fichier reste dans `public/assets/backgrounds/`). Les tests U13,
+  R1 et U3 comparent les pixels au parchemin et à la grille repeints hors écran
+  (`e2e/board-paper.ts`). Captures dans `test-results/board-paper/` ; validation
+  de l’auteur attendue (V2b).
 
 - **Accueil `/`** : landing avec les couleurs et assets locaux de l’application,
   scène d’atelier illustrée, accès à la campagne, à l’atelier
@@ -882,6 +883,11 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après V2b (2 octobre 2026) : passe — typecheck, lint, formatage,
+Knip, contenu (6 documents embarqués), 1097 tests Vitest (83 fichiers), build et
+86 tests Playwright du projet `v1` (0 ignoré). `tmp/check-levels.ts` écarté puis
+remis identique. Captures de V2b : validation de l’auteur attendue.
 
 `pnpm check` après V2a (2 octobre 2026) : passe — typecheck, lint, formatage,
 Knip, contenu (6 documents embarqués), 1096 tests Vitest (83 fichiers), build et

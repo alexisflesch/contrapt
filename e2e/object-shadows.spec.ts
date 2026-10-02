@@ -4,6 +4,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { levelDocumentSchema } from '../src/domain/level-document';
 import { encodeShareFragment } from '../src/infrastructure/level-share/level-share-codec';
+import { expectedPaperPixel } from './board-paper';
 
 const formats = [
   { width: 390, height: 844 },
@@ -80,54 +81,33 @@ const camera = async (canvas: Locator) => {
   return { bounds, origin: { x, y }, zoom };
 };
 
-/** Red-channel darkening outside every sprite, against the background or the pre-ghost canvas. */
+/** Red-channel darkening outside every sprite, against the parchment or the pre-ghost canvas. */
 const darkening = async (
   canvas: Locator,
   point: Point,
   reference: 'background' | 'before-ghost' = 'background',
 ): Promise<number> => {
   const { origin, zoom } = await camera(canvas);
-  return canvas.evaluate(
-    async (element, { point, origin, zoom, reference }) => {
-      if (!(element instanceof HTMLCanvasElement)) throw new Error('Canvas attendu.');
-      const context = element.getContext('2d');
-      if (context === null) throw new Error('Contexte 2D attendu.');
-      const scale = element.width / element.getBoundingClientRect().width;
-      const x = Math.round((point.x - origin.x) * zoom * scale);
-      const y = Math.round((point.y - origin.y) * zoom * scale);
-      const actual = context.getImageData(x, y, 1, 1).data[0] ?? 0;
-      if (reference === 'before-ghost') {
-        const pixels: unknown = Reflect.get(window, '__shadowReference');
-        if (!(pixels instanceof Uint8ClampedArray))
-          throw new Error('Référence du plateau absente.');
-        return (pixels[(y * element.width + x) * 4] ?? 0) - actual;
-      }
-      const background = document.createElement('canvas');
-      background.width = element.width;
-      background.height = element.height;
-      const expected = background.getContext('2d');
-      if (expected === null) throw new Error('Contexte de référence attendu.');
-      const image = new Image();
-      image.src = '/assets/backgrounds/board-generic-v0.png';
-      await image.decode();
-      expected.setTransform(scale, 0, 0, scale, 0, 0);
-      expected.drawImage(image, -origin.x * zoom, -origin.y * zoom, 8 * zoom, 5.5 * zoom);
-      expected.lineWidth = 1;
-      expected.strokeStyle = `rgba(78, 68, 51, ${String(0.16 * Math.min(1, zoom / 64))})`;
-      expected.beginPath();
-      for (let line = 1; line < 8; line += 1) {
-        expected.moveTo((line - origin.x) * zoom, -origin.y * zoom);
-        expected.lineTo((line - origin.x) * zoom, (5.5 - origin.y) * zoom);
-      }
-      for (let line = 1; line < 5.5; line += 1) {
-        expected.moveTo(-origin.x * zoom, (line - origin.y) * zoom);
-        expected.lineTo((8 - origin.x) * zoom, (line - origin.y) * zoom);
-      }
-      expected.stroke();
-      return (expected.getImageData(x, y, 1, 1).data[0] ?? 0) - actual;
-    },
-    { point, origin, zoom, reference },
-  );
+  const local = { x: (point.x - origin.x) * zoom, y: (point.y - origin.y) * zoom };
+  const { actual, before } = await canvas.evaluate((element, at) => {
+    if (!(element instanceof HTMLCanvasElement)) throw new Error('Canvas attendu.');
+    const context = element.getContext('2d');
+    if (context === null) throw new Error('Contexte 2D attendu.');
+    const scale = element.width / element.getBoundingClientRect().width;
+    const x = Math.round(at.x * scale);
+    const y = Math.round(at.y * scale);
+    const pixels: unknown = Reflect.get(window, '__shadowReference');
+    return {
+      actual: context.getImageData(x, y, 1, 1).data[0] ?? 0,
+      before:
+        pixels instanceof Uint8ClampedArray ? (pixels[(y * element.width + x) * 4] ?? 0) : null,
+    };
+  }, local);
+  if (reference === 'before-ghost') {
+    if (before === null) throw new Error('Référence du plateau absente.');
+    return before - actual;
+  }
+  return (await expectedPaperPixel(canvas, local))[0] - actual;
 };
 
 const hover = async (page: Page, canvas: Locator, point: Point) => {

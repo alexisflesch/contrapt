@@ -20,7 +20,6 @@ import type { Camera } from '../presentation/board-camera';
 import {
   createImageBitmapSpriteDecoder,
   createSpriteLoader,
-  publicAssetUrl,
   type DecodedSprite,
   type SpriteDecoder,
   type SpriteLoader,
@@ -254,7 +253,6 @@ export function BoardView({
 }: BoardViewProps) {
   const boardRef = useRef<HTMLDivElement>(null);
   const spriteLoaderRef = useRef<SpriteLoader | null>(null);
-  const backgroundPromiseRef = useRef<Promise<DecodedSprite> | null>(null);
   const boardRenderRef = useRef<(() => void) | null>(null);
   const boardRenderQueueRef = useRef<Promise<void>>(Promise.resolve());
 
@@ -335,18 +333,6 @@ export function BoardView({
               devicePixelRatio: window.devicePixelRatio > 0 ? window.devicePixelRatio : 1,
             },
             spriteLoader,
-            loadBackground: () => {
-              backgroundPromiseRef.current ??= decode(
-                publicAssetUrl(
-                  '/assets/backgrounds/board-generic-v0.png',
-                  import.meta.env.BASE_URL,
-                ),
-              ).catch((error: unknown) => {
-                backgroundPromiseRef.current = null;
-                throw error;
-              });
-              return backgroundPromiseRef.current;
-            },
           });
 
           const currentSession = sessionRef.current;

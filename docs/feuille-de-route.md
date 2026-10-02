@@ -391,3 +391,70 @@ test/fixtures/sketch-campaign.ts:23:14` ; Vitest `src/app/level-export.test.ts`
   et la gate suivante passent.
 - Pour l'auteur : la grille d'accueil à trois destinations (4 colonnes avant)
   sera redessinée par V7.
+
+### V2b — Pas de bordure, pas de perte par le haut — fait, validation visuelle attendue — commit V2b (2 octobre 2026)
+
+- Test rouge (domaine) : `attempt-failure-evaluator.test.ts` « ne perd jamais par
+  le haut : la balle au-delà de la marge reste en jeu… (V2b) » — `expected {
+status: 'failed', … } to deeply equal { status: 'pending', … }`. Correctif : le
+  test `position.y < scene.min.y - marge` est retiré de `isOutOfScene` (gauche,
+  droite et bas inchangés, marge de 2 unités). Une balle qui monte haut retombe
+  ou atteint la limite de 20 s : voulu. Tests ajoutés : balle très haute reste en
+  jeu ; balle très haute mais hors par un côté perd toujours.
+- Test rouge (rendu) : `board-renderer.test.ts` « fond uni et grille sur tout le
+  viewport (V2b) » — trois échecs, dont `expected [ fillRect…, fillRect… ] to
+deeply equal [ fillRect [0, 0, 320, 240] ]` (le fond de scène était encore
+  peint) et `expected [] to deeply equal [ moveTo [20, 0], lineTo [20, 240] ]`
+  (grille absente quand la scène est hors du viewport).
+- Rendu : `drawPaper` (couleur `#f6ead3` sur tout le viewport) puis `drawWorldGrid`
+  (un mètre, sur **tout** le viewport, même atténuation au faible zoom) ; aucune
+  image, aucune couleur hors scène, aucun trait de scène. `loadBackground`,
+  `OUTSIDE_SCENE_COLOUR`, `SCENE_FALLBACK_COLOUR` et le décodage du fond de
+  `BoardView` sont retirés. Les zones de construction (U13) sont inchangées.
+- Tests supprimés avec le fond image (`board-renderer.test.ts`) : « projette le
+  fond dans la scène… » (plus d'image à projeter), « attend le décodage du fond
+  avant tout dessin » et « garde les objets et un fond uni si l'image de fond ne
+  peut pas être chargée » (plus de chargement, donc plus d'échec de chargement).
+  Réécrits : « peint tout le viewport hors scène avec une couleur unie avant le
+  fond » (parchemin, sans image, un seul `fillRect`), « trace une grille d'un mètre
+  limitée à la scène visible » (désormais sur tout le viewport, scène comprise ou
+  non), « atténue la grille au faible zoom et ne la trace pas hors scène »
+  (atténuation conservée ; « ne pas tracer hors scène » est précisément ce qui
+  change : la grille se trace hors scène, test de panoramique ajouté). Le test
+  `dessine chaque fil en équerre…` saute maintenant le trait de la grille ;
+  `wire-renderer.test.ts` prend le parchemin `#f6ead3` comme couleur du plateau.
+  `attempt-failure-evaluator.test.ts` « tolère la marge sur les quatre côtés »
+  devient « … à gauche, à droite et en bas », le haut étant couvert par le nouveau
+  test.
+- E2E : `board-background.spec.ts` (U2) devient `board-paper.spec.ts` : même
+  parcours (ajusté, zoom avant, panoramique tactile, ajuster), mêmes trois
+  formats, mais la référence est le parchemin et la grille repeints hors écran
+  (`e2e/board-paper.ts`) ; elle vérifie aussi des points juste à l'extérieur des
+  quatre bords de la scène (rien ne marque la limite). Disparu avec l'image : la
+  comparaison au PNG. `goal-ball.spec.ts` (R1), `build-zones.spec.ts` (U13) et
+  `object-shadows.spec.ts` (U3) comparaient leurs pixels au PNG projeté : ils
+  utilisent la même référence (assertions et seuils inchangés). Aucune spec de
+  format téléphone modifiée.
+- Documents : ADR 0007 amendée (rendu, rôle de la scène, perte) avec renvois dans
+  § Scène et § Conséquences ; l'ADR 0006 ne décrit pas le fond du plateau, rien à
+  y corriger ; `etat.md` (repère « Échec », fond et grille).
+- **Précache PWA** : `workbox.globPatterns` inclut `png` : les quatre fonds de
+  `public/assets/backgrounds/` sont précachés (`dist/sw.js`), dont
+  `board-generic-v0.png` (1,7 Mo), désormais inutilisé, ainsi que
+  `board-workshop-evening-v1.png` et `board-workshop-stone-v1.png` qui ne l'étaient
+  déjà pas (seul `board-workshop-day-v1.png` sert, à l'accueil). Non modifié, à
+  décider (voir ci-dessous).
+- Captures (1440 × 900 et 1280 × 720, tutoriel 1 « Le petit pont ») dans
+  `/tmp/claude-1000/-home-aflesch-tinkerbolt/6a643584-d9aa-4357-aedc-da10439fec33/scratchpad/v2b/` :
+  `ajuste-*.png` (ajustement par défaut), `dezoome-*.png` (trois fois « Zoom
+  arrière »), `sortie-bas-*.png` (tutoriel 1 lancé sans rien poser : la balle
+  tombe sous la scène) et `sortie-cote-*.png` (niveau jetable : la balle roule
+  au-delà du bord droit, vue dézoomée). Inspectées : parchemin uni, grille
+  continue autour de la scène, aucune démarcation. La gate régénère en plus
+  `test-results/board-paper/` (ajusté, zoom, panoramique aux trois formats).
+- Gate `pnpm check` verte : 1097 tests Vitest (83 fichiers), 6 documents de
+  contenu, 86 tests Playwright `v1`.
+- Pour l'auteur : (1) le parchemin et la grille sont-ils à ton goût (couleur,
+  intensité de la grille à fort zoom : 0,16 d'opacité) ? (2) Faut-il retirer les
+  trois PNG inutilisés du précache (`globIgnores`) ? Le fichier générique pèse
+  1,7 Mo.

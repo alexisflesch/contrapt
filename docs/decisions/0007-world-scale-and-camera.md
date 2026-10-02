@@ -73,7 +73,8 @@ contenu.
 Un niveau déclare explicitement son rectangle de scène en unités monde. Ce
 rectangle sert à trois choses, et c'est ce qui justifie qu'il soit une donnée du
 niveau et non un réglage de la vue : le cadrage initial, la détection de sortie de
-monde, et le calage du fond. Aucune des trois ne peut le deviner.
+monde, et (jusqu'à l'amendement du 2 octobre 2026) le calage du fond. Aucune des
+trois ne peut le deviner.
 
 - Un niveau du premier chapitre tient dans **8 × 5,5 unités**. C'est une règle de
   contenu et non une contrainte du format : sur un écran de 320 px de large,
@@ -213,10 +214,12 @@ dette, pas une livraison.
   placé. À échelle, ancre et empreinte communes, une forme CSS fixe en overlay
   DOM n'est plus défendable : elle ne peut ni suivre le zoom, ni montrer la
   géométrie réelle.
-- Le fond du plateau se cale sur le rectangle de scène et suit la caméra. Un
-  `background-size: cover` en CSS ment sur l'échelle du monde.
+- Le fond du plateau suit la caméra. Un `background-size: cover` en CSS ment sur
+  l'échelle du monde. (Depuis l'amendement du 2 octobre 2026, il n'est plus calé sur
+  la scène : parchemin uni et grille sur tout le viewport.)
 - La détection de sortie de monde devient possible et attendue : une simulation
-  dont la balle quitte la scène a une fin.
+  dont la balle quitte la scène par le bas ou un côté a une fin (le haut est
+  ouvert depuis l'amendement du 2 octobre 2026).
 - Le domaine, les commandes et le test d'appartenance aux zones continuent
   d'ignorer l'écran, conformément à l'ADR 0006 et à `AGENTS.md`.
 - Rien de cette décision n'entre dans le document de niveau hormis le rectangle
@@ -248,14 +251,14 @@ suit l'une de trois poses : celle du placement (pièce immobile), celle du corps
 simulé, ou la position du corps sans sa rotation (ombrage et reflet qui restent
 face à la lumière).
 
-| Famille   | Calques, de l'arrière à l'avant                       | Empreinte monde (origine)                         |
-| --------- | ----------------------------------------------------- | ------------------------------------------------- |
-| balle     | `ball-base`, `ball-spin` (tourne), `ball-highlight`   | 0,6 × 0,6 (centre)                                |
-| panier    | `basket-back`, `basket-front`                         | 1,5 × 1,1 (centre)                                |
-| poutre    | `beam-short`, `beam-medium` ou `beam-long` (U12)      | 2, 4 ou 6 × 0,25 (centre)                         |
-| bascule   | `seesaw-fulcrum` (immobile), `seesaw-beam` (pivote)   | ensemble 3 × 0,82 (pivot)                         |
-| masse     | `mass-10kg`                                           | 0,8 × 0,772 (centre)                              |
-| levier    | `lever-base` (immobile), `lever-handle` (pivote)      | socle 0,8 × 0,414, poignée 0,35 × 1,0 (pivot)     |
+| Famille   | Calques, de l'arrière à l'avant                           | Empreinte monde (origine)                     |
+| --------- | --------------------------------------------------------- | --------------------------------------------- |
+| balle     | `ball-base`, `ball-spin` (tourne), `ball-highlight`       | 0,6 × 0,6 (centre)                            |
+| panier    | `basket-back`, `basket-front`                             | 1,5 × 1,1 (centre)                            |
+| poutre    | `beam-short`, `beam-medium` ou `beam-long` (U12)          | 2, 4 ou 6 × 0,25 (centre)                     |
+| bascule   | `seesaw-fulcrum` (immobile), `seesaw-beam` (pivote)       | ensemble 3 × 0,82 (pivot)                     |
+| masse     | `mass-10kg`                                               | 0,8 × 0,772 (centre)                          |
+| levier    | `lever-base` (immobile), `lever-handle` (pivote)          | socle 0,8 × 0,414, poignée 0,35 × 1,0 (pivot) |
 | convoyeur | `conveyor-belt` ou `conveyor-belt-left`, `conveyor-frame` | 3 × 0,58 (centre)                             |
 
 La bande du convoyeur fait exception au cadre commun : son sprite couvre la
@@ -267,3 +270,25 @@ Les colliders polygonaux (pied de la bascule, masse, socle du levier) sont
 mesurés sur les sources par le même script et vivent dans
 `src/domain/family-geometry.ts`, source unique des empreintes pour la physique
 comme pour le rendu.
+
+## Amendement du 2 octobre 2026 — pas de bordure, pas de perte par le haut
+
+À la demande de l'auteur (feuille de route v1, décision 2), la scène cesse d'être
+une zone visible du plateau.
+
+- **Rendu.** Le renderer ne dessine plus d'image de fond ni de cadre : il peint
+  tout le viewport d'un parchemin uni (`#f6ead3`), puis une grille d'un mètre sur
+  **tout** le viewport, alignée sur les entiers du monde, avec la même
+  atténuation au faible zoom. Rien ne marque la limite de la scène, ni couleur
+  hors scène, ni trait, ni ombre. Les zones de construction (U13) gardent leur
+  rendu. `board-generic-v0.png` n'est plus chargé ; le fichier reste dans
+  `public/assets/backgrounds/`.
+- **Rôle de la scène.** Le rectangle de scène garde deux usages : le cadrage
+  (« Ajuster à la scène », bornes de la caméra) et la règle de perte. Il ne cale
+  plus le fond. Aucun mur physique n'est ajouté.
+- **Perte.** L'échec « hors de la scène » garde sa marge de 2 unités à gauche, à
+  droite et en bas (`y` croît vers le bas : le bas est `scene.max.y`). **Le haut
+  est ouvert** : une balle au-dessus de `scene.min.y - marge` reste en jeu, la
+  gravité la ramène, et la limite de 20 s simulées met fin à la tentative si elle
+  ne revient pas. Le comportement est porté par `isOutOfScene` dans
+  `src/domain/attempt-failure-evaluator.ts`.

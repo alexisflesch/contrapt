@@ -52,17 +52,15 @@ describe('évaluateur d’échec d’une tentative', () => {
     });
   });
 
-  it('tolère la marge sur les quatre côtés, bord compris', () => {
+  it('tolère la marge à gauche, à droite et en bas, bord compris, et perd au-delà', () => {
     const stillInside = [
       { x: -2, y: 3 },
       { x: 12, y: 3 },
-      { x: 5, y: -2 },
       { x: 5, y: 8 },
     ];
     const outside = [
       { x: -2.001, y: 3 },
       { x: 12.001, y: 3 },
-      { x: 5, y: -2.001 },
       { x: 5, y: 8.001 },
     ];
 
@@ -72,6 +70,32 @@ describe('évaluateur d’échec d’une tentative', () => {
       ).toEqual(pending);
     }
     for (const position of outside) {
+      expect(
+        applyAttemptFailureFact(createAttemptFailureEvaluation(), rule, positionFact({ position })),
+      ).toMatchObject({ status: 'failed', reason: 'out-of-scene' });
+    }
+  });
+
+  it('ne perd jamais par le haut : la balle au-delà de la marge reste en jeu et la gravité la ramène (V2b)', () => {
+    // `y` croît vers le bas (ADR 0007) : le haut de la scène est `scene.min.y`.
+    const aboveMargin = [
+      { x: 5, y: -2.001 },
+      { x: 5, y: -50 },
+      { x: -1, y: -1000 },
+    ];
+
+    for (const position of aboveMargin) {
+      expect(
+        applyAttemptFailureFact(createAttemptFailureEvaluation(), rule, positionFact({ position })),
+      ).toEqual(pending);
+    }
+  });
+
+  it('perd encore par un côté ou le bas quand la balle est aussi très haut', () => {
+    for (const position of [
+      { x: -2.001, y: -50 },
+      { x: 12.001, y: -50 },
+    ]) {
       expect(
         applyAttemptFailureFact(createAttemptFailureEvaluation(), rule, positionFact({ position })),
       ).toMatchObject({ status: 'failed', reason: 'out-of-scene' });

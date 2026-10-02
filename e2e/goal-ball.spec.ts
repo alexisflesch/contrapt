@@ -4,6 +4,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { levelDocumentSchema } from '../src/domain/level-document';
 import { encodeShareFragment } from '../src/infrastructure/level-share/level-share-codec';
+import { expectedPaperPixel, type Rgba } from './board-paper';
 
 const formats = [
   { width: 390, height: 844 },
@@ -12,7 +13,6 @@ const formats = [
 ] as const;
 
 type Point = { readonly x: number; readonly y: number };
-type Rgba = readonly [number, number, number, number];
 
 // The pixel comparisons below were calibrated on a dense screen (Pixel 5, ratio 2.75): at a
 // ratio of 1 the sprite's soft edge reaches the sampled corner by a few levels.
@@ -73,46 +73,20 @@ const ringPixel = async (
       (sample === 'ring' ? ringRadius(zoom) : sample === 'corner' ? 0.3 * zoom : 0),
     y: (centre.y - origin.y) * zoom + (sample === 'corner' ? 0.28 * zoom : 0),
   };
-  return canvas.evaluate(
-    async (element, { point, backgroundOnly, origin, zoom }): Promise<Rgba> => {
-      if (!(element instanceof HTMLCanvasElement)) return [0, 0, 0, 0];
-      const reference = backgroundOnly ? document.createElement('canvas') : element;
-      if (backgroundOnly) {
-        reference.width = element.width;
-        reference.height = element.height;
-      }
-      const context = reference.getContext('2d');
-      if (context === null) return [0, 0, 0, 0];
-      const scale = element.width / element.getBoundingClientRect().width;
-      if (backgroundOnly) {
-        const image = new Image();
-        image.src = '/assets/backgrounds/board-generic-v0.png';
-        await image.decode();
-        context.setTransform(scale, 0, 0, scale, 0, 0);
-        context.drawImage(image, -origin.x * zoom, -origin.y * zoom, 8 * zoom, 5.5 * zoom);
-        context.lineWidth = 1;
-        context.strokeStyle = `rgba(78, 68, 51, ${String(0.16 * Math.min(1, zoom / 64))})`;
-        context.beginPath();
-        for (let x = 1; x < 8; x += 1) {
-          context.moveTo((x - origin.x) * zoom, -origin.y * zoom);
-          context.lineTo((x - origin.x) * zoom, (5.5 - origin.y) * zoom);
-        }
-        for (let y = 1; y < 5.5; y += 1) {
-          context.moveTo(-origin.x * zoom, (y - origin.y) * zoom);
-          context.lineTo((8 - origin.x) * zoom, (y - origin.y) * zoom);
-        }
-        context.stroke();
-      }
-      const data = context.getImageData(
-        Math.round(point.x * scale),
-        Math.round(point.y * scale),
-        1,
-        1,
-      ).data;
-      return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0, data[3] ?? 0];
-    },
-    { point: local, backgroundOnly, origin, zoom },
-  );
+  if (backgroundOnly) return expectedPaperPixel(canvas, local);
+  return canvas.evaluate((element, point): Rgba => {
+    if (!(element instanceof HTMLCanvasElement)) return [0, 0, 0, 0];
+    const context = element.getContext('2d');
+    if (context === null) return [0, 0, 0, 0];
+    const scale = element.width / element.getBoundingClientRect().width;
+    const data = context.getImageData(
+      Math.round(point.x * scale),
+      Math.round(point.y * scale),
+      1,
+      1,
+    ).data;
+    return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0, data[3] ?? 0];
+  }, local);
 };
 
 const isRingRed = ([red, green, blue, alpha]: Rgba): boolean =>

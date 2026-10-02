@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { ProjectedWire } from './control-wires';
 import { drawWireLabels, drawWires, type WireCanvas } from './wire-renderer';
 
-/** Median colour of the goal ball (`ball-base@2x.png`) and of the board (`board-generic-v0.png`). */
+/** Median colour of the goal ball (`ball-base@2x.png`) and the board's plain parchment, `#f6ead3` (V2b). */
 const GOAL_BALL_RED = { r: 222, g: 17, b: 17 };
-const CREAM_BOARD = { r: 250, g: 234, b: 208 };
+const CREAM_BOARD = { r: 246, g: 234, b: 211 };
 const PALETTE_PROBE = 12;
 
 type Rgb = typeof GOAL_BALL_RED;

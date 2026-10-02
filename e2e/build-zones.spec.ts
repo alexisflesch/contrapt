@@ -4,6 +4,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { levelDocumentSchema } from '../src/domain/level-document';
 import { encodeShareFragment } from '../src/infrastructure/level-share/level-share-codec';
+import { expectedPaperPixel } from './board-paper';
 
 const formats = [
   { width: 390, height: 844 },
@@ -75,42 +76,28 @@ const screenPointForWorld = async (canvas: Locator, point: Point): Promise<Point
   return { x: bounds.x + (point.x - originX) * zoom, y: bounds.y + (point.y - originY) * zoom };
 };
 
-/** U2 makes the canvas opaque: compare its pixel with the projected, untinted background. */
+/** The canvas is opaque: compare its pixel with the untinted parchment and grid (V2b). */
 const differenceFromBackgroundAt = async (canvas: Locator, point: Point): Promise<number> => {
   const bounds = await canvas.boundingBox();
   const screen = await screenPointForWorld(canvas, point);
   if (bounds === null) return Number.NaN;
-  return canvas.evaluate(
-    async (element, local) => {
-      if (!(element instanceof HTMLCanvasElement)) return Number.NaN;
-      const context = element.getContext('2d');
-      if (context === null) return Number.NaN;
-      const scale = element.width / element.getBoundingClientRect().width;
-      const x = Math.round(local.x * scale);
-      const y = Math.round(local.y * scale);
-      const pixel = context.getImageData(x, y, 1, 1).data;
-      if (pixel[3] !== 255) return -1;
-      const image = new Image();
-      image.src = '/assets/backgrounds/board-generic-v0.png';
-      await image.decode();
-      const reference = document.createElement('canvas');
-      reference.width = element.width;
-      reference.height = element.height;
-      const background = reference.getContext('2d');
-      if (background === null) return Number.NaN;
-      const [ox, oy] = (element.dataset.cameraOrigin ?? '').split(',').map(Number);
-      const zoom = Number(element.dataset.cameraZoom);
-      if (ox === undefined || oy === undefined) return Number.NaN;
-      background.setTransform(scale, 0, 0, scale, 0, 0);
-      background.drawImage(image, -ox * zoom, -oy * zoom, 8 * zoom, 5.5 * zoom);
-      const original = background.getImageData(x, y, 1, 1).data;
-      return [0, 1, 2].reduce(
-        (difference, channel) =>
-          difference + Math.abs((pixel[channel] ?? 0) - (original[channel] ?? 0)),
-        0,
-      );
-    },
-    { x: screen.x - bounds.x, y: screen.y - bounds.y },
+  const local = { x: screen.x - bounds.x, y: screen.y - bounds.y };
+  const pixel = await canvas.evaluate((element, at) => {
+    if (!(element instanceof HTMLCanvasElement)) return null;
+    const context = element.getContext('2d');
+    if (context === null) return null;
+    const scale = element.width / element.getBoundingClientRect().width;
+    return Array.from(
+      context.getImageData(Math.round(at.x * scale), Math.round(at.y * scale), 1, 1).data,
+    );
+  }, local);
+  if (pixel === null) return Number.NaN;
+  if (pixel[3] !== 255) return -1;
+  const original = await expectedPaperPixel(canvas, local);
+  return [0, 1, 2].reduce(
+    (difference, channel) =>
+      difference + Math.abs((pixel[channel] ?? 0) - (original[channel] ?? 0)),
+    0,
   );
 };
 

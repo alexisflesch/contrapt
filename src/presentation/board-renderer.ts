@@ -31,7 +31,6 @@ import {
   spriteAssetPath,
   spriteAssetsForFamily,
   type SpriteAsset,
-  type DecodedSprite,
   type SpriteFamily,
   type SpriteLoader,
 } from './sprite-loader';
@@ -703,8 +702,6 @@ type BoardRendererOptions = Readonly<{
   readonly context: BoardCanvasContext;
   readonly viewport: BoardViewport;
   readonly spriteLoader: SpriteLoader;
-  /** Decoded with the same local-asset pipeline as the objects, before drawing. */
-  readonly loadBackground?: () => Promise<DecodedSprite>;
   /** U3 was abandoned by the author: kept for experiments, disabled in the app (ADR 0006). */
   readonly objectShadows?: boolean;
 }>;
@@ -734,8 +731,8 @@ const GHOST_ALPHA: Record<BoardAppearance, number> = {
 const GHOST_VALID_OUTLINE = '#1e88e5';
 const GHOST_INVALID_DASH_CSS_PIXELS = [6, 4];
 
-const OUTSIDE_SCENE_COLOUR = '#d9d2c7';
-const SCENE_FALLBACK_COLOUR = '#efe2c8';
+/** V2b: one plain parchment over the whole viewport; nothing marks where the scene ends. */
+const BOARD_PAPER_COLOUR = '#f6ead3';
 const GRID_LINE_WIDTH_CSS_PIXELS = 1;
 const GRID_FULL_OPACITY_ZOOM = 64;
 /** C2/U3: a soft ellipse under the whole object, never baked into its sprite. */
@@ -795,62 +792,36 @@ const drawObjectShadow = (
   context.restore();
 };
 
-const drawSceneBackground = (
-  context: BoardCanvasContext,
-  scene: BoardZone,
-  viewport: BoardViewport,
-  background: DecodedSprite | undefined,
-): void => {
-  const topLeft = worldToPixels(scene.min, viewport);
-  const bottomRight = worldToPixels(scene.max, viewport);
-  const width = bottomRight.x - topLeft.x;
-  const height = bottomRight.y - topLeft.y;
+const drawPaper = (context: BoardCanvasContext, viewport: BoardViewport): void => {
   context.save();
-  context.fillStyle = OUTSIDE_SCENE_COLOUR;
+  context.fillStyle = BOARD_PAPER_COLOUR;
   context.fillRect?.(0, 0, viewport.cssWidth, viewport.cssHeight);
-  if (background === undefined) {
-    context.fillStyle = SCENE_FALLBACK_COLOUR;
-    context.fillRect?.(topLeft.x, topLeft.y, width, height);
-  } else {
-    context.drawImage(background.source, topLeft.x, topLeft.y, width, height);
-  }
   context.restore();
 };
 
-/** One metre per line; only the visible scene is visited, with strokes in CSS pixels. */
-const drawWorldGrid = (
-  context: BoardCanvasContext,
-  scene: BoardZone,
-  viewport: BoardViewport,
-): void => {
+/**
+ * One metre per line over the whole viewport (V2b), so the world reads the same
+ * inside and outside the scene; strokes are in CSS pixels, and only the visible
+ * lines are visited.
+ */
+const drawWorldGrid = (context: BoardCanvasContext, viewport: BoardViewport): void => {
   if (!canDrawWires(context)) return;
   const zoom = viewport.pixelsPerWorldUnit;
-  const min = {
-    x: Math.max(scene.min.x, viewport.origin.x),
-    y: Math.max(scene.min.y, viewport.origin.y),
-  };
-  const max = {
-    x: Math.min(scene.max.x, viewport.origin.x + viewport.cssWidth / zoom),
-    y: Math.min(scene.max.y, viewport.origin.y + viewport.cssHeight / zoom),
-  };
-  if (min.x >= max.x || min.y >= max.y) return;
-  const topLeft = worldToPixels(min, viewport);
-  const bottomRight = worldToPixels(max, viewport);
+  const maxX = viewport.origin.x + viewport.cssWidth / zoom;
+  const maxY = viewport.origin.y + viewport.cssHeight / zoom;
   context.save();
   context.lineWidth = GRID_LINE_WIDTH_CSS_PIXELS;
   context.strokeStyle = `rgba(78, 68, 51, ${String(0.16 * Math.min(1, zoom / GRID_FULL_OPACITY_ZOOM))})`;
   context.beginPath();
-  for (let x = Math.ceil(min.x); x < max.x; x += 1) {
-    if (x <= scene.min.x) continue;
+  for (let x = Math.ceil(viewport.origin.x); x < maxX; x += 1) {
     const pixelX = worldToPixels({ x, y: 0 }, viewport).x;
-    context.moveTo(pixelX, topLeft.y);
-    context.lineTo(pixelX, bottomRight.y);
+    context.moveTo(pixelX, 0);
+    context.lineTo(pixelX, viewport.cssHeight);
   }
-  for (let y = Math.ceil(min.y); y < max.y; y += 1) {
-    if (y <= scene.min.y) continue;
+  for (let y = Math.ceil(viewport.origin.y); y < maxY; y += 1) {
     const pixelY = worldToPixels({ x: 0, y }, viewport).y;
-    context.moveTo(topLeft.x, pixelY);
-    context.lineTo(bottomRight.x, pixelY);
+    context.moveTo(0, pixelY);
+    context.lineTo(viewport.cssWidth, pixelY);
   }
   context.stroke();
   context.restore();
@@ -1063,21 +1034,17 @@ export const createBoardRenderer = ({
   context,
   viewport,
   spriteLoader,
-  loadBackground,
   objectShadows = false,
 }: BoardRendererOptions): BoardRenderer => ({
   render: async (projection): Promise<void> => {
-    const [, background] = await Promise.all([
-      spriteLoader.loadForFamilies(requiredFamilies(projection)),
-      loadBackground?.().catch(() => undefined),
-    ]);
+    await spriteLoader.loadForFamilies(requiredFamilies(projection));
 
     canvas.width = Math.round(viewport.cssWidth * viewport.devicePixelRatio);
     canvas.height = Math.round(viewport.cssHeight * viewport.devicePixelRatio);
     context.setTransform(viewport.devicePixelRatio, 0, 0, viewport.devicePixelRatio, 0, 0);
 
-    drawSceneBackground(context, projection.scene, viewport, background);
-    drawWorldGrid(context, projection.scene, viewport);
+    drawPaper(context, viewport);
+    drawWorldGrid(context, viewport);
 
     if (projection.buildZones !== undefined) {
       drawBuildZones(context, projection.buildZones, viewport);
