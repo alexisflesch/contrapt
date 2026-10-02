@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, U11 (paramètres : pseudo retenu et remise à zéro de la progression) livrée ; phase 1 (« Mes niveaux ») terminée.
+Dernière mise à jour : 2 octobre 2026, U2 (fond et grille qui suivent la caméra) implémentée, validation visuelle attendue ; phase 1 (« Mes niveaux ») terminée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -403,6 +403,19 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ### Présentation et interface
 
+- Fond et grille U2 (ADR 0007, spécification D3) : `projectLevel` porte le
+  rectangle de scène. Le renderer peint d’abord le viewport en gris uni, puis
+  `board-generic-v0.png` dans la scène projetée ; zoom et panoramique suivent
+  la même caméra que les objets. Une grille d’un mètre, limitée à la scène
+  visible, garde un trait de 1 px CSS et s’atténue au faible zoom. `BoardView`
+  décode et garde le fond avec le pipeline des sprites (chemin sous le
+  sous-répertoire de déploiement) ; le premier dessin attend les assets. Si
+  l’image manque, les objets restent dessinés sur un fond crème uni. Le fond
+  CSS fixe est retiré. Les tests U13 comparent désormais la teinte des zones
+  avec le fond projeté, puisque le canvas est opaque. Captures aux trois
+  formats dans `test-results/board-background/`, validation de l’auteur attendue.
+
+
 - **Accueil `/`** : landing avec les couleurs et assets locaux de l’application,
   scène d’atelier illustrée, accès à la campagne, à l’atelier, à la démonstration
   et aux paramètres (et à « Mes niveaux », M9). La commande principale lance le
@@ -767,8 +780,6 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ### Interface
 
-- **Fond en CSS.** `board-generic-v0.png` est un `background-image` de
-  `.scene-frame` : il ne suit ni le zoom ni le panoramique (D3).
 - **Sources de poutre.** Le rapport des sources de `art/assets/beam/` n'est pas
   celui de l'empreinte (8, 16 et 24 pour 1) : `beam-short` mesure 802 × 88 px
   opaques (rapport 9,1, écrasé de 12 % à l'export), `beam-medium` 1543 × 117
@@ -858,6 +869,20 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U2 (2 octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 1079 tests Vitest (83 fichiers),
+build Vite/PWA et 75 tests Playwright `mobile` (74 réussis, 1 ignoré).
+La première gate a révélé une assertion U7 de transparence remplacée par
+une comparaison avec le fond et sa grille, et une pause tardive sous charge
+(pas 65, balle à y = 6,845125, hors écran) ; le parcours contrôle désormais
+400 ms simulées avec l’horloge Playwright. Il passe 6 fois sur 6 en répétition.
+Les sept parcours ciblés U1/U2/U13 passent aussi. Captures U2 inspectées aux
+trois formats ; validation de l’auteur attendue. `tmp/check-levels.ts`
+écarté le temps des gates, puis remis identique (SHA-256 `1113625e…a92907`,
+mode 644). La première tentative de gate de départ dans le sandbox était
+refusée par l’ouverture du socket local de `tsx` ; les gates complètes ont
+été exécutées avec l’autorisation de sockets locaux et de Chromium.
 
 `pnpm check` après U11 (2 octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 1073 tests Vitest (83 fichiers),

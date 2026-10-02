@@ -1637,11 +1637,7 @@ select:focus-visible {
   overflow: hidden;
   border: 3px solid var(--night-950);
   border-radius: var(--radius-l);
-  background-color: #efe2c8;
-  background-image: url('/assets/backgrounds/board-generic-v0.png');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  background-color: #d9d2c7;
   box-shadow: 0 0 0 2px var(--night-line);
   touch-action: none;
   overscroll-behavior: contain;

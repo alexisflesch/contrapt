@@ -469,7 +469,8 @@ describe('coque TinkerBolt', () => {
       within(board).queryByText('Le plateau est prêt pour votre prochaine construction.'),
     ).not.toBeInTheDocument();
     expect(board.querySelector('.scene-ground')).not.toBeInTheDocument();
-    expect(styles).toContain('board-generic-v0.png');
+    // U2: the background belongs to the renderer so it follows the camera.
+    expect(styles).not.toContain('board-generic-v0.png');
 
     for (const controlName of ['Zoom arrière', 'Ajuster à la scène', 'Zoom avant']) {
       expect(screen.getByRole('button', { name: controlName })).toBeVisible();

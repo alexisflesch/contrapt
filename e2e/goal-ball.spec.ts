@@ -56,25 +56,52 @@ const camera = async (canvas: Locator) => {
 };
 
 /** The canvas's colour on the ring's right edge around a world point. */
-const ringPixel = async (canvas: Locator, centre: Point): Promise<Rgba> => {
+const ringPixel = async (canvas: Locator, centre: Point, backgroundOnly = false): Promise<Rgba> => {
   const { origin, zoom } = await camera(canvas);
   const local = {
     x: (centre.x - origin.x) * zoom + ringRadius(zoom),
     y: (centre.y - origin.y) * zoom,
   };
-  return canvas.evaluate((element, point): Rgba => {
-    if (!(element instanceof HTMLCanvasElement)) return [0, 0, 0, 0];
-    const context = element.getContext('2d');
-    if (context === null) return [0, 0, 0, 0];
-    const scale = element.width / element.getBoundingClientRect().width;
-    const data = context.getImageData(
-      Math.round(point.x * scale),
-      Math.round(point.y * scale),
-      1,
-      1,
-    ).data;
-    return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0, data[3] ?? 0];
-  }, local);
+  return canvas.evaluate(
+    async (element, { point, backgroundOnly, origin, zoom }): Promise<Rgba> => {
+      if (!(element instanceof HTMLCanvasElement)) return [0, 0, 0, 0];
+      const reference = backgroundOnly ? document.createElement('canvas') : element;
+      if (backgroundOnly) {
+        reference.width = element.width;
+        reference.height = element.height;
+      }
+      const context = reference.getContext('2d');
+      if (context === null) return [0, 0, 0, 0];
+      const scale = element.width / element.getBoundingClientRect().width;
+      if (backgroundOnly) {
+        const image = new Image();
+        image.src = '/assets/backgrounds/board-generic-v0.png';
+        await image.decode();
+        context.setTransform(scale, 0, 0, scale, 0, 0);
+        context.drawImage(image, -origin.x * zoom, -origin.y * zoom, 8 * zoom, 5.5 * zoom);
+        context.lineWidth = 1;
+        context.strokeStyle = `rgba(78, 68, 51, ${String(0.16 * Math.min(1, zoom / 64))})`;
+        context.beginPath();
+        for (let x = 1; x < 8; x += 1) {
+          context.moveTo((x - origin.x) * zoom, -origin.y * zoom);
+          context.lineTo((x - origin.x) * zoom, (5.5 - origin.y) * zoom);
+        }
+        for (let y = 1; y < 5.5; y += 1) {
+          context.moveTo(-origin.x * zoom, (y - origin.y) * zoom);
+          context.lineTo((8 - origin.x) * zoom, (y - origin.y) * zoom);
+        }
+        context.stroke();
+      }
+      const data = context.getImageData(
+        Math.round(point.x * scale),
+        Math.round(point.y * scale),
+        1,
+        1,
+      ).data;
+      return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0, data[3] ?? 0];
+    },
+    { point: local, backgroundOnly, origin, zoom },
+  );
 };
 
 const isRingRed = ([red, green, blue, alpha]: Rgba): boolean =>
@@ -94,7 +121,13 @@ const openLevel = async (page: Page): Promise<Locator> => {
 
 /** Launches the machine and pauses it once both balls have fallen a little. */
 const launchAndPause = async (page: Page, canvas: Locator): Promise<Point> => {
+  // Under load, polling and then clicking could pause after the balls had
+  // fallen out of the scene. Advance a known duration with the browser clock.
+  const time = new Date('2026-10-02T12:00:00Z');
+  await page.clock.install({ time });
+  await page.clock.pauseAt(time);
   await page.getByRole('button', { name: 'Lancer' }).click();
+  await page.clock.runFor(400);
   await expect
     .poll(async () => Number((await canvas.getAttribute('data-simulation-step')) ?? '0'))
     .toBeGreaterThan(15);
@@ -119,8 +152,12 @@ test('U7 — la balle de l’objectif est cerclée, la bleue non, et l’anneau 
   await expect(canvas).toHaveAttribute('data-goal-ball-marker', 'ball-1');
   await expect(canvas).toHaveAttribute('data-red-balls', 'ball-1');
   await expect(canvas).toHaveAttribute('data-blue-balls', 'ball-2');
-  // Same spot beside the blue ball: nothing drawn, the ring is the goal's alone.
-  expect((await ringPixel(canvas, blueBall))[3]).toBe(0);
+  // U2: this spot now shows the background and grid, still without any ring.
+  const bluePixel = await ringPixel(canvas, blueBall);
+  const backgroundPixel = await ringPixel(canvas, blueBall, true);
+  for (const channel of [0, 1, 2, 3] as const) {
+    expect(Math.abs(bluePixel[channel] - backgroundPixel[channel])).toBeLessThanOrEqual(3);
+  }
 
   const paused = await launchAndPause(page, canvas);
   expect(paused.y).toBeGreaterThan(goalBall.y + 0.1);

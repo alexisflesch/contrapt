@@ -60,8 +60,8 @@ const outside = { x: 6.4, y: 2.6 } as const;
 /** Still inside the zone: the short beam spans 2,5 to 4,5. */
 const inside = { x: 3.5, y: 4 } as const;
 /** Empty points, in and out of the zone, to read the canvas's own pixels. */
-const emptyInZone = { x: 4.4, y: 2 } as const;
-const emptyOutOfZone = { x: 6, y: 1 } as const;
+const emptyInZone = { x: 4.4, y: 2.4 } as const;
+const emptyOutOfZone = { x: 6.4, y: 1.2 } as const;
 
 const screenPointForWorld = async (canvas: Locator, point: Point): Promise<Point> => {
   const bounds = await canvas.boundingBox();
@@ -75,24 +75,40 @@ const screenPointForWorld = async (canvas: Locator, point: Point): Promise<Point
   return { x: bounds.x + (point.x - originX) * zoom, y: bounds.y + (point.y - originY) * zoom };
 };
 
-/** The canvas's alpha at a world point: the board's background is CSS, so empty means 0. */
-const alphaAt = async (canvas: Locator, point: Point): Promise<number> => {
+/** U2 makes the canvas opaque: compare its pixel with the projected, untinted background. */
+const differenceFromBackgroundAt = async (canvas: Locator, point: Point): Promise<number> => {
   const bounds = await canvas.boundingBox();
   const screen = await screenPointForWorld(canvas, point);
   if (bounds === null) return Number.NaN;
   return canvas.evaluate(
-    (element, local) => {
+    async (element, local) => {
       if (!(element instanceof HTMLCanvasElement)) return Number.NaN;
       const context = element.getContext('2d');
       if (context === null) return Number.NaN;
       const scale = element.width / element.getBoundingClientRect().width;
-      const pixel = context.getImageData(
-        Math.round(local.x * scale),
-        Math.round(local.y * scale),
-        1,
-        1,
-      ).data;
-      return pixel[3] ?? Number.NaN;
+      const x = Math.round(local.x * scale);
+      const y = Math.round(local.y * scale);
+      const pixel = context.getImageData(x, y, 1, 1).data;
+      if (pixel[3] !== 255) return -1;
+      const image = new Image();
+      image.src = '/assets/backgrounds/board-generic-v0.png';
+      await image.decode();
+      const reference = document.createElement('canvas');
+      reference.width = element.width;
+      reference.height = element.height;
+      const background = reference.getContext('2d');
+      if (background === null) return Number.NaN;
+      const [ox, oy] = (element.dataset.cameraOrigin ?? '').split(',').map(Number);
+      const zoom = Number(element.dataset.cameraZoom);
+      if (ox === undefined || oy === undefined) return Number.NaN;
+      background.setTransform(scale, 0, 0, scale, 0, 0);
+      background.drawImage(image, -ox * zoom, -oy * zoom, 8 * zoom, 5.5 * zoom);
+      const original = background.getImageData(x, y, 1, 1).data;
+      return [0, 1, 2].reduce(
+        (difference, channel) =>
+          difference + Math.abs((pixel[channel] ?? 0) - (original[channel] ?? 0)),
+        0,
+      );
     },
     { x: screen.x - bounds.x, y: screen.y - bounds.y },
   );
@@ -158,7 +174,7 @@ const openLevel = async (page: Page): Promise<Locator> => {
     .getByRole('img', { name: 'Rendu du plateau' });
   await expect(canvas).toBeVisible();
   // The renderer draws nothing before every sprite is decoded.
-  await expect.poll(() => alphaAt(canvas, beamStart)).toBeGreaterThan(0);
+  await expect.poll(() => differenceFromBackgroundAt(canvas, beamStart)).toBeGreaterThan(20);
   return canvas;
 };
 
@@ -183,10 +199,10 @@ test('U13 — zone visible ; hors zone l’objet suit le doigt, puis revient ave
   await page.setViewportSize({ width: 390, height: 844 });
   const canvas = await openLevel(page);
 
-  // The zone is drawn: the canvas is tinted inside it and left empty outside.
+  // The zone tints the scene inside it; the background stays unchanged outside.
   await expect(canvas).toHaveAttribute('data-build-zones', '1');
-  expect(await alphaAt(canvas, emptyInZone)).toBeGreaterThan(0);
-  expect(await alphaAt(canvas, emptyOutOfZone)).toBe(0);
+  expect(await differenceFromBackgroundAt(canvas, emptyInZone)).toBeGreaterThan(10);
+  expect(await differenceFromBackgroundAt(canvas, emptyOutOfZone)).toBeLessThanOrEqual(3);
 
   await selectBeam(page, canvas);
   await page.waitForTimeout(200);
@@ -222,7 +238,7 @@ test('U13 — zone visible ; hors zone l’objet suit le doigt, puis revient ave
   });
   await expect(undo).toBeEnabled();
   await expect(refusal).toHaveCount(0);
-  await expect.poll(() => alphaAt(canvas, inside)).toBeGreaterThan(0);
+  await expect.poll(() => differenceFromBackgroundAt(canvas, inside)).toBeGreaterThan(20);
 });
 
 test('U13 — captures de la zone, du fantôme hors zone et du refus aux trois formats', async ({

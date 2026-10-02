@@ -10,11 +10,11 @@ point de reprise), mais il reste responsable du résultat : il relit le diff, la
 
 ## Point de reprise (fin de session du 2 octobre 2026)
 
-- **Phase 0, phase 1 (M1 à M15) et, en phase 2, U12, U1, U13, U7, U8, U10 et
-  U11 sont faites** (journal § 7). **Prochaine tâche : U2** (fond qui suit la
-  caméra), puis U3, l'inspecteur compact, puis les phases 3 et 4. La phase 5
-  attend l'auteur. `pnpm check` était vert au dernier commit (`aa8d779`,
-  1 073 tests Vitest, 72 E2E `mobile` dont 1 ignoré). Rien n'est poussé.
+- **Phase 0, phase 1 (M1 à M15) et, en phase 2, U12, U1, U13, U7, U8, U10,
+  U11 et U2 sont faites** (journal § 7). **Prochaine tâche : U3** (ombre
+  portée), puis l'inspecteur compact, puis les phases 3 et 4. La phase 5
+  attend l'auteur. `pnpm check` passe après U2 (commit de l’entrée U2,
+  1 079 tests Vitest, 75 E2E `mobile` dont 1 ignoré). Rien n'est poussé.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
   part dans un sous-agent neuf, une à la fois, avec pour consigne de lire
   `AGENTS.md`, `docs/index.md`, ce fichier (§ 1 à 3, la tâche, le journal),
@@ -29,7 +29,7 @@ point de reprise), mais il reste responsable du résultat : il relit le diff, la
   rapport et le diff, regarde au moins une capture, tranche les questions
   simples en les écrivant dans l'ADR ou la tâche concernée, et remonte à
   l'auteur ce qui relève de son goût ou de son contenu. Prochaines tâches
-  probables : U2 et U3 (rendu : Opus), inspecteur compact (correctif avec test
+  probables : U3 (rendu : Opus), inspecteur compact (correctif avec test
   rouge : Sonnet), A1 à A3 (interface tactile : Opus), L2 et la mesure de
   l'export (outillage : Sonnet).
 - **Pièges connus pour la gate** :
@@ -47,9 +47,9 @@ point de reprise), mais il reste responsable du résultat : il relit le diff, la
     exporté mais inutilisé : le rendre local.
 - **N'attend que l'auteur** :
   - validation visuelle des captures de M8 à M14b et de U12, U1, U13, U7, U8,
-    U10, U11 (`test-results/`, régénérées par `pnpm check` ; sous-dossiers
+    U10, U11 et U2 (`test-results/`, régénérées par `pnpm check` ; sous-dossiers
     `beam-sprites/`, `placement-ghost/`, `build-zones/`, `goal-ball/`,
-    `first-level-hint/`, `pwa-invitation/`, `settings/`) ; relecture des
+    `first-level-hint/`, `pwa-invitation/`, `settings/`, `board-background/`) ; relecture des
     documents de M15 (entrée du journal) ;
   - questions de goût dans « Pour l'auteur » des entrées M12 à U11 du journal
     (tutoiement/vouvoiement de la boîte d'export, teintes des zones et du
@@ -463,7 +463,8 @@ validation visuelle pour chacune.
    2026 (journal U10) ; validation visuelle attendue.
 7. ~~U11 — Paramètres~~ : faite le 2 octobre 2026 (journal U11) ; validation
    visuelle attendue.
-8. **U2 — Fond qui suit la caméra** (`plan-remise-en-jeu.md` § 6 « D3 »).
+8. ~~U2 — Fond qui suit la caméra~~ : implémentée le 2 octobre 2026
+   (`plan-remise-en-jeu.md` § 6 « D3 », journal U2) ; validation visuelle attendue.
 9. **U3 — Ombre portée** (`plan-remise-en-jeu.md` § 5 « C2 »), après U1.
 10. **Inspecteur compact** : toucher un autre objet alors que l'inspecteur est
     fermé et un objet sélectionné doit le rouvrir (dette de `etat.md`). Test
@@ -2684,3 +2685,88 @@ className="level-card-description">` après l’état, comme `/levels` (même
   gardée aujourd’hui ; (6) `LevelExportDialog` liste à la main les champs à
   garder, alors que `rememberAuthor` les garde tous : l’unifier serait un
   refactoring à part.
+
+### U2 — Fond qui suit la caméra — fait (validation visuelle attendue) — commit de cette entrée
+
+- Déroulé : reprise directe par Codex, sans délégation (les modèles Claude
+  indiqués au point de reprise ne sont pas disponibles dans cet environnement).
+  Dépôt propre au départ ; `pnpm install --frozen-lockfile` puis gate de départ
+  verte. Lecture : ADR 0007, ADR 0006, architecture § Rendu et interface,
+  spécification D3, puce luna citée ci-dessous. Lus en plus pour implémenter et
+  vérifier : `board-renderer.ts` et son test, `sprite-loader.ts` (décodeur et
+  chemins sous le sous-répertoire de déploiement), `BoardView.tsx`, règles du
+  plateau dans `styles.css`, `App.test.tsx`, E2E U1, U7, U12 et U13,
+  `playwright.config.ts`. La trace de l’échec U7 et la documentation du type
+  `Clock` de Playwright installé ont servi au diagnostic de la pause tardive.
+- Puce citée (`feuille-de-route-luna.md` § 6) : « **U2 — Fond qui suit la
+  caméra** (`plan-remise-en-jeu.md` § 6 « D3 »). » Pas d’entrée de journal
+  luna citée.
+- Tests ajoutés : `src/presentation/board-renderer.test.ts` › « fond et
+  grille qui suivent la caméra (U2) » (6 cas : rectangle projeté au zoom et
+  au panoramique, fond avant les objets ; viewport peint hors scène ; attente
+  du décodage ; image indisponible, objets gardés sur un fond uni ; grille
+  d’un mètre limitée à la scène visible avec un trait de 1 px CSS ; atténuation
+  au faible zoom et absence hors scène). `e2e/board-background.spec.ts` (3
+  formats) : comparaison des pixels réels avec l’image projetée avant et
+  après zoom, panoramique tactile et retour au cadrage ajusté ; couleur unie
+  hors scène ; neuf captures. Aucun délai arbitraire ajouté.
+- Échec initial constaté : 5 tests renderer rouges (`expected … to deeply
+  equal [ { background: true }, 0, 4, 40, 28 ]`, remplissage et grille absents,
+  dessin sans attendre le fond). Playwright sur le build de départ :
+  `toHaveCSS('background-image', 'none')`, reçu
+  `url("…/assets/backgrounds/board-generic-v0.png")`, aux trois formats.
+  Le test de repli ajouté ensuite échouait sur `Error: Image indisponible`.
+- Tests existants réécrits (comportement remplacé explicitement par D3) :
+  `App.test.tsx` › « rend un canvas accessible superposé au plateau et
+  conserve son aide tactile » vérifie que le chemin du fond a quitté le CSS,
+  tout le reste est conservé. U13 : le canvas étant opaque, les pixels dans
+  et hors zone sont comparés avec le fond projeté (teinte présente dans la
+  zone, image intacte hors zone), au lieu de mesurer leur alpha. U7 : le
+  pixel à côté de la balle bleue doit égaler le fond et sa grille, au lieu
+  d’être transparent ; un anneau rouge ou blanc y ferait encore échouer le
+  test. La pause U7 utilise l’horloge Playwright : 400 ms simulées avant de
+  toucher « Mettre en pause », mêmes assertions sur le mouvement et l’anneau.
+  La première gate avait capturé une pause au pas 65, balle à y = 6,845125,
+  hors écran : le délai entre l’attente du pas 15 et le clic dépendait de la
+  charge. Les deux parcours U7 passent 6 fois sur 6 (`--repeat-each=3`).
+- Réalisé : la projection porte `scene`. Le renderer peint le viewport en
+  gris uni `#d9d2c7`, puis l’image locale dans la scène projetée, puis une
+  grille neutre par unité monde, avant zones, fils et objets. Trait de 1 px
+  CSS ; opacité 0,16 à partir de 64 px/m, proportionnelle en dessous (0,06 au
+  plancher de 24 px/m). Seules les lignes dans la partie visible sont visitées.
+  `BoardView` décode et garde le fond avec le même décodeur que les sprites,
+  et rend son chargement au renderer ; un échec donne un fond crème uni et
+  permet un nouvel essai au prochain rendu. Le fond CSS fixe est retiré.
+  Aucun asset, schéma, niveau ni constante physique modifié.
+- Fichiers touchés hors périmètre : `BoardView.tsx` (chargement du fond,
+  nécessaire pour D3), `App.test.tsx` et E2E U7/U13 (anciennes assertions de
+  fond CSS ou de transparence remplacées, raisons ci-dessus).
+- Écarts avec la tâche : ajout du repli en cas d’image absente pour conserver
+  les objets visibles ; couleurs et atténuation non chiffrées dans D3,
+  précisées ci-dessus avec la palette neutre existante. Aucun nouvel asset.
+- Contradictions rencontrées : aucune entre les sources d’autorité ; les
+  assertions CSS et de transparence décrivaient le comportement remplacé.
+- Captures inspectées :
+  `test-results/board-background/{ajuste,zoom,panoramique}-{390x844,844x390,1440x900}.png`.
+  Au cadrage ajusté, le dessin beige bordé de bois remplit exactement la scène,
+  avec des marges grises en haut/bas en portrait, gauche/droite en paysage.
+  La grille fine se lit sur le dessin. Au zoom, dessin, grille et objets
+  grandissent ensemble, les objets en bordure sont coupés par le canvas.
+  Au panoramique, la fenêtre et la bordure dessinées se déplacent avec les
+  objets ; les lignes restent limitées à la scène. Les commandes sont dégagées.
+- Non vérifié : vrai téléphone, coût du redessin du fond sur le Xiaomi,
+  chargement du fond en erreur dans le navigateur (repli couvert par le test
+  renderer), déploiement sous `/tinkerbolt/` (chemin par `publicAssetUrl`).
+- Pour l’auteur : validation visuelle des neuf captures ; confirmer la teinte
+  grise hors scène et la discrétion de la grille. Le fond comporte déjà des
+  repères dessinés, auxquels se superpose la grille d’un mètre demandée par D3.
+- Gate : `pnpm check` passe après les adaptations ci-dessus — typecheck,
+  lint, formatage, Knip, contenu (19 documents), 1079 tests Vitest en
+  83 fichiers, build et 75 tests Playwright `mobile` (74 réussis, 1 ignoré).
+  Une gate rapide avait révélé l’assertion CSS de `App.test.tsx`, puis la
+  première gate complète les deux problèmes U7 décrits ci-dessus, corrigés.
+  Pas d’intermittence D4 ni U15 observée. Le fichier d’essai de l’auteur
+  `tmp/check-levels.ts` a été écarté puis remis identique après chaque gate
+  (SHA-256 `1113625e…a92907`, mode 644). La gate de départ dans le sandbox
+  échouait sur `listen EPERM /tmp/tsx-1000/…pipe` ; l’exécution avec sockets
+  locaux autorisés passe au départ et en fin de tâche.
