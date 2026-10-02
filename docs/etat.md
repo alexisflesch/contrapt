@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, arrêt demandé par l’auteur. R1 commitée (`cf6c5be`) ; N2 en cours dans le working tree, non commitée, gate bloquée à Knip. U3 reste abandonnée.
+Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0 et V1 (fin de N2) livrées, gate globale verte ; prochaine tâche : V2. U3 reste abandonnée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -9,21 +9,14 @@ et ne contient ni décision ni spécification ; celles-ci restent dans
 `decisions/`. Le travail restant et son ordre sont dans
 [la feuille de route](feuille-de-route.md).
 
-## Arrêt et reprise — N2 en cours
+## Arrêt et reprise — feuille de route v1
 
-L’auteur a demandé l’arrêt pour préserver son quota. Les cinq tutoriels de Bolt
-sont copiés et branchés dans le working tree, avec des descriptions courtes.
-La correction autorisée du ventilateur du tutoriel 3 est appliquée uniquement
-à sa copie embarquée. Les cinq solutions passent les tests ciblés et les cinq
-victoires tactiles ont été vérifiées, sur plusieurs exécutions Playwright.
-
-**N2 n’est pas livrée** : la dernière gate s’arrête à Knip sur l’export
-`sketchChapters` de `test/fixtures/sketch-campaign.ts`, utilisé via des imports
-dynamiques dans les mocks. Typecheck, lint et formatage passent. Restent :
-correction Knip, gate complète, revue du diff, régénération/revue des captures,
-finalisation documentaire et commit. Voir le point de reprise et le journal N2
-[dans la feuille de route](feuille-de-route.md). Les sources auteur et son
-fichier d’essai restent intacts ; rien n’est poussé.
+La feuille de route v1 (desktop d’abord) est dans
+[la feuille de route](feuille-de-route.md). **V0** (règle mobile-first suspendue,
+archives, projet Playwright `v1`) et **V1** (fin de N2 : Knip, test d’export,
+copies des tutoriels vérifiées) sont livrées, gate globale verte. Prochaine
+tâche : **V2** (nettoyage : démo, bordure, repli hors ligne de `/my-levels`).
+Les sources auteur et son fichier d’essai restent intacts ; rien n’est poussé.
 
 ## Stack en place
 
@@ -35,7 +28,8 @@ exécutables sont dans [`package.json`](../package.json).
 
 La gate `pnpm check` orchestre typecheck, lint sans warning, vérification du
 formatage, code mort, validation du contenu, tests Vitest, build statique et E2E
-du projet Playwright `mobile`. `pnpm check:fast` (typecheck, lint, Vitest) sert
+du projet Playwright `v1` (desktop 1440 × 900 avec `hasTouch`, specs `@mobile`
+exclues ; le projet `mobile` reste lançable à la main, hors gate). `pnpm check:fast` (typecheck, lint, Vitest) sert
 pendant le travail.
 
 ## Licence
@@ -715,7 +709,7 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ### Contenu
 
-- **N2 — en cours, cinq tutoriels de Bolt dans le working tree** : `tuto-1` à `tuto-5`, dans le chapitre
+- **N2 — livrée (V1), cinq tutoriels de Bolt** : `tuto-1` à `tuto-5`, dans le chapitre
   « Premiers pas », remplacent les 17 esquisses. Titres et descriptions courts ;
   scènes 16 × 9 entièrement constructibles, décors verrouillés, pas de défi
   d’objets. Chaque solution de référence est rejouée avec les commandes du
@@ -729,8 +723,10 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pour les tests de gestes, d’export et de déterminisme : elles ne sont plus
   embarquées. La progression compte seulement les cinq identifiants actuels ;
   les anciennes victoires et créations locales restent stockées.
-- `pnpm content:check` devra valider les sept documents embarqués : cinq
-  tutoriels, démonstration et atelier (non atteint par la dernière gate N2).
+- `pnpm content:check` valide les sept documents embarqués : cinq tutoriels,
+  démonstration et atelier. Les copies `src/content/levels/tuto-{1..5}.json`
+  ne diffèrent de `levels/` que par id, titre, description, auteur et, pour le
+  tutoriel 3, l’état initial du ventilateur (vérifié en V1).
 - **Fiche de calibrage U28** : ouvrir une création de campagne en développement
   affiche la fiche de l’esquisse source avec l’intention/essai décrit par
   l’auteur, l’inventaire exact autorisé et ses quantités, la solution
@@ -834,9 +830,8 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ### Contenu et progression
 
-- **Contenu de v1** : les cinq tutoriels de l’auteur sont intégrés dans le
-  working tree et leurs solutions vérifiées par tests ciblés ; finalisation N2
-  encore requise. Les anciennes esquisses restent seulement des
+- **Contenu de v1** : les cinq tutoriels de l’auteur sont intégrés et leurs
+  solutions vérifiées (N2 terminée par V1). Les anciennes esquisses restent seulement des
   fixtures de test ; leur calibration n’est plus une dette de livraison.
 - **Progression de campagne.** L19 calcule les paliers, records, indices et
   déblocages ; L20 persiste les records dans une enveloppe locale validée ; L21
@@ -888,13 +883,12 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ## Dernière exécution de la gate
 
-Tentative N2 (2 octobre 2026) : **échec à Knip**, export `sketchChapters`
-signalé inutilisé dans `test/fixtures/sketch-campaign.ts:23`. Typecheck, lint
-et formatage réussis ; les étapes suivantes n’ont pas été atteintes. Tests
-ciblés : 13 Vitest de contenu réussis ; chaque tutoriel gagne au toucher et sa
-progression est conservée, sur plusieurs exécutions E2E. Build isolé réussi.
-Le fichier d’essai auteur a été restauré identique. Arrêt demandé : aucune
-relance ni commit N2. La dernière gate complète verte reste R1 ci-dessous.
+`pnpm check` après V1 (2 octobre 2026) : passe — typecheck, lint, formatage,
+Knip, contenu (7 documents embarqués), 1096 tests Vitest (83 fichiers), build et
+86 tests Playwright du projet `v1` (86 réussis, 0 ignoré). Aucune intermittence
+de `layout.spec.ts` observée. Le fichier d’essai `tmp/check-levels.ts` a été
+écarté puis remis identique. Captures E2E de N2 régénérées par la gate ; validation
+visuelle de l’auteur attendue (non revalidées une à une, voir V9).
 
 `pnpm check` après R1 (2 octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 1090 tests Vitest (83 fichiers),

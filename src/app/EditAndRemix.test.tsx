@@ -23,12 +23,12 @@ import { App } from './App';
 /** Gesture fixtures stay stable when the published campaign changes (N2). */
 vi.mock('../content/embedded-levels', async (importOriginal) => {
   const original = await importOriginal<typeof EmbeddedLevels>();
-  const fixtures = await import('../../test/fixtures/sketch-campaign');
+  const { sketchChapters, sketchLevels } = await import('../../test/fixtures/sketch-campaign');
   return {
     ...original,
-    campaignChapters: fixtures.sketchChapters,
-    embeddedLevels: fixtures.sketchLevels,
-    nextCampaignLevel: (id: string, chapters = fixtures.sketchChapters) =>
+    campaignChapters: sketchChapters,
+    embeddedLevels: sketchLevels,
+    nextCampaignLevel: (id: string, chapters = sketchChapters) =>
       original.nextCampaignLevel(id, chapters),
   };
 });

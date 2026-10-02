@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { embeddedLevels, embeddedWorkshopDocument } from '../content/embedded-levels';
+import { embeddedWorkshopDocument } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
 import { decodeLevelFile } from '../infrastructure/level-file/level-file-codec';
 import { decodeShareFragment } from '../infrastructure/level-share/level-share-codec';
+
+import { sketchLevels as embeddedLevels } from '../../test/fixtures/sketch-campaign';
 
 import {
   buildShareUrl,

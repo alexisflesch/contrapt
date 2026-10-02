@@ -63,6 +63,12 @@ Les règles d'`AGENTS.md` s'appliquent. Compléments propres à la v1 :
   remettre identique (SHA-256 `1113625e…`, mode 644).
 - **Playwright** : une exécution isolée vide `test-results/`. Ne pas en lancer
   juste avant de demander une validation visuelle ; `pnpm check` régénère tout.
+- **Specs au format téléphone** : beaucoup de parcours E2E fixent encore leur
+  viewport à 390 × 844 (ou autre format téléphone) et tournent dans la gate
+  `v1`. Si une tâche v1 change l'interface et casse une telle spec, passer la
+  spec en 1440 × 900 (même parcours, mêmes assertions) ; ne pas retoucher la
+  mise en page téléphone pour la faire passer. Une spec qui n'a de sens qu'au
+  téléphone est étiquetée `@mobile`. Noter chaque cas dans le journal.
 - **S'arrêter et écrire « bloqué »** si deux tentatives échouent au même
   endroit, si une décision manque ou si deux sources se contredisent. Ne
   jamais laisser `main` avec une gate rouge.
@@ -108,6 +114,9 @@ Le contenu est déjà dans `src/content/levels/tuto-{1..5}.json` et commité
 - `pnpm check` complet vert ; vérifier que les copies embarquées ne diffèrent
   des sources de `levels/` que par l'id, le titre, la description, l'auteur et
   l'état du ventilateur du tutoriel 3 (autorisé).
+- Corriger `src/app/level-export.test.ts` (« Niveau 4 embarqué introuvable ») :
+  il dépend d'une ancienne esquisse ; le faire porter sur les fixtures
+  d'esquisses ou sur un tutoriel, sans affaiblir ce qu'il vérifie.
 - Après : V0.
 
 ### V2 — Nettoyage ●● (Sonnet)
@@ -121,8 +130,13 @@ Trois commits distincts :
 - **V2b Pas de bordure, pas de perte par le haut** (décision 2). Test rouge
   dans `attempt-failure-evaluator.test.ts` : une balle au-dessus de la scène
   au-delà de la marge reste en jeu ; les trois autres côtés perdent toujours.
-  Rendu : le fond déborde de la scène pour couvrir tout le viewport (aucune
-  `OUTSIDE_SCENE_COLOUR` visible) ; la grille peut rester limitée à la scène.
+  Rendu (option A, choisie par l'auteur) : la bordure est peinte dans l'image
+  `board-generic-v0.png` (cadre en bois, et image 3:2 étirée en 16:9). Ne plus
+  dessiner d'image de fond : couleur parchemin unie (≈ `#f6ead3`) et grille du
+  monde sur **tout** le viewport, sans aucune démarcation de la scène. Le
+  chargement de l'image devient inutile (le retirer avec ses tests, ou le
+  laisser inactif si d'autres usages existent : le dire). L'aperçu des niveaux
+  (V5) utilisera le même rendu.
   Mettre à jour ADR 0007 (§ Scène) et le repère « Échec » d'`etat.md`.
   Captures : un niveau dézoomé, balle sortant par un côté.
 - **V2c Repli hors ligne de `/my-levels`** : test rouge sur le motif
@@ -218,3 +232,76 @@ Une entrée par tâche, au format :
 - Tests rouges (ligne d'erreur utile), ce qui a été fait, captures, gate.
 - Pour l'auteur : questions de goût ou décisions à prendre.
 ```
+
+### V0 — Cadre de la v1 — fait — commitée avec la gate verte de V1 (2 octobre 2026)
+
+- Fait : `AGENTS.md` § Mobile-first remplacée (v1 desktop d'abord, v2 mobile-first,
+  interdiction du seul survol / clic droit conservée) ; `docs/index.md`
+  (introduction, ligne `feuille-de-route-mes-niveaux.md`, notes « v2 » sur les
+  lignes d'interface tactile et de parcours E2E) ; `mobile-editor-interactions.md`
+  annoté « référence de la v2 » ; les trois documents de propositions déplacés
+  avec `git mv` dans `docs/archives/` (liens relatifs de
+  `propositions-gamification-astra.md` corrigés, chemins cités dans
+  `feuille-de-route-luna.md` et `feuille-de-route-mes-niveaux.md` mis à jour) ;
+  amendements datés du 2 octobre 2026 dans `docs/qualite.md` et l'ADR 0003.
+- Gate : projet Playwright `v1` (Desktop Chrome, `channel: 'chromium'`, 1440 × 900,
+  `hasTouch`, `grepInvert: /@mobile/`) ; `test:e2e:critical` pointe dessus. Le
+  projet `mobile` reste, hors gate.
+- Premier passage sur `v1` : 38 réussis, 3 échecs, **45 ignorés**. Les 45
+  ignorés venaient de `test.skip(testInfo.project.name !== 'mobile', …)` (et de
+  variantes `'desktop'`) : avec `v1` seul dans la gate, ces parcours (export, remix,
+  Mes niveaux, partage, tutoriels, atelier…) auraient disparu en silence. Les
+  conditions sont élargies à `v1` dans 21 fichiers de `e2e/` (aucun test supprimé
+  ni ignoré en plus) ; ces specs fixent leur propre viewport (390 × 844…) et
+  passent sur `v1` avec le même contenu d'assertions.
+- Specs étiquetées `@mobile` : **aucune**. Toutes les specs de format téléphone
+  (`layout.spec.ts` portrait/paysage, tiroirs, 320 × 568…) fixent leur propre
+  viewport et passent sur `v1`; les exclure aurait réduit la couverture sans
+  raison. `grepInvert` est en place pour les étiqueter en v2 ou plus tard.
+- Tests corrigés (test seul, sans affaiblir ce qui est vérifié) :
+  - `smoke.spec.ts` « lance depuis l'accueil le niveau 1 » (ex « …sur un écran
+    mobile ») : cherchait « Ouvrir le catalogue », absent à 1440 × 900 où le
+    catalogue est ancré ; le tiroir n'est ouvert que s'il existe.
+  - `goal-ball.spec.ts` (deux tests R1) : comparaisons de pixels calibrées sur un
+    écran dense (Pixel 5, ratio 2,75) ; à ratio 1 le bord doux du sprite écarte le
+    coin échantillonné de 4 niveaux (seuil 3). `test.use({ deviceScaleFactor:
+    2.75 })` en tête du fichier, seuil inchangé.
+- Aucun bug de production révélé sur desktop. Aucune intermittence de
+  `layout.spec.ts` (D4, U15) observée sur 3 exécutions complètes de `v1`.
+- Résultat : `pnpm exec playwright test --project=v1` (via
+  `test:e2e:critical`) : 86 réussis, 0 ignoré (le projet `mobile` : 85 réussis,
+  1 ignoré). Vitest : 1088 tests réussis, mais 1 fichier échoue
+  (`src/app/level-export.test.ts`, « Niveau 4 embarqué introuvable », hérité de
+  N2). Knip échoue sur `sketchChapters` (hérité de N2, tâche V1). Les autres
+  étapes (typecheck, lint, formatage des fichiers suivis, contenu : 7 niveaux
+  valides, build) passent. **Gate globale non verte pour des raisons étrangères à
+  V0 : tâche non commitée**, à reprendre après V1 (voir `etat.md`).
+- Pour l'auteur : la gate `v1` exécute encore les parcours en 390 × 844 ;
+  c'est volontaire pour ne rien perdre, à reconsidérer en v2.
+
+### V1 — Finir l'intégration des tutoriels (N2) — fait — commit V1 (2 octobre 2026)
+
+- Tests rouges de départ : Knip `Unused exports (1) — sketchChapters
+  test/fixtures/sketch-campaign.ts:23:14` ; Vitest `src/app/level-export.test.ts`
+  « Niveau 4 embarqué introuvable ».
+- Knip : la configuration n'est pas en cause. Les mocks `vi.mock` de
+  `App`, `CampaignDraftEditing`, `EditAndRemix` et `PuzzleWorkshop` utilisaient
+  `const fixtures = await import(…)` puis `fixtures.sketchChapters` ; Knip suit
+  les imports dynamiques déstructurés mais pas l'accès par membre sur un espace
+  de noms. Correctif : `const { sketchChapters, sketchLevels } = await import(…)`
+  (même comportement, aucune règle ni entrée Knip modifiée). Knip vert.
+- `level-export.test.ts` : importe désormais `sketchLevels` depuis
+  `test/fixtures/sketch-campaign` (comme `LevelExportDialog.test.tsx`), ce qui
+  rétablit les niveaux 1 et 4 d'esquisse ; `embeddedWorkshopDocument` reste
+  importé du contenu publié. Assertions inchangées. Suite Vitest complète :
+  83 fichiers, 1096 tests, aucun autre reste de N2.
+- Copies des tutoriels : comparées champ à champ aux sources de `levels/`
+  (script jetable hors dépôt). Seules différences : id (tuto-1 : `free-workshop`
+  → `tuto-1`), `metadata.title`, `metadata.description`, `metadata.author`
+  (`Bolt`) et, pour le tutoriel 3, l'état du ventilateur de l'inventaire
+  (`on` → `off`, autorisé). Aucune autre différence, `basedOn` identique.
+- Gate `pnpm check` verte : 1096 tests Vitest, 7 documents de contenu, 86 tests
+  Playwright `v1`, sans intermittence de `layout.spec.ts`. Code de production
+  inchangé. `tmp/check-levels.ts` remis identique (sha256 `1113625e…`).
+- Commits : V0 puis V1 séparés ; `docs/feuille-de-route.md` et `docs/etat.md`
+  portent les deux tâches et sont dans le commit V1.
