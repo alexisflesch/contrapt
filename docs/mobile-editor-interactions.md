@@ -610,6 +610,28 @@ supportée.
     `source` ou dont la `source` n'a pas de solution, hors de la phase de
     construction et en « Essayer en joueur ». La boîte de confirmation est voulue
     par l'ADR 0015, bien que la commande soit annulable.
+23. **Paramètres (U11).** Étant donné la page `/settings`, le champ « Pseudo
+    retenu » montre le pseudo gardé sur l'appareil (ADR 0016 § Pseudo).
+    « Enregistrer le pseudo » le remplace : les espaces de bord sont retirés,
+    et un champ vide l'oublie. « Effacer le pseudo » l'oublie. Dans les deux
+    cas, un statut discret (`role="status"`) dit « Pseudo enregistré. » ou
+    « Pseudo effacé. », et les autres préférences sont gardées. Un pseudo
+    refusé par le schéma est dit sous le champ (`role="alert"`) et désactive
+    « Enregistrer le pseudo ». « Remettre la progression à zéro » ouvre une
+    boîte de confirmation où « Annuler » est l'action par défaut. Elle dit ce
+    qui sera perdu : les niveaux résolus et leurs records. Seul le niveau 1
+    reste ouvert. Les créations, les niveaux reçus et le pseudo sont
+    conservés. Une création « Modifier le niveau » d'un niveau qui redevient
+    verrouillé ne s'ouvre plus avant qu'il soit de nouveau débloqué.
+    « Annuler » ne change rien. « Remettre à zéro » efface la progression, et
+    elle seule. Un statut discret dit « Progression remise à zéro : seul le
+    niveau 1 est ouvert. », et la liste des niveaux est de nouveau verrouillée
+    après le niveau 1, sans rechargement. Une erreur de stockage est dite dans
+    la page (« … La progression n'a pas été effacée. », « … Ton pseudo n'a pas
+    été enregistré. »). Elle ne lève jamais d'exception. Les champs et les
+    boutons mesurent au moins 44 pixels CSS. La page défile en 844 × 390. Le
+    libellé suit le vocabulaire « Remettre à zéro » : le mot « Réinitialiser »
+    n'est pas employé.
 
 ## Décisions à mesurer avant gel de l'interface
 

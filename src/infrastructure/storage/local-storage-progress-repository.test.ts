@@ -9,6 +9,7 @@ class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
   readonly writes: string[] = [];
   failGet = false;
+  failRemove = false;
   failSetKey: string | null = null;
   setError: unknown = new Error('stockage indisponible');
 
@@ -30,6 +31,8 @@ class MemoryStorage implements Storage {
   }
 
   removeItem(key: string): void {
+    this.writes.push(`-${key}`);
+    if (this.failRemove) throw new Error('stockage indisponible');
     this.values.delete(key);
   }
 
@@ -146,5 +149,67 @@ describe('dépôt local de progression', () => {
       code: 'invalid-progress',
     });
     expect(storage.writes).toEqual([]);
+  });
+
+  describe('remise à zéro de la progression (U11)', () => {
+    it('efface la progression enregistrée et rien d’autre', () => {
+      const storage = new MemoryStorage();
+      const repository = createLocalStorageProgressRepository(storage);
+      repository.save(savedProgress);
+      storage.seed('tinkerbolt:preferences', '{"kind":"preferences","version":1,"data":{}}');
+      storage.seed('tinkerbolt:draft:campaign-01-brouillon', 'création');
+      storage.seed('tinkerbolt:received', '[]');
+      storage.seed(backupKey, 'ancienne sauvegarde');
+
+      expect(repository.clear()).toEqual({ status: 'ok' });
+
+      expect(storage.getItem(progressKey)).toBeNull();
+      expect(repository.load()).toEqual({ status: 'ok', progress: {} });
+      expect(storage.getItem('tinkerbolt:preferences')).not.toBeNull();
+      expect(storage.getItem('tinkerbolt:draft:campaign-01-brouillon')).toBe('création');
+      expect(storage.getItem('tinkerbolt:received')).toBe('[]');
+      expect(storage.getItem(backupKey)).toBe('ancienne sauvegarde');
+    });
+
+    it('réussit sans rien écrire quand aucune progression n’existe', () => {
+      const storage = new MemoryStorage();
+      const repository = createLocalStorageProgressRepository(storage);
+
+      expect(repository.clear()).toEqual({ status: 'ok' });
+      expect(storage.writes.filter((key) => !key.startsWith('-'))).toEqual([]);
+    });
+
+    it('sauvegarde une valeur illisible avant de l’effacer', () => {
+      const storage = new MemoryStorage();
+      storage.seed(progressKey, '{ JSON cassé');
+      const repository = createLocalStorageProgressRepository(storage);
+
+      expect(repository.clear()).toEqual({ status: 'ok' });
+      expect(storage.getItem(backupKey)).toBe('{ JSON cassé');
+      expect(storage.getItem(progressKey)).toBeNull();
+    });
+
+    it('n’efface pas une valeur illisible si la sauvegarde de secours échoue', () => {
+      const storage = new MemoryStorage();
+      storage.seed(progressKey, '{ JSON cassé');
+      storage.failSetKey = backupKey;
+      storage.setError = new DOMException('quota dépassé', 'QuotaExceededError');
+      const repository = createLocalStorageProgressRepository(storage);
+
+      expect(repository.clear()).toEqual({ status: 'error', code: 'quota-exceeded' });
+      expect(storage.getItem(progressKey)).toBe('{ JSON cassé');
+    });
+
+    it('convertit un stockage indisponible en résultat, sans exception', () => {
+      const storage = new MemoryStorage();
+      const repository = createLocalStorageProgressRepository(storage);
+      repository.save(savedProgress);
+      storage.failRemove = true;
+
+      expect(() => repository.clear()).not.toThrow();
+      expect(repository.clear()).toEqual({ status: 'error', code: 'storage-unavailable' });
+      storage.failGet = true;
+      expect(repository.clear()).toEqual({ status: 'error', code: 'storage-unavailable' });
+    });
   });
 });

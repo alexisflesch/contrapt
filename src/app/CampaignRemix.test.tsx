@@ -150,7 +150,11 @@ describe('remixer un niveau de campagne gagné (M11, ADR 0015 § Points d’entr
   it('pose la tentative gagnante dans une nouvelle création, la victoire comptée', () => {
     const flush = createAnimationFrameHarness();
     const save = vi.fn(() => ({ status: 'ok' as const }));
-    const progress: ProgressRepository = { load: () => ({ status: 'ok', progress: {} }), save };
+    const progress: ProgressRepository = {
+      load: () => ({ status: 'ok', progress: {} }),
+      save,
+      clear: () => ({ status: 'ok' }),
+    };
     window.history.replaceState(null, '', `/levels/${levelOneId}/play`);
     render(<App progressRepository={progress} />);
 

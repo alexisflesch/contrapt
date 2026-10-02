@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, U8 (aide brève du niveau 1, vers « Lancer » puis le catalogue) livrée ; phase 1 (« Mes niveaux ») terminée.
+Dernière mise à jour : 2 octobre 2026, U11 (paramètres : pseudo retenu et remise à zéro de la progression) livrée ; phase 1 (« Mes niveaux ») terminée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -140,6 +140,16 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   amendement du 2 octobre 2026), champ facultatif sans changement de
   version : une valeur antérieure se relit à l’identique ; retenir le pseudo
   conserve ce champ, et inversement.
+- Paramètres U11 (ADR 0011, amendement du 2 octobre 2026) : le port
+  `ProgressRepository` a une opération `clear()`. L’adaptateur `localStorage`
+  retire la seule clé `tinkerbolt:progress`. Une valeur illisible est d’abord
+  copiée sous `tinkerbolt:backup:progress`. Un quota dépassé ou un stockage
+  indisponible donne un résultat d’erreur. `CampaignProgressProvider` expose
+  `resetCampaignProgress()`, qui n’oublie la progression affichée qu’une fois
+  le stockage d’accord. Le cas d’usage `rememberAuthor(repository, author?)`
+  (`src/application/preferences/remember-author.ts`) relit les préférences,
+  remplace ou retire `author` seul, et réécrit tels quels tous les autres
+  champs. Il n’écrit rien si la lecture échoue et ne lève jamais d’exception.
 - Créations de niveaux de campagne U17 : chaque carte de `/levels` porte
   « Modifier le niveau N » (M11), qui ouvre `/editor?draft=<id>-brouillon`.
   Depuis M6, une création neuve est construite par `creationFromLevel` (sans
@@ -405,7 +415,7 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
   `/my-levels`, `/my-levels/:id/play`, `/import` (redirige vers `/my-levels`),
   `/editor`, `/demo` (machine en chaîne qui se résout seule, testée),
-  `/settings` (vide) et `/shared` (niveau décodé depuis le fragment URL,
+  `/settings` (paramètres, U11) et `/shared` (niveau décodé depuis le fragment URL,
   enregistré comme niveau reçu avant d’être joué depuis M8).
   `/` ouvre l’accueil ; le premier niveau reste accessible par son URL directe.
 - Renderer Canvas 2D (ADR 0006) avec DPR, sprites en calques (balle à motif
@@ -551,6 +561,31 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   Décision pure `pwaInvitation`, port de service worker injectable
   (`RegisterServiceWorker`) ; E2E `e2e/pwa-invitation.spec.ts` sur le build
   réel (nouvelle version enregistrée sur la même portée, événement simulé).
+- **U11 — paramètres** (2 octobre 2026, validation visuelle attendue) :
+  `/settings` n’est plus vide. Le panneau « Pseudo » montre le pseudo retenu
+  dans le champ « Pseudo retenu » (44 px de haut au moins). « Enregistrer le
+  pseudo » le remplace, espaces de bord retirés ; un champ vide l’oublie.
+  « Effacer le pseudo » l’oublie. Les autres préférences
+  (`firstLevelHintDone`, `installInvitationDeclined`) sont gardées. Un statut
+  discret (`role="status"`) dit « Pseudo enregistré. » ou « Pseudo effacé. ».
+  Un pseudo refusé par `authorSchema` est dit sous le champ (`role="alert"`,
+  `aria-invalid`) et désactive « Enregistrer le pseudo ». Le panneau
+  « Progression de la campagne » donne « Niveaux résolus : N sur 17. » et
+  « Remettre la progression à zéro ». Ce bouton ouvre une confirmation
+  `Dialog` où « Annuler » est ciblé. Le texte dit la perte (niveaux résolus,
+  records ; seul le niveau 1 reste ouvert) et ce qui est gardé (créations,
+  niveaux reçus, pseudo, et la création « Modifier le niveau » d’un niveau
+  qui redevient verrouillé). Après confirmation, seule `tinkerbolt:progress`
+  est effacée. Un statut discret dit « Progression remise à zéro : seul le
+  niveau 1 est ouvert. ». L’accueil, la liste des niveaux et les URL directes
+  reflètent la campagne neuve, sans rechargement. Une erreur de stockage est
+  dite dans la page, sans exception. Le libellé suit « Remettre à zéro » : le
+  mot « Réinitialiser » n’est plus employé dans l’interface. Tests
+  `local-storage-progress-repository.test.ts`, `remember-author.test.ts`,
+  `local-storage-preferences-repository.test.ts`, `SettingsPage.test.tsx` et
+  parcours tactile `e2e/settings.spec.ts` (390 × 844 et 844 × 390 ; captures
+  `test-results/settings/{repos,pseudo-invalide,confirmation,statut}-{390x844,844x390,1440x900}.png`).
+  **Validation visuelle de l’auteur attendue.**
 - **U27 — icônes d’interface** : les pictogrammes d’action, de navigation, de cadrage, de catalogue, d’export et de résultat utilisent `lucide-react` (ADR 0014). Les libellés accessibles restent inchangés.
 - **U6 — recommencer et remise à zéro de l’atelier** : pendant la simulation,
   une seule commande « Recommencer » est visible ; dans l’atelier, « Ràz atelier »
@@ -706,7 +741,11 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   création de campagne créée (la supprimer depuis « Mes niveaux » puis
   « Modifier le niveau » en recrée une). Une création `creation-<aléa>`
   remixée d’un niveau de campagne n’est pas verrouillée si la progression est
-  ensuite réinitialisée : seul `<id>-brouillon` l’est (ADR 0015). Les
+  ensuite remise à zéro : seul `<id>-brouillon` l’est (ADR 0015). Depuis U11,
+  la remise à zéro se fait depuis `/settings`. La création `<id>-brouillon`
+  d’un niveau qui redevient verrouillé reste gardée, mais elle est marquée
+  « Verrouillé » dans « Mes niveaux » et ne s’ouvre plus avant que le niveau
+  soit de nouveau débloqué (ADR 0011, amendement U11). Les
   créations de campagne créées avant M6 gardent leur solution posée et leur
   inventaire (ADR 0015) ; sous `pnpm dev`, une création neuve s’ouvre solution
   révélée (M11).
@@ -819,6 +858,15 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U11 (2 octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 1073 tests Vitest (83 fichiers),
+build Vite/PWA et 72 tests Playwright `mobile` (71 réussis, 1 ignoré). Une
+première exécution s’était arrêtée au formatage (nouvel E2E pas encore passé
+par Prettier), corrigé avant la gate verte. Pas d’intermittence D4 ni U15
+observée. `tmp/check-levels.ts` écarté du dépôt le temps de la gate (ESLint le
+refuse), puis remis à l’identique (SHA-256 `1113625e…a92907` et mode 644
+vérifiés).
 
 `pnpm check` après U10 (2 octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 1049 tests Vitest (81 fichiers),

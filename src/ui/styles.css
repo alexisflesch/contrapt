@@ -2343,6 +2343,17 @@ select:focus-visible {
   border-color: var(--danger);
 }
 
+/* U11 : paramètres, panneaux empilés ; le champ du pseudo reste une cible tactile. */
+.settings-page {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: stretch;
+}
+
+.settings-page .export-name-field {
+  min-height: var(--touch-target);
+}
+
 /* M14 : pseudo refusé, dit sous le champ. */
 .export-field-error {
   color: var(--danger);

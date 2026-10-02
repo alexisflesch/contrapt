@@ -64,6 +64,7 @@ interface AppProps {
 const unavailableProgressRepository: ProgressRepository = {
   load: () => ({ status: 'error', code: 'storage-unavailable' }),
   save: () => ({ status: 'error', code: 'storage-unavailable' }),
+  clear: () => ({ status: 'error', code: 'storage-unavailable' }),
 };
 
 const createBrowserProgressRepository = (): ProgressRepository => {

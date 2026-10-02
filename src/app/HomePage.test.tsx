@@ -12,6 +12,7 @@ import { App } from './App';
 const createRepository = (progress: CampaignProgress = {}): ProgressRepository => ({
   load: () => ({ status: 'ok', progress }),
   save: vi.fn(() => ({ status: 'ok' as const })),
+  clear: () => ({ status: 'ok' }),
 });
 
 describe('Accueil TinkerBolt', () => {
@@ -99,6 +100,7 @@ describe('Accueil TinkerBolt', () => {
         progressRepository={{
           load: () => ({ status: 'error', code: 'storage-unavailable' }),
           save: () => ({ status: 'error', code: 'storage-unavailable' }),
+          clear: () => ({ status: 'error', code: 'storage-unavailable' }),
         }}
       />,
     );

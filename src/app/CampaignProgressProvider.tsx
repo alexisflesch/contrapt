@@ -10,6 +10,7 @@ import {
 import type {
   ProgressRepository,
   ProgressRepositoryErrorCode,
+  ProgressSaveResult,
 } from '../application/progression/progress-repository';
 import { campaignChapters } from '../content/embedded-levels';
 import { CampaignProgressContext } from './campaign-progress-context';
@@ -67,6 +68,26 @@ export function CampaignProgressProvider({
     [repository],
   );
 
+  /**
+   * U11: forgets the campaign progress in storage first; the screens only
+   * show the fresh campaign (level 1 open) once storage agreed. A failure,
+   * or an exception from the port, leaves the progress as it was.
+   */
+  const resetCampaignProgress = useCallback((): ProgressSaveResult => {
+    let result: ProgressSaveResult;
+    try {
+      result = repository.clear();
+    } catch {
+      result = { status: 'error', code: 'storage-unavailable' };
+    }
+    if (result.status === 'ok') {
+      progressRef.current = {};
+      setProgress({});
+      setStorageError(null);
+    }
+    return result;
+  }, [repository]);
+
   const levels = useMemo(() => {
     const entries = campaignChapters.flatMap(({ levels: chapterLevels }) =>
       chapterLevels.map((level) => {
@@ -102,9 +123,18 @@ export function CampaignProgressProvider({
       storageError,
       storageWarning,
       recordCampaignSuccess,
+      resetCampaignProgress,
       unlockAllLevels,
     }),
-    [levels, progress, recordCampaignSuccess, storageError, storageWarning, unlockAllLevels],
+    [
+      levels,
+      progress,
+      recordCampaignSuccess,
+      resetCampaignProgress,
+      storageError,
+      storageWarning,
+      unlockAllLevels,
+    ],
   );
 
   return (

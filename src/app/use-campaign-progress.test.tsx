@@ -14,6 +14,7 @@ const createRepository = (
 ): ProgressRepository & { readonly save: ReturnType<typeof vi.fn> } => ({
   load: () => ({ status: 'ok', progress }),
   save: vi.fn(() => ({ status: 'ok' as const })),
+  clear: () => ({ status: 'ok' }),
 });
 
 function ProgressProbe() {

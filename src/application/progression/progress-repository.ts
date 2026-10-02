@@ -21,4 +21,10 @@ export type ProgressSaveResult =
 export interface ProgressRepository {
   load(): ProgressLoadResult;
   save(progress: CampaignProgress): ProgressSaveResult;
+  /**
+   * U11: forget the whole campaign progress (resolved levels, records, hence
+   * unlocks). Nothing else is touched: creations, received levels and
+   * preferences live under their own keys.
+   */
+  clear(): ProgressSaveResult;
 }

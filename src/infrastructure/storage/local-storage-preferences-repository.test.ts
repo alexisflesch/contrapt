@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { rememberAuthor } from '../../application/preferences/remember-author';
 import { createLocalStoragePreferencesRepository } from './local-storage-preferences-repository';
 
 const preferencesKey = 'tinkerbolt:preferences';
@@ -241,5 +242,38 @@ describe('dépôt local des préférences (ADR 0011, ADR 0016 § Pseudo)', () =>
       code: 'invalid-preferences',
     });
     expect(storage.writes).toEqual([]);
+  });
+
+  it('modifie puis efface le pseudo depuis les paramètres sans perdre les autres champs (U11)', () => {
+    const storage = new MemoryStorage();
+    const repository = createLocalStoragePreferencesRepository(storage);
+    repository.save({ author: 'Lili', firstLevelHintDone: true, installInvitationDeclined: true });
+
+    expect(rememberAuthor(repository, 'Noé')).toEqual({ status: 'ok' });
+    expect(JSON.parse(storage.getItem(preferencesKey) ?? 'null')).toEqual({
+      kind: 'preferences',
+      version: 1,
+      data: { author: 'Noé', firstLevelHintDone: true, installInvitationDeclined: true },
+    });
+
+    expect(rememberAuthor(repository, undefined)).toEqual({ status: 'ok' });
+    expect(JSON.parse(storage.getItem(preferencesKey) ?? 'null')).toEqual({
+      kind: 'preferences',
+      version: 1,
+      data: { firstLevelHintDone: true, installInvitationDeclined: true },
+    });
+  });
+
+  it('refuse depuis les paramètres un pseudo invalide sans rien écrire (U11)', () => {
+    const storage = new MemoryStorage();
+    const repository = createLocalStoragePreferencesRepository(storage);
+    repository.save({ author: 'Lili', firstLevelHintDone: true });
+    const before = storage.getItem(preferencesKey);
+
+    expect(rememberAuthor(repository, 'Lili\u2028Noé')).toEqual({
+      status: 'error',
+      code: 'invalid-preferences',
+    });
+    expect(storage.getItem(preferencesKey)).toBe(before);
   });
 });

@@ -11,8 +11,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
 ## Point de reprise (fin de session du 1er octobre 2026)
 
-- **Phase 1 terminée ; phase 2 commencée : U12, U1, U13, U7, U8 et U10 faites (2
-  octobre 2026), prochaine tâche U11.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
+- **Phase 1 terminée ; phase 2 commencée : U12, U1, U13, U7, U8, U10 et U11
+  faites (2 octobre 2026), prochaine tâche U2.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
   2026, qui livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
   2 octobre 2026). `pnpm check` était vert au dernier commit.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
@@ -27,10 +27,10 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
 - **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b,
-  de U12, de U1, de U13, de U7, de U8 et de U10 (`test-results/`, dont `test-results/beam-sprites/`,
+  de U12, de U1, de U13, de U7, de U8, de U10 et de U11 (`test-results/`, dont `test-results/beam-sprites/`,
   `test-results/placement-ghost/`, `test-results/build-zones/`,
-  `test-results/goal-ball/`, `test-results/first-level-hint/` et
-  `test-results/pwa-invitation/`) ; relecture des documents de M15 (entrée du journal) ;
+  `test-results/goal-ball/`, `test-results/first-level-hint/`,
+  `test-results/pwa-invitation/` et `test-results/settings/`) ; relecture des documents de M15 (entrée du journal) ;
   questions de goût listées dans les entrées M12 à M14b du journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
   la phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
@@ -420,9 +420,8 @@ validation visuelle pour chacune.
    validation visuelle attendue.
 6. ~~U10 — Invitation de mise à jour et d'installation~~ : faite le 2 octobre
    2026 (journal U10) ; validation visuelle attendue.
-7. **U11 — Paramètres** : `/settings` est une page provisoire ; y mettre
-   « Réinitialiser la progression » (confirmation destructive) et le pseudo
-   retenu (M14), modifiable et effaçable.
+7. ~~U11 — Paramètres~~ : faite le 2 octobre 2026 (journal U11) ; validation
+   visuelle attendue.
 8. **U2 — Fond qui suit la caméra** (`plan-remise-en-jeu.md` § 6 « D3 »).
 9. **U3 — Ombre portée** (`plan-remise-en-jeu.md` § 5 « C2 »), après U1.
 10. **Inspecteur compact** : toucher un autre objet alors que l'inspecteur est
@@ -2492,3 +2491,155 @@ className="level-card-description">` après l’état, comme `/levels` (même
   constaté, hors périmètre : la liste de repli hors ligne de `vite.config.ts`
   (`navigateFallbackAllowlist`) ne contient pas `/my-levels`.
 
+### U11 — Paramètres — fait — commit de cette entrée
+
+- Déroulé : une seule étape, sous-agent Opus (tâche d’interface). Lecture
+  imposée faite. Lus en plus pour le travail : `SettingsPage.tsx`,
+  `CampaignProgressProvider.tsx`, `campaign-progress-context.ts`, `App.tsx`,
+  le port et l’adaptateur de la progression et des préférences (et leurs
+  tests), `LevelExportDialog.tsx` et `level-export.ts` (`pseudoRefusal`,
+  règle du pseudo), `Dialog.tsx`, `Panel.tsx`, `Button.tsx`, la boîte « Ràz
+  atelier » de `BoardShell.tsx` et la suppression de `MyLevelsPage.tsx`
+  (modèles de confirmation et de message de stockage), les règles
+  `.export-*`, `.page-content`, `.level-result-actions` de `styles.css`,
+  `e2e/first-level-hint.spec.ts` et `e2e/home.spec.ts` (modèles), ADR 0008
+  (route `/settings` décrite « provisoire »).
+- Puce citée (`feuille-de-route-luna.md` § 6) : « **U11 — Réglages** :
+  réinitialiser la progression, préférences. » Elle ne cite aucune entrée de
+  journal luna.
+- État trouvé : `SettingsPage` affichait un panneau « Paramètres » avec
+  « Réglages à venir. ». Aucune opération d’effacement dans `ProgressRepository`.
+  Rien de U11 dans `git log`.
+- Tests ajoutés : `local-storage-progress-repository.test.ts` › « remise à
+  zéro de la progression (U11) » (5 cas : efface la progression et rien
+  d’autre, sauvegarde existante comprise ; rien d’écrit sans progression ;
+  valeur illisible sauvegardée avant effacement ; rien d’effacé si la
+  sauvegarde de secours échoue (quota) ; stockage indisponible en résultat,
+  sans exception) ; `src/application/preferences/remember-author.test.ts`
+  (6 cas : modifier sans perdre `firstLevelHintDone` ni
+  `installInvitationDeclined` ; effacer `author` seul ; premier pseudo ;
+  rien d’écrit si la lecture échoue ; erreur d’écriture rendue ; exception
+  convertie) ; `local-storage-preferences-repository.test.ts` › « modifie
+  puis efface le pseudo depuis les paramètres sans perdre les autres champs
+  (U11) » (enveloppe réelle) et « refuse depuis les paramètres un pseudo
+  invalide sans rien écrire (U11) » ; `src/app/SettingsPage.test.tsx` (11
+  tests App sur `localStorage` réel : affiche le pseudo ; champ vide et
+  « Effacer » désactivé ; modifier, rogné, autres préférences gardées ;
+  effacer ; champ vidé = oublié ; pseudo U+2028 refusé sous le champ, rien
+  écrit ; erreur d’écriture dite ; lecture qui lève, page affichée ;
+  confirmation avec « Annuler » ciblé et texte de la perte, « Annuler » ne
+  change rien ; confirmer efface `tinkerbolt:progress` et seulement elle
+  (créations, niveaux reçus, préférences, sauvegarde gardés octet pour
+  octet), statut, « 0 sur 17 », niveaux 2 et 3 verrouillés dans la liste
+  sans rechargement ; échec de stockage dit, progression gardée) ;
+  `e2e/settings.spec.ts` (390 × 844 au toucher : cibles ≥ 44 px, pas de
+  défilement horizontal, pseudo refusé, modifié, effacé, enveloppe
+  `tinkerbolt:preferences` vérifiée, « Annuler » ciblé puis sans effet,
+  confirmation, statut, clés gardées, liste verrouillée après le niveau 1 ;
+  844 × 390 : la page défile jusqu’à la remise à zéro et la boîte reste
+  utilisable ; captures aux trois formats).
+- Échec initial constaté : progression, `TypeError: repository.clear is not a
+  function` (5 sur 5) ; préférences, `Error: Cannot find module
+  './remember-author'` (le fichier d’adaptateur aussi : import absent) ;
+  `SettingsPage.test.tsx`, `Unable to find an accessible element with the
+  role "region" and name "Pseudo"` / `… "textbox" and name "Pseudo retenu"`
+  / `… "button" and name "Remettre la progression à zéro"` (11 sur 11) ;
+  Playwright contre un build de l’ancienne page (seul `SettingsPage.tsx`
+  remis à la version de HEAD le temps du build, puis rétabli) :
+  `toHaveValue` — `Received: <element(s) not found>` pour les trois tests.
+  Ensuite, sur la nouvelle page : champ de 35 px de haut (`Expected: >= 44`,
+  corrigé par une règle CSS) ; puis deux sélecteurs E2E trop larges
+  (« Remettre à zéro » trouvait aussi « Fermer sans remettre à zéro »,
+  « Lancer le niveau 1 » trouvait 10 à 17 ; `exact: true` ajouté au test).
+  Dans le premier jet du test App, des identifiants de niveau faux
+  (`campaign-01`) donnaient « 0 sur 17 » : corrigé dans le test, en lisant
+  les identifiants de `campaignChapters`.
+- Tests existants réécrits : `App.test.tsx` › « navigue vers une page de
+  réglages dédiée depuis le menu (ADR 0008) ». Il attendait la région
+  « Paramètres » du panneau provisoire, que U11 remplace. Il attend
+  désormais les régions « Pseudo » et « Progression de la campagne » ;
+  navigation et absence du plateau inchangées. Les doublures de
+  `ProgressRepository` de `App.test.tsx`, `CampaignDraftEditing.test.tsx`,
+  `CampaignRemix.test.tsx`, `EditAndRemix.test.tsx`, `HomePage.test.tsx`,
+  `ReceivedLevelPlay.test.tsx` et `use-campaign-progress.test.tsx` reçoivent
+  `clear` (le port l’exige) ; aucune assertion changée. Aucun test affaibli
+  ni supprimé.
+- Réalisé : `ProgressRepository.clear()` et son adaptateur `localStorage`
+  (retire `tinkerbolt:progress`, sauvegarde d’abord une valeur illisible,
+  résultat d’erreur sinon) ; `resetCampaignProgress()` dans
+  `CampaignProgressProvider` (progression affichée vidée seulement si le
+  stockage a réussi ; exception du port convertie) ; `rememberAuthor`
+  (`src/application/preferences/`, relit, remplace ou retire `author`,
+  garde tous les autres champs) ; `SettingsPage` réécrite : deux `Panel`
+  (« Pseudo », « Progression de la campagne »), `Button`, `Dialog` et
+  classes existantes (`export-link`, `export-name-field`,
+  `export-field-error`, `panel-note`, `level-result-actions`,
+  `dialog-text`). Deux règles CSS ajoutées sous jetons existants :
+  `.settings-page` (grille, `--space-4`) et la hauteur minimale du champ
+  (`--touch-target`). Domaine, schéma de niveau, niveaux, simulation,
+  enveloppes (préférences et progression restent en version 1) inchangés.
+  `LevelExportDialog` n’est pas touché (il garde sa propre fusion des
+  champs).
+- Fichiers touchés hors périmètre : les sept fichiers de test cités plus
+  haut (doublures du port) ; `docs/decisions/0008-client-side-routing.md`
+  (`/settings` n’est plus provisoire) ; `docs/decisions/0011-…` (amendement
+  U11 : `clear`, conservation des champs, conséquence pour
+  `<id>-brouillon`).
+- Écarts avec la tâche : (1) libellé « Remettre la progression à zéro », pas
+  « Réinitialiser la progression » (voir contradictions) ; (2) la page
+  ajoute une ligne « Niveaux résolus : N sur 17. ». Ce n’est pas un réglage :
+  elle montre ce que la remise à zéro effacera et rend visible l’état neuf.
+  (3) Effacer le pseudo vide aussi le champ. Enregistrer un champ vide l’oublie
+  aussi, comme le champ vidé de l’export (M14).
+- Contradictions rencontrées : la ligne U11 de la phase 2 dit
+  « Réinitialiser la progression ». `mobile-editor-interactions.md` § Lancer,
+  mettre en pause et recommencer, qui fait autorité sur l’interface, dit :
+  « Le mot « Réinitialiser » n’est plus employé dans l’interface. » Le
+  document d’interaction gagne, comme pour « Tester »/« Lancer » en U8. Le
+  libellé reprend le vocabulaire « Remettre à zéro » de « Ràz atelier ». La
+  ligne U11 est barrée. Rien n’est arbitré dans la puce luna (historique).
+- Captures inspectées (Read sur les PNG) :
+  `test-results/settings/{repos,pseudo-invalide,confirmation,statut}-{390x844,844x390,1440x900}.png`.
+  390 × 844 : deux panneaux crème à barre de titre bleu nuit, « PSEUDO »
+  puis « PROGRESSION DE LA CAMPAGNE », sur le fond nuit ; champ « Lili » à
+  bordure foncée ; aide atténuée sur deux lignes ; « Enregistrer le pseudo »
+  (vert, deux lignes) et « Effacer le pseudo » (neutre) côte à côte ;
+  « Niveaux résolus : 2 sur 17. » puis le bouton orange « Remettre la
+  progression à zéro » sur toute la largeur. Pseudo invalide : bordure
+  rouge du champ, message rouge sur deux lignes sous l’aide, bouton vert
+  grisé. Confirmation : voile sombre, boîte au milieu de l’écran,
+  texte de six lignes, « Annuler » (neutre) et « Remettre à zéro » (orange)
+  côte à côte, croix en haut à droite. Statut : « 0 sur 17. » et « Progression
+  remise à zéro : seul le niveau 1 est ouvert. » en gris sous le bouton.
+  844 × 390 : panneaux de 560 px de large à gauche ; les boutons du pseudo
+  s’empilent (règle paysage de `.level-result-actions`) ; la page défile pour
+  atteindre le second panneau ; la boîte de confirmation tient dans la
+  hauteur, ses boutons sont empilés et entièrement visibles. 1440 × 900 :
+  panneaux de 560 px dans la colonne centrée de 960 px, donc décalés à
+  gauche (comme l’ancienne page provisoire) ; boutons du pseudo côte à côte ;
+  boîte de confirmation centrée, texte sur six lignes. Rien ne déborde.
+- Gate : `pnpm check` passe — typecheck, lint, formatage, Knip, contenu (19
+  documents), 1073 tests Vitest en 83 fichiers, build, 72 tests Playwright
+  `mobile` (71 réussis, 1 ignoré). Une première exécution s’était arrêtée
+  au formatage (`e2e/settings.spec.ts` pas encore passé par Prettier),
+  corrigé. Pas d’intermittence D4 ni U15 observée. Le nouvel E2E passe 9 fois
+  sur 9 (`--repeat-each=3`). `tmp/check-levels.ts` (ESLint le refuse) a été
+  déplacé hors du dépôt pendant `pnpm check:fast` et `pnpm check`, puis remis
+  exactement à sa place : SHA-256 `1113625e…a92907` et mode 644 identiques
+  avant et après.
+- Non vérifié : un vrai téléphone et son clavier virtuel (le champ est en
+  haut de page, la méta `resizes-content` de M14 s’applique) ; un lecteur
+  d’écran ; une progression illisible effacée depuis la page (couvert par
+  l’adaptateur seulement).
+- Pour l'auteur : validation visuelle des douze captures ci-dessus.
+  Questions (tranchées de façon conservatrice, à confirmer) : (1) libellé
+  « Remettre la progression à zéro » plutôt que « Réinitialiser… » (règle
+  de vocabulaire) ; (2) le texte de confirmation, assez long (six lignes en
+  390 px), mentionne le verrouillage des créations « Modifier le niveau » :
+  faut-il le garder ? (3) la ligne « Niveaux résolus : N sur 17. » vous
+  convient-elle ? (4) en grand format, les panneaux restent alignés à gauche
+  de la colonne (comme avant) : faut-il les centrer ? (5) faut-il aussi
+  effacer la sauvegarde de secours `tinkerbolt:backup:progress` ? Elle est
+  gardée aujourd’hui ; (6) `LevelExportDialog` liste à la main les champs à
+  garder, alors que `rememberAuthor` les garde tous : l’unifier serait un
+  refactoring à part.

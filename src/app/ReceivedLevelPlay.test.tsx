@@ -80,7 +80,11 @@ const storedEntry = (id: string): ReceivedLevel | null => {
 
 const createProgressRepository = () => {
   const save = vi.fn(() => ({ status: 'ok' as const }));
-  const repository: ProgressRepository = { load: () => ({ status: 'ok', progress: {} }), save };
+  const repository: ProgressRepository = {
+    load: () => ({ status: 'ok', progress: {} }),
+    save,
+    clear: () => ({ status: 'ok' }),
+  };
   return { repository, save };
 };
 

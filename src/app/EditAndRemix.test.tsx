@@ -94,7 +94,11 @@ const toPlaceObjects = (document: LevelDocument) =>
 
 const createProgressRepository = (progress: CampaignProgress = {}) => {
   const save = vi.fn(() => ({ status: 'ok' as const }));
-  const repository: ProgressRepository = { load: () => ({ status: 'ok', progress }), save };
+  const repository: ProgressRepository = {
+    load: () => ({ status: 'ok', progress }),
+    save,
+    clear: () => ({ status: 'ok' }),
+  };
   return { repository, save };
 };
 

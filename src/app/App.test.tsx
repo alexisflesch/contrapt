@@ -94,6 +94,7 @@ const createProgressRepository = (progress: CampaignProgress = {}) => {
   const repository: ProgressRepository = {
     load: () => ({ status: 'ok', progress }),
     save,
+    clear: () => ({ status: 'ok' }),
   };
   return { repository, save };
 };
@@ -934,7 +935,9 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Paramètres' }));
 
     expect(window.location.pathname).toBe('/settings');
-    expect(screen.getByRole('region', { name: 'Paramètres' })).toBeVisible();
+    // U11: the placeholder panel « Paramètres » gave way to the two real settings.
+    expect(screen.getByRole('region', { name: 'Pseudo' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Progression de la campagne' })).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Plateau de jeu' })).not.toBeInTheDocument();
   });
 

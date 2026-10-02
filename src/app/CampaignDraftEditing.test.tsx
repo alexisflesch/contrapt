@@ -67,6 +67,7 @@ const createProgressRepository = () => {
       progress: { 'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 1 } },
     }),
     save,
+    clear: () => ({ status: 'ok' }),
   };
   return { repository, save };
 };

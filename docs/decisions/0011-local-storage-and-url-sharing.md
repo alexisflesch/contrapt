@@ -148,3 +148,26 @@ d’installation (ADR 0012, amendement du même jour). Mêmes règles que
 version 1 sans migration (tests de l’adaptateur pour l’ancienne et la nouvelle
 forme), et toute écriture d’un champ conserve les autres. Même conséquence
 assumée pour une version antérieure de l’application en cache.
+
+## Amendement du 2 octobre 2026 — paramètres (U11)
+
+- Le port `ProgressRepository` reçoit `clear()`, appelé par « Remettre la
+  progression à zéro » de `/settings`. L’adaptateur `localStorage` retire la
+  seule clé `tinkerbolt:progress`. Une valeur illisible est d’abord copiée sous
+  `tinkerbolt:backup:progress`, comme avant toute écriture. Une sauvegarde de
+  secours qui existe déjà n’est pas touchée. Un quota dépassé ou un stockage
+  indisponible donne un résultat d’erreur, jamais une exception, et la
+  progression affichée ne change alors pas. Les créations
+  (`tinkerbolt:draft:*`), les niveaux reçus (`tinkerbolt:received*`) et les
+  préférences ne sont pas touchés.
+- Le pseudo retenu se modifie et s’efface depuis `/settings`
+  (`rememberAuthor`, `src/application/preferences/`). Les préférences sont
+  relues, seul `author` est remplacé ou retiré, et tous les autres champs
+  (`firstLevelHintDone`, `installInvitationDeclined`) sont réécrits tels quels.
+  Rien n’est écrit si les préférences ne peuvent pas être lues. L’enveloppe
+  reste en version 1, sans nouveau champ.
+- Conséquence connue (ADR 0015) : après la remise à zéro, la création
+  `<id>-brouillon` d’un niveau de campagne qui redevient verrouillé est gardée,
+  mais elle est marquée « Verrouillé ». Elle ne s’ouvre plus avant que le
+  niveau soit de nouveau débloqué. Une création `creation-<aléa>` remixée
+  depuis ce niveau reste ouverte. La boîte de confirmation le dit.

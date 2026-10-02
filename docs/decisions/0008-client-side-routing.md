@@ -49,7 +49,8 @@ bibliothèque.
     (`embeddedDemoDocument`, ajoutée le 26 septembre 2026), en mode joueur
     sans inventaire : elle montre le concept en une pression sur « Tester » ;
   - `/settings` — réglages ; page provisoire tant qu'aucun réglage réel
-    n'existe ;
+    n'existe (depuis U11 : pseudo retenu et remise à zéro de la progression,
+    amendement du 2 octobre 2026) ;
   - toute autre route redirige vers `/levels`.
 - `<BrowserRouter>` est monté par `App.tsx`, qui ne contient plus que la
   déclaration des routes. Chaque route mène à une page de `src/app/`
@@ -144,10 +145,17 @@ ne remplace aucun brouillon existant. Le niveau validé s’ouvre ensuite dans
 - `/editor` sans paramètre : à la première modification engagée, l’URL est
   remplacée par `/editor?draft=<id>` de la création enregistrée.
 
+## Amendement du 2 octobre 2026 — paramètres (U11)
+
+`/settings` n’est plus vide. La page montre deux réglages, et seulement eux :
+le pseudo retenu (ADR 0016 § Pseudo), à voir, modifier ou effacer, et
+« Remettre la progression à zéro », qui efface la progression de campagne
+(ADR 0010, ADR 0011) après une confirmation. La route ne change pas.
+
 ## Ce qui reste non décidé
 
-- Le contenu réel de `/settings` : cette ADR pose seulement la route et une
-  page provisoire, sans inventer de réglage.
+- Tout autre réglage de `/settings` : U11 n’y a mis que le pseudo retenu et la
+  remise à zéro de la progression, sans inventer d’autre réglage.
 - La stratégie exacte de repli 404 → `index.html` pour l'hébergement de
   production final.
 - Le routage imbriqué (sous-routes de l'éditeur, par exemple) : aucun besoin

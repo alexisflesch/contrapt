@@ -1,7 +1,10 @@
 import { createContext } from 'react';
 
 import type { CampaignProgress, ChallengeHint } from '../application/progression';
-import type { ProgressRepositoryErrorCode } from '../application/progression/progress-repository';
+import type {
+  ProgressRepositoryErrorCode,
+  ProgressSaveResult,
+} from '../application/progression/progress-repository';
 
 interface CampaignLevelProgressView {
   readonly unlocked: boolean;
@@ -17,6 +20,8 @@ interface CampaignProgressContextValue {
   readonly storageError: ProgressRepositoryErrorCode | null;
   readonly storageWarning: 'invalid-data-backed-up' | null;
   readonly recordCampaignSuccess: (levelId: string, objectsUsed: number) => void;
+  /** U11: « Remettre la progression à zéro » from `/settings`; an error leaves it as it was. */
+  readonly resetCampaignProgress: () => ProgressSaveResult;
   /**
    * Dev-mode override (`pnpm dev`, injected from `main.tsx`): every level
    * reports `unlocked: true` regardless of progress, so the whole campaign

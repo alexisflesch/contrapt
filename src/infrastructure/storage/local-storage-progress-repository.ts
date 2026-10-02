@@ -120,4 +120,19 @@ export const createLocalStorageProgressRepository = (storage: Storage): Progress
       return storageError(error);
     }
   },
+
+  /** U11: removes `tinkerbolt:progress` only; an unreadable value is backed up first (ADR 0011). */
+  clear(): ProgressSaveResult {
+    try {
+      const currentValue = storage.getItem(PROGRESS_KEY);
+      if (currentValue === null) return { status: 'ok' };
+      if (!isValidProgressEnvelope(currentValue)) {
+        storage.setItem(PROGRESS_BACKUP_KEY, currentValue);
+      }
+      storage.removeItem(PROGRESS_KEY);
+      return { status: 'ok' };
+    } catch (error) {
+      return storageError(error);
+    }
+  },
 });
