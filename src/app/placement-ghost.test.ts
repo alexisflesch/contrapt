@@ -4,6 +4,7 @@ import {
   createConstructionAttempt,
   movePlacement,
   placeFromInventory,
+  rotatePlacement,
 } from '../application/construction';
 import {
   beginEditorManipulation,
@@ -81,7 +82,7 @@ const placing = (): EditorSession =>
     }),
   );
 
-describe('placementGhost (U1)', () => {
+describe('placementGhost (U1, U13)', () => {
   it('ne montre aucun fantôme hors placement', () => {
     expect(
       placementGhost(createEditorSession('resolution', createConstructionAttempt(level))),
@@ -127,6 +128,43 @@ describe('placementGhost (U1)', () => {
     );
 
     expect(placementGhost(session)).toBeNull();
+  });
+
+  it('fait d’un déplacement hors zone un fantôme invalide, qui suit le doigt (U13)', () => {
+    const moving = accepted(
+      beginEditorManipulation(createEditorSession('resolution', createConstructionAttempt(level)), {
+        kind: 'move',
+        placementId: 'beam',
+      }),
+    );
+    const session = accepted(
+      previewInvalidEditorManipulation(
+        moving,
+        movePlacement({ context: 'author', placementId: 'beam', position: { x: 6, y: 2 } }),
+        'outside-build-zone',
+      ),
+    );
+
+    expect(placementGhost(session)).toEqual({ ghostPlacementId: 'beam', isGhostValid: false });
+    expect(session.history.past).toHaveLength(0);
+  });
+
+  it('fait d’une rotation hors zone un fantôme invalide (U13)', () => {
+    const turning = accepted(
+      beginEditorManipulation(createEditorSession('resolution', createConstructionAttempt(level)), {
+        kind: 'rotation',
+        placementId: 'beam',
+      }),
+    );
+    const session = accepted(
+      previewInvalidEditorManipulation(
+        turning,
+        rotatePlacement({ context: 'author', placementId: 'beam', rotation: Math.PI / 2 }),
+        'outside-build-zone',
+      ),
+    );
+
+    expect(placementGhost(session)).toEqual({ ghostPlacementId: 'beam', isGhostValid: false });
   });
 
   it('disparaît une fois le placement confirmé, sans avoir touché l’historique avant', () => {

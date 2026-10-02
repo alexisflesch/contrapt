@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, U1 (fantôme de placement dessiné par le renderer) livrée ; phase 1 (« Mes niveaux ») terminée.
+Dernière mise à jour : 2 octobre 2026, U13 (zones de construction visibles, déplacement hors zone en fantôme invalide, un seul refus par geste) livrée ; phase 1 (« Mes niveaux ») terminée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -443,6 +443,27 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   fantôme = empreinte puis objet posé, captures
   `test-results/placement-ghost/ghost-{valid,invalid}-{390x844,844x390,1440x900}.png`).
   **Validation visuelle de l’auteur attendue.**
+- Zones de construction et déplacement hors zone (U13) : en résolution,
+  pendant la construction, le plateau dessine chaque zone qui restreint la
+  pose (teinte bleue légère et contour en tirets, sous les objets), toutes
+  quand il y en a plusieurs ; aucune quand une zone couvre la scène, en
+  création ni pendant la simulation (`highlightedBuildZones`,
+  `src/app/build-zone-highlight.ts`, sur `constrainingBuildZones`). Le canvas
+  expose leur nombre (`data-build-zones`). Un objet glissé ou tourné hors de
+  toute zone continue de suivre le doigt, dessiné comme le fantôme de placement
+  refusé de U1 (alpha 0,35, tirets rouges, sans cadre de sélection, poignée de
+  rotation gardée) ; `placementGhost` le désigne et le canvas expose
+  `data-placement-ghost="invalid"` et sa position. Au lâcher hors zone, l’objet
+  revient à sa position de départ, sans entrée d’historique, avec un seul
+  message de refus pour le geste ; un déplacement accepté efface un refus
+  précédent. L’ancien rendu d’un déplacement refusé (alpha 0,5, contour rouge
+  plein, `invalidPlacementId`) est supprimé. Tests
+  `build-zone-highlight.test.ts`, `placement-ghost.test.ts`,
+  `board-renderer.test.ts` (« objet déplacé hors zone (U13) »), `App.test.tsx`
+  et parcours tactile `e2e/build-zones.spec.ts` (pixels de la zone, refus
+  unique, objet revenu, déplacement accepté ; captures
+  `test-results/build-zones/{zone,hors-zone,refus}-{390x844,844x390,1440x900}.png`).
+  **Validation visuelle de l’auteur attendue.**
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
   cadrage, recadrage sur vrai redimensionnement seulement.
@@ -744,6 +765,14 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U13 (2 octobre 2026) : passe du premier coup —
+typecheck, lint, formatage, Knip, contenu (19 documents), 1002 tests Vitest
+(79 fichiers), build Vite/PWA et 60 tests Playwright `mobile` (59 réussis,
+1 ignoré). Pas d’intermittence D4 ni U15 observée. Le fichier d’essai de
+l’auteur `tmp/check-levels.ts` a été écarté du dépôt le temps de la gate
+(ESLint le refuse), puis remis à l’identique (SHA-256 `1113625e…a92907` et
+mode 644 vérifiés).
 
 `pnpm check` après U1 (2 octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 994 tests Vitest (78 fichiers), build

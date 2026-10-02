@@ -11,8 +11,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
 ## Point de reprise (fin de session du 1er octobre 2026)
 
-- **Phase 1 terminée ; phase 2 commencée : U12 et U1 faites (2 octobre 2026),
-  prochaine tâche U13.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
+- **Phase 1 terminée ; phase 2 commencée : U12, U1 et U13 faites (2 octobre
+  2026), prochaine tâche U7.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
   2026, qui livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
   2 octobre 2026). `pnpm check` était vert au dernier commit.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
@@ -27,8 +27,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
 - **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b,
-  de U12 et de U1 (`test-results/`, dont `test-results/beam-sprites/` et
-  `test-results/placement-ghost/`) ; relecture des documents de M15 (entrée du journal) ;
+  de U12, de U1 et de U13 (`test-results/`, dont `test-results/beam-sprites/`,
+  `test-results/placement-ghost/` et `test-results/build-zones/`) ; relecture des documents de M15 (entrée du journal) ;
   questions de goût listées dans les entrées M12 à M14b du journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
   la phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
@@ -410,8 +410,8 @@ validation visuelle pour chacune.
    validation visuelle attendue.
 2. ~~U1 — Fantôme de placement~~ : faite le 2 octobre 2026 (journal U1) ;
    validation visuelle attendue.
-3. **U13 — Zones de construction visibles** et objet qui suit le doigt hors
-   zone avec fantôme invalide, un seul message de refus par geste.
+3. ~~U13 — Zones de construction visibles~~ : faite le 2 octobre 2026 (journal
+   U13) ; validation visuelle attendue.
 4. **U7 — Balle suivie** : signaler la balle cible de l'objectif.
 5. **U8 — Aide du niveau 1** : indication brève et non bloquante vers « Tester »
    puis le tiroir.
@@ -2017,3 +2017,131 @@ className="level-card-description">` après l’état, comme `/levels` (même
   1440 × 900. (4) Un objet déplacé hors zone garde l'ancien rendu (alpha 0,5,
   contour rouge plein) : l'aligner sur le fantôme invalide relève-t-il de
   U13 ?
+
+### U13 — Zones de construction visibles — fait — commit de cette entrée
+
+- Déroulé : une seule étape, sous-agent Opus (tâche d'interface). Lecture
+  imposée faite ; lus en plus pour le travail : `src/app/use-board-pointers.ts`,
+  `src/app/placement-ghost.ts`, `src/ui/BoardView.tsx`,
+  `src/presentation/board-renderer.ts`, `src/app/use-editor-session.ts`
+  (messages de refus), `src/ui/SimulationControls.tsx` (bouton Annuler),
+  `src/application/editor-session/editor-session.ts` (manipulation), leurs
+  tests, `e2e/placement-ghost.spec.ts` et `e2e/remix.spec.ts` (modèles de
+  niveau partagé, de toucher CDP et de captures), et le commit `3bf136e`
+  (première livraison U13, voir « État trouvé »).
+- Puce citée (`feuille-de-route-luna.md` § 6) : « **U13 — Zones de
+  construction** : en mode joueur, mettre visuellement en évidence, sur le
+  plateau, la ou les régions où l'empreinte complète de l'objet peut être
+  posée, y compris lorsque plusieurs zones existent. […] Décision auteur du
+  27 septembre 2026 : la fonctionnalité est **conservée** […]. Outre le dessin
+  des zones : pendant un glisser, l'objet **suit le doigt partout**, avec un
+  fantôme signalé invalide hors zone, au lieu de rester figé à sa dernière
+  position valide puis de sauter (comportement actuel de `previewDirectMove`,
+  `use-board-pointers.ts`) ; l'annulation n'a lieu qu'au lâcher ; un seul
+  message de refus par geste, pas un par mouvement. » Elle ne cite aucune
+  entrée de journal luna.
+- État trouvé : l'essentiel avait déjà été livré le 27 septembre 2026 (commit
+  `3bf136e`, « rend les zones de construction lisibles au glisser (U13) » ; le
+  tableau de bord de `feuille-de-route-luna.md` range U13 parmi les faites) :
+  zones dessinées en mode joueur, objet qui suit le doigt hors zone, refus
+  reporté au lâcher. Restaient : le « fantôme invalide » (l'objet hors zone
+  gardait un rendu à part, alpha 0,5 et contour rouge plein, sous un cadre de
+  sélection), aucune trace des zones testable dans le navigateur, un refus
+  qui restait affiché après un geste accepté, et aucun parcours E2E (celui du
+  niveau 3 avait disparu avec la campagne provisoire).
+- Tests ajoutés : `src/app/build-zone-highlight.test.ts` ›
+  `highlightedBuildZones (U13)` (4 cas : une et plusieurs zones montrées au
+  joueur ; rien quand une zone couvre la scène ; rien à l'auteur ; rien en
+  simulation) ; `src/app/placement-ghost.test.ts` › « fait d'un déplacement
+  hors zone un fantôme invalide, qui suit le doigt (U13) » et « fait d'une
+  rotation hors zone un fantôme invalide (U13) » ;
+  `src/presentation/board-renderer.test.ts` › « objet déplacé hors zone (U13)
+  › se dessine comme le fantôme invalide : pâle, tirets rouges, sans cadre
+  bleu, poignée gardée » ; `src/app/App.test.tsx` › « montre la zone, fait
+  suivre le doigt hors zone en fantôme invalide et refuse le geste une seule
+  fois (U13) » (niveau partagé, `data-build-zones="1"`, fantôme invalide qui
+  suit deux positions successives hors zone, aucun message pendant le geste,
+  un seul au lâcher, historique vide, puis un glisser dans la zone accepté
+  qui efface le refus) ; `e2e/build-zones.spec.ts` (toucher CDP en 390 × 844 :
+  alpha du canvas > 0 dans la zone et 0 hors zone, fantôme invalide sous le
+  doigt à la position visée, aucun refus pendant, un seul après, pixels du
+  canvas identiques à ceux d'avant le geste, Annuler désactivé ; puis
+  glisser dans la zone accepté, refus effacé ; et captures aux trois formats).
+- Échec initial constaté : Vitest, `expected null to deeply equal {
+  ghostPlacementId: 'beam', …(1) }` (déplacement et rotation) ; `expected [
+  [ '', false ], [ '#e53935', true ] ] to deeply equal [ [ '#e53935', true ] ]`
+  (cadre de sélection sous le contour) ; `Failed to load url
+  ./build-zone-highlight` ; `App.test.tsx` :
+  `toHaveAttribute("data-build-zones", "1")`, puis, l'attribut masqué
+  provisoirement, `toHaveAttribute("data-placement-ghost", "invalid")`, puis,
+  sans le seul effacement du message, `expected [ …(1) ] to have a length of
+  +0 but got 1`. Playwright, contre un build de l'ancien code (`git stash` des
+  fichiers de production, puis restaurés à l'identique, `cmp`) :
+  `toHaveAttribute` attendu `"1"`, reçu `null` pour `data-build-zones`.
+- Tests existants réécrits : `board-renderer.test.ts` › « atténue l'objet dont
+  la position est refusée, et lui seul » passait `invalidPlacementId` dans la
+  projection, propriété supprimée : il désigne désormais l'objet refusé comme
+  fantôme invalide (`projectLevel(…, { ghostPlacementId, isGhostValid: false
+  })`), même assertion (un seul dessin translucide). Le bloc de
+  `placement-ghost.test.ts` s'appelle `placementGhost (U1, U13)` ; « ne fait
+  pas d'un déplacement un fantôme de placement » (déplacement valide) est
+  inchangé et passe toujours. Aucun test affaibli ni supprimé.
+- Réalisé : `placementGhost` désigne aussi un déplacement ou une rotation dont
+  la manipulation porte un `invalidReason` (un déplacement valide reste plein) ;
+  le renderer ne trace plus le cadre de sélection d'un objet fantôme (la
+  poignée reste : le doigt peut être en train de tourner) ; `invalidPlacementId`,
+  `INVALID_OBJECT_ALPHA` et le contour rouge plein sont supprimés ;
+  `highlightedBuildZones(session)` (nouveau, `src/app/`) remplace la
+  condition en ligne de `BoardView` et alimente `data-build-zones` ; un
+  déplacement accepté efface le message de refus précédent (`setFeedback(null)`,
+  comme le placement). Domaine, commandes, constantes physiques et schéma
+  inchangés.
+- Fichiers touchés hors périmètre : aucun.
+- Écarts avec la tâche : aucun. Choix conservateurs : une zone qui couvre la
+  scène entière n'est pas dessinée (comportement de `3bf136e`, conservé : la
+  pose n'y est pas restreinte) ; les zones ne sont montrées qu'au joueur
+  (contexte où elles s'appliquent) ; mêmes jetons visuels qu'avant pour les
+  zones (bleu `rgba(30,136,229,…)`, tirets 8/6) et que U1 pour le fantôme.
+- Contradictions rencontrées : la puce U13 de la phase 2 (à faire) et le
+  tableau de bord de `feuille-de-route-luna.md` (« U13 à U26 » faites) ; pas
+  arbitré : l'écart réel était la partie « fantôme invalide », traitée ici.
+- Captures inspectées (Read sur les PNG) :
+  `test-results/build-zones/{zone,hors-zone,refus}-{390x844,844x390,1440x900}.png`.
+  Zone au repos : rectangle gris-bleu très léger à contour bleu en tirets
+  fins, à gauche du plateau ; il se lit nettement sur le fond beige sans
+  masquer la poutre posée dedans (bois bien visible à travers), et la balle
+  et le panier, hors zone, ne sont pas teintés. Hors zone (doigt tenu) : la
+  poutre suit le doigt à droite de la zone, nettement pâle, entourée de
+  tirets rouges, sans cadre noir ni bleu, la poignée de rotation bleue
+  au-dessus ; pas de message. Refus (après le lâcher) : la poutre est revenue
+  à sa place dans la zone, sélectionnée (cadre sombre et poignée) ; une seule
+  carte « Action refusée : choisissez une position dans la zone de
+  construction. » à bord rouge, en haut du plateau. En 844 × 390, cette carte
+  recouvre le haut du plateau et cache la moitié de la balle rouge
+  (emplacement préexistant de `.toolbar-feedback`, non touché) ; en 390 × 844
+  et 1440 × 900 elle ne recouvre que la bordure haute.
+- Gate : `pnpm check` passe du premier coup — typecheck, lint, formatage,
+  Knip, contenu (19 documents), 1002 tests Vitest en 79 fichiers, build, 60
+  tests Playwright `mobile` (59 réussis, 1 ignoré). Pas d'intermittence D4 ni
+  U15 observée. Le nouveau test App était instable au premier jet (le niveau
+  partagé se charge de façon asynchrone et la caméra n'était pas encore
+  ajustée) : il attend désormais le zoom de `fitCameraToScene`, 5 passages
+  sur 5 ; le parcours E2E aussi (l'inspecteur compact s'ouvrait après la
+  vérification) : il attend l'inspecteur avant de le fermer, 12 passages sur
+  12 (`--repeat-each=6`). `tmp/check-levels.ts` (ESLint le refuse) a été
+  déplacé hors du dépôt pendant `pnpm check:fast` et `pnpm check`, puis remis
+  exactement à sa place : SHA-256 `1113625e…a92907` et mode 644 identiques
+  avant et après.
+- Non vérifié : un vrai téléphone (le doigt masque l'objet qu'il tire) ; un
+  niveau à plusieurs zones dans le navigateur (couvert par le test pur) ; la
+  rotation hors zone dans le navigateur (couverte par le test pur et le
+  renderer).
+- Pour l'auteur : validation visuelle des neuf captures ci-dessus.
+  Questions (tranchées de façon conservatrice, à confirmer) : (1) la teinte
+  des zones (bleu à 10 %, contour à 65 %) est-elle assez visible, ou trop ?
+  (2) une zone qui couvre toute la scène n'est pas dessinée : vous convient-il ?
+  (3) Constaté, préexistant et non touché : en 844 × 390 la carte de refus
+  cache le haut du plateau (dont la balle) ; et le cadre de sélection d'un
+  objet est sombre, pas bleu (`drawFootprintOutline` sans couleur). (4) La
+  question (4) du journal U1 est résolue ici : le déplacement hors zone a le
+  rendu du fantôme invalide.

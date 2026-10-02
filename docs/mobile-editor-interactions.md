@@ -152,6 +152,19 @@ annonce l'action et rend « Annuler » accessible.
 6. `pointercancel`, la perte de focus, un changement d'orientation ou l'arrivée
    d'un second pointeur annule de la même façon la projection temporaire.
 
+Hors de toute zone de construction, la projection continue de suivre le doigt :
+l'objet est dessiné comme le fantôme de placement refusé (plus pâle, entouré de
+tirets rouges, sans cadre de sélection ; la poignée de rotation reste). Rien n'est
+annoncé pendant le geste ; au relâchement hors zone, l'objet revient à sa
+position de départ et un seul message de refus est affiché pour tout le geste.
+Un geste accepté efface le message d'un refus précédent. Une rotation qui fait
+sortir l'empreinte de la zone suit la même règle.
+
+En résolution, pendant la construction, les zones de construction qui
+restreignent la pose sont dessinées sur le plateau (teinte bleue légère, contour
+en tirets), toutes quand il y en a plusieurs ; aucune quand une zone couvre la
+scène entière, ni en création, ni pendant la simulation.
+
 La validité tient compte des permissions et de la zone de construction. Le simple
 chevauchement de deux formes physiques n'est pas déclaré invalide par ce document :
 si une règle de niveau doit l'interdire, elle devra être explicite et testée.

@@ -1202,7 +1202,7 @@ describe('renderer Canvas 2D du plateau', () => {
   });
 
   it('atténue l’objet dont la position est refusée, et lui seul', async () => {
-    const renderWith = async (invalidPlacementId?: string): Promise<readonly Operation[]> => {
+    const renderWith = async (refusedPlacementId?: string): Promise<readonly Operation[]> => {
       const { context, operations } = createContext();
       const spriteLoader = createPendingSpriteLoader();
       spriteLoader.setReady();
@@ -1212,9 +1212,15 @@ describe('renderer Canvas 2D du plateau', () => {
         viewport,
         spriteLoader: spriteLoader.loader,
       });
-      const projection = projectLevel(levelDocument);
+      // U13: a refused move or turn is drawn as the invalid ghost of U1.
       await renderer.render(
-        invalidPlacementId === undefined ? projection : { ...projection, invalidPlacementId },
+        projectLevel(
+          levelDocument,
+          undefined,
+          refusedPlacementId === undefined
+            ? undefined
+            : { ghostPlacementId: refusedPlacementId, isGhostValid: false },
+        ),
       );
       return operations;
     };
@@ -1589,5 +1595,45 @@ describe('fantôme de placement (U1)', () => {
 
     expect(drawn.every(({ state }) => state.alpha === 1)).toBe(true);
     expect(drawn.some(({ operation }) => operation.kind === 'strokeRect')).toBe(false);
+  });
+});
+
+describe('objet déplacé hors zone (U13)', () => {
+  it('se dessine comme le fantôme invalide : pâle, tirets rouges, sans cadre bleu, poignée gardée', async () => {
+    const { context, operations } = createContext();
+    const spriteLoader = createPendingSpriteLoader();
+    spriteLoader.setReady();
+    const renderer = createBoardRenderer({
+      canvas: { width: 0, height: 0 },
+      context,
+      viewport,
+      spriteLoader: spriteLoader.loader,
+    });
+
+    await renderer.render({
+      ...projectLevel(levelDocument, undefined, {
+        ghostPlacementId: 'beam-1',
+        isGhostValid: false,
+      }),
+      selectedPlacementId: 'beam-1',
+    });
+
+    const drawn = replay(operations);
+    const beam = drawn.find(
+      ({ operation }) =>
+        operation.kind === 'drawImage' &&
+        operation.values[0] === spriteLoader.sprites['beam-medium'].source,
+    );
+    expect(beam?.state.alpha).toBe(0.35);
+    // One outline only around the beam's footprint: the dashed warning one.
+    const outlines = drawn.filter(
+      ({ operation }) =>
+        operation.kind === 'strokeRect' && operation.values[2] === 16 && operation.values[3] === 1,
+    );
+    expect(outlines.map(({ state }) => [state.strokeStyle, state.dashed])).toEqual([
+      ['#e53935', true],
+    ]);
+    // The finger may be turning it by its handle: the handle stays.
+    expect(operations.some(isRotationKnob)).toBe(true);
   });
 });

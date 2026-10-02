@@ -422,7 +422,7 @@ phase ; le détail reste dans `etat.md` et le journal de la feuille de route).
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0 — Gate verte                    | faite (G1, G2)                                                                                                                                      |
 | 1 — « Mes niveaux » et communauté | faite (M1 à M15 ; M14b : description modifiable à l’export ; M15 : documentation)                                                                   |
-| 2 — Interface en attente          | en cours (U12 et U1 livrées, validation visuelle attendue ; reste U13, U7, U8, U10, U11, U2, U3, inspecteur compact)                               |
+| 2 — Interface en attente          | en cours (U12, U1 et U13 livrées, validation visuelle attendue ; reste U7, U8, U10, U11, U2, U3, inspecteur compact)                               |
 | 3 — Atelier complet               | à faire (A1 à A3) ; A4, description du niveau, livrée par M14b                                                                                      |
 | 4 — Outillage et mesures          | à faire                                                                                                                                             |
 | 5 — Décisions de l’auteur         | en attente (minuteur et niveau 15, bouton Grist, tri des propositions)                                                                              |

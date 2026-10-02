@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CampaignProgress } from '../application/progression';
@@ -2647,5 +2647,93 @@ describe('coque TinkerBolt', () => {
 
     fireEvent.click(undoButton);
     expect(screen.queryByRole('region', { name: 'Propriétés de Poutre' })).not.toBeInTheDocument();
+  });
+
+  it('montre la zone, fait suivre le doigt hors zone en fantôme invalide et refuse le geste une seule fois (U13)', async () => {
+    const zoneLevel = levelDocumentSchema.parse({
+      ...sharedM8Level,
+      id: 'u13-zones',
+      metadata: { title: 'Zones U13' },
+      objects: [
+        ...sharedM8Level.objects,
+        {
+          id: 'movable-beam',
+          type: 'beam',
+          props: { size: 'short' },
+          transform: { position: { x: 2, y: 3 }, rotation: 0 },
+          permissions: { move: true, rotate: true, remove: false },
+        },
+      ],
+      // An inventory gives the player the undo and redo buttons.
+      inventory: [
+        {
+          id: 'inventory-mass',
+          type: 'mass',
+          props: { weight: '10kg' },
+          quantity: 1,
+          permissions: { move: true, rotate: false, remove: true },
+        },
+      ],
+      buildZones: [{ min: { x: 0, y: 1.5 }, max: { x: 5, y: 5.5 } }],
+    });
+    window.history.replaceState(null, '', '/shared' + (await encodeShareFragment(zoneLevel)));
+    const { repository } = createReceivedLevelRepository();
+    render(<App receivedLevelRepository={repository} />);
+    expect(await screen.findByText('Partage · Zones U13')).toBeVisible();
+
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+    expect(canvas).toHaveAttribute('data-build-zones', '1');
+    // The camera frames the scene once the board has measured its canvas.
+    const fittedZoom = fitCameraToScene(zoneLevel.scene, {
+      width: BOARD_CANVAS_WIDTH_IN_CSS_PIXELS,
+      height: BOARD_CANVAS_HEIGHT_IN_CSS_PIXELS,
+    }).pixelsPerWorldUnit;
+    await waitFor(() => {
+      expect(Number(canvas.getAttribute('data-camera-zoom'))).toBe(fittedZoom);
+    });
+    const undoButton = screen.getByRole('button', { name: 'Annuler' });
+    const client = (x: number, y: number) => {
+      const [originX, originY] = (canvas.getAttribute('data-camera-origin') ?? '')
+        .split(',')
+        .map(Number);
+      const zoom = Number(canvas.getAttribute('data-camera-zoom'));
+      if (originX === undefined || originY === undefined || !(zoom > 0)) {
+        throw new Error('Cadrage caméra invalide dans le test.');
+      }
+      return { clientX: (x - originX) * zoom, clientY: (y - originY) * zoom };
+    };
+    const touch = (type: PointerEventType, x: number, y: number): void => {
+      firePointerEvent(board, type, { pointerId: 7, pointerType: 'touch', ...client(x, y) });
+    };
+    const refusals = () => screen.queryAllByText(/Action refusée/);
+    const ghostPosition = () =>
+      (canvas.getAttribute('data-placement-ghost-position') ?? '')
+        .split(',')
+        .map((value) => Math.round(Number(value) * 1000) / 1000);
+
+    // Out of the zone, the beam keeps following the finger, as an invalid ghost.
+    touch('pointerdown', 2, 3);
+    touch('pointermove', 4, 3);
+    touch('pointermove', 6.5, 3);
+    expect(canvas).toHaveAttribute('data-placement-ghost', 'invalid');
+    expect(ghostPosition()).toEqual([6.5, 3]);
+    touch('pointermove', 7, 2.5);
+    expect(ghostPosition()).toEqual([7, 2.5]);
+    expect(refusals()).toHaveLength(0);
+
+    // Lifted there: one refusal for the whole gesture, nothing committed.
+    touch('pointerup', 7, 2.5);
+    expect(refusals()).toHaveLength(1);
+    expect(canvas).not.toHaveAttribute('data-placement-ghost');
+    expect(undoButton).toBeDisabled();
+
+    // A drag inside the zone is accepted and clears the previous refusal.
+    touch('pointerdown', 2, 3);
+    touch('pointermove', 3, 3.5);
+    expect(canvas).not.toHaveAttribute('data-placement-ghost');
+    touch('pointerup', 3, 3.5);
+    expect(undoButton).toBeEnabled();
+    expect(refusals()).toHaveLength(0);
   });
 });

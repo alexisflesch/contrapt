@@ -5,10 +5,10 @@ import {
   currentEditorAttempt,
   type EditorSession,
 } from '../application/editor-session/editor-session';
+import { highlightedBuildZones } from '../app/build-zone-highlight';
 import { placementGhost } from '../app/placement-ghost';
 import type { BoardPointerHandlers } from '../app/use-board-pointers';
 import {
-  constrainingBuildZones,
   createBoardRenderer,
   projectLevel,
   withAuthorRotation,
@@ -256,8 +256,11 @@ export function BoardView({
     (body) => body.placementId === simulationBallId && body.role === 'primary',
   );
 
-  // The placement a gesture projects, drawn as a ghost by the renderer and
-  // exposed for tests and tools like the balls below.
+  // The build zones shown to the player (U13), counted for tests and tools.
+  const buildZoneCount = highlightedBuildZones(session).length;
+
+  // The placement a gesture projects, or a refused move (U13), drawn as a
+  // ghost by the renderer and exposed for tests and tools like the balls below.
   const ghost = session.phase === 'construction' ? placementGhost(session) : null;
   const ghostPlacement =
     ghost === null
@@ -348,20 +351,11 @@ export function BoardView({
                   objects: withAuthorRotation(projection.objects),
                 }
               : projection;
-          const { manipulation } = currentSession;
           const constructionView =
             currentSession.phase === 'construction'
               ? {
                   ...(selectedPlacementId !== null && { selectedPlacementId }),
-                  ...(currentSession.mode === 'resolution' && {
-                    buildZones: constrainingBuildZones(displayedDocument),
-                  }),
-                  // A refused placement is drawn as an invalid ghost instead.
-                  ...(manipulation !== null &&
-                    manipulation.kind !== 'placement' &&
-                    manipulation.invalidReason !== null && {
-                      invalidPlacementId: manipulation.placementId,
-                    }),
+                  buildZones: highlightedBuildZones(currentSession),
                 }
               : {};
           await renderer.render({ ...projectionWithEffectiveCapabilities, ...constructionView });
@@ -426,6 +420,7 @@ export function BoardView({
               .join(' ')}
             data-camera-zoom={String(camera.pixelsPerWorldUnit)}
             data-camera-origin={`${String(camera.origin.x)},${String(camera.origin.y)}`}
+            data-build-zones={buildZoneCount === 0 ? undefined : String(buildZoneCount)}
             data-placement-ghost={
               ghost === null ? undefined : ghost.isGhostValid ? 'valid' : 'invalid'
             }

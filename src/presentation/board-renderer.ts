@@ -214,11 +214,9 @@ type BoardProjection = Readonly<{
   readonly selectedPlacementId?: string;
   /** Build zones to highlight while the player constructs; view state, like the selection. */
   readonly buildZones?: readonly BoardZone[];
-  /** Placement projected where it cannot be committed (outside every build zone). */
-  readonly invalidPlacementId?: string;
 }>;
 
-type BoardZone = Readonly<{ readonly min: BoardPoint; readonly max: BoardPoint }>;
+export type BoardZone = Readonly<{ readonly min: BoardPoint; readonly max: BoardPoint }>;
 
 type Placement = LevelDocument['objects'][number];
 
@@ -701,7 +699,6 @@ const INVALID_OUTLINE = '#e53935';
 /** Neither the goal's red nor the build zones' blue (U19, U13). */
 const TO_PLACE_OUTLINE = '#6a1b9a';
 const TO_PLACE_DASH_CSS_PIXELS = [6, 4];
-const INVALID_OBJECT_ALPHA = 0.5;
 /** C1: a ghost shows the object it will become, see-through; a refused one fades further. */
 const GHOST_ALPHA: Record<BoardAppearance, number> = {
   solid: 1,
@@ -881,7 +878,8 @@ const drawSelection = (
 ): void => {
   if (context.strokeRect === undefined) return;
 
-  drawFootprintOutline(context, object, viewport);
+  // A ghost (U13: a refused move or turn) is framed by its own outline only.
+  if (object.appearance === 'solid') drawFootprintOutline(context, object, viewport);
 
   if (!object.rotatable || !canDrawWires(context)) return;
   drawRotationHandle(context, object, viewport);
@@ -948,9 +946,6 @@ export const createBoardRenderer = ({
 
       context.save();
       if (object.appearance !== 'solid') context.globalAlpha = GHOST_ALPHA[object.appearance];
-      else if (object.id === projection.invalidPlacementId) {
-        context.globalAlpha = INVALID_OBJECT_ALPHA;
-      }
       context.translate(position.x, position.y);
       context.rotate(object.layer.rotation);
       if (object.layer.mirrored === true) context.scale(-1, 1);
@@ -991,11 +986,5 @@ export const createBoardRenderer = ({
     }
 
     drawGhostOutline(context, projection, viewport);
-
-    // Drawn last so the refused footprint stays red over the selection frame.
-    const invalid = projection.objects.find(
-      ({ id, appearance }) => id === projection.invalidPlacementId && appearance === 'solid',
-    );
-    if (invalid !== undefined) drawFootprintOutline(context, invalid, viewport, INVALID_OUTLINE);
   },
 });

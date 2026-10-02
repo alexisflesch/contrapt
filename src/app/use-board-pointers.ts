@@ -581,7 +581,9 @@ export function useBoardPointers({
     }
     const result = commitEditorManipulation(sessionRef.current);
     updateSession(result.session);
+    // One refusal per gesture (U13): an accepted gesture clears an earlier one.
     if (result.status === 'rejected') reportRefusal(result.reason);
+    else setFeedback(null);
   };
 
   const cancelDirectMove = (): void => {
