@@ -147,6 +147,10 @@ const selectGoalBall = async (page: Page, canvas: Locator): Promise<void> => {
     bounds.x + (goalBall.x - origin.x) * zoom,
     bounds.y + (goalBall.y - origin.y) * zoom,
   );
+  // The tap opens the properties a render later: in a compact layout they are a sheet over the
+  // toolbar, which a player closes before launching. Wait for the panel so that its close button,
+  // when the layout has one, is tested once it is there and never skipped by an early look.
+  await expect(page.getByRole('region', { name: 'Propriétés de Balle' })).toBeVisible();
   const close = page.getByRole('button', { name: 'Fermer les propriétés' });
   if (await close.isVisible()) await close.click();
   await expect(

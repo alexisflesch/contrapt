@@ -900,6 +900,11 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ## Dernière exécution de la gate
 
+`pnpm check` après T1 (2 octobre 2026) : passe — 1200 tests Vitest (90 fichiers), 88 tests
+Playwright `v1` (0 ignoré), précache 55 entrées. `e2e/goal-ball.spec.ts` est stable en
+isolation (5 exécutions sur 5) : `selectGoalBall` attend la feuille des propriétés avant de la
+fermer. `tmp/check-levels.ts` écarté puis remis identique.
+
 `pnpm check` après V7 (2 octobre 2026) : passe — typecheck, lint, formatage,
 Knip, contenu (6 documents embarqués), 1200 tests Vitest (90 fichiers), build
 (précache : 55 entrées, 2 606 Kio, contre 58 et 10 226 Kio avant) et 88 tests

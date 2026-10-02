@@ -831,3 +831,24 @@ an accessible element with the role "heading" and name "Amène la balle jusqu’
   les dix specs qui lisent le contexte à 390 px (voir « En-tête ») ; corrigé côté CSS.
 - Pour l’auteur : valider les captures de `v7/` ; au téléphone, le contexte de l’en-tête
   s’empile sous le titre (v2 décidera).
+
+### T1 — Stabiliser goal-ball en isolation — fait — commit T1 (2 octobre 2026)
+
+- Symptôme : `pnpm build` puis `playwright test e2e/goal-ball.spec.ts --project=v1`
+  échouait à chaque exécution isolée sur le test « R1 — captures… » : « `<div class="panel-body">`
+  from `<div class="status-slot">` subtree intercepts pointer events » au clic sur « Lancer ».
+- Cause (reproduite, instrumentée) : ce n'était ni l'aide du niveau 1 ni un panneau ancré,
+  mais la **feuille des propriétés** de la balle, au **deuxième format** (844 × 390,
+  disposition compacte). `selectGoalBall` touche la balle verrouillée, puis
+  teste `close.isVisible()` _une seule fois, sans attendre_ : la feuille (panneau et scrim)
+  n'est rendue que quelques instants après le toucher. Le test regardait avant, ne trouvait
+  pas le bouton « Fermer les propriétés », ne fermait rien, et la feuille recouvrait « Lancer ».
+  À 390 × 844 le rendu était assez rapide, à 1440 × 900 la disposition large n'a pas de
+  feuille (rail sans bouton de fermeture) ; dans la suite complète, la course était gagnée
+  par hasard. Aucun bug de production : la feuille est un recouvrement voulu (D4) que
+  le joueur ferme avant de lancer.
+- Correctif (test seul) : `selectGoalBall` attend d'abord la région « Propriétés de Balle »
+  visible, puis ferme la feuille si la disposition en a une. Mêmes assertions, mêmes seuils
+  de pixels, mêmes formats.
+- Preuves : 5 exécutions isolées vertes (2 réussis chacune) ; `pnpm check` verte
+  (1200 tests Vitest, 88 tests Playwright `v1`, précache 55 entrées).
