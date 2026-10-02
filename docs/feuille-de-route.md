@@ -265,7 +265,7 @@ Une entrée par tâche, au format :
   - `goal-ball.spec.ts` (deux tests R1) : comparaisons de pixels calibrées sur un
     écran dense (Pixel 5, ratio 2,75) ; à ratio 1 le bord doux du sprite écarte le
     coin échantillonné de 4 niveaux (seuil 3). `test.use({ deviceScaleFactor:
-    2.75 })` en tête du fichier, seuil inchangé.
+2.75 })` en tête du fichier, seuil inchangé.
 - Aucun bug de production révélé sur desktop. Aucune intermittence de
   `layout.spec.ts` (D4, U15) observée sur 3 exécutions complètes de `v1`.
 - Résultat : `pnpm exec playwright test --project=v1` (via
@@ -282,7 +282,7 @@ Une entrée par tâche, au format :
 ### V1 — Finir l'intégration des tutoriels (N2) — fait — commit V1 (2 octobre 2026)
 
 - Tests rouges de départ : Knip `Unused exports (1) — sketchChapters
-  test/fixtures/sketch-campaign.ts:23:14` ; Vitest `src/app/level-export.test.ts`
+test/fixtures/sketch-campaign.ts:23:14` ; Vitest `src/app/level-export.test.ts`
   « Niveau 4 embarqué introuvable ».
 - Knip : la configuration n'est pas en cause. Les mocks `vi.mock` de
   `App`, `CampaignDraftEditing`, `EditAndRemix` et `PuzzleWorkshop` utilisaient
@@ -305,3 +305,44 @@ Une entrée par tâche, au format :
   inchangé. `tmp/check-levels.ts` remis identique (sha256 `1113625e…`).
 - Commits : V0 puis V1 séparés ; `docs/feuille-de-route.md` et `docs/etat.md`
   portent les deux tâches et sont dans le commit V1.
+
+### V4 — Maquettes — fait, validé par l'auteur le 2 octobre 2026 — commit V4
+
+- Maquettes statiques dans `docs/maquettes/v1/` (`accueil.html`, `campagne.html`,
+  `mes-niveaux.html`, `atelier.html`, feuille `maquettes.css`), captures en
+  1440 × 900 et 1280 × 720 dans `captures/`. Elles se servent en HTTP (la
+  police ne se charge pas en `file://`) : `python3 -m http.server` à la racine.
+  Les vignettes `img/tuto-*.png` sont de vraies captures du jeu, fond option A.
+- **L'auteur a validé toute l'UI.** Ces maquettes font référence pour V5 à V7 ;
+  les écarts d'implémentation se justifient dans le journal. Choix fixés :
+  - **Police** : Nunito (OFL, variable), embarquée localement dans l'app
+    (fichier de police dans `public/`, pas de dépendance npm, pas de police
+    distante : PWA hors ligne). Licence OFL à citer dans le README.
+  - **En-tête** : « TinkerBolt » lien vers `/` ; titre de page en texte simple
+    centré, sans pastille ni sous-titre en capitales ; dans l'Atelier
+    « <titre du niveau> · Atelier ».
+  - **Accueil** : titre « Amène la balle jusqu'au panier. », texte « Poutres,
+    tremplins, ventilateurs, leviers : place les pièces, lance la machine et
+    regarde ce qui se passe. Raté ? Ajuste et relance. », bouton « Jouer » →
+    `/levels`, lien « ou créer un niveau » → Atelier ; image : aperçu réel d'un
+    tutoriel ; trois cartes Campagne (progression `n / 5` en barre),
+    Atelier, Mes niveaux, illustrées par un sprite ; pied de page : licence
+    CC BY 4.0 et « Paramètres ». Aucune flèche décorative, pastille,
+    « carnet de bord » ni statistique.
+  - **Carte de niveau** : aperçu 16:9 en haut avec numéro (campagne) et palier
+    (Résolu / Élégant / Minimal, ou « Résolu · n objets » pour un niveau reçu) ;
+    titre, ligne auteur/source (Mes niveaux), description sur deux lignes ;
+    action principale verte + actions secondaires en icônes avec nom
+    accessible et infobulle. Campagne : Jouer + Modifier. Créations :
+    Modifier + Jouer, Partager, Dupliquer, Supprimer. Reçus : Jouer +
+    Modifier, Partager, Supprimer. Verrouillé : aperçu grisé, badge
+    « Verrouillé », actions désactivées. Pas de bandeau « Le carnet de
+    l'atelier » ni de compteurs ; en-tête de chapitre « Chapitre 1 · Premiers
+    pas » avec « n / 5 résolus ».
+  - **Mes niveaux** : « Importer » et « Nouveau niveau » dans le bandeau du
+    haut ; sections « Mes créations » et « Niveaux reçus » avec les mêmes
+    cartes.
+  - **Scrollbar** : fine, sable (`#d4c19c`, survol `#b99c69`), sans flèches,
+    piste transparente, pour toutes les zones qui défilent.
+- La maquette de l'Atelier ne couvre que le bandeau, le catalogue et la
+  scrollbar : le reste de l'agencement de jeu et d'édition est reporté en v2.
