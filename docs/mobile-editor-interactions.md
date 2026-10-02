@@ -510,6 +510,67 @@ supportée.
 20. **Échec d'autosauvegarde.** Quand une sauvegarde échoue après une commande de
     création, alors le brouillon et l'historique restent disponibles, l'erreur est
     persistante et quitter demande confirmation.
+21. **Recevoir, jouer, remixer, partager.** Étant donné la page « Mes niveaux »
+    (ADR 0015) et un fichier de niveau valide en forme puzzle, quand le joueur
+    touche « Importer un fichier » et le choisit, alors il reste sur la page, un
+    statut dit « « <titre> » est dans tes niveaux reçus. » et une carte apparaît
+    dans « Niveaux reçus » avec « Pas encore résolu », la description et
+    l'attribution (« par <auteur> », « d'après <titre> (par <auteur>) »), en
+    texte brut. Recevoir à nouveau le même document, par fichier ou par lien, ne
+    crée pas de seconde carte : il la remet en tête sans changer la résolution,
+    le record ni la solution du joueur. Un atelier (objet ou fil « à placer »)
+    est refusé avec un message, sans carte. Ensuite :
+    - quand il touche « Jouer » sur la carte, alors `/my-levels/:id/play` ouvre
+      le niveau en mode joueur, l'en-tête montre l'attribution et un bouton
+      « Mes niveaux » ramène à la liste ; si le stockage a refusé l'écriture,
+      l'import affiche une alerte et « Jouer quand même » joue sur place, avec le
+      statut discret « Ce niveau n’a pas été gardé sur cet appareil. », sans
+      rien enregistrer, victoire comprise ;
+    - quand il pose ses objets et touche « Lancer » et que la machine gagne,
+      alors la boîte « Bravo ! » n'offre que le palier « Résolu », avec
+      « Recommencer », « Voir la scène » et « Remixer », sans « Niveau suivant »,
+      et la carte devient « Résolu » avec le meilleur nombre d'objets ;
+    - quand il touche « Remixer », alors une nouvelle création `creation-<aléa>`
+      s'ouvre dans l'atelier (`/editor?draft=<id>`), titrée « <titre> (remix) »,
+      sans `author`, avec le niveau d'origine dans `basedOn`, et la tentative
+      gagnante posée en objets « à placer » ; le niveau reçu n'est pas modifié ;
+      glisser un de ces objets au doigt produit une seule entrée d'historique,
+      enregistrée dans la création ;
+    - quand il touche « Exporter le niveau », alors la boîte vérifie le puzzle
+      (« Puzzle vérifié ») et propose « Nom du niveau », « Description
+      (facultatif) » et « Pseudo (facultatif) » (aide « Un pseudo, pas ton vrai
+      nom »), avec la mention de licence CC BY 4.0 (ADR 0016) ; un pseudo refusé
+      par le schéma est dit sous le champ (`role="alert"`) et désactive
+      « Télécharger le fichier » et « Copier le lien de partage » ; sinon le
+      fichier et le lien portent le nom, la description et le pseudo saisis,
+      espaces de bord retirés, un champ vidé retirant la valeur, `basedOn`
+      transmis tel quel ; le pseudo est retenu et préremplit l'export suivant,
+      même après rechargement ; avec le clavier virtuel ouvert (390 × 508), le
+      champ saisi et « Télécharger le fichier » restent visibles ;
+    - toutes ces actions s'achèvent au toucher, sans survol ni clic droit, et
+      leurs cibles mesurent au moins 44 x 44 pixels CSS. `APPAREIL` pour le
+      clavier virtuel.
+22. **Révéler la solution de l'auteur.** Étant donné l'atelier d'une création
+    dont la `source` porte une solution (par exemple un remix de niveau reçu), en
+    phase de construction, quand le joueur ouvre le menu d'en-tête, alors
+    « Révéler la solution de l’auteur » y est la première entrée, avec une cible
+    d'au moins 44 pixels de haut, et le menu reste contenu dans l'écran et
+    défile en paysage sur téléphone (844 × 390). Quand il la touche, alors une
+    boîte de confirmation s'ouvre avec « Annuler » comme action par défaut ;
+    « Annuler » la ferme sans rien changer. Quand il touche « Révéler la
+    solution », alors les poses et les fils de la solution de l'auteur sont
+    ajoutés au plateau, marqués « à placer », sans rien retirer de ce qui s'y
+    trouve ; la commande ne crée qu'une entrée d'historique, qu'un seul
+    « Annuler » de la barre d'actions retire, et la création est enregistrée
+    comme toute modification. Si un fil ne peut pas être posé (une de ses
+    extrémités n'existe plus, ou il viserait un appareil déjà commandé), il est
+    ignoré et un statut discret (`role="status"`, masquable d'un toucher) dit
+    « 1 fil de la solution de l’auteur n’a pas pu être posé. » ou « N fils de la
+    solution de l’auteur n’ont pas pu être posés. » ; la révélation n'est jamais
+    refusée en bloc. L'entrée est absente de l'atelier libre, d'une création sans
+    `source` ou dont la `source` n'a pas de solution, hors de la phase de
+    construction et en « Essayer en joueur ». La boîte de confirmation est voulue
+    par l'ADR 0015, bien que la commande soit annulable.
 
 ## Décisions à mesurer avant gel de l'interface
 

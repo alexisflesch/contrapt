@@ -421,7 +421,7 @@ phase ; le détail reste dans `etat.md` et le journal de la feuille de route).
 | Phase de la feuille de route      | État au 2 octobre 2026                                                                                                                              |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0 — Gate verte                    | faite (G1, G2)                                                                                                                                      |
-| 1 — « Mes niveaux » et communauté | en cours : M1 à M14b livrées (M14b : description modifiable à l’export) ; M15 (documentation) reste                                                 |
+| 1 — « Mes niveaux » et communauté | faite (M1 à M15 ; M14b : description modifiable à l’export ; M15 : documentation)                                                                   |
 | 2 — Interface en attente          | à faire                                                                                                                                             |
 | 3 — Atelier complet               | à faire (A1 à A3) ; A4, description du niveau, livrée par M14b                                                                                      |
 | 4 — Outillage et mesures          | à faire                                                                                                                                             |

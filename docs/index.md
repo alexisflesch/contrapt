@@ -23,15 +23,15 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `AGENTS.md`                                               | 103     | règles applicables à tout changement, invariants non négociables |
 | `docs/backlog.md`                                         | 138     | découpage des tranches, dépendances, tranche courante            |
 | `docs/cahier-des-charges.md`                              | 436     | vision produit, périmètre, hors-périmètre                        |
-| `docs/etat.md`                                            | 133     | ce qui est livré, les dettes, la dernière gate                   |
-| `docs/feuille-de-route.md`                                | 443     | tâches restantes, leur ordre, règles de reprise, journal         |
+| `docs/etat.md`                                            | 849     | ce qui est livré, les dettes, la dernière gate                   |
+| `docs/feuille-de-route.md`                                | 1795    | tâches restantes, leur ordre, règles de reprise, journal         |
 | `docs/feuille-de-route-luna.md`                           | 2633    | historique de la reprise précédente (journal L1 à U29)           |
 | `docs/plan-remise-en-jeu.md`                              | 1208    | historique A–F ; spécifications détaillées de C1, C2, D3         |
 | `docs/architecture.md`                                    | 223     | couches, dépendances, états distincts, modèle d'objet            |
 | `docs/qualite.md`                                         | 149     | stratégie de test, niveaux de test, gates                        |
 | `docs/catalogue-initial.md`                               | 239     | contrats des onze familles d'objets                              |
 | `docs/tinkerbolt_control_wires_v1.md`                       | 125     | spécification fonctionnelle des fils de commande                 |
-| `docs/mobile-editor-interactions.md`                      | 504     | gestes, états d'interface, scénarios d'acceptation tactiles      |
+| `docs/mobile-editor-interactions.md`                      | 595     | gestes, états d'interface, scénarios d'acceptation tactiles      |
 | `docs/levels/nouveaux-niveaux.md`                         | —       | campagne esquissée : 18 propositions, niveau 15 différé          |
 | `docs/levels/conception-niveaux.md`                       | 156     | concevoir un niveau : règles du jeu, objets, physique, méthode   |
 | `docs/decisions/0001-product-foundations.md`              | 33      | fondations produit (accepté)                                     |

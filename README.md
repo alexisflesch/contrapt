@@ -11,9 +11,25 @@ version 3 ou ultérieure (`AGPL-3.0-or-later`). Le texte complet est dans
 contient le code de l’application ; les dépendances et ressources tierces restent
 soumises à leurs propres licences.
 
-Le projet est encore en développement. La campagne contient actuellement douze
-niveaux jouables ; le mode auteur permet aussi de tester, modifier, sauvegarder
-et partager des niveaux localement.
+Le contenu de niveau (les niveaux embarqués dans la campagne comme ceux qu’on
+partage depuis l’application) est sous licence
+[Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/deed.fr) :
+d’autres peuvent le modifier et le republier en citant son auteur. La licence
+n’est pas un champ du fichier de niveau ; elle est rappelée au moment de
+partager. Elle ne couvre pas les sprites et illustrations de `art/` et de
+`public/assets/`. La décision est dans
+[l’ADR 0016](docs/decisions/0016-attribution-licence-niveaux.md).
+
+Le projet est encore en développement. La campagne contient actuellement
+dix-sept esquisses de niveaux, non calibrées ; le mode auteur permet de créer, tester, modifier,
+sauvegarder et partager des niveaux localement.
+
+La page « Mes niveaux » rassemble, sur l’appareil, les niveaux reçus par lien ou
+par fichier et les créations du joueur. On y importe un fichier, on joue un
+niveau reçu, on le partage à nouveau ou on le remixe dans l’atelier, qui garde
+l’auteur et les sources d’origine ; une création se modifie, se joue, se
+duplique et se partage avec un nom, une description et un pseudo facultatif.
+Tout reste dans le navigateur ([ADR 0015](docs/decisions/0015-mes-niveaux.md)).
 
 ## Développement
 

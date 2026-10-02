@@ -11,9 +11,10 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
 ## Point de reprise (fin de session du 1er octobre 2026)
 
-- **Prochaine tâche : M15**, puis la phase 2. Phase 0 et M1 à M14b sont
-  faites (journal § 7 ; M14b le 2 octobre 2026, qui livre aussi A4 de la
-  phase 3). `pnpm check` était vert au dernier commit.
+- **Phase 1 terminée : prochaine tâche, la phase 2, en commençant par U12.**
+  Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre 2026, qui
+  livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
+  2 octobre 2026). `pnpm check` était vert au dernier commit.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
   part dans un sous-agent neuf, une à la fois, avec pour consigne de lire
   `AGENTS.md`, `docs/index.md`, ce fichier (§ 1 à 3, la tâche, le journal),
@@ -26,8 +27,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
 - **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b
-  (`test-results/`) ; questions de goût listées dans les entrées M12 à M14b du
-  journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
+  (`test-results/`) ; relecture des documents de M15 (entrée du journal) ;
+  questions de goût listées dans les entrées M12 à M14b du journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
   la phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
 
@@ -1701,3 +1702,94 @@ className="level-card-description">` après l’état, comme `/levels` (même
   (SHA-256 vérifié avant et après). Les captures de `test-results/` sont
   effacées par toute exécution Playwright isolée (dossier de sortie vidé) :
   `pnpm check` les régénère toutes.
+
+### M15 — Documentation de la phase — fait — commit de cette entrée
+
+- Déroulé : une seule étape documentaire, sous-agent Sonnet (consigne du
+  pilote ; pas d'interface, donc pas d'Opus). Aucun code modifié.
+- Tests ajoutés : aucun (documentaire).
+- Échec initial constaté : sans objet (pas de test).
+- Tests existants réécrits : aucun.
+- Fichiers touchés : `README.md` (licence CC BY 4.0 du contenu de niveau avec
+  renvoi à l'ADR 0016, « Mes niveaux » avec renvoi à l'ADR 0015) ;
+  `docs/etat.md` (réécrit pour la fin de phase) ;
+  `docs/mobile-editor-interactions.md` (scénarios 21 et 22) ;
+  `docs/cahier-des-charges.md` (tableau « Avancement » : la phase 1 passe de
+  « en cours » à « faite », la ligne devenait fausse) ; `docs/index.md`
+  (colonne « ~lignes » de `etat.md`, `feuille-de-route.md` et
+  `mobile-editor-interactions.md`) ; ce fichier (point de reprise, journal).
+  Ni `LICENSE`, ni `package.json`, ni le code.
+- Ce qui a changé dans `etat.md` : les paragraphes M1 à M14b de « Réellement
+  livré » sont regroupés par sujet (domaine, format et attribution ;
+  stockage ; réception et « Mes niveaux » ; jouer, remixer et révéler ;
+  partager), sans retirer de fait ni de chemin de capture « validation
+  visuelle attendue ». Les dettes sont rangées par thème et chacune a été
+  revérifiée dans le code : toutes restent vraies (aperçu de placement CSS,
+  fond CSS, poutre étirée, `decideDraftAutosave` non branché, atelier libre
+  sans message d'échec, partage pendant une simulation, en-tête de 390 px,
+  `format:check` hors Markdown, avertissement peer `typescript-eslint`).
+  Retirées ou corrigées parce que fausses ou périmées : la phrase « la gate
+  complète n'a pas été lancée » de la section Licence (la gate est lancée à
+  chaque tâche) ; « les niveaux partagés gardent le bandeau simple » (U4),
+  faux depuis M10, qui leur donne la boîte « Bravo ! » à palier « Résolu » ;
+  « à gauche de « Tester » » (U6), le bouton s'appelle « Lancer » (décision
+  du 1er octobre 2026) ; « Seul l'ajout d'objet est exposé » (L25), le titre,
+  la description et le pseudo le sont depuis M14 et M14b ; « aucun appelant
+  ne crée encore de `source` » (M4) et « appelée par l'atelier depuis M12 »
+  fusionnés dans les paragraphes concernés. Les lignes de gate M1 à M13 sont
+  condensées en une ligne de synthèse (nombres de tests conservés) ; M14,
+  M14b et les lignes plus anciennes sont inchangées.
+- Écarts avec la tâche : « Mes niveaux » est décrit dans le README en trois
+  phrases (niveaux reçus, créations, import, partage, remix) ; la phrase
+  « La campagne contient actuellement douze niveaux jouables » du README était
+  fausse (17 esquisses non calibrées embarquées, `etat.md`) : elle dit
+  maintenant « dix-sept esquisses de niveaux, non calibrées ». À relire.
+- Contradictions rencontrées (signalées, non arbitrées) :
+  1. `mobile-editor-interactions.md` § Sélection et panneau
+     contextuel (« Une confirmation modale n'est pas requise pour une action
+     immédiatement annulable ») contre l'ADR 0015 § Révéler (« derrière une
+     boîte de confirmation ») : « Révéler » est annulable et demande pourtant
+     une confirmation. Le scénario 22 suit l'ADR et le code, et le dit.
+  2. `mobile-editor-interactions.md` § États de session et scénario 20
+     (échec d'autosauvegarde persistant, quitter demande confirmation)
+     contre `etat.md` (l'atelier libre et les créations échouent en silence,
+     dette M13) : le code ne fait pas ce que le scénario 20 exige. Non touché.
+  3. Le même document emploie encore « tester » (scénario 14, phase de
+     résultat) alors que le libellé est « Lancer » depuis le 1er octobre
+     2026 (le document le dit lui-même § Lancer). Les scénarios 21 et 22
+     emploient « Lancer ».
+  4. Le même document dit que le tiroir de création « donne accès à la
+     configuration de l'inventaire du futur joueur » ; `etat.md` note que
+     l'atelier n'a pas d'édition d'inventaire (dette « Mode auteur
+     incomplet »). Non touché.
+  5. `docs/index.md` : la colonne « ~lignes » était périmée pour presque tous
+     les fichiers (par exemple `etat.md` à 133 pour 845). Seules les lignes
+     des trois fichiers de cette tâche ont été remises à jour.
+- Non vérifié : les scénarios 21 et 22 ne sont pas rejoués ici ; ils suivent
+  `e2e/remix.spec.ts`, `e2e/reveal.spec.ts`, `e2e/share-attribution.spec.ts`,
+  `e2e/my-levels.spec.ts`, `e2e/received-play.spec.ts` et
+  `e2e/shared.spec.ts` (lus en plus de la liste imposée : les libellés de
+  « Jouer quand même », du statut « pas gardé » et de la boîte « Bravo ! »
+  d'un niveau reçu y sont) et le code de `BoardShell.tsx`,
+  `MyLevelsPage.tsx` et `ReceivedLevelShareDialog.tsx` (libellés exacts). Le
+  scénario 21 est marqué `APPAREIL` pour le clavier virtuel (jamais vu sur un
+  téléphone réel). Le défilement du menu de « Révéler » au doigt n'est
+  vérifié que par la hauteur et `overflow-y: auto`.
+- Pour l'auteur : relire (1) la section « Licence » et le paragraphe
+  « Mes niveaux » du README (ton, et la phrase sur les dix-sept esquisses) ;
+  (2) les scénarios d'acceptation 21 et 22 de
+  `docs/mobile-editor-interactions.md` ; (3) `docs/etat.md` réorganisé (aucune
+  capture nouvelle : aucun changement visible). Questions : faut-il trancher
+  la contradiction 1 dans le document d'interactions (exception explicite à la
+  règle « pas de confirmation pour une action annulable ») ? Faut-il marquer
+  le scénario 22 `APPAREIL` aussi ? Les points 2 à 4 sont des écarts
+  préexistants entre le document d'interactions et le code, à traiter ou à
+  assumer.
+- Gate : `pnpm check` passe du premier coup (typecheck, lint, formatage, Knip,
+  contenu, 975 tests Vitest en 77 fichiers, build, 54 tests Playwright
+  `mobile` réussis et 1 ignoré). `tmp/check-levels.ts` (ESLint le refuse) a
+  été déplacé hors du dépôt pendant la gate, puis remis exactement à sa
+  place : SHA-256 `1113625e…a92907` et mode 644 identiques avant et après. Par
+  une erreur de substitution de shell (des accents graves dans un `grep`),
+  `pnpm check` a été lancé deux fois sans effet utile pendant le travail, sans
+  conséquence pour l'arbre ; seule la gate propre ci-dessus compte.
