@@ -65,6 +65,15 @@ entourée d'un anneau, en construction comme en simulation, où l'anneau la suit
 l'objectif le dit aussi en texte : « Seule la balle rouge compte : sur le
 plateau, elle est entourée d’un anneau. » Une balle seule n'a pas d'anneau (U7).
 
+Sur le niveau 1 de la campagne, tant qu'il n'est pas résolu, une aide brève
+oriente le premier essai (U8) : « Touche « Lancer » pour voir la machine
+tourner. », puis, de retour en construction après un lancer, « Prends un objet
+dans le catalogue, pose-le sur le plateau, puis touche « Lancer ». ». Elle
+occupe l'emplacement réservé au résultat et aux propriétés, jamais le plateau
+ni la barre d'actions ; elle se tait pendant la simulation ; un toucher sur
+« Masquer l'aide » ou la première pose la retire pour de bon (préférence
+locale, ADR 0011).
+
 En portrait sur téléphone, le catalogue est un tiroir bas avec au moins deux
 positions : replié et ouvert. En paysage, l'hypothèse initiale est un tiroir
 latéral afin de conserver la hauteur du plateau. Le contenu, l'ordre de focus et

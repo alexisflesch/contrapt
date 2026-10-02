@@ -26,6 +26,8 @@ import { ObjectDrawer } from '../ui/ObjectDrawer';
 import { Dialog } from '../ui/Dialog';
 import { SimulationControls } from '../ui/SimulationControls';
 import { CalibrationGuide } from '../ui/CalibrationGuide';
+import { FirstLevelHint } from '../ui/FirstLevelHint';
+import { firstLevelHintStep } from './first-level-hint';
 import { useBoardCamera } from './use-board-camera';
 import { placementSourceKey, useBoardPointers } from './use-board-pointers';
 import { LevelExportDialog } from './LevelExportDialog';
@@ -71,6 +73,11 @@ interface BoardShellProps {
    * solution, the workshop's menu offers to reveal it.
    */
   readonly authorSource?: LevelDocument | undefined;
+  /**
+   * U8: offers level 1's hint. `onDone` is called once, when the player
+   * closes it or first acts on the board, so it never comes back.
+   */
+  readonly firstLevelHint?: { readonly onDone: () => void } | undefined;
 }
 
 const revealLabel = 'Révéler la solution de l’auteur';
@@ -104,6 +111,7 @@ export function BoardShell({
   calibrationDocument,
   notice,
   authorSource,
+  firstLevelHint,
 }: BoardShellProps) {
   const navigate = useNavigate();
   const [isNoticeDismissed, setIsNoticeDismissed] = useState(false);
@@ -155,6 +163,21 @@ export function BoardShell({
     ...(onSimulationCompleted === undefined ? {} : { onSimulationCompleted }),
   });
   const isSideLayout = useIsSideLayout();
+
+  // U8: « Lancer » first, then the drawer once the machine has run.
+  const [hasLaunched, setHasLaunched] = useState(false);
+  const hasActed = session.history.past.length > 0;
+  const hintStep =
+    firstLevelHint === undefined
+      ? null
+      : firstLevelHintStep({ phase: session.phase, hasLaunched, hasActed });
+  const onHintDoneRef = useRef(firstLevelHint?.onDone);
+  useEffect(() => {
+    onHintDoneRef.current = firstLevelHint?.onDone;
+  });
+  useEffect(() => {
+    if (hasActed) onHintDoneRef.current?.();
+  }, [hasActed]);
 
   // Escape drops the active placement tool, like « Annuler le placement ».
   const isPlacementActive = pointers.placementTool !== null;
@@ -463,6 +486,7 @@ export function BoardShell({
           onCancelPlacement={pointers.cancelPlacement}
           onLaunchSimulation={() => {
             wiring.cancelWiring();
+            setHasLaunched(true);
             simulation.launchSimulation();
           }}
           onPause={simulation.pauseCurrentSimulation}
@@ -487,6 +511,9 @@ export function BoardShell({
           onWheelZoom={boardCamera.zoomWithWheel}
         />
         <div className="status-slot">
+          {hintStep !== null && firstLevelHint !== undefined && (
+            <FirstLevelHint step={hintStep} onDismiss={firstLevelHint.onDone} />
+          )}
           <InspectorDrawer
             isWideLayout={isSideLayout}
             isPropertiesOpen={isInspectorOpen}

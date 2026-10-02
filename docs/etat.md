@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, U7 (balle de l’objectif cerclée quand le plateau compte plusieurs balles) livrée ; phase 1 (« Mes niveaux ») terminée.
+Dernière mise à jour : 2 octobre 2026, U8 (aide brève du niveau 1, vers « Lancer » puis le catalogue) livrée ; phase 1 (« Mes niveaux ») terminée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -129,13 +129,17 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 - Préférences M14 (ADR 0016 § Pseudo) : port `PreferencesRepository`
   (`src/application/preferences/`) et adaptateur `localStorage`
   (`local-storage-preferences-repository.ts`) : enveloppe
-  `{ kind: "preferences", version: 1, data: { author? } }` sous
+  `{ kind: "preferences", version: 1, data: { author?, firstLevelHintDone? } }` sous
   `tinkerbolt:preferences`, pseudo validé par la règle `metadata.author`,
   valeur illisible sauvegardée sous `tinkerbolt:backup:preferences`, quota et
   stockage indisponible en résultats d’erreur ; fourni par
   `PreferencesRepositoryContext`. Le pseudo exporté y est retenu (un champ
   vidé l’oublie) et préremplit l’export d’une création sans `author` ; une
-  erreur de lecture ou d’écriture n’empêche jamais l’export.
+  erreur de lecture ou d’écriture n’empêche jamais l’export. U8 y ajoute
+  `firstLevelHintDone: true` (aide du niveau 1 fermée ou suivie ; ADR 0011,
+  amendement du 2 octobre 2026), champ facultatif sans changement de
+  version : une valeur antérieure se relit à l’identique ; retenir le pseudo
+  conserve ce champ, et inversement.
 - Créations de niveaux de campagne U17 : chaque carte de `/levels` porte
   « Modifier le niveau N » (M11), qui ouvre `/editor?draft=<id>-brouillon`.
   Depuis M6, une création neuve est construite par `creationFromLevel` (sans
@@ -479,6 +483,26 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   captures
   `test-results/goal-ball/{repos,simulation}-{390x844,844x390,1440x900}.png`).
   **Validation visuelle de l’auteur attendue.**
+- Aide du niveau 1 (U8) : sur le premier niveau de la campagne, jamais
+  résolu, une carte brève (liseré jaune, ampoule, bouton « Masquer l’aide »)
+  dit d’abord « Touche « Lancer » pour voir la machine tourner. », puis, de
+  retour en construction après un lancer, « Prends un objet dans le
+  catalogue, pose-le sur le plateau, puis touche « Lancer ». ». Elle se loge
+  dans l’emplacement réservé `.status-slot` (sous le cadrage en portrait,
+  dock de droite en paysage, rail droit en grand format) : jamais sur le
+  plateau ni sur la barre d’actions, et elle ne le redimensionne pas. Elle se
+  tait pendant la simulation et disparaît pour toujours au premier toucher
+  de « Masquer l’aide » ou à la première commande validée sur le plateau
+  (préférence `firstLevelHintDone`), ainsi qu’une fois le niveau résolu.
+  `offersFirstLevelHint` et `firstLevelHintStep`
+  (`src/app/first-level-hint.ts`, purs), `FirstLevelHint` (`src/ui/`),
+  `useFirstLevelHint` (`PlayLevelPage.tsx`). Tests `first-level-hint.test.ts`,
+  `local-storage-preferences-repository.test.ts`,
+  `LevelExportDialog.test.tsx`, `App.test.tsx` et parcours
+  `e2e/first-level-hint.spec.ts` (toucher, rechargement, boîtes disjointes du
+  plateau et des boutons ; captures
+  `test-results/first-level-hint/{lancer,tiroir}-{390x844,844x390,1440x900}.png`).
+  **Validation visuelle de l’auteur attendue.**
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
   cadrage, recadrage sur vrai redimensionnement seulement.
@@ -780,6 +804,14 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U8 (2 octobre 2026) : passe du premier coup —
+typecheck, lint, formatage, Knip, contenu (19 documents), 1025 tests Vitest
+(80 fichiers), build Vite/PWA et 65 tests Playwright `mobile` (64 réussis,
+1 ignoré). Pas d’intermittence D4 ni U15 observée. Le fichier d’essai de
+l’auteur `tmp/check-levels.ts` a été écarté du dépôt le temps de la gate
+(ESLint le refuse), puis remis à l’identique (SHA-256 `1113625e…a92907` et
+mode 644 vérifiés).
 
 `pnpm check` après U7 (2 octobre 2026) : passe du premier coup —
 typecheck, lint, formatage, Knip, contenu (19 documents), 1009 tests Vitest

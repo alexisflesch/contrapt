@@ -7,7 +7,9 @@ import { embeddedLevels, nextCampaignLevel } from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
 import type { CampaignVictory } from '../ui/CampaignVictoryDialog';
 import { BoardShell } from './BoardShell';
+import { offersFirstLevelHint } from './first-level-hint';
 import { LockedLevelPage } from './LockedLevelPage';
+import { usePreferencesRepository } from './preferences-repository-context';
 import { useCampaignProgress } from './use-campaign-progress';
 import { useRemix } from './use-remix';
 
@@ -35,21 +37,23 @@ export function PlayLevelPage() {
     return <LockedLevelPage title={`Niveau ${String(levelIndex + 1)} · ${level.metadata.title}`} />;
   }
 
-  return <CampaignLevelBoard key={level.id} level={level} number={levelIndex + 1} />;
+  return <CampaignLevelBoard key={level.id} level={level} levelIndex={levelIndex} />;
 }
 
 interface CampaignLevelBoardProps {
   readonly level: LevelDocument;
-  readonly number: number;
+  /** Position in the embedded campaign: 0 for level 1. */
+  readonly levelIndex: number;
 }
 
 /**
  * An unlocked campaign level, played: the attempt snapshot taken at launch
  * records the victory (L21) and is what « Remixer » poses (M11).
  */
-function CampaignLevelBoard({ level, number }: CampaignLevelBoardProps) {
+function CampaignLevelBoard({ level, levelIndex }: CampaignLevelBoardProps) {
   const navigate = useNavigate();
   const { recordCampaignSuccess, levels: levelProgress } = useCampaignProgress();
+  const firstLevelHint = useFirstLevelHint(levelIndex, levelProgress[level.id]?.resolved === true);
   const launchedAttemptRef = useRef<ConstructionAttempt | null>(null);
   /** The last won attempt, as launched (U4); `null` otherwise. */
   const [wonAttempt, setWonAttempt] = useState<ConstructionAttempt | null>(null);
@@ -84,8 +88,9 @@ function CampaignLevelBoard({ level, number }: CampaignLevelBoardProps) {
     <BoardShell
       initialDocument={level}
       mode="resolution"
-      title={`Niveau ${String(number)} · ${level.metadata.title}`}
+      title={`Niveau ${String(levelIndex + 1)} · ${level.metadata.title}`}
       subtitle="Mode joueur"
+      firstLevelHint={firstLevelHint}
       campaignVictory={campaignVictory}
       onSimulationLaunched={(attempt) => {
         launchedAttemptRef.current = attempt;
@@ -102,4 +107,32 @@ function CampaignLevelBoard({ level, number }: CampaignLevelBoardProps) {
       }}
     />
   );
+}
+
+/**
+ * U8: level 1's hint, offered until it is closed or followed. That moment is
+ * kept in the local preferences (ADR 0011, amendment of 2 Oct. 2026) with
+ * the other preferences untouched; a storage failure only hides it for this
+ * visit.
+ */
+function useFirstLevelHint(
+  levelIndex: number,
+  isLevelSolved: boolean,
+): { readonly onDone: () => void } | undefined {
+  const preferences = usePreferencesRepository();
+  const [isHintDone, setIsHintDone] = useState(() => {
+    const loaded = preferences.load();
+    return loaded.status === 'ok' && loaded.preferences.firstLevelHintDone === true;
+  });
+  if (!offersFirstLevelHint({ levelIndex, isLevelSolved, isHintDone })) return undefined;
+  return {
+    onDone: () => {
+      setIsHintDone(true);
+      const loaded = preferences.load();
+      preferences.save({
+        ...(loaded.status === 'ok' ? loaded.preferences : {}),
+        firstLevelHintDone: true,
+      });
+    },
+  };
 }

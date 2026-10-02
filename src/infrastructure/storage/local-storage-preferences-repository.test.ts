@@ -75,6 +75,35 @@ describe('dépôt local des préférences (ADR 0011, ADR 0016 § Pseudo)', () =>
     expect(repository.load()).toEqual({ status: 'ok', preferences: {} });
   });
 
+  it('retient que l’aide du niveau 1 est terminée, à côté du pseudo (U8)', () => {
+    const storage = new MemoryStorage();
+    const repository = createLocalStoragePreferencesRepository(storage);
+
+    expect(repository.save({ author: 'Lili', firstLevelHintDone: true })).toEqual({
+      status: 'ok',
+    });
+    expect(JSON.parse(storage.getItem(preferencesKey) ?? 'null')).toEqual({
+      kind: 'preferences',
+      version: 1,
+      data: { author: 'Lili', firstLevelHintDone: true },
+    });
+    expect(repository.load()).toEqual({
+      status: 'ok',
+      preferences: { author: 'Lili', firstLevelHintDone: true },
+    });
+  });
+
+  it('relit à l’identique des préférences écrites avant U8, sans l’aide du niveau 1', () => {
+    const storage = new MemoryStorage();
+    const before = JSON.stringify({ kind: 'preferences', version: 1, data: { author: 'Lili' } });
+    storage.seed(preferencesKey, before);
+    const repository = createLocalStoragePreferencesRepository(storage);
+
+    expect(repository.load()).toEqual({ status: 'ok', preferences: { author: 'Lili' } });
+    expect(storage.writes).toEqual([]);
+    expect(storage.getItem(preferencesKey)).toBe(before);
+  });
+
   it('sauvegarde un JSON invalide puis renvoie des préférences vides avec avertissement', () => {
     const storage = new MemoryStorage();
     storage.seed(preferencesKey, '{ JSON cassé');
@@ -94,6 +123,10 @@ describe('dépôt local des préférences (ADR 0011, ADR 0016 § Pseudo)', () =>
     [
       'pseudo invalide',
       JSON.stringify({ kind: 'preferences', version: 1, data: { author: 'Li\nli' } }),
+    ],
+    [
+      'aide du niveau 1 invalide',
+      JSON.stringify({ kind: 'preferences', version: 1, data: { firstLevelHintDone: false } }),
     ],
     [
       'champ inconnu',

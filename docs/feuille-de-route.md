@@ -11,8 +11,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
 ## Point de reprise (fin de session du 1er octobre 2026)
 
-- **Phase 1 terminée ; phase 2 commencée : U12, U1, U13 et U7 faites (2 octobre
-  2026), prochaine tâche U8.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
+- **Phase 1 terminée ; phase 2 commencée : U12, U1, U13, U7 et U8 faites (2
+  octobre 2026), prochaine tâche U10.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
   2026, qui livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
   2 octobre 2026). `pnpm check` était vert au dernier commit.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
@@ -27,9 +27,9 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
 - **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b,
-  de U12, de U1, de U13 et de U7 (`test-results/`, dont `test-results/beam-sprites/`,
-  `test-results/placement-ghost/`, `test-results/build-zones/` et
-  `test-results/goal-ball/`) ; relecture des documents de M15 (entrée du journal) ;
+  de U12, de U1, de U13, de U7 et de U8 (`test-results/`, dont `test-results/beam-sprites/`,
+  `test-results/placement-ghost/`, `test-results/build-zones/`,
+  `test-results/goal-ball/` et `test-results/first-level-hint/`) ; relecture des documents de M15 (entrée du journal) ;
   questions de goût listées dans les entrées M12 à M14b du journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
   la phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
@@ -415,8 +415,8 @@ validation visuelle pour chacune.
    U13) ; validation visuelle attendue.
 4. ~~U7 — Balle suivie~~ : faite le 2 octobre 2026 (journal U7) ; validation
    visuelle attendue.
-5. **U8 — Aide du niveau 1** : indication brève et non bloquante vers « Tester »
-   puis le tiroir.
+5. ~~U8 — Aide du niveau 1~~ : faite le 2 octobre 2026 (journal U8) ;
+   validation visuelle attendue.
 6. **U10 — Invitation de mise à jour et d'installation** de la PWA, branchée sur
    `usePwaUpdateStatus` (phase sûre uniquement).
 7. **U11 — Paramètres** : `/settings` est une page provisoire ; y mettre
@@ -2242,3 +2242,124 @@ className="level-card-description">` après l’état, comme `/levels` (même
   irait-il mieux ? (3) Faut-il dire « la balle rouge » dans les messages
   d'échec ? (4) Constaté, préexistant : le capuchon du bouton est rouge, ce
   qui contredit « le rouge n'appartient qu'à l'objectif » (U19).
+
+### U8 — Aide du niveau 1 — fait — commit de cette entrée
+
+- Déroulé : une seule étape, sous-agent Opus (tâche d'interface). Lecture
+  imposée faite ; lus en plus pour le travail : `src/app/PlayLevelPage.tsx`,
+  `src/app/BoardShell.tsx`, `src/ui/SimulationControls.tsx`,
+  `src/ui/InspectorDrawer.tsx`, `src/ui/Panel.tsx`, `src/ui/LevelResult.tsx`,
+  l'en-tête de `src/ui/ObjectDrawer.tsx` (libellés du catalogue), les règles
+  `.status-slot`, `.toolbar-notice` et `.wiring-guide` de `styles.css`, le port
+  et l'adaptateur des préférences (et leur test), `LevelExportDialog.tsx` (seul
+  autre écrivain des préférences), ADR 0011 et ADR 0016 § Pseudo (stockage),
+  `src/content/levels/campaign-01-…json` (inventaire, en lecture seule),
+  `e2e/goal-ball.spec.ts` et `e2e/smoke.spec.ts` (modèles).
+- Puce citée (`feuille-de-route-luna.md` § 6) : « **U8 — Aide du niveau 1** :
+  indication brève et non bloquante vers « Tester » puis vers le tiroir. »
+  Elle ne cite aucune entrée de journal luna.
+- État trouvé : rien de U8 dans le code ni dans `git log`.
+- Tests ajoutés : `src/app/first-level-hint.test.ts` ›
+  `offersFirstLevelHint (U8)` (4 cas : niveau 1 neuf ; aucun autre niveau ;
+  pas une fois résolu ; pas une fois fermée ou suivie) et
+  `firstLevelHintStep (U8)` (4 cas : « Lancer » d'abord, tiroir après un
+  lancer, silence en simulation, pause et résultat, disparition à la première
+  action) ; `local-storage-preferences-repository.test.ts` › « retient que
+  l'aide du niveau 1 est terminée, à côté du pseudo (U8) », « relit à
+  l'identique des préférences écrites avant U8… » et le cas « aide du niveau 1
+  invalide » (`false`) des valeurs sauvegardées avant remplacement ;
+  `LevelExportDialog.test.tsx` › « retient le pseudo sans oublier que l'aide
+  du niveau 1 est terminée (U8) » ; `App.test.tsx` › « montre sur le niveau 1
+  neuf une aide brève vers « Lancer », hors du plateau (U8) », « oriente vers
+  le tiroir après un premier lancer, puis disparaît pour toujours à la
+  première pose (U8) » (préférences : `{ author: 'Lili', firstLevelHintDone:
+  true }`, rien après remontage), « se ferme d'un toucher et ne revient pas
+  (U8) », « ne montre l'aide ni sur un autre niveau ni sur le niveau 1 déjà
+  résolu (U8) » (garde, verte dès l'écriture : elle décrit une absence) ;
+  `e2e/first-level-hint.spec.ts` (390 × 844 au toucher : aide visible, boîte
+  disjointe du plateau, de « Lancer » et de « Recommencer le niveau » ;
+  « Lancer » la tait, « Recommencer » montre l'étape du catalogue ; « Masquer
+  l'aide » la retire, `localStorage` contient `{ kind: 'preferences',
+  version: 1, data: { firstLevelHintDone: true } }`, absente au rechargement ;
+  second parcours : poser une poutre courte la retire, absente au
+  rechargement ; et captures aux trois formats, deux étapes).
+- Échec initial constaté : Vitest, `Failed to load url ./first-level-hint` ;
+  adaptateur : `expected { status: 'error', …(1) } to deeply equal { status:
+  'ok' }` (le schéma strict refusait le champ) ; export : `expected [ {
+  author: 'Noé' }, {} ] to deeply equal [ { author: 'Noé', …(1) }, …(1) ]`
+  (le pseudo retenu effaçait le reste) ; `App.test.tsx` : `expected null not
+  to be null`, `toHaveTextContent()` sur `null`, `Aide du niveau 1 absente.`.
+  Playwright, contre un build de l'ancien code (fichiers de production mis de
+  côté puis restaurés, `git status` identique) : `toBeVisible()` — `Received:
+  <element(s) not found>`, pour les trois tests.
+- Tests existants réécrits : aucun. Aucun E2E existant du niveau 1 n'a été
+  gêné (l'aide est dans l'emplacement réservé, hors du plateau).
+- Réalisé : `offersFirstLevelHint` et `firstLevelHintStep` (`src/app/`,
+  purs) ; `FirstLevelHint` (`src/ui/`, carte au liseré jaune de la carte de
+  guidage du fil U15, ampoule, texte `aria-live="polite"`, bouton « Masquer
+  l'aide » de 44 px) rendu par `BoardShell` en tête de `.status-slot` ;
+  `BoardShell` retient le premier lancer de la visite et signale la fin de
+  l'aide à la première commande validée (`history.past` non vide) ;
+  `useFirstLevelHint` (`PlayLevelPage.tsx`) lit et écrit la préférence.
+  Préférences : `firstLevelHintDone?: true` (port, schéma de l'adaptateur,
+  lecture) ; `LevelExportDialog` conserve ce champ en retenant le pseudo.
+  Domaine, simulation, schéma de niveau, contenu des niveaux et constantes
+  physiques inchangés.
+- Fichiers touchés hors périmètre : `src/app/LevelExportDialog.tsx` (sans lui,
+  retenir un pseudo aurait effacé la préférence : il écrivait `{ author }`
+  seul) ; `docs/decisions/0011-local-storage-and-url-sharing.md` (amendement
+  qui consigne le nouveau champ).
+- Écarts avec la tâche : (1) le libellé est « Lancer » (code et
+  `mobile-editor-interactions.md`, décision du 1er octobre 2026), pas
+  « Tester » ; (2) la consigne de session disait « ouvrir le tiroir / poser
+  puis lancer » et la puce « vers « Tester » puis vers le tiroir » : l'aide
+  suit les deux, en deux étapes (« Lancer » pour voir la machine, puis
+  catalogue, pose et relance) ; (3) l'aide ne nomme ni la poutre ni le
+  tremplin : le niveau 1 est une esquisse provisoire (§ 6) et son inventaire
+  changera ; (4) le stockage : enveloppe des préférences gardée en version 1,
+  champ facultatif, sans migration — une valeur antérieure est une valeur
+  valide (tests ancienne et nouvelle forme) ; une montée en version 2 aurait
+  aussi dû réécrire le test existant « version inconnue » (version 2). Choix
+  conservateurs : « vue » = fermée ou suivie (première commande validée), pas
+  « affichée une fois » ; un simple lancer ne la clôt pas (au rechargement,
+  l'étape « Lancer » revient) ; une victoire passe par une pose, et un niveau
+  résolu ne la montre plus (état dérivé de la progression).
+- Contradictions rencontrées : « Tester » (puce luna et ligne U8 de la phase
+  2) contre « Lancer » (code, `mobile-editor-interactions.md`) : le code et le
+  document d'interaction suivent la décision la plus récente ; la ligne U8 est
+  barrée, la puce luna (historique) n'est pas retouchée.
+- Captures inspectées (Read sur les PNG) :
+  `test-results/first-level-hint/{lancer,tiroir}-{390x844,844x390,1440x900}.png`.
+  390 × 844 : carte crème à liseré jaune sous les boutons de cadrage, juste
+  au-dessus de la poignée du catalogue (« Objets disponibles ») ; une ligne
+  pour « Touche « Lancer » pour voir la machine tourner. », deux pour l'étape
+  du catalogue ; ampoule à gauche, croix à droite ; le plateau entier (balles,
+  poutres, panier, fil) et la barre d'actions restent dégagés. 844 × 390 :
+  la carte occupe le haut du dock de droite, sous les boutons de cadrage, à
+  côté du plateau, qui garde sa taille ; texte lisible sur trois lignes
+  (étape « Lancer ») et six lignes étroites (étape du catalogue) ; rien ne
+  recouvre le plateau ni le bouton « Lancer ». 1440 × 900 : en tête du rail
+  droit, à hauteur de la barre d'actions, à droite de « Lancer » ; deux à
+  trois lignes ; plateau et catalogue intacts.
+- Gate : `pnpm check` passe du premier coup — typecheck, lint, formatage,
+  Knip, contenu (19 documents), 1025 tests Vitest en 80 fichiers, build, 65
+  tests Playwright `mobile` (64 réussis, 1 ignoré). Pas d'intermittence D4 ni
+  U15 observée. Un `pnpm check:fast` intermédiaire s'était arrêté au lint
+  (`no-unsafe-return` sur un `JSON.parse` du nouvel E2E), corrigé avant la
+  gate. `tmp/check-levels.ts` (ESLint le refuse) a été déplacé hors du dépôt
+  pendant `pnpm check:fast` et `pnpm check`, puis remis exactement à sa
+  place : SHA-256 `1113625e…a92907` et mode 644 identiques avant et après.
+- Non vérifié : un vrai téléphone ; un lecteur d'écran (le texte est
+  `aria-live="polite"`, la carte est une région nommée « Aide du niveau 1 ») ;
+  l'aide quand un objet est sélectionné en portrait (le bouton « Ouvrir les
+  propriétés » partage alors l'emplacement, qui défile).
+- Pour l'auteur : validation visuelle des six captures ci-dessus.
+  Questions (tranchées de façon conservatrice, à confirmer) : (1) Les deux
+  textes, au tutoiement des autres messages, vous conviennent-ils ? Faut-il
+  nommer l'objet attendu une fois le niveau 1 définitif ? (2) « Déjà vue » =
+  fermée ou suivie ; préférez-vous qu'un seul affichage suffise ? (3) L'ordre
+  « Lancer » puis catalogue suit la puce ; préférez-vous l'inverse (catalogue
+  d'abord) ? (4) En 844 × 390, l'étape du catalogue fait six lignes dans le
+  dock étroit : acceptable, ou faut-il un texte plus court ? (5) Les niveaux
+  de `levels/` (tutoriels) remplaceront la campagne : l'aide vise l'indice 0
+  de la campagne embarquée, quel que soit son identifiant.

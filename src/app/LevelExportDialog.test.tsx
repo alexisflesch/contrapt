@@ -335,6 +335,22 @@ describe('titre, pseudo et licence dans la boîte d’export (M14, ADR 0016)', (
     expect(preferences.saved).toEqual([{ author: 'Noé' }, {}]);
   });
 
+  it('retient le pseudo sans oublier que l’aide du niveau 1 est terminée (U8)', () => {
+    const preferences = memoryPreferences({ author: 'Lili', firstLevelHintDone: true });
+    renderDialog(levelOneWorkshop, {}, preferences.repository);
+    const pseudo = screen.getByRole('textbox', { name: 'Pseudo (facultatif)' });
+
+    fireEvent.change(pseudo, { target: { value: 'Noé' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+    fireEvent.change(pseudo, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+
+    expect(preferences.saved).toEqual([
+      { author: 'Noé', firstLevelHintDone: true },
+      { firstLevelHintDone: true },
+    ]);
+  });
+
   it.each<[string, PreferencesRepository]>([
     [
       'renvoie une erreur',

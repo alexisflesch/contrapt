@@ -12,8 +12,15 @@ import { authorSchema } from '../../domain/level-document';
 const PREFERENCES_KEY = 'tinkerbolt:preferences';
 const PREFERENCES_BACKUP_KEY = 'tinkerbolt:backup:preferences';
 
-/** ADR 0016 § Pseudo: the pseudonym follows `metadata.author`'s rule; nothing else is kept. */
-const preferencesSchema = z.strictObject({ author: authorSchema.optional() });
+/**
+ * ADR 0016 § Pseudo: the pseudonym follows `metadata.author`'s rule. ADR 0011
+ * (amendment of 2 Oct. 2026, U8): level 1's hint, once done, is the only other
+ * field — optional, so a version 1 value written before it stays valid.
+ */
+const preferencesSchema = z.strictObject({
+  author: authorSchema.optional(),
+  firstLevelHintDone: z.literal(true).optional(),
+});
 
 const preferencesEnvelopeSchema = z.strictObject({
   kind: z.literal('preferences'),
@@ -32,8 +39,11 @@ const parseEnvelope = (rawValue: string): Preferences | null => {
   }
   const parsed = preferencesEnvelopeSchema.safeParse(candidate);
   if (!parsed.success) return null;
-  const { author } = parsed.data.data;
-  return author === undefined ? emptyPreferences : { author };
+  const { author, firstLevelHintDone } = parsed.data.data;
+  return {
+    ...(author === undefined ? {} : { author }),
+    ...(firstLevelHintDone === undefined ? {} : { firstLevelHintDone }),
+  };
 };
 
 const storageError = (

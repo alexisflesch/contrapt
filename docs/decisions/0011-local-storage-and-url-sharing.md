@@ -122,3 +122,19 @@ sans action explicite » de § Partage par fragment URL, à la demande de l’au
 
 Le détail (empreinte, doublons, refus des documents `toPlace`, saturation du
 stockage) est dans l’ADR 0015.
+
+## Amendement du 2 octobre 2026 — aide du niveau 1 (U8)
+
+`tinkerbolt:preferences` porte, à côté du pseudo (ADR 0016), un second champ
+facultatif : `firstLevelHintDone: true`, écrit quand le joueur ferme l’aide du
+niveau 1 ou pose son premier objet, pour qu’elle ne revienne pas. Ce n’est pas
+une donnée personnelle ; seule la valeur `true` est enregistrée, toute autre
+valeur rend l’enveloppe invalide (sauvegarde de secours, comme ci-dessus).
+
+L’enveloppe reste en version 1 : le champ est facultatif, donc une valeur
+écrite avant U8 (`{ author? }`) reste valide et se relit à l’identique, sans
+migration (tests de l’adaptateur pour l’ancienne et la nouvelle forme). Une
+écriture de l’un des deux champs conserve l’autre. Conséquence assumée : une
+version de l’application antérieure à U8 (PWA en cache) lirait le nouveau champ
+comme invalide, la sauvegarderait sous `tinkerbolt:backup:preferences` et
+oublierait le pseudo.

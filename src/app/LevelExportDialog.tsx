@@ -8,7 +8,10 @@ import {
   type ConstructionAttempt,
 } from '../application/construction';
 import type { Command } from '../application/history';
-import type { PreferencesRepository } from '../application/preferences/preferences-repository';
+import type {
+  Preferences,
+  PreferencesRepository,
+} from '../application/preferences/preferences-repository';
 import type { LevelDocument } from '../domain/level-document';
 import type { PuzzleRunner } from '../application/puzzle/puzzle-workshop';
 import { Button } from '../ui/Button';
@@ -52,7 +55,13 @@ const rememberedPseudo = (preferences: PreferencesRepository): string => {
 
 const rememberPseudo = (preferences: PreferencesRepository, author: string | undefined): void => {
   try {
-    preferences.save(author === undefined ? {} : { author });
+    // U8: the other preferences (level 1's hint) are kept as they were.
+    const loaded = preferences.load();
+    const kept: Preferences =
+      loaded.status === 'ok' && loaded.preferences.firstLevelHintDone === true
+        ? { firstLevelHintDone: true }
+        : {};
+    preferences.save(author === undefined ? kept : { ...kept, author });
   } catch {
     // Best effort, like the result it would have returned: the export already happened.
   }

@@ -4,6 +4,10 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type {
+  Preferences,
+  PreferencesRepository,
+} from '../application/preferences/preferences-repository';
 import type { CampaignProgress } from '../application/progression';
 import type { ProgressRepository } from '../application/progression/progress-repository';
 import { embeddedLevels } from '../content/embedded-levels';
@@ -92,6 +96,24 @@ const createProgressRepository = (progress: CampaignProgress = {}) => {
   };
   return { repository, save };
 };
+
+/** U8: an in-memory preferences port that keeps what it is asked to save. */
+const createPreferencesRepository = (initial: Preferences = {}) => {
+  let stored = initial;
+  const saved: Preferences[] = [];
+  const repository: PreferencesRepository = {
+    load: () => ({ status: 'ok', preferences: stored }),
+    save: (preferences) => {
+      saved.push(preferences);
+      stored = preferences;
+      return { status: 'ok' };
+    },
+  };
+  return { repository, saved };
+};
+
+const firstLevelHint = (): HTMLElement | null =>
+  screen.queryByRole('region', { name: 'Aide du niveau 1' });
 
 /** M8: an in-memory received-level port whose writes all answer `saveResult`. */
 const createReceivedLevelRepository = (saveResult: ReceivedLevelWriteResult = { status: 'ok' }) => {
@@ -2769,5 +2791,84 @@ describe('coque TinkerBolt', () => {
     const dialog = screen.getByRole('dialog', { name: 'Objectif du niveau' });
     expect(dialog).toHaveTextContent('Faire entrer la balle dans le panier');
     expect(dialog).not.toHaveTextContent(/anneau/);
+  });
+
+  it('montre sur le niveau 1 neuf une aide brève vers « Lancer », hors du plateau (U8)', () => {
+    const { repository } = createPreferencesRepository();
+    render(<App preferencesRepository={repository} />);
+
+    const hint = firstLevelHint();
+    expect(hint).not.toBeNull();
+    if (hint === null) return;
+    expect(hint).toHaveTextContent('Touche « Lancer » pour voir la machine tourner.');
+    expect(within(hint).getByRole('button', { name: 'Masquer l’aide' })).toBeVisible();
+    // Ni sur le plateau, ni dans la barre d'actions : dans l'emplacement réservé.
+    const board = screen.getByRole('region', { name: 'Plateau de jeu' });
+    expect(board).not.toContainElement(hint);
+    expect(screen.getByRole('button', { name: 'Lancer' })).not.toContainElement(hint);
+    expect(hint.closest('.status-slot')).not.toBeNull();
+  });
+
+  it('oriente vers le tiroir après un premier lancer, puis disparaît pour toujours à la première pose (U8)', () => {
+    const preferences = createPreferencesRepository({ author: 'Lili' });
+    render(<App preferencesRepository={preferences.repository} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
+    expect(firstLevelHint()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
+
+    const hint = firstLevelHint();
+    expect(hint).toHaveTextContent(
+      'Prends un objet dans le catalogue, pose-le sur le plateau, puis touche « Lancer ».',
+    );
+    expect(preferences.saved).toEqual([]);
+
+    placeCampaignBeam(5.0, 2.15);
+    expect(firstLevelHint()).toBeNull();
+    expect(preferences.saved).toEqual([{ author: 'Lili', firstLevelHintDone: true }]);
+
+    cleanup();
+    window.history.replaceState(null, '', '/levels/campaign-01-la-bille-de-service/play');
+    render(<App preferencesRepository={preferences.repository} />);
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeVisible();
+    expect(firstLevelHint()).toBeNull();
+  });
+
+  it('se ferme d’un toucher et ne revient pas (U8)', () => {
+    const preferences = createPreferencesRepository();
+    render(<App preferencesRepository={preferences.repository} />);
+
+    const hint = firstLevelHint();
+    if (hint === null) throw new Error('Aide du niveau 1 absente.');
+    fireEvent.click(within(hint).getByRole('button', { name: 'Masquer l’aide' }));
+
+    expect(firstLevelHint()).toBeNull();
+    expect(preferences.saved).toEqual([{ firstLevelHintDone: true }]);
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
+    expect(firstLevelHint()).toBeNull();
+
+    cleanup();
+    window.history.replaceState(null, '', '/levels/campaign-01-la-bille-de-service/play');
+    render(<App preferencesRepository={preferences.repository} />);
+    expect(screen.getByRole('button', { name: 'Lancer' })).toBeVisible();
+    expect(firstLevelHint()).toBeNull();
+  });
+
+  it('ne montre l’aide ni sur un autre niveau ni sur le niveau 1 déjà résolu (U8)', () => {
+    const { repository: progress } = createProgressRepository({
+      'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 2 },
+    });
+    const preferences = createPreferencesRepository();
+    render(<App progressRepository={progress} preferencesRepository={preferences.repository} />);
+    expect(screen.getByText('Niveau 1 · La bille de service')).toBeVisible();
+    expect(firstLevelHint()).toBeNull();
+
+    cleanup();
+    window.history.replaceState(null, '', '/levels/campaign-02-par-dessus-le-mur/play');
+    render(<App progressRepository={progress} preferencesRepository={preferences.repository} />);
+    expect(screen.getByText('Niveau 2 · Par-dessus le mur')).toBeVisible();
+    expect(firstLevelHint()).toBeNull();
+    expect(preferences.saved).toEqual([]);
   });
 });
