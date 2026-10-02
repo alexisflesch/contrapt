@@ -252,7 +252,7 @@ face à la lumière).
 | --------- | ----------------------------------------------------- | ------------------------------------------------- |
 | balle     | `ball-base`, `ball-spin` (tourne), `ball-highlight`   | 0,6 × 0,6 (centre)                                |
 | panier    | `basket-back`, `basket-front`                         | 1,5 × 1,1 (centre)                                |
-| poutre    | `beam` (inchangé)                                     | 2, 4 ou 6 × 0,25 (centre)                         |
+| poutre    | `beam-short`, `beam-medium` ou `beam-long` (U12)      | 2, 4 ou 6 × 0,25 (centre)                         |
 | bascule   | `seesaw-fulcrum` (immobile), `seesaw-beam` (pivote)   | ensemble 3 × 0,82 (pivot)                         |
 | masse     | `mass-10kg`                                           | 0,8 × 0,772 (centre)                              |
 | levier    | `lever-base` (immobile), `lever-handle` (pivote)      | socle 0,8 × 0,414, poignée 0,35 × 1,0 (pivot)     |

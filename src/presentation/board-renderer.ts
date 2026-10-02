@@ -225,7 +225,9 @@ const layerPoseSources: Record<SpriteAsset, LayerPoseSource> = {
   'second-ball-highlight': 'upright-body',
   'basket-back': 'body',
   'basket-front': 'body',
-  beam: 'body',
+  'beam-short': 'body',
+  'beam-medium': 'body',
+  'beam-long': 'body',
   'seesaw-fulcrum': 'placement',
   'seesaw-beam': 'body',
   'mass-10kg': 'body',
@@ -286,9 +288,16 @@ const OTHER_BALL_LAYERS = [
   'second-ball-highlight',
 ] as const;
 
+const BEAM_LAYERS = {
+  short: 'beam-short',
+  medium: 'beam-medium',
+  long: 'beam-long',
+} as const;
+
 /**
  * The layers an object shows now. Both belts are loaded, one is drawn; both
- * balls are loaded, and only the goal's ball is red.
+ * balls are loaded, and only the goal's ball is red; the three beam lengths
+ * are loaded, and a beam shows the drawing of its own length.
  */
 const layerAssetsFor = (
   object: Placement,
@@ -298,6 +307,7 @@ const layerAssetsFor = (
   if (object.type === 'ball') {
     return object.id === goalBallId ? GOAL_BALL_LAYERS : OTHER_BALL_LAYERS;
   }
+  if (object.type === 'beam') return [BEAM_LAYERS[object.props.size]];
   if (object.type !== 'conveyor') return spriteAssetsForFamily(object.type);
   const belt = conveyorBeltAt(object, view).facing === -1 ? 'conveyor-belt-left' : 'conveyor-belt';
   return [belt, 'conveyor-frame'];
@@ -499,7 +509,9 @@ const projectLayer = (
  */
 const drawOrderByAsset: Record<SpriteAsset, number> = {
   'basket-back': 0,
-  beam: 0,
+  'beam-short': 0,
+  'beam-medium': 0,
+  'beam-long': 0,
   'seesaw-fulcrum': 0,
   'seesaw-beam': 0,
   'mass-10kg': 0,

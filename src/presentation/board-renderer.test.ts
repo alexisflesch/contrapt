@@ -329,7 +329,9 @@ const createPendingSpriteLoader = (): {
     'second-ball-highlight': { width: 64, height: 32 },
     'basket-back': { width: 64, height: 32 },
     'basket-front': { width: 64, height: 32 },
-    beam: { width: 64, height: 32 },
+    'beam-short': { width: 64, height: 32 },
+    'beam-medium': { width: 64, height: 32 },
+    'beam-long': { width: 64, height: 32 },
     'seesaw-fulcrum': { width: 64, height: 32 },
     'seesaw-beam': { width: 64, height: 32 },
     'mass-10kg': { width: 64, height: 32 },
@@ -709,6 +711,28 @@ describe('projection du plateau', () => {
     ]);
   });
 
+  it.each([
+    ['short', 'beam-short', 2],
+    ['medium', 'beam-medium', 4],
+    ['long', 'beam-long', 6],
+  ] as const)(
+    'dessine une poutre %s avec son propre sprite %s, à l’empreinte de sa longueur',
+    (size, assetKey, length) => {
+      const beams = projectLevel(createBeamDocument(size)).objects.filter(
+        (object: ProjectedObject) => object.family === 'beam',
+      );
+
+      // Un seul calque par poutre : jamais le sprite d’une autre longueur étiré.
+      expect(beams.map((object: ProjectedObject) => object.assetKey)).toEqual([assetKey]);
+      expect(beams.map((object: ProjectedObject) => object.assetPath)).toEqual([
+        `/assets/sprites/${assetKey}@2x.png`,
+      ]);
+      expect(beams.map((object: ProjectedObject) => object.layer.destination)).toEqual([
+        { x: -length / 2, y: -0.125, width: length, height: 0.25 },
+      ]);
+    },
+  );
+
   it('contient les quatre familles et porte les assets visuels hors du document', () => {
     const projection = projectLevel(levelDocument);
 
@@ -716,7 +740,7 @@ describe('projection du plateau', () => {
     // calques du panier.
     expect(projection.objects.map((object: ProjectedObject) => object.assetKey)).toEqual([
       'basket-back',
-      'beam',
+      'beam-medium',
       'seesaw-fulcrum',
       'seesaw-beam',
       'ball-base',
@@ -1048,7 +1072,7 @@ describe('renderer Canvas 2D du plateau', () => {
     expect(order).toEqual([
       'seesaw-fulcrum',
       'seesaw-beam',
-      'beam',
+      'beam-medium',
       'basket-back',
       'ball-base',
       'ball-spin',

@@ -146,8 +146,18 @@ basket_layers = [
 ]
 save(composite([(layer, (0, 0)) for layer in basket_layers], basket_layers[0].size), THUMBS / "basket.png")
 
-# Poutre : pas de nouvelle source, la vignette reprend le sprite existant.
-save(Image.open(OUT / "beam@2x.png").convert("RGBA"), THUMBS / "beam.png")
+# Poutre : trois dessins, un par longueur (U12), chacun recadré sur ses pixels
+# opaques et exporté à l'empreinte monde de sa longueur (2, 4 ou 6 × 0,25) :
+# aucun n'est un autre étiré. Les sources n'ont pas le même rapport que
+# l'empreinte (la grande est coupée par les bords de son image) ; ce qui est
+# déformé à l'export est signalé à l'auteur dans le journal de la feuille de route.
+BEAM_THICKNESS = 0.25
+beam_sprites = {}
+for beam_name, beam_source, beam_length in (("short", "beam-short", 2), ("medium", "beam-medium", 4), ("long", "beam-big", 6)):
+    beam_image = load(f"beam/{beam_source}.png")
+    beam_sprites[beam_name] = export(beam_image, opaque_box(beam_image), beam_length, BEAM_THICKNESS, f"beam-{beam_name}")
+# La vignette du catalogue montre la poutre longue, comme avant.
+save(beam_sprites["long"], THUMBS / "beam.png")
 
 # Bascule : tablier 3 × 0,24 centré sur le pivot, pied posé sous le tablier.
 fulcrum = load("seesaw/seesaw_fulcrum.png")

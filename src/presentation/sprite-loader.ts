@@ -15,7 +15,8 @@ const spriteAssetsByFamily = {
     'second-ball-highlight',
   ],
   basket: ['basket-back', 'basket-front'],
-  beam: ['beam'],
+  // Three drawings, one per length: a beam is never one sprite stretched.
+  beam: ['beam-short', 'beam-medium', 'beam-long'],
   seesaw: ['seesaw-fulcrum', 'seesaw-beam'],
   mass: ['mass-10kg'],
   lever: ['lever-base', 'lever-handle'],

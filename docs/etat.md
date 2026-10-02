@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, fin de la phase 1 (« Mes niveaux »).
+Dernière mise à jour : 2 octobre 2026, U12 (poutres en trois tailles) livrée ; phase 1 (« Mes niveaux ») terminée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -411,6 +411,19 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   perspective et orientable, barrière dont seule la partie sortie du poteau est
   dessinée, tremplin à ressort tassé à l’impact), ordre de dessin
   déterministe (la balle après le panier).
+- Poutres en trois tailles (U12) : `beam-short`, `beam-medium` et `beam-long`
+  (2, 4 et 6 × 0,25 unités, @2x), exportés par `art/build-sprites.py` depuis
+  `art/assets/beam/` (`beam-short.png`, `beam-medium.png`, `beam-big.png`),
+  chacun recadré sur ses pixels opaques ; le renderer choisit le sprite de la
+  poutre d’après `props.size` (`layerAssetsFor`), comme il choisit la bande du
+  convoyeur. L’ancien `beam@2x.png` (une image longue raccourcie) est retiré ;
+  la vignette `thumbs/beam.png` reprend la poutre longue. Les sources n’ont pas
+  le rapport largeur/hauteur de l’empreinte (voir la dette « Sources de poutre »
+  ci-dessous). Test `board-renderer.test.ts` (longueur → sprite),
+  `sprite-assets.test.ts` (dimensions et budget des trois fichiers, vignette) et
+  parcours `e2e/beam-sprites.spec.ts` (captures
+  `test-results/beam-sprites/beams-{390x844,844x390,1440x900}.png`).
+  **Validation visuelle de l’auteur attendue.**
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
   cadrage, recadrage sur vrai redimensionnement seulement.
@@ -629,10 +642,19 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   l’objet ; le fantôme dessiné par le renderer (C1) reste à faire.
 - **Fond en CSS.** `board-generic-v0.png` est un `background-image` de
   `.scene-frame` : il ne suit ni le zoom ni le panoramique (D3).
-- **Poutre étirée.** Le renderer utilise `beam@2x.png` pour les trois longueurs ;
-  `beam-short/medium/long@2x.png` existent dans `public/assets/sprites/` mais ne
-  sont pas câblés, et `art/` ne contient pas de source dessinée de poutre.
-  `art/build-sprites.py` dépend de Pillow, numpy et pngquant, hors gate.
+- **Sources de poutre.** Le rapport des sources de `art/assets/beam/` n'est pas
+  celui de l'empreinte (8, 16 et 24 pour 1) : `beam-short` mesure 802 × 88 px
+  opaques (rapport 9,1, écrasé de 12 % à l'export), `beam-medium` 1543 × 117
+  (13,2, étiré de 21 %), `beam-big` 2171 × 136 (16,0, étiré de 50 % et coupé par
+  les bords gauche et droit de son image : le bout arrondi de gauche manque, et
+  le dessin est pincé). À redessiner par l'auteur, ou à exporter en neuf
+  tranches (bouts conservés, milieu étiré) sur sa décision.
+- **Sprites hors du script.** Relancer `art/build-sprites.py` en entier
+  régénère `button-cap`, `lever-handle`, `second-ball-*` et les vignettes
+  `button`, `lever` et `second-ball` avec des octets différents des PNG commités
+  (sources ou script retouchés depuis leur export) : seuls les fichiers de
+  poutre ont été remplacés en U12. À éclaircir avant toute régénération
+  générale. Le script dépend de Pillow, numpy et pngquant, hors gate.
 - **Inspecteur compact et sélection.** Quand l’inspecteur compact est fermé
   et qu’un objet reste sélectionné, toucher un autre objet ne le rouvre pas
   (il faut « Ouvrir les propriétés ») ; constaté pendant U21, préexistant.
@@ -706,6 +728,13 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U12 (2 octobre 2026) : passe du premier coup —
+typecheck, lint, formatage, Knip, contenu (19 documents), 982 tests Vitest
+(77 fichiers), build Vite/PWA et 56 tests Playwright `mobile` (55 réussis,
+1 ignoré). Le fichier d’essai de l’auteur `tmp/check-levels.ts` a été écarté du
+dépôt le temps de la gate (ESLint le refuse), puis remis à l’identique
+(SHA-256 `1113625e…a92907` et mode 644 vérifiés).
 
 `pnpm check` après M15 (2 octobre 2026) : passe du premier coup —
 typecheck, lint, formatage, Knip, contenu (19 documents), 975 tests Vitest

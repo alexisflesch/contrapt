@@ -51,10 +51,26 @@ const everyFamily = levelDocumentSchema.parse({
       permissions,
     },
     {
-      id: 'beam-1',
+      id: 'beam-short',
+      type: 'beam',
+      transform: { position: { x: 5, y: 2 }, rotation: 0 },
+      // One drawing per length, each exported at its own footprint (U12).
+      props: { size: 'short' },
+      permissions,
+    },
+    {
+      id: 'beam-medium',
       type: 'beam',
       transform: { position: { x: 5, y: 3 }, rotation: 0 },
-      // The single beam sprite is drawn at the long footprint and shortened.
+      // One drawing per length, each exported at its own footprint (U12).
+      props: { size: 'medium' },
+      permissions,
+    },
+    {
+      id: 'beam-long',
+      type: 'beam',
+      transform: { position: { x: 5, y: 4 }, rotation: 0 },
+      // One drawing per length, each exported at its own footprint (U12).
       props: { size: 'long' },
       permissions,
     },

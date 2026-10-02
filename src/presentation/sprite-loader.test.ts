@@ -159,6 +159,8 @@ describe('sprite loader contract', () => {
       'second-ball-highlight',
     ]);
     expect(spriteAssetsForFamily('seesaw')).toEqual(['seesaw-fulcrum', 'seesaw-beam']);
+    // One drawing per beam length, never one sprite stretched (U12).
+    expect(spriteAssetsForFamily('beam')).toEqual(['beam-short', 'beam-medium', 'beam-long']);
     expect(spriteThumbnailPath('seesaw')).toBe('/assets/sprites/thumbs/seesaw.png');
   });
 
@@ -275,7 +277,7 @@ describe('sprite loader contract', () => {
   });
 
   it('retries a failed asset on the next request and becomes ready after success', async () => {
-    const failedPath = spriteAssetPath('beam', 2);
+    const failedPath = spriteAssetPath('mass-10kg', 2);
     const sprite: DecodedSpriteFixture = { width: 128, height: 96 };
     let attempts = 0;
     const decoder = vi.fn((path: string): Promise<DecodedSpriteFixture> => {
@@ -286,15 +288,15 @@ describe('sprite loader contract', () => {
     });
     const loader = createSpriteLoader({ scale: 2, decode: decoder });
 
-    await expect(loader.loadForFamilies(['beam'])).rejects.toThrow('Réseau indisponible');
-    expect(loader.getState('beam')).toBe('failed');
+    await expect(loader.loadForFamilies(['mass'])).rejects.toThrow('Réseau indisponible');
+    expect(loader.getState('mass')).toBe('failed');
     expect(decoder).toHaveBeenCalledTimes(1);
 
-    await loader.loadForFamilies(['beam']);
+    await loader.loadForFamilies(['mass']);
 
     expect(decoder).toHaveBeenCalledTimes(2);
-    expect(loader.getState('beam')).toBe('ready');
-    expect(loader.getSprite('beam')).toBe(sprite);
+    expect(loader.getState('mass')).toBe('ready');
+    expect(loader.getSprite('mass-10kg')).toBe(sprite);
   });
 
   it('stops after three failed attempts without making a fourth request', async () => {
@@ -306,16 +308,16 @@ describe('sprite loader contract', () => {
     const loader = createSpriteLoader({ scale: 2, decode: decoder });
 
     for (let attempt = 1; attempt <= 3; attempt += 1) {
-      await expect(loader.loadForFamilies(['beam'])).rejects.toThrow(`Échec ${String(attempt)}`);
+      await expect(loader.loadForFamilies(['mass'])).rejects.toThrow(`Échec ${String(attempt)}`);
     }
 
-    expect(loader.getState('beam')).toBe('failed');
-    await expect(loader.loadForFamilies(['beam'])).rejects.toThrow('Échec 3');
+    expect(loader.getState('mass')).toBe('failed');
+    await expect(loader.loadForFamilies(['mass'])).rejects.toThrow('Échec 3');
     expect(decoder).toHaveBeenCalledTimes(3);
   });
 
   it('exposes failed after a decoder rejection', async () => {
-    const failedPath = spriteAssetPath('beam', 3);
+    const failedPath = spriteAssetPath('beam-medium', 3);
     const decoder = vi.fn((path: string): Promise<DecodedSpriteFixture> => {
       if (path === failedPath) {
         return Promise.reject(new Error('Décodage impossible'));
@@ -327,7 +329,7 @@ describe('sprite loader contract', () => {
     await expect(loader.loadForFamilies(spriteFamilies)).rejects.toThrow('Décodage impossible');
 
     expect(loader.getState('beam')).toBe('failed');
-    expect(loader.getSprite('beam')).toBeUndefined();
+    expect(loader.getSprite('beam-medium')).toBeUndefined();
   });
 
   it('adapts injectable asset fetching and bitmap creation in Node', async () => {

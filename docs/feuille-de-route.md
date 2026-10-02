@@ -11,9 +11,9 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
 ## Point de reprise (fin de session du 1er octobre 2026)
 
-- **Phase 1 terminée : prochaine tâche, la phase 2, en commençant par U12.**
-  Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre 2026, qui
-  livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
+- **Phase 1 terminée ; phase 2 commencée : U12 faite (2 octobre 2026), prochaine
+  tâche U1.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
+  2026, qui livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
   2 octobre 2026). `pnpm check` était vert au dernier commit.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
   part dans un sous-agent neuf, une à la fois, avec pour consigne de lire
@@ -26,8 +26,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   relit le rapport et le diff, regarde au moins une capture, tranche les
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
-- **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b
-  (`test-results/`) ; relecture des documents de M15 (entrée du journal) ;
+- **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b et
+  de U12 (`test-results/`, dont `test-results/beam-sprites/`) ; relecture des documents de M15 (entrée du journal) ;
   questions de goût listées dans les entrées M12 à M14b du journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
   la phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
@@ -405,9 +405,8 @@ Spécifications dans `feuille-de-route-luna.md` § 6 (citer la puce exacte) et,
 pour U1, U2, U3, dans `plan-remise-en-jeu.md` à la section indiquée. Captures et
 validation visuelle pour chacune.
 
-1. **U12 — Poutres en trois tailles** : exporter les sources de
-   `art/assets/beam/` par `art/build-sprites.py` et câbler les trois sprites
-   (dette « Poutre étirée » de `etat.md`).
+1. ~~U12 — Poutres en trois tailles~~ : faite le 2 octobre 2026 (journal U12) ;
+   validation visuelle attendue.
 2. **U1 — Fantôme de placement** dessiné par le renderer
    (`plan-remise-en-jeu.md` § 5 « C1 ») ; remplace l'overlay CSS.
 3. **U13 — Zones de construction visibles** et objet qui suit le doigt hors
@@ -1793,3 +1792,108 @@ className="level-card-description">` après l’état, comme `/levels` (même
   une erreur de substitution de shell (des accents graves dans un `grep`),
   `pnpm check` a été lancé deux fois sans effet utile pendant le travail, sans
   conséquence pour l'arbre ; seule la gate propre ci-dessus compte.
+
+### U12 — Poutres en trois tailles — fait — commit de cette entrée
+
+- Déroulé : une seule étape, sous-agent Sonnet (consigne du pilote). Lecture
+  hors liste : aucune ; `src/presentation/` (`board-renderer.ts`,
+  `sprite-loader.ts` et leurs tests), `src/domain/object-family-registry.ts`
+  (propriété `size`), `e2e/received-play.spec.ts` (modèle de captures) et
+  `src/content/levels/demo.json` (forme d'un fichier) lus pour le travail.
+- Puce citée (`feuille-de-route-luna.md` § 6) : « **U12 — Poutres en trois
+  tailles** : sources dessinées dans `art/assets/beam/` (26 septembre 2026) ;
+  les exporter par `art/build-sprites.py` et câbler les trois sprites, une
+  fois le dessin validé par l'auteur. La mascotte de `art/assets/bolt/` n'a
+  pas encore d'usage décidé. » La clause « une fois le dessin validé par
+  l'auteur » n'a pas de trace d'une validation ; la consigne du pilote
+  demandait de faire la tâche : voir « Pour l'auteur ».
+- État trouvé : `art/assets/beam/` contient bien trois sources (`beam-short.png`,
+  `beam-medium.png`, `beam-big.png`, 2172 × 724, ajoutées en 291d122) ;
+  `public/assets/sprites/beam-{short,medium,long}@2x.png` existaient (256, 512
+  et 768 × 32, de l'ancienne itération du 3 septembre) mais ne venaient pas de
+  ces sources, et `beam@2x.png` était identique (même MD5) à `beam-long@2x.png`.
+  Le script n'exportait aucune poutre (« pas de nouvelle source »). Pillow
+  12.2.0, numpy 1.26.4 et `/usr/bin/pngquant` étaient présents : rien installé.
+  Le renderer faisait `spriteAssetsForFamily('beam')` = `['beam']`, un seul
+  calque pour les trois longueurs.
+- Tests ajoutés : `src/presentation/board-renderer.test.ts` › « dessine une
+  poutre %s avec son propre sprite %s, à l'empreinte de sa longueur » (3 cas :
+  short, medium, long ; la propriété `size` est une énumération à trois valeurs
+  dans `object-family-registry.ts`, il n'existe donc ni longueur intermédiaire
+  ni limite à tester ; l'empreinte 2, 4 et 6 × 0,25 est vérifiée avec le
+  sprite). `sprite-loader.test.ts` : l'assertion « un sprite par longueur de
+  poutre » ajoutée au test des familles en calques. Le test de fichiers
+  existant, `sprite-assets.test.ts` (dimensions exactes de chaque calque
+  projeté contre l'empreinte à 128 px par unité, budget de 60 Ko, vignette et
+  fichiers de chaque famille), couvre les trois fichiers : son document porte
+  désormais une poutre de chaque longueur au lieu d'une seule. E2E :
+  `e2e/beam-sprites.spec.ts` (importe un niveau de trois poutres, chacune
+  portant une balle posée sur son bord supérieur, plus une poutre inclinée ;
+  attend que le canvas ait dessiné ; captures).
+- Échec initial constaté : `expected [ 'beam' ] to deeply equal [ 'beam-short'
+  ]` (idem `'beam-medium'` et `'beam-long'`), 3 tests rouges sur 38.
+- Tests existants réécrits : `sprite-loader.test.ts` › « retries a failed asset
+  on the next request… » et « stops after three failed attempts… » : ils
+  chargeaient la famille `beam` en supposant un seul fichier (un seul appel du
+  décodeur) ; la famille en a trois désormais, ils utilisent la famille `mass`
+  (un seul fichier), même comportement vérifié. « exposes failed after a decoder
+  rejection » vise `beam-medium` au lieu de `beam`. `board-renderer.test.ts` :
+  les listes d'`assetKey` attendues (`'beam'` → `'beam-medium'`, deux fixtures
+  de poutre moyenne) et la table de sprites factices. Aucun test affaibli.
+- Réalisé : `art/build-sprites.py` exporte les trois poutres (bloc « Poutre » :
+  `opaque_box` de chaque source, export à 2, 4 et 6 × 0,25, vignette
+  `thumbs/beam.png` = poutre longue, comme avant) ; `sprite-loader.ts`
+  (`beam: ['beam-short', 'beam-medium', 'beam-long']`) ; `board-renderer.ts`
+  (`layerAssetsFor` choisit le calque par `props.size`, poses et ordre de
+  dessin des trois noms) ; `beam@2x.png` supprimé (identique à l'ancien
+  `beam-long`, plus référencé nulle part ; `git rm`). ADR 0007 (tableau de
+  l'amendement du 25 septembre : ligne « poutre »), `etat.md`, tableau
+  « Avancement » du cahier des charges.
+- Fichiers touchés hors périmètre : aucun. `art/build-sprites.py` régénère aussi
+  `button-cap`, `lever-handle`, `second-ball-{base,highlight,spin}` et les
+  vignettes `button`, `lever`, `second-ball` avec des octets différents des PNG
+  commités (comparaison avant/après) : ces sorties ont été **restaurées**
+  (`git checkout`), pour ne rien changer d'autre que les poutres ; dette
+  notée dans `etat.md`.
+- Écarts avec la tâche : aucun. Les trois PNG sont différents des anciens (ils
+  viennent désormais des sources de l'auteur), donc régénérés.
+- Contradictions rencontrées : `feuille-de-route-luna.md` U12 (« une fois le
+  dessin validé par l'auteur ») contre la consigne du pilote (faire la tâche) ;
+  non arbitré, voir « Pour l'auteur ».
+- Captures inspectées (Read sur les PNG) :
+  `test-results/beam-sprites/beams-{390x844,844x390,1440x900}.png`. En
+  1440 × 900 : trois poutres horizontales de longueurs nettement différentes
+  (courte à gauche dans le hublot, moyenne au centre, longue en bas, de rapport
+  proche de 2 : 1 : 3 comme 2, 4 et 6 m) et une poutre moyenne inclinée de 15° ;
+  bois orange à veines et liseré brun sombre, fond clair ; bords nets, pas
+  d'escalier visible ; chaque balle repose sur le bord supérieur de sa poutre,
+  sans espace ni recouvrement (zoom ×3 : la balle bleue sur la courte, la rouge
+  sur la longue). L'inclinée tourne avec son dessin. En 390 × 844 et 844 × 390 :
+  mêmes proportions, plus petites (la courte mesure environ 48 et 56 px de
+  large), toujours nettes, balles posées dessus. Défaut visible au zoom : le
+  bout gauche de la poutre longue est pincé et sans liseré, le bout droit est
+  plus sombre (source coupée par les bords de l'image, voir ci-dessous) ; à
+  taille normale cela se lit comme un chanfrein discret.
+- Gate : `pnpm check` passe du premier coup (typecheck, lint, formatage, Knip,
+  19 documents, 982 tests Vitest en 77 fichiers, build, 56 tests Playwright
+  `mobile` : 55 réussis, 1 ignoré). Pas d'intermittence D4 ni U15 observée.
+  `tmp/check-levels.ts` (ESLint le refuse) a été déplacé hors du dépôt pendant
+  `pnpm check:fast` et `pnpm check`, puis remis exactement à sa place : SHA-256
+  `1113625e…a92907` et mode 644 identiques avant et après.
+- Non vérifié : un vrai téléphone ; la netteté à 3× de densité (seuls les
+  sprites @2x existent, comme pour les autres familles) ; la poutre dans les
+  niveaux de campagne ou de l'atelier (seul le parcours de test a été vu).
+- Pour l'auteur : validation visuelle des trois captures ci-dessus.
+  Questions : (1) les sources n'ont pas le rapport de l'empreinte
+  (`etat.md`, « Sources de poutre ») : `beam-short` est écrasée de 12 %,
+  `beam-medium` étirée de 21 % et `beam-big` de 50 %, et cette dernière est
+  coupée par les bords de son image 2172 px (le bout gauche manque). Les
+  redessiner à 8 : 1, 16 : 1 et 24 : 1 de rapport, ou exporter en neuf tranches
+  (bouts conservés, milieu étiré) ? Non touché, la physique reste 2, 4 et
+  6 × 0,25. (2) La clause « une fois le dessin validé par l'auteur » de U12 :
+  si le dessin n'est pas validé, il suffit de restaurer les trois PNG
+  précédents (`git revert`). (3) La vignette du catalogue montre la poutre
+  longue, comme avant ; préférez-vous la moyenne ? (4) Le script, lancé en
+  entier, change `button-cap`, `lever-handle`, `second-ball-*` : ses sources ou
+  lui ont été retouchés depuis l'export commité ; à éclaircir avant de
+  régénérer le reste.
