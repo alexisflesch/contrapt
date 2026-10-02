@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { creationFromLevel } from '../application/drafts/creation-from-level';
 import type { ReceivedLevel } from '../application/received/received-level-repository';
@@ -157,12 +157,46 @@ describe('page « Mes niveaux » (M9, ADR 0015 § Page « Mes niveaux »)', () =
     expect(window.location.pathname).toBe('/my-levels');
     expect(within(section('Mes créations')).getByText(/aucune création/u)).toBeVisible();
     expect(within(section('Niveaux reçus')).getByText(/aucun niveau reçu/u)).toBeVisible();
-    expect(
-      within(section('Mes créations')).getByRole('button', { name: 'Nouveau niveau' }),
-    ).toBeVisible();
-    expect(
-      within(section('Niveaux reçus')).getByRole('button', { name: 'Importer un fichier' }),
-    ).toBeVisible();
+    expect(within(section('Mes créations')).getByText('0')).toBeVisible();
+    expect(within(section('Niveaux reçus')).getByText('0')).toBeVisible();
+  });
+
+  it('met « Importer » et « Nouveau niveau » dans le bandeau du haut, pas dans les sections (V6)', () => {
+    openMyLevels();
+
+    const banner = screen.getByRole('banner');
+    expect(within(banner).getByRole('button', { name: 'Importer' })).toBeVisible();
+    expect(within(banner).getByRole('button', { name: 'Nouveau niveau' })).toBeVisible();
+    expect(within(section('Mes créations')).queryByRole('button')).toBeNull();
+    expect(within(section('Niveaux reçus')).queryByRole('button')).toBeNull();
+  });
+
+  it('ouvre le sélecteur de fichier avec « Importer »', () => {
+    openMyLevels();
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+    if (input === null) throw new Error('Sélecteur de fichier introuvable.');
+    const open = vi.spyOn(input, 'click').mockImplementation(() => undefined);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Importer' }));
+
+    expect(open).toHaveBeenCalledTimes(1);
+  });
+
+  it('compte les niveaux de chaque section dans son en-tête (V6)', () => {
+    saveCreation(workshop('creation-a', 'A'), '2026-09-01T08:00:00.000Z');
+    saveCreation(workshop('creation-b', 'B'), '2026-09-02T08:00:00.000Z');
+    saveReceived(
+      receivedLevel(
+        puzzle('recu-a', { title: 'Reçu' }),
+        'a'.repeat(16),
+        '2026-09-25T08:00:00.000Z',
+      ),
+    );
+
+    openMyLevels();
+
+    expect(within(section('Mes créations')).getByText('2')).toBeVisible();
+    expect(within(section('Niveaux reçus')).getByText('1')).toBeVisible();
   });
 
   it('redirige `/import` vers `/my-levels`', () => {
@@ -202,6 +236,32 @@ describe('page « Mes niveaux » (M9, ADR 0015 § Page « Mes niveaux »)', () =
     expect(cardTitles('Niveaux reçus')).toEqual(['Reçu récent', 'Reçu ancien']);
   });
 
+  it('date chaque création de sa dernière modification, l’année seulement si elle diffère (V6)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 2, 12, 0));
+    try {
+      saveCreation(
+        workshop('creation-recente', 'Récente'),
+        new Date(2026, 8, 20, 10).toISOString(),
+      );
+      saveCreation(
+        workshop('creation-ancienne', 'Ancienne'),
+        new Date(2025, 2, 4, 10).toISOString(),
+      );
+      saveReceived(
+        receivedLevel(puzzle('recu-a', { title: 'Reçu' }), 'a'.repeat(16), '2026-09-25T08:00:00Z'),
+      );
+
+      openMyLevels();
+
+      expect(within(card('Récente')).getByText('Modifié le 20 septembre')).toBeVisible();
+      expect(within(card('Ancienne')).getByText('Modifié le 4 mars 2025')).toBeVisible();
+      expect(within(card('Reçu')).queryByText(/^Modifié le/u)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('montre l’état, l’auteur et la première source d’un niveau reçu, en texte brut', () => {
     saveReceived(
       receivedLevel(
@@ -236,10 +296,12 @@ describe('page « Mes niveaux » (M9, ADR 0015 § Page « Mes niveaux »)', () =
     expect(within(solved).getByText('par <i>Lili</i>')).toBeVisible();
     expect(within(solved).getByText('d’après La chute (par Max)')).toBeVisible();
     expect(within(solved).queryByText(/Plus ancien/u)).toBeNull();
-    expect(within(solved).getByText('Résolu')).toBeVisible();
-    expect(within(solved).getByText('Record : 2 objets')).toBeVisible();
+    // V6: the record is part of the tier badge laid over the preview (V4 mock-up).
+    expect(within(solved).getByText('Résolu · 2 objets')).toBeVisible();
     expect(solved.querySelector('b, i')).toBeNull();
     expect(within(card('Pas encore')).getByText('Pas encore résolu')).toBeVisible();
+    // V6: no badge for an unsolved level; the state stays for screen readers.
+    expect(card('Pas encore').querySelector('.level-card-tier')).toBeNull();
     expect(within(card('Pas encore')).queryByText(/^par /u)).toBeNull();
   });
 
@@ -527,10 +589,11 @@ describe('page « Mes niveaux » (M9, ADR 0015 § Page « Mes niveaux »)', () =
 
     const lockedCard = card(`${second.metadata.title} (remix)`);
     expect(within(lockedCard).getByText('Verrouillé')).toBeVisible();
+    // V6: the buttons are icons, named by `aria-label` (they had a visible label).
     expect(
       within(lockedCard)
         .getAllByRole('button')
-        .map((button) => button.textContent),
+        .map((button) => button.getAttribute('aria-label')),
     ).toEqual(['Supprimer']);
     const openCard = card(`${first.metadata.title} (remix)`);
     expect(within(openCard).queryByText('Verrouillé')).toBeNull();

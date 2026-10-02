@@ -39,7 +39,7 @@ test('importe un fichier depuis « Mes niveaux » et le retrouve dans la liste (
   await captureFormats(page, 'my-levels-empty');
 
   const document = await readFile('test/fixtures/self-solving-level.json', 'utf8');
-  await expect(received.getByRole('button', { name: 'Importer un fichier' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Importer', exact: true })).toBeVisible();
   await page.locator('input[type="file"]').setInputFiles({
     name: 'self-solving-level.json',
     mimeType: 'application/json',

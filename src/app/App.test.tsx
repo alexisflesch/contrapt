@@ -101,7 +101,7 @@ const createAnimationFrameHarness = () => {
 const openEmbeddedLevelOne = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
   fireEvent.click(screen.getByRole('button', { name: 'Campagne' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Jouer le niveau 1' }));
 };
 
 const createProgressRepository = (progress: CampaignProgress = {}) => {
@@ -424,7 +424,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('link', { name: 'Jouer' }));
     expect(window.location.pathname).toBe('/levels');
-    fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Jouer le niveau 1' }));
 
     expect(screen.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
     expect(screen.getByText('Niveau 1 · La bille de service')).toBeVisible();
@@ -836,10 +836,18 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Campagne' }));
 
-    const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
+    const levelList = screen.getByRole('region', { name: 'Campagne' });
     expect(levelList).toBeVisible();
+    // V6: the « carnet de l'atelier » banner and its counters are gone (V4 mock-up).
     expect(
-      within(levelList).getByRole('heading', { name: 'Choisis ton prochain défi' }),
+      within(levelList).queryByRole('heading', { name: 'Choisis ton prochain défi' }),
+    ).toBeNull();
+    expect(within(levelList).queryByText('Le carnet de l’atelier')).toBeNull();
+    expect(within(levelList).queryByRole('term')).toBeNull();
+    expect(
+      within(
+        within(levelList).getByRole('region', { name: 'Chapitre 1 · Les billes de service' }),
+      ).getByText('0 / 3 résolus'),
     ).toBeVisible();
     for (const chapter of [
       'Chapitre 1 · Les billes de service',
@@ -872,10 +880,10 @@ describe('coque TinkerBolt', () => {
       expect(within(levelList).getByRole('heading', { name: title })).toBeVisible();
     }
 
-    expect(within(levelList).getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
+    expect(within(levelList).getByRole('button', { name: 'Jouer le niveau 1' })).toBeEnabled();
     for (let level = 2; level <= 17; level += 1) {
       expect(
-        within(levelList).getByRole('button', { name: 'Lancer le niveau ' + String(level) }),
+        within(levelList).getByRole('button', { name: 'Jouer le niveau ' + String(level) }),
       ).toBeDisabled();
     }
     expect(within(levelList).getAllByText(/Verrouillé/)).toHaveLength(16);
@@ -890,18 +898,27 @@ describe('coque TinkerBolt', () => {
     window.history.replaceState(null, '', '/levels');
     render(<App progressRepository={repository} />);
 
-    const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
+    const levelList = screen.getByRole('region', { name: 'Campagne' });
     const cardOf = (level: number): HTMLElement =>
       within(levelList).getByRole('region', { name: 'Niveau ' + String(level) });
+
+    const chapterCount = (name: string, count: string): void => {
+      expect(
+        within(within(levelList).getByRole('region', { name })).getByText(count),
+      ).toBeVisible();
+    };
+    chapterCount('Chapitre 1 · Les billes de service', '3 / 3 résolus');
+    chapterCount('Chapitre 2 · Commandes à distance', '1 / 3 résolus');
+    chapterCount('Chapitre 3 · Le vent', '0 / 4 résolus');
 
     expect(cardOf(1)).toHaveAttribute('data-level-tier', 'resolved');
     expect(within(cardOf(1)).getByText(/Résolu/)).toBeVisible();
     expect(cardOf(4)).toHaveAttribute('data-level-tier', 'resolved');
     expect(within(cardOf(5)).queryByText(/Résolu|Élégant|Minimal/)).toBeNull();
-    expect(within(cardOf(5)).getByRole('button', { name: 'Lancer le niveau 5' })).toBeEnabled();
-    expect(within(cardOf(6)).getByRole('button', { name: 'Lancer le niveau 6' })).toBeDisabled();
+    expect(within(cardOf(5)).getByRole('button', { name: 'Jouer le niveau 5' })).toBeEnabled();
+    expect(within(cardOf(6)).getByRole('button', { name: 'Jouer le niveau 6' })).toBeDisabled();
 
-    fireEvent.click(within(cardOf(5)).getByRole('button', { name: 'Lancer le niveau 5' }));
+    fireEvent.click(within(cardOf(5)).getByRole('button', { name: 'Jouer le niveau 5' }));
     expect(window.location.pathname).toBe('/levels/campaign-05-l-electricien/play');
   });
   it('place le Ràz atelier avant Lancer et demande confirmation avant d’effacer', () => {
@@ -1001,7 +1018,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
 
     expect(window.location.pathname).toBe('/levels');
-    expect(screen.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Campagne' })).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
     expect(screen.queryByRole('button', { name: 'Démonstration' })).not.toBeInTheDocument();
@@ -1012,7 +1029,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
 
     expect(window.location.pathname).toBe('/levels');
-    expect(screen.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Campagne' })).toBeVisible();
   });
 
   it('n’affiche ni palier de défi ni niveau suivant sur un niveau hors campagne (U4, U4b)', () => {
@@ -1060,7 +1077,7 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Campagne' }));
 
     expect(screen.getByText('Mode développement : niveaux débloqués')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Lancer le niveau 17' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Jouer le niveau 17' })).toBeEnabled();
   });
 
   it('ne persiste pas les victoires hors campagne', () => {
@@ -1154,7 +1171,7 @@ describe('coque TinkerBolt', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Retour aux niveaux' }));
 
-    const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
+    const levelList = screen.getByRole('region', { name: 'Campagne' });
     expect(levelList).toBeVisible();
     for (const [number, title] of [
       [1, 'La bille de service'],

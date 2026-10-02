@@ -113,7 +113,7 @@ test.describe('mise à jour (U10)', () => {
     await expect(invitation.getByRole('button', { name: 'Mettre à jour' })).toBeVisible();
 
     await page.getByRole('link', { name: 'Jouer', exact: true }).tap();
-    await page.getByRole('button', { name: 'Lancer le niveau 1', exact: true }).tap();
+    await page.getByRole('button', { name: 'Jouer le niveau 1', exact: true }).tap();
     await expect(page.getByRole('button', { name: 'Lancer' })).toBeVisible();
     await expect(invitation).toBeVisible();
     await expectBesideTheBoard(page, invitation);
@@ -152,7 +152,7 @@ test.describe('mise à jour (U10)', () => {
       await shot('mise-a-jour-accueil');
 
       await page.getByRole('link', { name: 'Jouer', exact: true }).click();
-      await page.getByRole('button', { name: 'Lancer le niveau 1', exact: true }).click();
+      await page.getByRole('button', { name: 'Jouer le niveau 1', exact: true }).click();
       await expect(page.getByRole('button', { name: 'Lancer' })).toBeVisible();
       await expect(invitation).toBeVisible();
       await expectBesideTheBoard(page, invitation);

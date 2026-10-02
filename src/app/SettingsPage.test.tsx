@@ -242,9 +242,9 @@ describe('Paramètres — remettre la progression à zéro (U11, ADR 0010, ADR 0
     expect(pseudoField()).toHaveValue('Lili');
 
     openLevelList();
-    expect(screen.getByRole('button', { name: 'Lancer le niveau 1' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Lancer le niveau 2' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Lancer le niveau 3' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Jouer le niveau 1' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Jouer le niveau 2' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Jouer le niveau 3' })).toBeDisabled();
   });
 
   it('dit que rien n’a été effacé quand le stockage refuse, sans exception', () => {
@@ -268,6 +268,6 @@ describe('Paramètres — remettre la progression à zéro (U11, ADR 0010, ADR 0
     expect(screen.getByText('Niveaux résolus : 1 sur 5.')).toBeVisible();
 
     openLevelList();
-    expect(screen.getByRole('button', { name: 'Lancer le niveau 2' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Jouer le niveau 2' })).toBeEnabled();
   });
 });

@@ -627,3 +627,108 @@ canvas, context, spriteLoader })`, qui appelle `projectLevel` et
   `cache` ou simuler `levelPreviewImages` (jsdom n'a ni canevas ni `createImageBitmap` :
   l'aperçu y reste simplement sur le parchemin). Changer le titre d'un niveau change
   son empreinte, donc redessine l'aperçu (sans conséquence visuelle).
+
+### V6 — Carte de niveau commune — fait (validation visuelle attendue) — commit V6 (2 octobre 2026)
+
+Étape A (Sonnet : composant, factorisation, tests) puis étape B (Opus : finition d'après
+la maquette, captures), un seul commit.
+
+- Architecture. `src/app/LevelCard.tsx` (couche `app`, car il intègre `LevelPreview`) est
+  la carte unique ; `src/app/LevelSection.tsx` factorise l'en-tête de section
+  (titre `h2` qui nomme la région + compteur à droite) des chapitres de la campagne et
+  des sections de « Mes niveaux ». `LevelsPage` et `MyLevelsPage` n'ont plus de carte,
+  de statut ni d'attribution propres. API de `LevelCard` : `document`, `label?` (nom de
+  la région, titre par défaut), `number?`, `tier?` (`resolved | elegant | minimal | null`),
+  `objectCount?` (avec `resolved` : « Résolu · n objets »), `locked?`, `showAttribution?`
+  (`attributionParts`, texte brut), `assistiveStatus?`, `primary?` et `actions` (chacune :
+  `label`, `name?`, `icon`, `onSelect`, `disabled?`, `danger?`, `availableWhenLocked?`),
+  `previewCache?` (tests). Verrouillé : classe `level-card-locked` (CSS `filter` sur l'aperçu),
+  badge « Verrouillé » sur l'aperçu, toutes les actions désactivées sauf celle qui porte
+  `availableWhenLocked` (supprimer la création d'un niveau verrouillé, ADR 0015).
+- Tests rouges. `LevelCard.test.tsx` (22 tests, rouges d'abord : module absent). Pages,
+  vérifiées rouges contre l'ancien `LevelsPage`/`MyLevelsPage` (11 échecs) : région « Campagne »
+  introuvable (5, `App.test`), bouton « Importer » absent du bandeau (2), compteurs de section
+  absents (2), `expected [ null ] to deeply equal [ 'Supprimer' ]` (création verrouillée),
+  `Unable to find an element with the text: Résolu · 2 objets`.
+- Campagne : plus de bandeau « Le carnet de l'atelier », de titre « Choisis ton prochain
+  défi » ni de compteurs ; en-tête « Chapitre N · titre » avec « n / total résolus » (niveaux
+  `resolved` du chapitre). La note « Mode développement : niveaux débloqués » est gardée.
+  « Jouer » porte le nom accessible « Lancer le niveau N » (`aria-label`, inchangé à l’étape A, « Jouer le niveau N » à l’étape B) et l'icône
+  crayon « Modifier le niveau N » (infobulle « Modifier dans l'Atelier »).
+  **La région accessible « Liste des niveaux » est renommée « Campagne »** (lexique, décision 3).
+  Le message d'échec de création du brouillon passe sous la grille du chapitre.
+- Mes niveaux : « Importer » et « Nouveau niveau » sont dans le bandeau (`headerAction` d'`AppFrame`),
+  l'`<input type=file>` caché avec eux. Sous 700 px, le libellé est masqué (CSS) et l'icône reste,
+  nom accessible conservé (`aria-label`) : à 390 px le bouton du menu sortait de l'écran sinon.
+  Création : principale « Modifier » ; icônes Jouer, Partager, Dupliquer, Supprimer. Reçu :
+  principale « Jouer » ; icônes Modifier, Partager, Supprimer. Création verrouillée : seule
+  l'icône Supprimer, active. États vides et notices conservés.
+- « Pas encore résolu » (niveau reçu) : pas de badge (maquette) ; le texte est gardé en
+  `visually-hidden` (lu par les lecteurs d'écran, et deux tests existants — `MyLevelsPage.test`,
+  E2E `my-levels` et `received-play` — le cherchent). « Record : n objets » disparaît au
+  profit du badge « Résolu · n objets ».
+- Tests réécrits (là où un libellé visible devient une icône, ou où l'élément a disparu) :
+  `App.test` : la région « Liste des niveaux » devient « Campagne » (4 tests) ; l'assertion du
+  titre « Choisis ton prochain défi » devient son absence + celle de « Le carnet de l'atelier »
+  et des compteurs (bandeau supprimé), et les compteurs « n / total résolus » y sont ajoutés.
+  `MyLevelsPage.test` : « Nouveau niveau » / « Importer un fichier » (cherchés dans les sections)
+  deviennent « Nouveau niveau » / « Importer » dans le bandeau ; « Résolu » + « Record : 2 objets »
+  deviennent « Résolu · 2 objets » ; la création verrouillée lit les `aria-label` des boutons
+  (leur texte est vide, ce sont des icônes) au lieu de `textContent`. E2E : `levels`, `home`
+  (région « Campagne »), `my-levels` (bouton « Importer », hors section), `received-play`
+  (« Résolu · 0 objet »). Aucun test supprimé ni ignoré ; aucune spec de format téléphone
+  retouchée (les parcours à 390 × 844 passent tels quels).
+- Tests ajoutés (pages) : bandeau de `Mes niveaux`, ouverture du sélecteur par « Importer »,
+  compteurs des sections.
+- CSS : `src/ui/styles.css` § U5/V6 réécrit (grille `auto-fill minmax(300px,1fr)`, carte, aperçu,
+  surimpressions, actions, verrouillage). Supprimé comme mort : `.campaign-hero*`, `.campaign-stats*`,
+  `.level-chapter*`, `.level-card-status*`, `.level-card .panel-*`, `.level-card::before`,
+  `.level-list`, `.my-level-*`, `.my-levels-heading/-section`, `.level-card-action/-edit`.
+- Captures d'étape (non validées) : `/tmp/claude-1000/-home-aflesch-tinkerbolt/6a643584-d9aa-4357-aedc-da10439fec33/scratchpad/v6/`
+  (`campagne-` et `mes-niveaux-` en 1440 × 900, 1280 × 720 et 390 × 844).
+- Étape B — décisions de la session principale :
+  - **Nom accessible « Jouer le niveau N »** (au lieu de « Lancer le niveau N ») : il contient le
+    libellé visible « Jouer » (WCAG 2.5.3). Réécriture mécanique des tests qui le cherchaient
+    (`App.test`, `SettingsPage.test`, `LevelCard.test`, E2E `home`, `levels`, `settings`, `smoke`,
+    `pwa-invitation`) ; aucun autre « Lancer » (simulation) touché. Rouge vérifié avant le
+    changement de `LevelsPage` : 8 échecs `Unable to find an accessible element with the role
+"button" and name "Jouer le niveau 1"`.
+  - **« Modifié le … »** sous le titre d'une création : `src/app/modified-on.ts`
+    (`modifiedOn(updatedAt, today)`, pur : jour — « 1er » pour le premier — et mois en toutes
+    lettres, l'année seulement si elle n'est pas celle de `today`). `today` vient de l'horloge
+    déjà injectée de `MyLevelsPage` (`systemClock`) ; `LevelCard` reçoit un texte (`meta`), sans
+    lire l'horloge. Tests rouges : `modified-on.test.ts` (module absent), `LevelCard.test`
+    (`Unable to find an element with the text: Modifié le 2 octobre`), `MyLevelsPage.test`
+    (horloge simulée, `Modifié le 20 septembre` / `Modifié le 4 mars 2025`, rien sur un reçu).
+  - **Aperçu cliquable** : un `<button>` transparent couvre l'aperçu et déclenche l'action
+    principale, avec `tabIndex=-1` et `aria-hidden` : agrandissement de cible pour la souris,
+    sans second arrêt de tabulation ni second bouton annoncé (le bouton nommé de la carte reste
+    l'unique entrée clavier et lecteur d'écran). Les pastilles laissent passer le clic
+    (`pointer-events: none`). Absent sans action principale, si elle est désactivée ou si la carte
+    est verrouillée. Test rouge : `Aperçu cliquable introuvable.`
+- Étape B — finition CSS (`styles.css` § V6), reprise de `maquettes.css` : survol de carte
+  (−2 px, ombre `0 12px 28px`), neutralisé sur une carte verrouillée ; boutons de carte à 40 px
+  (`--touch-target` global inchangé), bordure 1 px, 15 px ; bouton vert sans bordure, avec
+  `box-shadow: inset 0 -3px 0 var(--go-edge)` et éclaircissement au survol ; icônes bordées,
+  survol sable, Supprimer en rouge ; badge « Verrouillé » 14 px non coupé ; ligne d'auteur et de
+  source sur une ligne (`par Mila · d’après La chaîne`), 13 px gras atténué, comme « Modifié le » ;
+  en-têtes de section (marge haute 8 px, 18 px avant la grille) ; page `max-width` 1180 px avec
+  marges 40 / 32 / 64 px dès 700 px ; états vides en encadré pointillé (`--night-800`, bordure
+  `--night-line` en tirets, rayon 14 px). L'en-tête, l'accueil et l'éditeur ne sont pas touchés (V7).
+- Captures finales (1440 × 900 et 1280 × 720, build servi par `vite preview`, progression
+  et niveaux reçus injectés dans `localStorage`, créations faites par « Modifier » puis
+  renommées et datées) :
+  `/tmp/claude-1000/-home-aflesch-tinkerbolt/6a643584-d9aa-4357-aedc-da10439fec33/scratchpad/v6-final/`
+  (`campagne-*`, `mes-niveaux-*`, `-full` pleine page, `vide-*` états vides,
+  `survol-carte-1440.png`, `survol-supprimer-1440.png`). Comparées aux captures de
+  `docs/maquettes/v1/captures/` : grille, cartes, aperçus, pastilles, boutons et en-têtes se
+  superposent ; l'écart restant tient à la police (Nunito : V7) et à l'en-tête (V7).
+- Écarts connus avec la maquette, hors police : aucun palier « Élégant » ni « Minimal » dans la
+  campagne, les tutoriels n'ayant pas de défi (`challenge` absent, vérifié par
+  `embedded-levels.test`) — la pastille est couverte par `LevelCard.test` et stylée comme la
+  maquette ; la source s'écrit `d’après La chaîne`, sans guillemets (format ADR 0016) ; l'icône
+  « Jouer » des créations issues d'un niveau de campagne est désactivée (pas d'objet « à placer »,
+  comportement existant) ; les textes des états vides restent ceux de la page.
+- Gate `pnpm check` verte : 1185 tests Vitest (89 fichiers), 87 tests Playwright `v1`.
+  `tmp/check-levels.ts` écarté puis remis identique.
+- Pour l'auteur : valider les captures de `v6-final/`.

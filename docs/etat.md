@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0, V1 (fin de N2), V2a (démo supprimée), V2b (pas de bordure, pas de perte par le haut ; validation visuelle attendue) et V2c (repli hors ligne de `/my-levels`) V3 (navigation et vocabulaire ; validation visuelle attendue) et V5 (aperçu des niveaux : dessin, cache et composant, pas encore branchés) livrées, gate globale verte ; prochaine tâche : V6 (carte de niveau commune). U3 reste abandonnée.
+Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0, V1 (fin de N2), V2a (démo supprimée), V2b (pas de bordure, pas de perte par le haut ; validation visuelle attendue) et V2c (repli hors ligne de `/my-levels`) V3 (navigation et vocabulaire ; validation visuelle attendue) V5 (aperçu des niveaux) et V6 (carte de niveau commune ; validation visuelle attendue) livrées, gate globale verte ; prochaine tâche : V7 (accueil, éditeur, scrollbar, police Nunito). U3 reste abandonnée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -21,9 +21,12 @@ plus de perte par le haut ; validation visuelle de l’auteur attendue) et **V2c
 (navigation et vocabulaire : logo lié à l’accueil, « Jouer » → Campagne, lexique
 Accueil · Campagne · Atelier · Mes niveaux · Paramètres, `/import` hors ligne ;
 validation visuelle de l’auteur attendue) est livrée. **V5** (aperçu d’un niveau :
-`renderLevelPreview`, cache par empreinte, composant `LevelPreview` ; pas encore
-branché dans les pages) est livrée. Prochaine tâche : **V6** (carte de niveau
-commune ; les maquettes V4 sont validées).
+`renderLevelPreview`, cache par empreinte, composant `LevelPreview`) est livrée.
+**V6** (carte de niveau commune `LevelCard` avec aperçu, pour la campagne,
+« Mes créations » et « Niveaux reçus » ; « Importer » et « Nouveau niveau » dans
+le bandeau de Mes niveaux ; « Modifié le … » sur les créations ; validation
+visuelle de l’auteur attendue) est livrée. Prochaine tâche : **V7** (accueil,
+bandeau de l’éditeur, scrollbar, police Nunito).
 Les sources auteur et son fichier d’essai restent intacts ; rien n’est poussé.
 
 ## Stack en place
@@ -889,6 +892,11 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après V6 (2 octobre 2026) : passe — typecheck, lint, formatage,
+Knip, contenu (6 documents embarqués), 1185 tests Vitest (89 fichiers), build et
+87 tests Playwright du projet `v1` (0 ignoré). `tmp/check-levels.ts` écarté puis
+remis identique. Captures de V6 : validation de l’auteur attendue.
 
 `pnpm check` après V5 (2 octobre 2026) : passe — typecheck, lint, formatage,
 Knip, contenu (6 documents embarqués), 1153 tests Vitest (87 fichiers), build et

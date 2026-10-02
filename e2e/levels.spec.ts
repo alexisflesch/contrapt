@@ -5,7 +5,7 @@ const campaignIds = ['tuto-1', 'tuto-2', 'tuto-3', 'tuto-4', 'tuto-5'] as const;
 test('présente les cinq tutoriels de Bolt dans un chapitre', async ({ page }) => {
   await page.goto('/levels');
 
-  const levelList = page.getByRole('region', { name: 'Liste des niveaux' });
+  const levelList = page.getByRole('region', { name: 'Campagne' });
   await expect(levelList).toBeVisible();
   await expect(levelList.getByRole('region', { name: 'Chapitre 1 · Premiers pas' })).toBeVisible();
 
@@ -14,7 +14,7 @@ test('présente les cinq tutoriels de Bolt dans un chapitre', async ({ page }) =
       levelList.getByRole('region', { name: `Niveau ${String(index + 1)}`, exact: true }),
     ).toBeVisible();
     const launch = levelList.getByRole('button', {
-      name: 'Lancer le niveau ' + String(index + 1),
+      name: 'Jouer le niveau ' + String(index + 1),
       exact: true,
     });
     if (index === 0) await expect(launch).toBeEnabled();

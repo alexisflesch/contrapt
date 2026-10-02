@@ -16,7 +16,7 @@ test('lance depuis l’accueil, par la campagne, le niveau 1', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
   await page.getByRole('link', { name: 'Jouer', exact: true }).tap();
   await expect(page).toHaveURL(/\/levels$/);
-  await page.getByRole('button', { name: 'Lancer le niveau 1', exact: true }).tap();
+  await page.getByRole('button', { name: 'Jouer le niveau 1', exact: true }).tap();
   await expect(page.getByText('Niveau 1 · Le petit pont')).toBeVisible();
   await expect(page.getByText('Campagne', { exact: true })).toBeVisible();
   const board = page.getByRole('region', { name: 'Plateau de jeu' });

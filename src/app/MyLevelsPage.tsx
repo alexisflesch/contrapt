@@ -1,17 +1,6 @@
-import { useId, useRef, useState, type ChangeEvent } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  CircleCheck,
-  CircleDashed,
-  Copy,
-  FilePlus2,
-  FileUp,
-  LockKeyhole,
-  Pencil,
-  Play,
-  Share2,
-  Trash2,
-} from 'lucide-react';
+import { Copy, FilePlus2, FileUp, Pencil, Play, Share2, Trash2 } from 'lucide-react';
 
 import { createConstructionAttempt, type ConstructionAttempt } from '../application/construction';
 import { campaignDraftId } from '../application/drafts/campaign-draft';
@@ -29,11 +18,12 @@ import type { LevelDocument } from '../domain/level-document';
 import { AppFrame } from '../ui/AppFrame';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
-import { Panel } from '../ui/Panel';
 import { useDraftRepository } from './draft-repository-context';
 import { fingerprintOf } from './fingerprint-of';
-import { attributionParts } from './level-attribution';
+import { LevelCard } from './LevelCard';
 import { LevelExportDialog } from './LevelExportDialog';
+import { LevelSection } from './LevelSection';
+import { modifiedOn } from './modified-on';
 import { notKeptNotice } from './not-kept-notice';
 import { randomIdPart } from './random-id-part';
 import { readLevelFile } from './read-level-file';
@@ -42,7 +32,7 @@ import { ReceivedLevelShareDialog } from './ReceivedLevelShareDialog';
 import { useReceivedLevelRepository } from './received-level-repository-context';
 import { useCampaignProgress } from './use-campaign-progress';
 
-/** Composition point: the real clock stamps `receivedAt`, as on `/shared`. */
+/** Composition point: the real clock stamps `receivedAt`, as on `/shared`, and dates the creations. */
 const systemClock = (): Date => new Date();
 
 type PendingDeletion =
@@ -63,41 +53,6 @@ const storageMessage = (code: string): string =>
 /** ADR 0015: the campaign level a `<id>-brouillon` creation comes from, if any. */
 const campaignLevelOf = (creationId: string): LevelDocument | undefined =>
   embeddedLevels.find((level) => campaignDraftId(level) === creationId);
-
-/** ADR 0016 § Affichage: author and first source, always rendered as plain text. */
-function Attribution({ metadata }: { readonly metadata: LevelDocument['metadata'] }) {
-  const parts = attributionParts(metadata);
-  if (parts.length === 0) return null;
-  return (
-    <p className="my-level-attribution">
-      {parts.map((part) => (
-        <span key={part}>{part}</span>
-      ))}
-    </p>
-  );
-}
-
-function ReceivedStatus({ level }: { readonly level: ReceivedLevel }) {
-  if (!level.solved) {
-    return (
-      <p className="level-card-status my-level-status-unsolved">
-        <CircleDashed size={18} aria-hidden="true" /> Pas encore résolu
-      </p>
-    );
-  }
-  return (
-    <>
-      <p className="level-card-status level-card-status-resolved">
-        <CircleCheck size={18} aria-hidden="true" /> Résolu
-      </p>
-      {level.bestObjectCount !== undefined && (
-        <p className="my-level-record">
-          Record : {level.bestObjectCount} objet{level.bestObjectCount > 1 ? 's' : ''}
-        </p>
-      )}
-    </>
-  );
-}
 
 /**
  * `/my-levels` (ADR 0008 amended, ADR 0015 § Page « Mes niveaux »): the
@@ -120,8 +75,6 @@ export function MyLevelsPage() {
   const [playingUnkept, setPlayingUnkept] = useState<LevelDocument | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelDeletionRef = useRef<HTMLButtonElement>(null);
-  const creationsTitleId = useId();
-  const receivedTitleId = useId();
 
   const refresh = (): void => {
     setCreations(listCreations(drafts));
@@ -253,127 +206,122 @@ export function MyLevelsPage() {
     refresh();
   };
 
+  const today = systemClock();
+
   const creationCard = ({ id, creation }: { id: string; creation: DraftCreation }) => {
     const { title } = creation.document.metadata;
     const locked = isLocked(id);
-    const deleteButton = (
-      <Button
-        tone="reset"
-        onClick={() => {
-          setPendingDeletion({ kind: 'creation', id, title });
-        }}
-      >
-        <Trash2 size={18} aria-hidden="true" />
-        Supprimer
-      </Button>
-    );
+    const modified = modifiedOn(creation.updatedAt, today);
+    const deleteAction = {
+      label: 'Supprimer',
+      icon: Trash2,
+      danger: true,
+      // ADR 0015: the creation of a locked campaign level can still be deleted.
+      availableWhenLocked: true,
+      onSelect: () => {
+        setPendingDeletion({ kind: 'creation', id, title });
+      },
+    };
     return (
-      <Panel
+      <LevelCard
         key={id}
-        className={`level-card my-level-card ${locked ? 'level-card-locked' : 'level-card-unlocked'}`}
-        label={title}
-        title={title}
-      >
-        {locked ? (
-          <>
-            <p className="level-card-status level-card-status-locked">
-              <LockKeyhole size={18} aria-hidden="true" /> Verrouillé
-            </p>
-            <div className="my-level-actions">{deleteButton}</div>
-          </>
-        ) : (
-          <div className="my-level-actions">
-            <Button
-              tone="go"
-              onClick={() => {
-                void navigate(`/editor?draft=${encodeURIComponent(id)}`);
-              }}
-            >
-              <Pencil size={18} aria-hidden="true" />
-              Modifier
-            </Button>
-            <Button
-              disabled={puzzleFromWorkshop(creation.document).status !== 'ok'}
-              onClick={() => {
-                // U22 « Jouer le puzzle », opened straight away from the workshop.
-                void navigate(`/editor?draft=${encodeURIComponent(id)}`, {
-                  state: { playPuzzle: true },
-                });
-              }}
-            >
-              <Play size={18} aria-hidden="true" />
-              Jouer
-            </Button>
-            <Button
-              onClick={() => {
-                setSharing({ kind: 'creation', creation });
-              }}
-            >
-              <Share2 size={18} aria-hidden="true" />
-              Partager
-            </Button>
-            <Button
-              onClick={() => {
-                duplicate(id);
-              }}
-            >
-              <Copy size={18} aria-hidden="true" />
-              Dupliquer
-            </Button>
-            {deleteButton}
-          </div>
-        )}
-      </Panel>
+        document={creation.document}
+        locked={locked}
+        {...(modified === undefined ? {} : { meta: modified })}
+        {...(locked
+          ? {}
+          : {
+              primary: {
+                label: 'Modifier',
+                icon: Pencil,
+                onSelect: () => {
+                  void navigate(`/editor?draft=${encodeURIComponent(id)}`);
+                },
+              },
+            })}
+        actions={
+          locked
+            ? [deleteAction]
+            : [
+                {
+                  label: 'Jouer',
+                  icon: Play,
+                  disabled: puzzleFromWorkshop(creation.document).status !== 'ok',
+                  onSelect: () => {
+                    // U22 « Jouer le puzzle », opened straight away from the workshop.
+                    void navigate(`/editor?draft=${encodeURIComponent(id)}`, {
+                      state: { playPuzzle: true },
+                    });
+                  },
+                },
+                {
+                  label: 'Partager',
+                  icon: Share2,
+                  onSelect: () => {
+                    setSharing({ kind: 'creation', creation });
+                  },
+                },
+                {
+                  label: 'Dupliquer',
+                  icon: Copy,
+                  onSelect: () => {
+                    duplicate(id);
+                  },
+                },
+                deleteAction,
+              ]
+        }
+      />
     );
   };
 
   const receivedCard = (level: ReceivedLevel) => {
     const { title } = level.document.metadata;
     return (
-      <Panel key={level.id} className="level-card my-level-card" label={title} title={title}>
-        <Attribution metadata={level.document.metadata} />
-        <ReceivedStatus level={level} />
-        {level.document.metadata.description !== undefined && (
-          // M14b: plain text, like the campaign cards of `/levels`.
-          <p className="level-card-description">{level.document.metadata.description}</p>
-        )}
-        <div className="my-level-actions">
-          <Button
-            tone="go"
-            onClick={() => {
-              void navigate(`/my-levels/${encodeURIComponent(level.id)}/play`);
-            }}
-          >
-            <Play size={18} aria-hidden="true" />
-            Jouer
-          </Button>
-          <Button
-            onClick={() => {
+      <LevelCard
+        key={level.id}
+        document={level.document}
+        showAttribution
+        {...(level.solved
+          ? {
+              tier: 'resolved' as const,
+              ...(level.bestObjectCount === undefined
+                ? {}
+                : { objectCount: level.bestObjectCount }),
+            }
+          : { assistiveStatus: 'Pas encore résolu' })}
+        primary={{
+          label: 'Jouer',
+          icon: Play,
+          onSelect: () => {
+            void navigate(`/my-levels/${encodeURIComponent(level.id)}/play`);
+          },
+        }}
+        actions={[
+          {
+            label: 'Modifier',
+            icon: Pencil,
+            onSelect: () => {
               editReceived(level);
-            }}
-          >
-            <Pencil size={18} aria-hidden="true" />
-            Modifier
-          </Button>
-          <Button
-            onClick={() => {
+            },
+          },
+          {
+            label: 'Partager',
+            icon: Share2,
+            onSelect: () => {
               setSharing({ kind: 'received', document: level.document });
-            }}
-          >
-            <Share2 size={18} aria-hidden="true" />
-            Partager
-          </Button>
-          <Button
-            tone="reset"
-            onClick={() => {
+            },
+          },
+          {
+            label: 'Supprimer',
+            icon: Trash2,
+            danger: true,
+            onSelect: () => {
               setPendingDeletion({ kind: 'received', id: level.id, title });
-            }}
-          >
-            <Trash2 size={18} aria-hidden="true" />
-            Supprimer
-          </Button>
-        </div>
-      </Panel>
+            },
+          },
+        ]}
+      />
     );
   };
 
@@ -397,21 +345,49 @@ export function MyLevelsPage() {
   }
 
   return (
-    <AppFrame title="Mes niveaux" subtitle="Ta collection" variant="page">
+    <AppFrame
+      title="Mes niveaux"
+      subtitle="Ta collection"
+      variant="page"
+      headerAction={
+        <>
+          <Button
+            aria-label="Importer"
+            onClick={() => {
+              fileInputRef.current?.click();
+            }}
+          >
+            <FileUp size={18} aria-hidden="true" />
+            <span className="header-action-label">Importer</span>
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            aria-label="Fichier de niveau JSON"
+            hidden
+            onChange={(event) => {
+              void importFile(event);
+            }}
+          />
+          <Button
+            tone="go"
+            aria-label="Nouveau niveau"
+            onClick={() => {
+              void navigate('/editor');
+            }}
+          >
+            <FilePlus2 size={18} aria-hidden="true" />
+            <span className="header-action-label">Nouveau niveau</span>
+          </Button>
+        </>
+      }
+    >
       <div className="page-content page-content-levels my-levels">
-        <section className="my-levels-section" aria-labelledby={creationsTitleId}>
-          <div className="my-levels-heading">
-            <h2 id={creationsTitleId}>Mes créations</h2>
-            <Button
-              tone="go"
-              onClick={() => {
-                void navigate('/editor');
-              }}
-            >
-              <FilePlus2 size={18} aria-hidden="true" />
-              Nouveau niveau
-            </Button>
-          </div>
+        <LevelSection
+          title="Mes créations"
+          count={String(creations.status === 'ok' ? creations.creations.length : 0)}
+        >
           {creationNotice !== null && (
             <p className="panel-note my-levels-notice" role={creationNotice.tone}>
               {creationNotice.message}
@@ -433,34 +409,16 @@ export function MyLevelsPage() {
                   Tu n’as encore aucune création. Lance-toi avec « Nouveau niveau » !
                 </p>
               ) : (
-                <div className="level-list">{creations.creations.map(creationCard)}</div>
+                <div className="level-cards">{creations.creations.map(creationCard)}</div>
               )}
             </>
           )}
-        </section>
+        </LevelSection>
 
-        <section className="my-levels-section" aria-labelledby={receivedTitleId}>
-          <div className="my-levels-heading">
-            <h2 id={receivedTitleId}>Niveaux reçus</h2>
-            <Button
-              onClick={() => {
-                fileInputRef.current?.click();
-              }}
-            >
-              <FileUp size={18} aria-hidden="true" />
-              Importer un fichier
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json,application/json"
-              aria-label="Fichier de niveau JSON"
-              hidden
-              onChange={(event) => {
-                void importFile(event);
-              }}
-            />
-          </div>
+        <LevelSection
+          title="Niveaux reçus"
+          count={String(receivedLevels.status === 'ok' ? receivedLevels.levels.length : 0)}
+        >
           {importNotice !== null && (
             <p className="panel-note my-levels-notice" role={importNotice.tone}>
               {importNotice.message}
@@ -495,11 +453,11 @@ export function MyLevelsPage() {
                   fichier.
                 </p>
               ) : (
-                <div className="level-list">{receivedLevels.levels.map(receivedCard)}</div>
+                <div className="level-cards">{receivedLevels.levels.map(receivedCard)}</div>
               )}
             </>
           )}
-        </section>
+        </LevelSection>
       </div>
 
       {pendingDeletion !== null && (

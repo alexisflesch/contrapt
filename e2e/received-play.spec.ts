@@ -77,7 +77,8 @@ test('joue un niveau reçu, montre son auteur et enregistre la victoire (M10)', 
   await dialog.getByRole('button', { name: 'Voir la scène' }).tap();
   await page.getByRole('button', { name: 'Retour à Mes niveaux' }).tap();
   await expect(page).toHaveURL(/\/my-levels$/u);
-  await expect(card.getByText('Résolu', { exact: true })).toBeVisible();
+  // V6: the record is part of the badge over the preview (« Résolu · 0 objet »).
+  await expect(card.getByText('Résolu · 0 objet', { exact: true })).toBeVisible();
 });
 
 test('joue quand même un fichier importé que le stockage plein n’a pas gardé (M10)', async ({

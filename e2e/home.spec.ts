@@ -42,7 +42,7 @@ test('présente l’accueil sans débordement et mène à la campagne au tactile
   }
   await page.getByRole('link', { name: 'Jouer', exact: true }).tap();
   await expect(page).toHaveURL(/\/levels$/);
-  await expect(page.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Campagne' })).toBeVisible();
 });
 
 test('ouvre chaque destination et revient à l’accueil depuis le menu', async ({ page }) => {
@@ -91,5 +91,5 @@ test('reprend la progression enregistrée après rechargement', async ({ page })
   });
   await page.getByRole('link', { name: 'Jouer', exact: true }).tap();
   await expect(page).toHaveURL(/\/levels$/);
-  await expect(page.getByRole('button', { name: 'Lancer le niveau 2', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Jouer le niveau 2', exact: true })).toBeEnabled();
 });
