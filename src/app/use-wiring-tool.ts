@@ -81,10 +81,10 @@ export const wiringGuide = (
 ): { readonly prompt: string; readonly exitLabel: string } => {
   const prompt =
     step.kind === 'first'
-      ? 'Touchez une commande ou l’appareil à relier'
+      ? 'Choisis une commande ou l’appareil à relier'
       : step.first === 'source'
-        ? 'Touchez l’appareil à commander'
-        : 'Touchez le levier ou le bouton qui le commande';
+        ? 'Choisis l’appareil à commander'
+        : 'Choisis le levier ou le bouton qui le commande';
   return { prompt, exitLabel: 'Annuler le fil' };
 };
 

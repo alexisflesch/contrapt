@@ -122,7 +122,7 @@ test('reçoit, gagne, remixe, déplace un objet et exporte au toucher (M11)', as
 
   await dialog.getByRole('button', { name: 'Remixer' }).tap();
   await expect(page).toHaveURL(/\/editor\?draft=creation-[0-9a-f]+$/u);
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
   const draftId = new URL(page.url()).searchParams.get('draft') ?? '';
   expect(await storedBeamX(page, draftId)).toBeCloseTo(machineBeam.x, 1);
   await captureFormats(page, 'remix-workshop');
@@ -168,6 +168,6 @@ test('désactive « Modifier » d’un niveau verrouillé et refuse son URL dire
   await expect(page.getByText('Ce niveau est encore verrouillé.')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toHaveCount(0);
   await captureFormats(page, 'locked-draft');
-  await page.getByRole('link', { name: 'Liste des niveaux' }).tap();
+  await page.getByRole('link', { name: 'Campagne', exact: true }).tap();
   await expect(page).toHaveURL(/\/levels$/u);
 });

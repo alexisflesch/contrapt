@@ -56,14 +56,14 @@ test('édite un tutoriel de campagne au toucher et conserve le brouillon', async
   await page.goto('/levels');
   await page.getByRole('button', { name: 'Modifier le niveau 2' }).tap();
   // A production build shows no calibration guide (M11, ADR 0015 § Révéler).
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Fiche de calibrage' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
   await expect(page.getByRole('button', { name: 'Ouvrir la fiche de calibrage' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Fermer le catalogue' }).tap();
 
   await expect(page).toHaveURL(/\/editor\?draft=tuto-2-brouillon$/u);
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
   expect(await storedFloorX(page)).toBe(8.195822458208895);
 
   await tapWorldPoint(page, 8.195822458208895, 7.974035655966092);
@@ -73,7 +73,7 @@ test('édite un tutoriel de campagne au toucher et conserve le brouillon', async
   await expect.poll(() => storedFloorX(page)).toBeGreaterThan(8.195822458208895);
 
   await page.reload();
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
   expect(await storedFloorX(page)).toBeGreaterThan(8.195822458208895);
   await expect(page.getByRole('button', { name: 'Exporter le niveau' })).toBeVisible();
 });

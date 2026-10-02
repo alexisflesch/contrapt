@@ -14,7 +14,7 @@ const essentialActionNames = [
 const openWorkshop = async (page: Page): Promise<void> => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Ouvrir le menu' }).click();
-  await page.getByRole('button', { name: 'Atelier de construction' }).click();
+  await page.getByRole('button', { name: 'Atelier', exact: true }).click();
 };
 
 const bounds = async (locator: Locator) => {

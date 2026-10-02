@@ -89,7 +89,7 @@ function CampaignLevelBoard({ level, levelIndex }: CampaignLevelBoardProps) {
       initialDocument={level}
       mode="resolution"
       title={`Niveau ${String(levelIndex + 1)} · ${level.metadata.title}`}
-      subtitle="Mode joueur"
+      subtitle="Campagne"
       firstLevelHint={firstLevelHint}
       campaignVictory={campaignVictory}
       onSimulationLaunched={(attempt) => {

@@ -124,7 +124,7 @@ const intactCreation = creationFromLevel(source, { createId: () => creationId })
 const openCreation = (): void => {
   window.history.replaceState(null, '', `/editor?draft=${creationId}`);
   render(<App />);
-  expect(screen.getByText('Mode éditeur')).toBeVisible();
+  expect(screen.getByText('Atelier')).toBeVisible();
 };
 
 const openMenu = (): HTMLElement => {
@@ -245,7 +245,7 @@ describe('révéler la solution de l’auteur dans l’atelier (M12, ADR 0015 §
     revealAndConfirm();
 
     fireEvent.click(screen.getByRole('button', { name: 'Essayer en joueur' }));
-    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByText('Atelier', { selector: '.level-mode' })).toBeVisible();
 
     expect(within(openMenu()).queryByRole('button', { name: revealEntryName })).toBeNull();
   });

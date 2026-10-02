@@ -27,7 +27,7 @@ function ReceivedLevelPlay({ id }: { readonly id: string }) {
 
   if (level === null) {
     return (
-      <AppFrame title="Niveau reçu" subtitle="Mode joueur" variant="page">
+      <AppFrame title="Mes niveaux" subtitle="Niveau reçu" variant="page">
         <div className="page-content">
           <Panel label="Niveau reçu" title="Niveau introuvable">
             <p className="panel-note" role="alert">

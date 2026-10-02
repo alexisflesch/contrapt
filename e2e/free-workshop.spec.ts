@@ -14,7 +14,7 @@ test('M13 — l’atelier libre s’enregistre à la première modification, san
   );
 
   await page.goto('/editor');
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
   expect(await draftKeys(page)).toEqual([]);
   const entries = await page.evaluate(() => window.history.length);
 
@@ -36,7 +36,7 @@ test('M13 — l’atelier libre s’enregistre à la première modification, san
 
   const url = page.url();
   await page.reload();
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
   await expect(page).toHaveURL(url);
   expect(await draftKeys(page)).toHaveLength(1);
 });

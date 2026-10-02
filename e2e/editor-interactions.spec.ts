@@ -9,8 +9,8 @@ import {
 const openWorkshop = async (page: Page): Promise<void> => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Ouvrir le menu' }).click();
-  await page.getByRole('button', { name: 'Atelier de construction' }).click();
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await page.getByRole('button', { name: 'Atelier', exact: true }).click();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
 };
 
 const boardBounds = async (board: Locator) => {
@@ -468,11 +468,11 @@ test('U15 — relie un levier à un convoyeur par la carte Fil, au tactile', asy
 
   await pick('Fil de commande');
   const guide = page.getByRole('group', { name: 'Pose d’un fil' });
-  await expect(guide).toContainText('Touchez une commande ou l’appareil à relier');
+  await expect(guide).toContainText('Choisis une commande ou l’appareil à relier');
 
   // L’appareil d’abord : l’ordre est libre.
   await tapWorld(11, 4.5);
-  await expect(guide).toContainText('Touchez le levier ou le bouton qui le commande');
+  await expect(guide).toContainText('Choisis le levier ou le bouton qui le commande');
   // Le premier objet est sélectionné sans ouvrir l’inspecteur compact sur le plateau.
   await expect(page.getByRole('button', { name: 'Fermer les propriétés' })).toBeHidden();
   await tapWorld(4, 4.5);

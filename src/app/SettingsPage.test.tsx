@@ -60,7 +60,7 @@ const pseudoField = (): HTMLInputElement => screen.getByRole('textbox', { name: 
 
 const openLevelList = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Campagne' }));
 };
 
 beforeEach(() => {

@@ -68,7 +68,7 @@ export function ReceivedLevelBoard({
       initialDocument={document}
       mode="resolution"
       title={title}
-      subtitle="Mode joueur"
+      subtitle="Mes niveaux"
       attribution={attributionLine(document.metadata)}
       campaignVictory={victory}
       onSimulationLaunched={(attempt) => {

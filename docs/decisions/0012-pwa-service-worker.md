@@ -85,7 +85,7 @@ worker, sa stratégie (`registerType: 'prompt'`) et son précache sont inchangé
 Le motif du repli (`navigateFallbackAllowlist`) est extrait dans
 `scripts/navigate-fallback-allowlist.ts` et testé : il respecte le sous-répertoire
 de déploiement et sert hors ligne `/`, `/levels`, `/levels/:levelId/play`,
-`/my-levels`, `/my-levels/:id/play`, `/editor`, `/settings`, `/shared`, `/bench` et
-`/bench/play`. `/my-levels` en était absent depuis M9, malgré la phrase « toutes
+`/my-levels`, `/my-levels/:id/play`, `/import` (redirection vers `/my-levels`, ajoutée
+par V3), `/editor`, `/settings`, `/shared`, `/bench` et `/bench/play`. `/my-levels` en était absent depuis M9, malgré la phrase « toutes
 les routes de l'ADR 0008 » ci-dessus ; `/demo` est retirée avec la route (ADR 0008).
 Un test E2E recharge « Mes niveaux » hors ligne.

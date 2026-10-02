@@ -166,7 +166,7 @@ test('révèle la solution de l’auteur depuis le menu de l’atelier, au touch
   );
   await page.setViewportSize({ width: 390, height: 844 });
   await openRemixWithoutFan(page);
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
   const canvas = page.getByRole('img', { name: 'Rendu du plateau' });
   await expect(canvas).toHaveAttribute('data-wires', '');
 

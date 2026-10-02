@@ -17,7 +17,7 @@ export function LockedLevelPage({ title }: { readonly title: string }) {
             Ce niveau est encore verrouillé.
           </p>
           <Link className="btn btn-neutral" to="/levels">
-            Liste des niveaux
+            Campagne
           </Link>
         </Panel>
       </div>

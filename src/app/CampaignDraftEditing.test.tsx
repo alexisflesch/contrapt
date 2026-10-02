@@ -114,7 +114,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
       'campaign-02-par-dessus-le-mur-brouillon',
     );
     expect(screen.queryByText('Éditeur · Par-dessus le mur (remix)')).not.toBeInTheDocument();
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     const calibration = screen.getByRole('dialog', { name: 'Fiche de calibrage' });
     expect(calibration).toHaveTextContent('Le tremplin transforme la chute de la rouge en saut.');
     expect(calibration).toHaveTextContent('Tremplin');
@@ -228,7 +228,7 @@ describe('éditer un niveau de la campagne (U17)', () => {
     render(<App />);
 
     expect(screen.getByRole('alert')).toHaveTextContent('Ce brouillon est introuvable');
-    expect(screen.getByRole('link', { name: 'Liste des niveaux' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Campagne' })).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Plateau de jeu' })).toBeNull();
   });
 

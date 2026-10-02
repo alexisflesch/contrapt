@@ -341,7 +341,7 @@ export function ObjectDrawer({
           </div>
 
           <p className="drawer-hint" aria-live="polite" hidden={!drawerIsExpanded}>
-            Touchez un objet pour le sélectionner.
+            Choisis un objet pour le placer.
           </p>
         </div>
       </section>

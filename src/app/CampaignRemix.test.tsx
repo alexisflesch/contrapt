@@ -178,7 +178,7 @@ describe('remixer un niveau de campagne gagné (M11, ADR 0015 § Points d’entr
     expect(window.location.pathname).toBe('/editor');
     const draftId = new URLSearchParams(window.location.search).get('draft') ?? '';
     expect(draftId).toMatch(/^creation-[0-9a-f]+$/u);
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     const loaded = createLocalStorageDraftRepository(window.localStorage, () => new Date()).load(
       draftId,
     );

@@ -13,7 +13,7 @@ import type { LevelDocument } from '../domain/level-document';
 /** Translates an `EditorActionResult` rejection reason into user-facing feedback. */
 const refusalMessage = (reason: string): string =>
   reason === 'outside-build-zone'
-    ? 'Action refusée : choisissez une position dans la zone de construction.'
+    ? 'Action refusée : choisis une position dans la zone de construction.'
     : reason === 'move-not-permitted' || reason === 'rotate-not-permitted'
       ? 'Action indisponible : cet objet est verrouillé.'
       : reason === 'remove-not-permitted' || reason === 'goal-object-protected'

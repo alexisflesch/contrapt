@@ -182,7 +182,7 @@ describe('atelier créateur de puzzles (U22)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Essayer en joueur' }));
 
-    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByText('Atelier', { selector: '.level-mode' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Exporter le niveau' })).toBeNull();
     const drawerToggle = screen.queryByRole('button', { name: 'Ouvrir le catalogue' });
     if (drawerToggle !== null) fireEvent.click(drawerToggle);
@@ -190,7 +190,7 @@ describe('atelier créateur de puzzles (U22)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Retour à l’atelier' }));
 
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     expect(storedDraft()?.objects.find(({ id }) => id === 'placement-1')?.toPlace).toBe(true);
     selectBeam();
     expect(screen.getByRole('button', { name: 'À placer' })).toHaveAttribute(
@@ -204,7 +204,7 @@ describe('atelier créateur de puzzles (U22)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Essayer en joueur' }));
 
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     expect(screen.getByText(/Aucun objet n’est à placer/u)).toBeVisible();
   });
 

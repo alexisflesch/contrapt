@@ -79,7 +79,7 @@ export function SharedLevelPage() {
   }
 
   return (
-    <AppFrame title="Niveau partagé" subtitle="Mode joueur" variant="page">
+    <AppFrame title="Niveau partagé" subtitle="Mes niveaux" variant="page">
       <div className="page-content">
         <Panel
           label="Niveau partagé"
@@ -97,7 +97,7 @@ export function SharedLevelPage() {
                   : 'Ce lien de partage est invalide ou ne peut plus être ouvert.'}
               </p>
               <Link className="btn btn-neutral" to="/levels">
-                Liste des niveaux
+                Campagne
               </Link>
             </>
           )}

@@ -220,7 +220,7 @@ describe('modifier et remixer (M11, ADR 0015 § Points d’entrée)', () => {
 
     expect(window.location.pathname).toBe('/editor');
     expect(openedDraftId()).toMatch(/^creation-[0-9a-f]+$/u);
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     const creation = storedCreation(openedDraftId());
     expect(toPlaceObjects(creation.document)).toEqual([]);
     expect(creation.document.metadata.title).toBe('Le saut (remix)');
@@ -261,7 +261,7 @@ describe('modifier et remixer (M11, ADR 0015 § Points d’entrée)', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Remixer' }));
 
     expect(window.location.pathname).toBe('/editor');
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     const creation = storedCreation(openedDraftId());
     const posed = toPlaceObjects(creation.document);
     expect(posed.map(({ type }) => type)).toEqual(['beam']);
@@ -300,7 +300,7 @@ describe('modifier et remixer (M11, ADR 0015 § Points d’entrée)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Modifier le niveau 2' }));
 
     expect(openedDraftId()).toBe(levelTwoDraftId);
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     expect(screen.queryByRole('dialog', { name: 'Fiche de calibrage' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Ouvrir la fiche de calibrage' })).toBeNull();
     expect(toPlaceObjects(storedCreation(levelTwoDraftId).document)).toEqual([]);
@@ -329,7 +329,7 @@ describe('modifier et remixer (M11, ADR 0015 § Points d’entrée)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Modifier le niveau 2' }));
 
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     expect(toPlaceObjects(storedCreation(levelTwoDraftId).document)).toEqual([]);
   });
 
@@ -352,10 +352,7 @@ describe('modifier et remixer (M11, ADR 0015 § Points d’entrée)', () => {
     render(<App progressRepository={repository} />);
 
     expect(screen.getByText('Ce niveau est encore verrouillé.')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Liste des niveaux' })).toHaveAttribute(
-      'href',
-      '/levels',
-    );
+    expect(screen.getByRole('link', { name: 'Campagne' })).toHaveAttribute('href', '/levels');
     expect(screen.queryByRole('region', { name: 'Plateau de jeu' })).toBeNull();
     expect(window.localStorage.getItem(`tinkerbolt:draft:${levelTwoDraftId}`)).toBe(before);
   });
@@ -368,7 +365,7 @@ describe('modifier et remixer (M11, ADR 0015 § Points d’entrée)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Modifier le niveau 2' }));
 
     expect(openedDraftId()).toBe(levelTwoDraftId);
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     expect(screen.queryByText('Ce niveau est encore verrouillé.')).toBeNull();
   });
 });

@@ -112,7 +112,8 @@ test.describe('mise à jour (U10)', () => {
     await expect(invitation).toContainText('Nouvelle version disponible.');
     await expect(invitation.getByRole('button', { name: 'Mettre à jour' })).toBeVisible();
 
-    await page.getByRole('link', { name: 'Commencer à jouer' }).tap();
+    await page.getByRole('link', { name: 'Jouer', exact: true }).tap();
+    await page.getByRole('button', { name: 'Lancer le niveau 1', exact: true }).tap();
     await expect(page.getByRole('button', { name: 'Lancer' })).toBeVisible();
     await expect(invitation).toBeVisible();
     await expectBesideTheBoard(page, invitation);
@@ -150,7 +151,8 @@ test.describe('mise à jour (U10)', () => {
       await page.waitForTimeout(200);
       await shot('mise-a-jour-accueil');
 
-      await page.getByRole('link', { name: 'Commencer à jouer' }).click();
+      await page.getByRole('link', { name: 'Jouer', exact: true }).click();
+      await page.getByRole('button', { name: 'Lancer le niveau 1', exact: true }).click();
       await expect(page.getByRole('button', { name: 'Lancer' })).toBeVisible();
       await expect(invitation).toBeVisible();
       await expectBesideTheBoard(page, invitation);
@@ -189,7 +191,7 @@ test.describe('installation (U10)', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
     await offerInstall(page);
-    await expect(page.getByRole('link', { name: 'Commencer à jouer' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Jouer', exact: true })).toBeVisible();
     await expect(invitation).toBeHidden();
   });
 

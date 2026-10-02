@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('présente l’accueil sans débordement et lance le premier défi au tactile', async ({
-  page,
-}) => {
+test('présente l’accueil sans débordement et mène à la campagne au tactile', async ({ page }) => {
   for (const viewport of [
     { width: 390, height: 844 },
     { width: 844, height: 390 },
@@ -32,7 +30,7 @@ test('présente l’accueil sans débordement et lance le premier défi au tacti
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
     ).toBe(false);
-    const launch = page.getByRole('link', { name: 'Commencer à jouer' });
+    const launch = page.getByRole('link', { name: 'Jouer', exact: true });
     const bounds = await launch.boundingBox();
     if (bounds === null) throw new Error('La commande principale doit être visible.');
     expect(bounds.width).toBeGreaterThanOrEqual(44);
@@ -42,9 +40,9 @@ test('présente l’accueil sans débordement et lance le premier défi au tacti
       fullPage: true,
     });
   }
-  await page.getByRole('link', { name: 'Commencer à jouer' }).tap();
-  await expect(page).toHaveURL(/\/levels\/tuto-1\/play$/);
-  await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+  await page.getByRole('link', { name: 'Jouer', exact: true }).tap();
+  await expect(page).toHaveURL(/\/levels$/);
+  await expect(page.getByRole('region', { name: 'Liste des niveaux' })).toBeVisible();
 });
 
 test('ouvre chaque destination et revient à l’accueil depuis le menu', async ({ page }) => {
@@ -91,7 +89,7 @@ test('reprend la progression enregistrée après rechargement', async ({ page })
     path: 'test-results/home/accueil-progression-390x844.png',
     fullPage: true,
   });
-  await page.getByRole('link', { name: 'Continuer à jouer' }).tap();
-  await expect(page).toHaveURL(/\/levels\/tuto-2\/play$/);
-  await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
+  await page.getByRole('link', { name: 'Jouer', exact: true }).tap();
+  await expect(page).toHaveURL(/\/levels$/);
+  await expect(page.getByRole('button', { name: 'Lancer le niveau 2', exact: true })).toBeEnabled();
 });

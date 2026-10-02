@@ -5,8 +5,8 @@ import type { FirstLevelHintStep } from '../app/first-level-hint';
 const NBSP = ' ';
 
 const messages: Readonly<Record<FirstLevelHintStep, string>> = {
-  launch: `Touche «${NBSP}Lancer${NBSP}» pour voir la machine tourner.`,
-  drawer: `Prends un objet dans le catalogue, pose-le sur le plateau, puis touche «${NBSP}Lancer${NBSP}».`,
+  launch: `Lance la machine avec «${NBSP}Lancer${NBSP}» pour la voir tourner.`,
+  drawer: `Prends un objet dans le catalogue, pose-le sur le plateau, puis lance la machine avec «${NBSP}Lancer${NBSP}».`,
 };
 
 interface FirstLevelHintProps {

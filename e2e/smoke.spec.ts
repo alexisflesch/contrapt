@@ -2,21 +2,23 @@ import { expect, test, type Page } from '@playwright/test';
 
 /**
  * B1 (plan-remise-en-jeu.md § 4) moved the free-creation workshop off the
- * home screen: it is reachable only through ☰ → « Atelier de construction ».
+ * home screen: it is reachable only through ☰ → « Atelier ».
  */
 const openWorkshopFromMenu = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: 'Ouvrir le menu' }).click();
-  await page.getByRole('button', { name: 'Atelier de construction' }).click();
+  await page.getByRole('button', { name: 'Atelier', exact: true }).click();
 };
 
-test('lance depuis l’accueil le niveau 1', async ({ page }) => {
+test('lance depuis l’accueil, par la campagne, le niveau 1', async ({ page }) => {
   await page.goto('/');
 
   await expect(page).toHaveTitle('TinkerBolt');
   await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
-  await page.getByRole('link', { name: 'Commencer à jouer' }).tap();
+  await page.getByRole('link', { name: 'Jouer', exact: true }).tap();
+  await expect(page).toHaveURL(/\/levels$/);
+  await page.getByRole('button', { name: 'Lancer le niveau 1', exact: true }).tap();
   await expect(page.getByText('Niveau 1 · Le petit pont')).toBeVisible();
-  await expect(page.getByText('Mode joueur')).toBeVisible();
+  await expect(page.getByText('Campagne', { exact: true })).toBeVisible();
   const board = page.getByRole('region', { name: 'Plateau de jeu' });
   await expect(board).toBeVisible();
   await page.getByRole('button', { name: 'Voir l’objectif' }).click();
@@ -41,7 +43,7 @@ test('ouvre l’atelier depuis le menu et expose les familles du catalogue', asy
   await openWorkshopFromMenu(page);
 
   await expect(page.getByText('Éditeur de niveaux')).toHaveCount(0);
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
   for (const viewport of [
     { width: 390, height: 844 },

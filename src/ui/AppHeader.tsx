@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, Plus } from 'lucide-react';
 
 import { Button } from './Button';
@@ -46,12 +46,12 @@ export function AppHeader({
 
   return (
     <header className="app-header">
-      <div className="brand-lockup">
+      <Link className="brand-lockup" to="/" aria-label="TinkerBolt, accueil">
         <span className="brand-mark" aria-hidden="true">
           <Plus size={22} strokeWidth={3} />
         </span>
         <h1 className="brand-name">TinkerBolt</h1>
-      </div>
+      </Link>
       <p className="level-label">
         <span className="level-title">{title}</span>
         {attribution === undefined ? (
@@ -100,7 +100,14 @@ export function AppHeader({
               void navigate('/levels');
             }}
           >
-            Liste des niveaux
+            Campagne
+          </Button>
+          <Button
+            onClick={() => {
+              void navigate('/editor');
+            }}
+          >
+            Atelier
           </Button>
           <Button
             onClick={() => {
@@ -108,13 +115,6 @@ export function AppHeader({
             }}
           >
             Mes niveaux
-          </Button>
-          <Button
-            onClick={() => {
-              void navigate('/editor');
-            }}
-          >
-            Atelier de construction
           </Button>
           <Button
             onClick={() => {

@@ -58,12 +58,6 @@ export function HomePage() {
   const nextLevelNumber = nextLevel === undefined ? null : embeddedLevels.indexOf(nextLevel) + 1;
   const percentage =
     embeddedLevels.length === 0 ? 0 : Math.round((resolvedCount / embeddedLevels.length) * 100);
-  const playLabel =
-    nextLevel === undefined
-      ? 'Revisiter la campagne'
-      : resolvedCount === 0
-        ? 'Commencer à jouer'
-        : 'Continuer à jouer';
 
   return (
     <AppFrame title="Accueil" subtitle="À toi d’inventer" variant="page">
@@ -90,12 +84,9 @@ export function HomePage() {
               tes idées prendre vie.
             </p>
             <div className="home-hero-actions">
-              <Link
-                className="btn btn-go home-play"
-                to={nextLevel === undefined ? '/levels' : `/levels/${nextLevel.id}/play`}
-              >
+              <Link className="btn btn-go home-play" to="/levels">
                 <Play size={19} aria-hidden="true" />
-                {playLabel}
+                Jouer
                 <ArrowRight size={18} aria-hidden="true" />
               </Link>
               <p className="home-next-level">

@@ -168,3 +168,17 @@ La route `/demo`, sa page et son niveau embarqué sont supprimés (feuille de ro
 v1, décision 4). Une URL `/demo` retombe sur le repli `*` et redirige vers
 `/levels`. L'accueil et le menu ne la proposent plus, et le repli hors ligne de
 la PWA ne la liste plus. `/bench` et `/bench/play` restent, hors menu.
+
+## Amendement du 2 octobre 2026 — navigation et vocabulaire (V3)
+
+- Le bloc « TinkerBolt » de l’en-tête est un lien vers `/` (nom accessible
+  « TinkerBolt, accueil »).
+- Le menu partagé liste, dans cet ordre, les cinq entrées du lexique de la v1 :
+  **Accueil** (`/`), **Campagne** (`/levels`), **Atelier** (`/editor`), **Mes
+  niveaux** (`/my-levels`) et **Paramètres** (`/settings`). « Liste des niveaux »
+  et « Atelier de construction » disparaissent ; les actions propres à l’écran
+  restent en tête du menu.
+- La commande principale de l’accueil, « Jouer », mène à `/levels` (et non plus
+  au premier niveau non résolu : l’amendement du 1er octobre 2026 sur ce point
+  est remplacé).
+- `/import` est servi hors ligne par le repli de la PWA (ADR 0012).

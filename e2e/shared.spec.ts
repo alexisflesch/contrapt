@@ -20,7 +20,7 @@ test('ouvre un lien partagé fabriqué par le codec sur mobile', async ({ page }
   await page.goto(`/shared${fragment}`);
 
   await expect(page.getByText('Partage · Par-dessus le mur')).toBeVisible();
-  await expect(page.getByText('Mode joueur')).toBeVisible();
+  await expect(page.getByText('Mes niveaux', { exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
   // M8 : le lien valide est gardé comme niveau reçu avant d’être joué.
   const receivedIndex = await page.evaluate(() =>
@@ -53,7 +53,7 @@ test('affiche un message utile pour un partage invalide sur mobile', async ({ pa
   await expect(page.getByRole('alert')).toHaveText(
     'Ce lien de partage est invalide ou ne peut plus être ouvert.',
   );
-  await expect(page.getByRole('link', { name: 'Liste des niveaux' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Campagne', exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toHaveCount(0);
 
   await page.screenshot({

@@ -63,7 +63,7 @@ test('U8 — sur le niveau 1 neuf, l’aide montre « Lancer » puis le tiroir, 
 
   const hint = hintOf(page);
   await expect(hint).toBeVisible();
-  await expect(hint).toContainText('Touche « Lancer » pour voir la machine tourner.');
+  await expect(hint).toContainText('Lance la machine avec « Lancer » pour la voir tourner.');
   await expectBesideTheBoard(page, hint);
 
   await page.getByRole('button', { name: 'Lancer' }).tap();

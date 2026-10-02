@@ -80,7 +80,6 @@ function FreeEditor({ onCreated }: { readonly onCreated: (draftId: string) => vo
   return (
     <Workshop
       initialDocument={embeddedWorkshopDocument}
-      title=""
       onDocumentCommitted={(document) => {
         if (createdIdRef.current !== null) {
           saveFreeCreation(drafts, createdIdRef.current, document);
@@ -98,7 +97,6 @@ function FreeEditor({ onCreated }: { readonly onCreated: (draftId: string) => vo
 
 interface WorkshopProps {
   readonly initialDocument: LevelDocument;
-  readonly title: string;
   readonly onDocumentCommitted?: (document: LevelDocument) => void;
   readonly calibrationDocument?: LevelDocument;
   /** « Jouer » from « Mes niveaux » (M9): open on the puzzle when there is one. */
@@ -111,6 +109,10 @@ interface WorkshopProps {
 const asksToPlayPuzzle = (state: unknown): boolean =>
   typeof state === 'object' && state !== null && 'playPuzzle' in state && state.playPuzzle === true;
 
+/** V3: the header shows the title of the level being edited, « Sans titre » when blank. */
+const workshopTitle = ({ metadata }: LevelDocument): string =>
+  metadata.title.trim() === '' ? 'Sans titre' : metadata.title;
+
 /**
  * U22: the workshop, and the author's puzzle played « comme un joueur » on
  * an ephemeral copy. Coming back remounts the workshop on its last committed
@@ -118,7 +120,6 @@ const asksToPlayPuzzle = (state: unknown): boolean =>
  */
 function Workshop({
   initialDocument,
-  title,
   onDocumentCommitted,
   calibrationDocument,
   startPlaying = false,
@@ -138,7 +139,7 @@ function Workshop({
         initialDocument={playtest}
         mode="resolution"
         title={`Test joueur · ${playtest.metadata.title}`}
-        subtitle="Mode joueur"
+        subtitle="Atelier"
         exit={{
           label: 'Retour à l’atelier',
           onExit: () => {
@@ -155,8 +156,8 @@ function Workshop({
       initialDocument={workshopDocument}
       resetDocument={initialDocument}
       mode="creation"
-      title={title}
-      subtitle="Mode éditeur"
+      title={workshopTitle(workshopDocument)}
+      subtitle="Atelier"
       onDocumentCommitted={(document) => {
         setWorkshopDocument(document);
         onDocumentCommitted?.(document);
@@ -207,14 +208,14 @@ function StoredDraftEditor({ draftId, campaignLevel }: StoredDraftEditorProps) {
 
   if (draft === null) {
     return (
-      <AppFrame title="Brouillon" subtitle="Mode éditeur" variant="page">
+      <AppFrame title="Brouillon" subtitle="Atelier" variant="page">
         <div className="page-content">
           <Panel label="Brouillon" title="Brouillon introuvable">
             <p className="panel-note" role="alert">
               Ce brouillon est introuvable ou ne peut pas être lu sur cet appareil.
             </p>
             <Link className="btn btn-neutral" to="/levels">
-              Liste des niveaux
+              Campagne
             </Link>
           </Panel>
         </div>
@@ -228,7 +229,6 @@ function StoredDraftEditor({ draftId, campaignLevel }: StoredDraftEditorProps) {
   return (
     <Workshop
       initialDocument={draft.document}
-      title=""
       startPlaying={asksToPlayPuzzle(navigationState)}
       authorSource={draft.source}
       {...(calibrationDocument === undefined ? {} : { calibrationDocument })}

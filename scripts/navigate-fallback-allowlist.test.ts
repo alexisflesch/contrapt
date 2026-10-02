@@ -13,13 +13,23 @@ const servedOffline = [
   '/my-levels',
   '/my-levels/',
   '/my-levels/recu-0123456789abcdef/play',
+  '/import',
+  '/import/',
   '/bench',
   '/bench/play',
 ] as const;
 
-const notServedOffline = ['/demo', '/demo/', '/inconnue', '/my-levels-autre', '/editor/x'] as const;
+const notServedOffline = [
+  '/demo',
+  '/demo/',
+  '/inconnue',
+  '/my-levels-autre',
+  '/editor/x',
+  '/import-autre',
+  '/import/x',
+] as const;
 
-describe('repli hors ligne de la PWA (V2c)', () => {
+describe('repli hors ligne de la PWA (V2c, V3)', () => {
   it.each(servedOffline)('sert %s hors ligne', (path) => {
     expect(createNavigateFallbackAllowlist('/').test(path)).toBe(true);
   });

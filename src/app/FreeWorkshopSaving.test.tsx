@@ -93,11 +93,20 @@ describe('atelier libre enregistré (M13, ADR 0015 § Atelier libre)', () => {
   it('ouvrir l’atelier sans rien faire ne crée aucune création et laisse l’URL', () => {
     render(<App />);
 
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     expect(storedIds()).toEqual([]);
     expect(window.localStorage.length).toBe(0);
     expect(window.location.pathname).toBe('/editor');
     expect(window.location.search).toBe('');
+  });
+
+  it('affiche dans l’en-tête le titre du niveau édité, avec « Atelier » (V3)', () => {
+    render(<App draftRepository={draftStorage()} />);
+
+    const header = screen.getByRole('banner');
+    expect(within(header).getByText('Atelier de niveau')).toBeVisible();
+    expect(within(header).getByText('Atelier')).toBeVisible();
+    expect(header).not.toHaveTextContent('Mode éditeur');
   });
 
   it('poser un objet enregistre une création `creation-<aléa>` et met son identifiant dans l’URL', () => {
@@ -144,7 +153,7 @@ describe('atelier libre enregistré (M13, ADR 0015 § Atelier libre)', () => {
 
     render(<App />);
 
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     expect(blueBalls()).toBe(posed);
   });
 
@@ -187,7 +196,7 @@ describe('atelier libre enregistré (M13, ADR 0015 § Atelier libre)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
     fireEvent.click(
       within(screen.getByRole('navigation', { name: 'Menu principal' })).getByRole('button', {
-        name: 'Atelier de construction',
+        name: 'Atelier',
       }),
     );
 

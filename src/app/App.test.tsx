@@ -100,7 +100,7 @@ const createAnimationFrameHarness = () => {
 
 const openEmbeddedLevelOne = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Campagne' }));
   fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
 };
 
@@ -265,12 +265,12 @@ const levelOneScene = (() => {
 
 /**
  * B1 (plan-remise-en-jeu.md § 4) moved the free-creation workshop off the
- * home screen: it is reachable only through ☰ → « Atelier de construction ».
+ * home screen: it is reachable only through ☰ → « Atelier ».
  * Every test below that exercises editor/catalogue behaviour starts here.
  */
 const openEmbeddedWorkshop = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Atelier de construction' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Atelier' }));
 };
 
 const tapBoard = (board: HTMLElement, clientX: number, clientY: number): void => {
@@ -419,14 +419,16 @@ describe('coque TinkerBolt', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('lance depuis l’accueil le niveau 1, avec sa poutre et sans édition libre', () => {
+  it('lance depuis l’accueil, par la campagne, le niveau 1, avec sa poutre et sans édition libre', () => {
     window.history.replaceState(null, '', '/');
     render(<App />);
-    fireEvent.click(screen.getByRole('link', { name: 'Commencer à jouer' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Jouer' }));
+    expect(window.location.pathname).toBe('/levels');
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer le niveau 1' }));
 
     expect(screen.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
     expect(screen.getByText('Niveau 1 · La bille de service')).toBeVisible();
-    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByText('Campagne')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
     // L'objectif n'occupe plus d'espace permanent : il est accessible par un
     // bouton explicite (`mobile-editor-interactions.md` § Organisation de
@@ -481,7 +483,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     expect(screen.queryByText('Éditeur de niveaux')).not.toBeInTheDocument();
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
     expect(screen.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
 
@@ -832,7 +834,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Campagne' }));
 
     const levelList = screen.getByRole('region', { name: 'Liste des niveaux' });
     expect(levelList).toBeVisible();
@@ -991,7 +993,7 @@ describe('coque TinkerBolt', () => {
     render(<App />);
 
     expect(screen.queryByText('Éditeur de niveaux')).not.toBeInTheDocument();
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
   });
 
   it('redirige /demo, route supprimée, vers la liste des niveaux (V2a)', () => {
@@ -1041,7 +1043,7 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByText('Ce niveau est encore verrouillé.')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Lancer' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('link', { name: 'Liste des niveaux' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Campagne' }));
     expect(window.location.pathname).toBe('/levels');
   });
 
@@ -1051,11 +1053,11 @@ describe('coque TinkerBolt', () => {
     render(<App progressRepository={repository} unlockAllLevels />);
 
     expect(screen.getByText('Niveau 17 · La grande machine')).toBeVisible();
-    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByText('Campagne')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Lancer' })).toBeEnabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Liste des niveaux' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Campagne' }));
 
     expect(screen.getByText('Mode développement : niveaux débloqués')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Lancer le niveau 17' })).toBeEnabled();
@@ -1177,7 +1179,7 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByText('Campagne')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Lancer' })).toBeEnabled();
     expect(screen.queryByText('Simulation en cours')).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
@@ -1191,7 +1193,7 @@ describe('coque TinkerBolt', () => {
 
     advanceSimulationToResult(animationFrames, 320);
     fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
-    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByText('Campagne')).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Résultat du niveau' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Lancer' })).toBeEnabled();
   });
@@ -1204,7 +1206,7 @@ describe('coque TinkerBolt', () => {
     openEmbeddedWorkshop();
 
     expect(screen.queryByText('Éditeur de niveaux')).not.toBeInTheDocument();
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
   });
 
   it('présente le catalogue comme un panneau latéral ouvert sur une tablette ou un poste de bureau en paysage', () => {
@@ -1998,18 +2000,18 @@ describe('coque TinkerBolt', () => {
     expect(canvas).toHaveAttribute('data-wires', '');
 
     selectWireCard();
-    expect(screen.getByText('Touchez une commande ou l’appareil à relier')).toBeVisible();
+    expect(screen.getByText('Choisis une commande ou l’appareil à relier')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Annuler le fil' })).toBeVisible();
     // La carte ne pose rien et ferme le panneau : le plateau reste dégagé.
     expect(screen.queryByRole('region', { name: 'Propriétés de Levier' })).toBeNull();
 
     // Toucher le vide ne sort pas du geste : il reste libre pour déplacer la vue.
     tapBoard(board, 100, 50);
-    expect(screen.getByText('Touchez une commande ou l’appareil à relier')).toBeVisible();
+    expect(screen.getByText('Choisis une commande ou l’appareil à relier')).toBeVisible();
 
     // L’appareil d’abord, la commande ensuite : l’ordre est libre.
     tapBoard(board, 600, 225);
-    expect(screen.getByText('Touchez le levier ou le bouton qui le commande')).toBeVisible();
+    expect(screen.getByText('Choisis le levier ou le bouton qui le commande')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Propriétés de Convoyeur' })).toBeInTheDocument();
     tapBoard(board, 200, 225);
 
@@ -2059,7 +2061,7 @@ describe('coque TinkerBolt', () => {
     expect(
       screen.getByText('Un bouton ne commande pas de convoyeur : seul un levier en donne le sens.'),
     ).toBeVisible();
-    expect(screen.getByText('Touchez l’appareil à commander')).toBeVisible();
+    expect(screen.getByText('Choisis l’appareil à commander')).toBeVisible();
     expect(wires()).toHaveLength(0);
 
     // Un fil par geste : le bouton commande le ventilateur, puis la barrière.
@@ -2541,9 +2543,9 @@ describe('coque TinkerBolt', () => {
 
     openCatalogue();
     fireEvent.click(screen.getByRole('button', { name: 'Fil de commande, quantité : 1' }));
-    expect(screen.getByText('Touchez une commande ou l’appareil à relier')).toBeVisible();
+    expect(screen.getByText('Choisis une commande ou l’appareil à relier')).toBeVisible();
     tapWorldPoint(2, 3);
-    expect(screen.getByText('Touchez l’appareil à commander')).toBeVisible();
+    expect(screen.getByText('Choisis l’appareil à commander')).toBeVisible();
     // Mêmes règles que l’auteur : l’appareil du niveau a déjà son contrôleur.
     tapWorldPoint(5.5, 1.2);
     expect(
@@ -2587,7 +2589,7 @@ describe('coque TinkerBolt', () => {
     render(<App progressRepository={repository} />);
 
     expect(await screen.findByText('Partage · La bille de service')).toBeVisible();
-    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByText('Mes niveaux')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
     expect(save).not.toHaveBeenCalled();
     const received = createLocalStorageReceivedLevelRepository(window.localStorage);
@@ -2677,10 +2679,7 @@ describe('coque TinkerBolt', () => {
       'Ce lien de partage est invalide ou ne peut plus être ouvert.',
     );
     expect(received.saves).toHaveLength(0);
-    expect(screen.getByRole('link', { name: 'Liste des niveaux' })).toHaveAttribute(
-      'href',
-      '/levels',
-    );
+    expect(screen.getByRole('link', { name: 'Campagne' })).toHaveAttribute('href', '/levels');
     expect(screen.queryByRole('region', { name: 'Plateau de jeu' })).not.toBeInTheDocument();
     expect(save).not.toHaveBeenCalled();
     expect(window.localStorage.length).toBe(0);
@@ -2868,7 +2867,7 @@ describe('coque TinkerBolt', () => {
     const hint = firstLevelHint();
     expect(hint).not.toBeNull();
     if (hint === null) return;
-    expect(hint).toHaveTextContent('Touche « Lancer » pour voir la machine tourner.');
+    expect(hint).toHaveTextContent('Lance la machine avec « Lancer » pour la voir tourner.');
     expect(within(hint).getByRole('button', { name: 'Masquer l’aide' })).toBeVisible();
     // Ni sur le plateau, ni dans la barre d'actions : dans l'emplacement réservé.
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
@@ -2887,7 +2886,7 @@ describe('coque TinkerBolt', () => {
 
     const hint = firstLevelHint();
     expect(hint).toHaveTextContent(
-      'Prends un objet dans le catalogue, pose-le sur le plateau, puis touche « Lancer ».',
+      'Prends un objet dans le catalogue, pose-le sur le plateau, puis lance la machine avec « Lancer ».',
     );
     expect(preferences.saved).toEqual([]);
 

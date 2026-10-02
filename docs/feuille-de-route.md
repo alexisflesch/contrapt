@@ -490,3 +490,72 @@ deeply equal [ fillRect [0, 0, 320, 240] ]` (le fond de scène était encore
   le repli ; hors ligne, un ancien lien `/import` ne s'ouvrirait pas.
 - Gate `pnpm check` verte : 1116 tests Vitest (84 fichiers), 6 documents de
   contenu, 87 tests Playwright `v1`.
+
+### V3 — Navigation et vocabulaire — fait, validation visuelle attendue — commit V3 (2 octobre 2026)
+
+- Tests rouges (avant le code) : `AppHeader.test.tsx` « fait de la marque
+  « TinkerBolt » un lien vers l'accueil » (aucun lien nommé « TinkerBolt, accueil »)
+  et « liste le menu dans l'ordre du lexique… » (`expected [ Array(5) ] to deeply
+equal [ 'Accueil', 'Campagne', 'Atelier', 'Mes niveaux', 'Paramètres' ]`) ;
+  `HomePage.test.tsx` (quatre tests : `Unable to find an accessible element with
+the role "link" and name "Jouer"`) ; `navigate-fallback-allowlist.test.ts` « sert
+  /import hors ligne » et « /import/ » (`expected false to be true`). Test ajouté
+  après coup, vérifié rouge contre l'ancien `EditorPage.tsx` : `FreeWorkshopSaving`
+  « affiche dans l'en-tête le titre du niveau édité, avec « Atelier » ».
+- Fait : le bloc de marque est un `<Link to="/">` (`aria-label` « TinkerBolt, accueil »,
+  le `<h1>` « TinkerBolt » reste dedans ; `color: inherit; text-decoration: none`
+  pour que le rendu reste identique) ; menu dans l'ordre Accueil, Campagne,
+  Atelier, Mes niveaux, Paramètres ; « Jouer » (accueil) mène à `/levels` (libellés
+  « Commencer / Continuer à jouer », « Revisiter la campagne » supprimés, ligne
+  « Niveau N · titre » sous le bouton conservée) ; `/import` dans le repli hors ligne.
+  Sous-titres de l'écran de jeu : « Campagne » (niveau de campagne), « Mes
+  niveaux » (niveau reçu ou partagé), « Atelier » (atelier et « Test joueur »).
+  Atelier : le titre est celui du niveau en cours (suit les modifications), «
+  Sans titre » s'il est vide ; l'ancien paramètre `title=""` de `Workshop` est retiré.
+  Retours « Liste des niveaux » (niveau verrouillé, brouillon introuvable, partage
+  invalide) devenus « Campagne » ; page d'erreur d'un niveau reçu : titre « Mes
+  niveaux ». Aides au tutoiement et neutres à la souris comme au toucher :
+  « Lance la machine avec « Lancer » pour la voir tourner. », « …puis lance la
+  machine avec « Lancer ». », « Choisis un objet pour le placer. », guide des fils
+  (« Choisis une commande ou l'appareil à relier »…), et deux messages vouvoyés
+  (`use-editor-session`, `use-simulation-runner`). ADR 0008 amendée (V3), ADR 0012
+  (liste des routes hors ligne), `etat.md`.
+- Tests réécrits (même parcours, libellés nouveaux, aucun supprimé ni ignoré) :
+  « Mode éditeur » → « Atelier » et « Mode joueur » → « Campagne » / « Mes niveaux »
+  / « Atelier » (selon l'écran) dans `App`, `MyLevelsPage`, `PuzzleWorkshop`,
+  `RevealAuthorSolution`, `CampaignDraftEditing`, `CampaignRemix`, `EditAndRemix`,
+  `FreeWorkshopSaving` et les E2E `campaign-draft`, `export`, `free-workshop`,
+  `levels`, `my-levels`, `puzzle-workshop`, `remix`, `reveal`, `share-attribution`,
+  `shared`, `smoke`, `editor-interactions` ; boutons de menu « Liste des niveaux » /
+  « Atelier de construction » → « Campagne » / « Atelier » (`App`, `SettingsPage`,
+  `FreeWorkshopSaving`, E2E `layout`, `settings`, `remix`, `shared`, `smoke`,
+  `editor-interactions`) ; là où le bouton « Retour à l'atelier » / « Mes niveaux »
+  porte le même texte que le sous-titre, l'assertion cible `.level-mode`. Parcours
+  « Commencer à jouer » : `App.test` « lance depuis l'accueil, par la campagne, le
+  niveau 1 » (accueil → « Jouer » → `/levels` → « Lancer le niveau 1 »), E2E
+  `smoke`, `home` (URL `/levels`, niveau 2 activé après une victoire) et
+  `pwa-invitation` (même détour par la liste). Textes d'aide : `wiring-tool.test`,
+  `App.test`, E2E `player-wires`, `editor-interactions`, `first-level-hint`.
+  Aucune spec de format téléphone retouchée : toutes passent telles quelles sur `v1`.
+- Captures 1440 × 900 (accueil, menu ouvert, atelier, tutoriel 1 en jeu) dans
+  `/tmp/claude-1000/-home-aflesch-tinkerbolt/6a643584-d9aa-4357-aedc-da10439fec33/scratchpad/v3/`,
+  inspectées : marque inchangée, menu dans le bon ordre, sous-titres « ATELIER » et
+  « CAMPAGNE » (capitales par la feuille de style, inchangée), pas d'autre écart.
+- Gate `pnpm check` verte : 1123 tests Vitest (84 fichiers), 6 documents de contenu,
+  87 tests Playwright `v1`. Une première exécution avait échoué sur un seul test E2E
+  (`puzzle-workshop`, sous-titre « Atelier » et bouton « Retour à l'atelier » : deux
+  éléments) ; corrigé dans le test. `tmp/check-levels.ts` écarté puis remis identique.
+- Pour l'auteur :
+  - dans l'Atelier libre, le niveau s'appelle « Atelier de niveau » (titre du document
+    `workshop.json`) : l'en-tête affiche donc « Atelier de niveau · ATELIER » ; à
+    trancher avec V7 (« Sans titre » ? titre d'ouverture ?) ;
+  - textes volontairement non touchés (boîte d'export / partage, outil interne) :
+    `LevelExportDialog` et `ReceivedLevelShareDialog` (« sélectionnez le lien… »,
+    « téléchargez le fichier »), `level-export.ts` (deux refus : « touchez chaque
+    objet… », « gardez-les dans une zone de construction »), `BenchPlayPage`
+    (« Appuyez sur Lancer… ») ;
+  - la région accessible « Liste des niveaux » de la page Campagne (invisible) est
+    gardée ; elle disparaîtra avec la refonte V6 ;
+  - l'accueil (V7 le refait) garde « 1 chapitres à explorer » (pluriel fautif avec un
+    seul chapitre) et la ligne « Niveau 1 · Le petit pont » sous « Jouer », qui ne
+    correspond plus à la destination du bouton.

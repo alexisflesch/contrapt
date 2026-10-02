@@ -16,7 +16,7 @@ test('exporte le puzzle vérifié en fichier puis en lien de partage au toucher 
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.setViewportSize({ width: 390, height: 844 });
   await openMachineDraft(page);
-  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await expect(page.getByText('Atelier', { exact: true })).toBeVisible();
   await markBeamToPlace(page);
 
   await page.getByRole('button', { name: 'Exporter le niveau' }).tap();
@@ -47,5 +47,5 @@ test('exporte le puzzle vérifié en fichier puis en lien de partage au toucher 
 
   await page.goto(link);
   await expect(page.getByText('Partage · Ma machine')).toBeVisible();
-  await expect(page.getByText('Mode joueur')).toBeVisible();
+  await expect(page.getByText('Mes niveaux', { exact: true })).toBeVisible();
 });

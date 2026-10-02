@@ -29,10 +29,7 @@ describe('Accueil TinkerBolt', () => {
     expect(
       screen.getByRole('heading', { name: 'Les bonnes idées font leur chemin.' }),
     ).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Commencer à jouer' })).toHaveAttribute(
-      'href',
-      '/levels/tuto-1/play',
-    );
+    expect(screen.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', '/levels');
     const destinations = screen.getByRole('navigation', { name: 'Explorer TinkerBolt' });
     for (const { name, path } of [
       { name: 'La campagne', path: '/levels' },
@@ -61,10 +58,7 @@ describe('Accueil TinkerBolt', () => {
       />,
     );
 
-    expect(screen.getByRole('link', { name: 'Continuer à jouer' })).toHaveAttribute(
-      'href',
-      '/levels/tuto-2/play',
-    );
+    expect(screen.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', '/levels');
     const stats = screen.getByRole('region', { name: 'Ton carnet de bord' });
     expect(within(stats).getByText('1 / 5')).toBeVisible();
     expect(screen.getByRole('progressbar', { name: 'Progression de la campagne' })).toHaveAttribute(
@@ -80,10 +74,7 @@ describe('Accueil TinkerBolt', () => {
     );
     render(<App progressRepository={createRepository(progress)} />);
 
-    expect(screen.getByRole('link', { name: 'Revisiter la campagne' })).toHaveAttribute(
-      'href',
-      '/levels',
-    );
+    expect(screen.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', '/levels');
     expect(
       screen.getByText('Tous les défis sont résolus. Place à de nouvelles inventions !'),
     ).toBeVisible();
@@ -103,10 +94,7 @@ describe('Accueil TinkerBolt', () => {
         }}
       />,
     );
-    expect(screen.getByRole('link', { name: 'Commencer à jouer' })).toHaveAttribute(
-      'href',
-      '/levels/tuto-1/play',
-    );
+    expect(screen.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', '/levels');
     expect(screen.getByRole('status')).toHaveTextContent(
       'La progression ne peut pas être enregistrée sur cet appareil.',
     );

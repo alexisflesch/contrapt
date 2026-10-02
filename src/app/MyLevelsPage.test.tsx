@@ -428,7 +428,7 @@ describe('page « Mes niveaux » (M9, ADR 0015 § Page « Mes niveaux »)', () =
 
     expect(window.location.pathname).toBe('/editor');
     expect(window.location.search).toBe('?draft=creation-1');
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
   });
 
   it('joue le puzzle d’une création avec « Jouer », et revient à son atelier', () => {
@@ -438,9 +438,9 @@ describe('page « Mes niveaux » (M9, ADR 0015 § Page « Mes niveaux »)', () =
     fireEvent.click(within(card('Ma machine')).getByRole('button', { name: 'Jouer' }));
 
     expect(window.location.search).toBe('?draft=creation-1');
-    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByText('Atelier', { selector: '.level-mode' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Retour à l’atelier' }));
-    expect(screen.getByText('Mode éditeur')).toBeVisible();
+    expect(screen.getByText('Atelier')).toBeVisible();
   });
 
   it('ne propose pas « Jouer » sur une création sans objet à placer', () => {
@@ -498,7 +498,7 @@ describe('page « Mes niveaux » (M9, ADR 0015 § Page « Mes niveaux »)', () =
     fireEvent.click(within(card('À jouer')).getByRole('button', { name: 'Jouer' }));
 
     expect(window.location.pathname).toBe(`/my-levels/recu-${'3'.repeat(16)}/play`);
-    expect(screen.getByText('Mode joueur')).toBeVisible();
+    expect(screen.getByText('Mes niveaux', { selector: '.level-mode' })).toBeVisible();
     expect(screen.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
   });
 

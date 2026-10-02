@@ -168,7 +168,7 @@ export function useSimulationRunner({
   const launchSimulation = (): void => {
     const result = startSimulation(sessionRef.current);
     if (result.status === 'rejected') {
-      setFeedback('Simulation indisponible : revenez à la construction pour la relancer.');
+      setFeedback('Simulation indisponible : reviens à la construction pour la relancer.');
       return;
     }
 

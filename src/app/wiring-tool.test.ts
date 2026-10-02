@@ -17,15 +17,15 @@ const fromTarget = (firstId: string): WiringStep => ({ kind: 'second', firstId, 
 describe('outil fil : une commande et un appareil, dans n’importe quel ordre (U15)', () => {
   it('guide chaque étape, et le geste s’annule toujours par « Annuler le fil »', () => {
     expect(wiringGuide(firstStep)).toEqual({
-      prompt: 'Touchez une commande ou l’appareil à relier',
+      prompt: 'Choisis une commande ou l’appareil à relier',
       exitLabel: 'Annuler le fil',
     });
     expect(wiringGuide(fromSource('lever-1'))).toEqual({
-      prompt: 'Touchez l’appareil à commander',
+      prompt: 'Choisis l’appareil à commander',
       exitLabel: 'Annuler le fil',
     });
     expect(wiringGuide(fromTarget('fan-1'))).toEqual({
-      prompt: 'Touchez le levier ou le bouton qui le commande',
+      prompt: 'Choisis le levier ou le bouton qui le commande',
       exitLabel: 'Annuler le fil',
     });
   });
