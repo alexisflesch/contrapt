@@ -5,10 +5,24 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { embeddedLevels } from '../content/embedded-levels';
+import type * as EmbeddedLevels from '../content/embedded-levels';
 import type { LevelDocument } from '../domain/level-document';
 import { createLocalStorageDraftRepository } from '../infrastructure/storage/local-storage-draft-repository';
 
 import { App } from './App';
+
+/** Gesture fixtures stay stable when the published campaign changes (N2). */
+vi.mock('../content/embedded-levels', async (importOriginal) => {
+  const original = await importOriginal<typeof EmbeddedLevels>();
+  const fixtures = await import('../../test/fixtures/sketch-campaign');
+  return {
+    ...original,
+    campaignChapters: fixtures.sketchChapters,
+    embeddedLevels: fixtures.sketchLevels,
+    nextCampaignLevel: (id: string, chapters = fixtures.sketchChapters) =>
+      original.nextCampaignLevel(id, chapters),
+  };
+});
 
 const testClock = (): Date => new Date('2026-10-01T12:00:00.000Z');
 

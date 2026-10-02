@@ -15,7 +15,7 @@ test('lance depuis l’accueil le niveau 1 sur un écran mobile', async ({ page 
   await expect(page).toHaveTitle('TinkerBolt');
   await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
   await page.getByRole('link', { name: 'Commencer à jouer' }).tap();
-  await expect(page.getByText('Niveau 1 · La bille de service')).toBeVisible();
+  await expect(page.getByText('Niveau 1 · Le petit pont')).toBeVisible();
   await expect(page.getByText('Mode joueur')).toBeVisible();
   const board = page.getByRole('region', { name: 'Plateau de jeu' });
   await expect(board).toBeVisible();
@@ -273,7 +273,7 @@ test.describe('coque sur le petit viewport supporté', () => {
   });
 
   test('modifie visiblement le cadrage avec zoom puis ajustement au tactile', async ({ page }) => {
-    await page.goto('/levels/campaign-01-la-bille-de-service/play');
+    await page.goto('/levels/tuto-1/play');
 
     const renderer = page
       .getByRole('region', { name: 'Plateau de jeu' })

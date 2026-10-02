@@ -344,7 +344,7 @@ test.describe('Objectif — boîte de dialogue à la demande', () => {
       page,
     }) => {
       await page.setViewportSize(viewport);
-      await page.goto('/levels/campaign-01-la-bille-de-service/play');
+      await page.goto('/levels/tuto-1/play');
 
       const board = page.getByRole('region', { name: 'Plateau de jeu' });
       const before = await bounds(board);

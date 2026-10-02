@@ -43,7 +43,7 @@ test('présente l’accueil sans débordement et lance le premier défi au tacti
     });
   }
   await page.getByRole('link', { name: 'Commencer à jouer' }).tap();
-  await expect(page).toHaveURL(/\/levels\/campaign-01-la-bille-de-service\/play$/);
+  await expect(page).toHaveURL(/\/levels\/tuto-1\/play$/);
   await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
 });
 
@@ -78,13 +78,13 @@ test('reprend la progression enregistrée après rechargement', async ({ page })
       JSON.stringify({
         kind: 'progress',
         version: 1,
-        data: { 'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 1 } },
+        data: { 'tuto-1': { resolved: true, bestObjectCount: 1 } },
       }),
     );
   });
   await page.goto('/');
   await page.reload();
-  await expect(page.getByRole('region', { name: 'Ton carnet de bord' })).toContainText('1 / 17');
+  await expect(page.getByRole('region', { name: 'Ton carnet de bord' })).toContainText('1 / 5');
   await expect(
     page.getByRole('progressbar', { name: 'Progression de la campagne' }),
   ).toHaveAttribute('value', '1');
@@ -93,6 +93,6 @@ test('reprend la progression enregistrée après rechargement', async ({ page })
     fullPage: true,
   });
   await page.getByRole('link', { name: 'Continuer à jouer' }).tap();
-  await expect(page).toHaveURL(/\/levels\/campaign-02-par-dessus-le-mur\/play$/);
+  await expect(page).toHaveURL(/\/levels\/tuto-2\/play$/);
   await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toBeVisible();
 });

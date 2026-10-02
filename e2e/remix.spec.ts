@@ -158,7 +158,7 @@ test('désactive « Modifier » d’un niveau verrouillé et refuse son URL dire
   await expect(page.getByRole('button', { name: 'Modifier le niveau 2' })).toBeDisabled();
   await captureFormats(page, 'levels-locked');
 
-  await page.goto('/editor?draft=campaign-02-par-dessus-le-mur-brouillon');
+  await page.goto('/editor?draft=tuto-2-brouillon');
   await expect(page.getByText('Ce niveau est encore verrouillé.')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Plateau de jeu' })).toHaveCount(0);
   await captureFormats(page, 'locked-draft');

@@ -13,11 +13,25 @@ import type {
   ReceivedLevelRepository,
 } from '../application/received/received-level-repository';
 import { embeddedLevels } from '../content/embedded-levels';
+import type * as EmbeddedLevels from '../content/embedded-levels';
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
 import { createLocalStorageDraftRepository } from '../infrastructure/storage/local-storage-draft-repository';
 import { createLocalStorageReceivedLevelRepository } from '../infrastructure/storage/local-storage-received-level-repository';
 
 import { App } from './App';
+
+/** Gesture fixtures stay stable when the published campaign changes (N2). */
+vi.mock('../content/embedded-levels', async (importOriginal) => {
+  const original = await importOriginal<typeof EmbeddedLevels>();
+  const fixtures = await import('../../test/fixtures/sketch-campaign');
+  return {
+    ...original,
+    campaignChapters: fixtures.sketchChapters,
+    embeddedLevels: fixtures.sketchLevels,
+    nextCampaignLevel: (id: string, chapters = fixtures.sketchChapters) =>
+      original.nextCampaignLevel(id, chapters),
+  };
+});
 
 const testClock = (): Date => new Date('2026-10-01T12:00:00.000Z');
 const locked = { move: false, rotate: false, remove: false } as const;

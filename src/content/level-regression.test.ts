@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
-import { embeddedLevels } from './embedded-levels';
+import { sketchLevels as embeddedLevels } from '../../test/fixtures/sketch-campaign';
 import {
   applyPlayerSteps,
   runLevel,

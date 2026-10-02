@@ -10,6 +10,19 @@ point de reprise), mais il reste responsable du résultat : il relit le diff, la
 
 ## Point de reprise (fin de session du 2 octobre 2026)
 
+**Arrêt demandé par l’auteur pour préserver son quota.** Ne reprendre aucun
+travail sans nouvelle demande. Branche `main`, dernier commit `cf6c5be` (R1).
+**N2 est en cours, non commitée** : les fichiers modifiés et nouveaux du working
+tree constituent le travail à reprendre, pas une tâche livrée. Le journal N2
+ci-dessous donne les vérifications et le prochain correctif précis.
+
+À la reprise : corriger le signalement Knip de `sketchChapters` dans la fixture
+(testée par des imports dynamiques dans les mocks), puis relancer `pnpm check`.
+Ne pas supprimer le contrôle ni les tests pour faire passer la gate. Inspecter
+ensuite les captures régénérées, vérifier le diff et les copies des sources,
+finaliser les documents et faire le commit N2. Aucun changement de physique des
+bordures ni chantier mobile dans cette tâche.
+
 **Priorités v1 révisées par l’auteur le 2 octobre 2026.** La livraison d’un jeu
 jouable prime sur les outils d’auteur et la refonte mobile. Ordre autorisé :
 
@@ -17,11 +30,13 @@ jouable prime sur les outils d’auteur et la refonte mobile. Ordre autorisé :
    de sélection rectangulaire sur les balles ; garder les sprites et une
    indication textuelle de l’objectif (ADR 0006 amendée). Tests rouges,
    captures aux trois formats et gate.
-2. **N2 — Intégrer les cinq tutoriels de `levels/`** : copies embarquées avec
+2. **N2 — Intégrer les cinq tutoriels de `levels/` — en cours, arrêt demandé** : copies embarquées avec
    identifiants uniques, descriptions courtes et auteur **Bolt** ; préserver
    les géométries et solutions de l’auteur et vérifier chaque solution par les
    commandes du joueur et la simulation. Remplacer les esquisses dans la
-   campagne. Les fichiers source de `levels/` restent intacts.
+   campagne. Les fichiers source de `levels/` restent intacts. L’auteur a
+   autorisé l’état initial « arrêté » du ventilateur du tutoriel 3 uniquement
+   dans sa copie embarquée ; toutes les autres poses et solutions sont conservées.
 3. **Limites physiques du plateau** : priorité de jeu ; la règle reste à
    décider (cadre fermé ou sortie par le bas). La bordure du fond U2 n’est
    actuellement pas un mur. Aucun changement de physique avant cette décision.
@@ -38,8 +53,9 @@ tâche distincte, pas une suppression improvisée du schéma.
   **U3 est abandonnée par l’auteur** : les ombres ne conviennent pas à l’esprit
   du jeu ni au design ; le code est conservé mais désactivé (ADR 0006).
   **Prochaine tâche : N2**, selon les priorités v1 ci-dessus. La phase 5
-  attend l'auteur. `pnpm check` passe après la désactivation U3 (commit de
-  l’entrée U3, 1 087 tests Vitest, 78 E2E `mobile` dont 1 ignoré). Rien n'est poussé.
+  attend l’auteur. Dernière gate complète verte : R1 (`cf6c5be`),
+  1 090 tests Vitest et 78 E2E mobile (77 réussis, 1 ignoré). La tentative
+  N2 échoue à Knip ; aucune gate complète verte sur N2. Rien n’est poussé.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
   part dans un sous-agent neuf, une à la fois, avec pour consigne de lire
   `AGENTS.md`, `docs/index.md`, ce fichier (§ 1 à 3, la tâche, le journal),
@@ -97,8 +113,9 @@ tâche distincte, pas une suppression improvisée du schéma.
     de `vite.config.ts` n'inclut pas `/my-levels` (repli hors ligne, relevé en
     U10, non traité) ; le capuchon du bouton du niveau 1 est rouge alors que le
     rouge est réservé à la balle de l'objectif (U19, relevé en U7) ;
-  - feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de la
-    phase 5.
+  - validation visuelle de N2 après gate verte ; décisions de la phase 5.
+    L’intégration de `levels/` et la correction ciblée du ventilateur sont
+    déjà autorisées : ne pas redemander ce feu vert.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
 
 Ce document fixe **quoi faire et dans quel ordre**. Il ne redéfinit aucune
@@ -2930,3 +2947,88 @@ className="level-card-description">` après l’état, comme `/levels` (même
 - Non vérifié : appareil physique, Firefox et Safari.
 - Pour l’auteur : validation visuelle des captures ci-dessus. N2 est autorisée ;
   le choix de règle des bordures physiques reste ouvert. Rien n’est poussé.
+
+
+### N2 — Intégrer les cinq tutoriels de Bolt — en cours, arrêt demandé le 2 octobre 2026
+
+- **Statut** : arrêt explicite de l’auteur à l’approche de son quota. Code,
+  tests et mises à jour documentaires laissés dans le working tree ; aucun
+  commit N2 ni push. R1 est déjà commitée (`cf6c5be`). Ne pas repartir de zéro
+  et ne pas déclarer N2 terminée sur la base des seuls tests ciblés.
+- **Autorisation** : intégrer les cinq exports de `levels/`, descriptions
+  courtes et auteur `Bolt`. L’auteur a réexporté `tuto-4.json` avec son fil
+  à placer. La suppression de `levels/tuto-4-a-reprendre-fil-a-placer.json`
+  et le nouveau `levels/tuto-4.json` sont son travail : les laisser à part du
+  commit de l’agent. Tous les exports source sont inchangés pendant N2.
+- **Diagnostic tutoriel 3** : la masse garde le bouton pressé (du pas 17
+  jusqu’à la fin du diagnostic). Avec la règle de fils amendée le 1er octobre
+  (ADR 0009), une commande active inverse l’état initial de l’appareil : le
+  ventilateur exporté « en marche » s’arrête. Même pose gagnante avec un
+  ventilateur initialement arrêté. L’auteur a explicitement autorisé cette
+  seule correction dans la copie embarquée. Aucun correctif du simulateur.
+- **Implémenté, à finaliser** : cinq nouveaux JSON
+  `src/content/levels/tuto-{1..5}.json`, IDs `tuto-1` à `tuto-5`, chapitre
+  `tutoriels` / « Premiers pas ». Titres : « Le petit pont », « Le rebond »,
+  « Un peu de vent », « La porte », « La chaîne ». Descriptions courtes,
+  auteur Bolt ; `basedOn` conservé lorsqu’il existe. Géométries, inventaires,
+  solutions et permissions conservés, sauf l’état du ventilateur autorisé.
+  Scène 16 × 9 et zone couvrant toute la scène, sans restriction de construction.
+- **Anciennes esquisses** : les 17 JSON sont déplacés sans modification vers
+  `test/fixtures/campaign-sketches/`. La fixture `test/fixtures/sketch-campaign.ts`
+  les valide avec Zod et reconstruit les anciens chapitres. Les tests de gestes,
+  brouillons, export et déterminisme continuent de vérifier leurs comportements
+  sur ces géométries stables ; les tests du contenu publié et les E2E utilisent
+  les vrais tutoriels. Aucun test supprimé ou ignoré pour masquer un échec.
+  Des mocks de contenu sont ajoutés à App, CampaignDraftEditing, EditAndRemix,
+  PuzzleWorkshop ; les autres tests concernés importent directement les fixtures.
+- **Red-Green** : tests N2 ajoutés avant les copies ; sept échecs attendus
+  sur IDs/chapitre/auteur/solutions absents, puis 12 tests ciblés verts.
+  Un treizième test couvre le bouton tenu et le ventilateur actif jusqu’à
+  la victoire du tutoriel 3 : les 13 tests de
+  `src/content/embedded-levels.test.ts` passent. Les cinq solutions gagnent via
+  `playSolution` (commandes du joueur), et les cinq décors seuls ne gagnent pas.
+- **Parcours navigateur** : routes et comptes ajustés de 17 à 5 ; le test de
+  brouillon conserve une vraie édition tactile sur la poutre du tutoriel 2.
+  `e2e/tutorials.spec.ts` pose chaque solution au toucher, règle les rotations,
+  câble les fils, gagne et vérifie la victoire après rechargement de la liste.
+  Les cinq parcours gagnent : 1–4 dans la seconde exécution ciblée, 5 dans la
+  dernière exécution isolée. Le chapitre aux trois formats passe également.
+  Pas encore de succès de toute la suite dans une même exécution après N2.
+- **Corrections des nouveaux tests** : initialisation de la progression
+  limitée au premier chargement (le premier essai la réécrivait au rechargement) ;
+  auteur vérifié dans le contenu, car la liste ne l’affiche pas ; ciblage des
+  parties dégagées (base du bouton, poignée du levier, gauche du convoyeur).
+  Les cibles tactiles élargies chevauchent les objets voisins au zoom ajusté :
+  viser le centre du convoyeur du tutoriel 5 sélectionnait sa barrière. Le
+  simulateur et les interactions de production ne sont pas modifiés.
+- **Dernière tentative de gate N2** : `pnpm check` échoue à Knip :
+  `Unused exports (1) — sketchChapters test/fixtures/sketch-campaign.ts:23:14`.
+  Typecheck, lint et Prettier passent avant cet arrêt. Knip ne reconnaît pas
+  l’usage via les imports dynamiques des mocks. À corriger dans le code des
+  fixtures/imports ; ne pas désactiver la gate. Validation du contenu, suite
+  Vitest complète et suite E2E complète n’ont pas été exécutées par cette gate.
+  Une tentative rapide antérieure révélait trois tests encore liés aux anciens
+  IDs (export et déterminisme) : leurs imports ont été corrigés, mais l’ensemble
+  doit être rejoué. Le build isolé N2 passe.
+- **Captures** : les exécutions isolées Playwright effacent `test-results/`.
+  À cet arrêt, seules les captures du tutoriel 5 sont régénérées ; les captures
+  de campagne aux trois formats et celles de R1 doivent être régénérées par
+  la gate complète. Pas encore de revue visuelle des captures finales N2.
+- **Traces de cette session** (temporaires) :
+  `/tmp/tinkerbolt-n2-red.log`, `/tmp/tinkerbolt-n2-green.log`,
+  `/tmp/tinkerbolt-n2-final-unit.log`, `/tmp/tinkerbolt-n2-e2e2.log`,
+  `/tmp/tinkerbolt-n2-tuto5.log`, `/tmp/tinkerbolt-n2-check.log`.
+  Le wrapper temporaire `/tmp/tinkerbolt-check.py` déplace le fichier d’essai
+  auteur hors dépôt puis le restaure avec contrôle des octets et du mode.
+  À la reprise, recréer ce déplacement réversible si le wrapper a disparu.
+- **Fichier d’essai auteur restauré** : `tmp/check-levels.ts`, SHA-256
+  `1113625e737c16ced861a84a0b39b91a2649de8d66c5750f5fed13c308a92907`.
+  Les processus de gate et d’E2E sont terminés à cet arrêt.
+- **Reprise dans l’ordre** : résoudre Knip sans affaiblir les contrôles ;
+  exécuter `pnpm check` ; corriger les éventuels échecs sans toucher aux exports
+  auteur ; inspecter les captures portrait/paysage/grand écran ; vérifier le
+  diff et la copie des sources ; finaliser état/journal/avancement ; commiter
+  uniquement N2 (pas les changements auteur dans `levels/`), sans pousser.
+  Les bordures physiques attendent encore la décision cadre fermé/sortie par
+  le bas ; A1, zones de construction, autres objectifs et refonte mobile sont
+  reportés conformément au périmètre v1.

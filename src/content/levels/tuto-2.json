@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 2,
+  "id": "tuto-2",
+  "metadata": {
+    "title": "Le rebond",
+    "description": "Transforme la chute de la balle en rebond pour atteindre le panier.",
+    "author": "Bolt"
+  },
+  "objects": [
+    {
+      "id": "workshop-floor",
+      "transform": {
+        "position": {
+          "x": 8.195822458208895,
+          "y": 7.974035655966092
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "beam",
+      "props": {
+        "size": "long"
+      }
+    },
+    {
+      "id": "goal-ball",
+      "transform": {
+        "position": {
+          "x": 3.496083461195414,
+          "y": 3.1872642893034593
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "ball",
+      "props": {}
+    },
+    {
+      "id": "goal-basket",
+      "transform": {
+        "position": {
+          "x": 10.371628213421857,
+          "y": 7.2777776947774
+        },
+        "rotation": 0
+      },
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": false
+      },
+      "type": "basket",
+      "props": {}
+    }
+  ],
+  "inventory": [
+    {
+      "id": "beam-a-placer",
+      "quantity": 1,
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      },
+      "type": "beam",
+      "props": {
+        "size": "medium"
+      }
+    },
+    {
+      "id": "springboard-a-placer",
+      "quantity": 1,
+      "permissions": {
+        "move": true,
+        "rotate": true,
+        "remove": true
+      },
+      "type": "springboard",
+      "props": {}
+    }
+  ],
+  "goal": {
+    "type": "basket",
+    "ballId": "goal-ball",
+    "basketId": "goal-basket"
+  },
+  "buildZones": [
+    {
+      "min": {
+        "x": 0,
+        "y": 0
+      },
+      "max": {
+        "x": 16,
+        "y": 9
+      }
+    }
+  ],
+  "scene": {
+    "min": {
+      "x": 0,
+      "y": 0
+    },
+    "max": {
+      "x": 16,
+      "y": 9
+    }
+  },
+  "wires": [],
+  "solution": {
+    "placements": [
+      {
+        "inventoryId": "beam-a-placer",
+        "transform": {
+          "position": {
+            "x": 3.989266059203505,
+            "y": 4.739338643033471
+          },
+          "rotation": 0.7853981633974483
+        }
+      },
+      {
+        "inventoryId": "springboard-a-placer",
+        "transform": {
+          "position": {
+            "x": 6.4116626154182494,
+            "y": 7.379316372372228
+          },
+          "rotation": 0
+        }
+      }
+    ]
+  }
+}

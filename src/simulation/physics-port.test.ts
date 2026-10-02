@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { embeddedLevels } from '../content/embedded-levels';
+import { sketchLevels as embeddedLevels } from '../../test/fixtures/sketch-campaign';
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
 import {
   createSimulationSession,

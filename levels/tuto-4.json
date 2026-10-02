@@ -1,9 +1,15 @@
 {
   "schemaVersion": 2,
-  "id": "tuto-3",
+  "id": "tuto-4",
   "metadata": {
-    "title": "tuto-3",
-    "description": "Le point de départ de la création libre : une scène 16 × 9 avec un sol, une balle et un panier de démonstration, et un inventaire abondant de toutes les familles."
+    "title": "tuto-4",
+    "description": "description à écrire",
+    "author": "@lexis",
+    "basedOn": [
+      {
+        "title": "tuto-3"
+      }
+    ]
   },
   "objects": [
     {
@@ -172,6 +178,17 @@
   ],
   "inventory": [
     {
+      "id": "wire-a-placer",
+      "quantity": 1,
+      "type": "wire",
+      "props": {},
+      "permissions": {
+        "move": false,
+        "rotate": false,
+        "remove": true
+      }
+    },
+    {
       "id": "beam-a-placer",
       "quantity": 1,
       "permissions": {
@@ -217,11 +234,6 @@
       "id": "wire-2",
       "sourceId": "placement-5",
       "targetId": "placement-1"
-    },
-    {
-      "id": "wire-1",
-      "sourceId": "placement-3",
-      "targetId": "placement-4"
     }
   ],
   "solution": {
@@ -230,11 +242,19 @@
         "inventoryId": "beam-a-placer",
         "transform": {
           "position": {
-            "x": 3.147955476605596,
-            "y": 3.9415434982567428
+            "x": 3.488349295842996,
+            "y": 3.8291037828933563
           },
           "rotation": -0.5235987755982988
         }
+      }
+    ],
+    "wires": [
+      {
+        "id": "wire-1",
+        "inventoryId": "wire-a-placer",
+        "sourceId": "placement-3",
+        "targetId": "placement-4"
       }
     ]
   }

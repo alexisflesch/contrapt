@@ -1,21 +1,9 @@
 import demo from './levels/demo.json';
-import campaignOne from './levels/campaign-01-la-bille-de-service.json';
-import campaignTwo from './levels/campaign-02-par-dessus-le-mur.json';
-import campaignThree from './levels/campaign-03-la-balancoire.json';
-import campaignFour from './levels/campaign-04-retour-a-l-expediteur.json';
-import campaignFive from './levels/campaign-05-l-electricien.json';
-import campaignSix from './levels/campaign-06-la-porte-de-trop.json';
-import campaignSeven from './levels/campaign-07-service-a-l-etage.json';
-import campaignEight from './levels/campaign-08-le-courant-d-air.json';
-import campaignNine from './levels/campaign-09-lever-le-rideau.json';
-import campaignTen from './levels/campaign-10-le-paravent-de-balles.json';
-import campaignEleven from './levels/campaign-11-apres-vous.json';
-import campaignTwelve from './levels/campaign-12-treize-secondes.json';
-import campaignThirteen from './levels/campaign-13-une-seule-main.json';
-import campaignFourteen from './levels/campaign-14-l-aiguillage.json';
-import campaignFifteen from './levels/campaign-15-le-sonneur.json';
-import campaignSixteen from './levels/campaign-16-deux-souffles.json';
-import campaignSeventeen from './levels/campaign-17-la-grande-machine.json';
+import tutorial1 from './levels/tuto-1.json';
+import tutorial2 from './levels/tuto-2.json';
+import tutorial3 from './levels/tuto-3.json';
+import tutorial4 from './levels/tuto-4.json';
+import tutorial5 from './levels/tuto-5.json';
 import workshop from './levels/workshop.json';
 
 import { levelDocumentSchema, type LevelDocument } from '../domain/level-document';
@@ -59,50 +47,14 @@ export const createCampaign = (
 
 export const campaignChapters = createCampaign([
   {
-    id: 'les-billes-de-service',
-    title: 'Les billes de service',
+    id: 'tutoriels',
+    title: 'Premiers pas',
     levels: [
-      parseEmbeddedLevel(campaignOne),
-      parseEmbeddedLevel(campaignTwo),
-      parseEmbeddedLevel(campaignThree),
-    ],
-  },
-  {
-    id: 'commandes-a-distance',
-    title: 'Commandes à distance',
-    levels: [
-      parseEmbeddedLevel(campaignFour),
-      parseEmbeddedLevel(campaignFive),
-      parseEmbeddedLevel(campaignSix),
-    ],
-  },
-  {
-    id: 'le-vent',
-    title: 'Le vent',
-    levels: [
-      parseEmbeddedLevel(campaignSeven),
-      parseEmbeddedLevel(campaignEight),
-      parseEmbeddedLevel(campaignNine),
-      parseEmbeddedLevel(campaignTen),
-    ],
-  },
-  {
-    id: 'l-ordre-et-le-temps',
-    title: "L'ordre et le temps",
-    levels: [
-      parseEmbeddedLevel(campaignEleven),
-      parseEmbeddedLevel(campaignTwelve),
-      parseEmbeddedLevel(campaignThirteen),
-      parseEmbeddedLevel(campaignFourteen),
-    ],
-  },
-  {
-    id: 'grandes-machines',
-    title: 'Grandes machines',
-    levels: [
-      parseEmbeddedLevel(campaignFifteen),
-      parseEmbeddedLevel(campaignSixteen),
-      parseEmbeddedLevel(campaignSeventeen),
+      parseEmbeddedLevel(tutorial1),
+      parseEmbeddedLevel(tutorial2),
+      parseEmbeddedLevel(tutorial3),
+      parseEmbeddedLevel(tutorial4),
+      parseEmbeddedLevel(tutorial5),
     ],
   },
 ]);

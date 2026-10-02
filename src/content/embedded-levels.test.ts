@@ -9,45 +9,28 @@ import {
   nextCampaignLevel,
 } from './embedded-levels';
 import { levelDocumentSchema } from '../domain/level-document';
+import { playSolution } from '../application/puzzle/puzzle-workshop';
+import { runLevel } from './level-regression';
+import { createSimulationSession } from '../simulation/simulation-session';
 
-const expectedIds = [
-  'campaign-01-la-bille-de-service',
-  'campaign-02-par-dessus-le-mur',
-  'campaign-03-la-balancoire',
-  'campaign-04-retour-a-l-expediteur',
-  'campaign-05-l-electricien',
-  'campaign-06-la-porte-de-trop',
-  'campaign-07-service-a-l-etage',
-  'campaign-08-le-courant-d-air',
-  'campaign-09-lever-le-rideau',
-  'campaign-10-le-paravent-de-balles',
-  'campaign-11-apres-vous',
-  'campaign-12-treize-secondes',
-  'campaign-13-une-seule-main',
-  'campaign-14-l-aiguillage',
-  'campaign-15-le-sonneur',
-  'campaign-16-deux-souffles',
-  'campaign-17-la-grande-machine',
-] as const;
+const expectedIds = ['tuto-1', 'tuto-2', 'tuto-3', 'tuto-4', 'tuto-5'] as const;
 
 describe('campagne embarquée', () => {
-  it('remplace les anciens niveaux par les 17 esquisses ordonnées en cinq chapitres', () => {
+  it('publie les cinq tutoriels de Bolt dans leur ordre, à la place des esquisses (N2)', () => {
     expect(campaignChapters.map(({ id, title }) => ({ id, title }))).toEqual([
-      { id: 'les-billes-de-service', title: 'Les billes de service' },
-      { id: 'commandes-a-distance', title: 'Commandes à distance' },
-      { id: 'le-vent', title: 'Le vent' },
-      { id: 'l-ordre-et-le-temps', title: "L'ordre et le temps" },
-      { id: 'grandes-machines', title: 'Grandes machines' },
+      { id: 'tutoriels', title: 'Premiers pas' },
     ]);
     expect(embeddedLevels.map(({ id }) => id)).toEqual(expectedIds);
-    expect(campaignChapters.map(({ levels }) => levels.length)).toEqual([3, 3, 4, 4, 3]);
+    expect(campaignChapters.map(({ levels }) => levels.length)).toEqual([5]);
     expect(flattenCampaignLevels(campaignChapters)).toEqual(embeddedLevels);
   });
 
-  it('marque les documents comme esquisses U22 sans défi de palier', () => {
+  it('porte une description courte, l’auteur Bolt et une scène libre de restrictions (N2)', () => {
     expect(embeddedLevels).toHaveLength(expectedIds.length);
     for (const level of embeddedLevels) {
-      expect(level.metadata.description).toMatch(/^Esquisse non calibrée\./u);
+      expect(level.metadata.author).toBe('Bolt');
+      expect(level.metadata.description?.length).toBeGreaterThan(10);
+      expect(level.metadata.description).not.toMatch(/Esquisse|création libre|à écrire/);
       expect(level.challenge).toBeUndefined();
       expect(level.solution).toBeDefined();
       expect(
@@ -55,12 +38,50 @@ describe('campagne embarquée', () => {
           ({ permissions }) => !permissions.move && !permissions.rotate && !permissions.remove,
         ),
       ).toBe(true);
+      expect(level.scene).toEqual({ min: { x: 0, y: 0 }, max: { x: 16, y: 9 } });
+      expect(level.buildZones).toEqual([level.scene]);
     }
-    expect(embeddedLevels.map(({ scene }) => scene.max)).toEqual([
-      ...Array.from({ length: 10 }, () => ({ x: 8, y: 5.5 })),
-      ...Array.from({ length: 4 }, () => ({ x: 10, y: 6.5 })),
-      ...Array.from({ length: 3 }, () => ({ x: 12, y: 7.5 })),
-    ]);
+  });
+
+  it.each(expectedIds)(
+    'la solution du joueur gagne dans %s, et le décor seul ne gagne pas (N2)',
+    (id) => {
+      const level = embeddedLevels.find((candidate) => candidate.id === id);
+      if (level === undefined || level.solution === undefined)
+        throw new Error(`Solution absente : ${id}`);
+      const attempt = playSolution(level, level.solution);
+      expect(attempt).not.toBeNull();
+      if (attempt === null) return;
+      expect(runLevel(attempt.document).outcome).toBe('succeeded');
+      expect(runLevel(level).outcome).not.toBe('succeeded');
+    },
+  );
+
+  it('garde le bouton sous la masse et le ventilateur en marche jusqu’à la victoire du tutoriel 3', () => {
+    const level = embeddedLevels.find(({ id }) => id === 'tuto-3');
+    if (level?.solution === undefined) throw new Error('Tutoriel 3 sans solution.');
+    const attempt = playSolution(level, level.solution);
+    if (attempt === null) throw new Error('Solution du tutoriel 3 refusée.');
+    const session = createSimulationSession(attempt.document, { fixedStepSeconds: 1 / 60 });
+    let heldSteps = 0;
+    try {
+      for (let step = 0; step < 1_200; step += 1) {
+        session.advanceFixedSteps(1);
+        const devices = session.readState().devices;
+        const button = devices.find((device) => device.kind === 'button');
+        if (button?.kind !== 'button') throw new Error('Bouton du tutoriel 3 absent.');
+        if (button.pressed) heldSteps += 1;
+        if (heldSteps > 0) {
+          expect(button.pressed).toBe(true);
+          expect(devices.find((device) => device.kind === 'fan')).toMatchObject({ running: true });
+        }
+        if (session.readGoalEvaluation().status === 'succeeded') break;
+      }
+      expect(heldSteps).toBeGreaterThan(60);
+      expect(session.readGoalEvaluation().status).toBe('succeeded');
+    } finally {
+      session.destroy();
+    }
   });
 
   it('ne publie pas le niveau 15 reporté dans la campagne', () => {
@@ -74,7 +95,7 @@ describe('campagne embarquée', () => {
     const second = embeddedLevels[1];
     const last = embeddedLevels.at(-1);
     if (first === undefined || second === undefined || last === undefined) {
-      throw new Error('La campagne doit contenir ses niveaux esquissés.');
+      throw new Error('La campagne doit contenir ses tutoriels.');
     }
 
     expect(nextCampaignLevel(first.id)).toBe(second);

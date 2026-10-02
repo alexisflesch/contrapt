@@ -21,7 +21,8 @@ partager. Elle ne couvre pas les sprites et illustrations de `art/` et de
 [l’ADR 0016](docs/decisions/0016-attribution-licence-niveaux.md).
 
 Le projet est encore en développement. La campagne contient actuellement
-dix-sept esquisses de niveaux, non calibrées ; le mode auteur permet de créer, tester, modifier,
+cinq tutoriels conçus par Bolt, avec leurs solutions vérifiées ; le mode auteur
+permet de créer, jouer, modifier,
 sauvegarder et partager des niveaux localement.
 
 La page « Mes niveaux » rassemble, sur l’appareil, les niveaux reçus par lien ou

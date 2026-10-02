@@ -201,7 +201,7 @@ describe('Paramètres — remettre la progression à zéro (U11, ADR 0010, ADR 0
     seed({ ...untouchedEntries, [progressKey]: progressEnvelope });
     renderSettings();
 
-    expect(screen.getByText('Niveaux résolus : 2 sur 17.')).toBeVisible();
+    expect(screen.getByText('Niveaux résolus : 2 sur 5.')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Remettre la progression à zéro' }));
 
     const dialog = screen.getByRole('dialog', { name: 'Remettre la progression à zéro ?' });
@@ -219,7 +219,7 @@ describe('Paramètres — remettre la progression à zéro (U11, ADR 0010, ADR 0
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(localStorage.getItem(progressKey)).toBe(progressEnvelope);
     expect(screen.queryByRole('status')).toBeNull();
-    expect(screen.getByText('Niveaux résolus : 2 sur 17.')).toBeVisible();
+    expect(screen.getByText('Niveaux résolus : 2 sur 5.')).toBeVisible();
   });
 
   it('efface la progression et rien d’autre, le dit, et la campagne est de nouveau verrouillée', () => {
@@ -234,7 +234,7 @@ describe('Paramètres — remettre la progression à zéro (U11, ADR 0010, ADR 0
     expect(screen.getByRole('status')).toHaveTextContent(
       'Progression remise à zéro : seul le niveau 1 est ouvert.',
     );
-    expect(screen.getByText('Niveaux résolus : 0 sur 17.')).toBeVisible();
+    expect(screen.getByText('Niveaux résolus : 0 sur 5.')).toBeVisible();
     expect(localStorage.getItem(progressKey)).toBeNull();
     for (const [key, value] of Object.entries(untouchedEntries)) {
       expect(localStorage.getItem(key)).toBe(value);
@@ -265,7 +265,7 @@ describe('Paramètres — remettre la progression à zéro (U11, ADR 0010, ADR 0
       'Le stockage local de cet appareil est indisponible. La progression n’a pas été effacée.',
     );
     expect(screen.queryByRole('status')).toBeNull();
-    expect(screen.getByText('Niveaux résolus : 1 sur 17.')).toBeVisible();
+    expect(screen.getByText('Niveaux résolus : 1 sur 5.')).toBeVisible();
 
     openLevelList();
     expect(screen.getByRole('button', { name: 'Lancer le niveau 2' })).toBeEnabled();

@@ -12,15 +12,15 @@ const progressEnvelope = {
   kind: 'progress',
   version: 1,
   data: {
-    'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 2 },
-    'campaign-02-par-dessus-le-mur': { resolved: true, bestObjectCount: 3 },
+    'tuto-1': { resolved: true, bestObjectCount: 2 },
+    'tuto-2': { resolved: true, bestObjectCount: 3 },
   },
 };
 
 /** What a reset must leave alone (creations, received levels, preferences). */
 const untouched = {
-  'tinkerbolt:drafts': '["campaign-02-par-dessus-le-mur-brouillon"]',
-  'tinkerbolt:draft:campaign-02-par-dessus-le-mur-brouillon': 'création du niveau 2',
+  'tinkerbolt:drafts': '["tuto-2-brouillon"]',
+  'tinkerbolt:draft:tuto-2-brouillon': 'création du niveau 2',
   'tinkerbolt:received': '[]',
 } as const;
 
@@ -125,7 +125,7 @@ test('U11 — au toucher, le pseudo retenu se modifie et s’efface, et la progr
   await expect(progressPanel(page).getByRole('status')).toHaveText(
     'Progression remise à zéro : seul le niveau 1 est ouvert.',
   );
-  await expect(progressPanel(page)).toContainText('Niveaux résolus : 0 sur 17.');
+  await expect(progressPanel(page)).toContainText('Niveaux résolus : 0 sur 5.');
   expect(await stored(page, 'tinkerbolt:progress')).toBeNull();
   for (const [key, value] of Object.entries(untouched)) {
     expect(await stored(page, key)).toBe(value);

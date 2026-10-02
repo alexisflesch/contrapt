@@ -21,15 +21,15 @@ const resolveLevelOne = async (page: Page): Promise<void> => {
       JSON.stringify({
         kind: 'progress',
         version: 1,
-        data: { 'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 1 } },
+        data: { 'tuto-1': { resolved: true, bestObjectCount: 1 } },
       }),
     );
   });
 };
 
-const storedWallX = (page: Page): Promise<number | null> =>
+const storedFloorX = (page: Page): Promise<number | null> =>
   page.evaluate(() => {
-    const raw = localStorage.getItem('tinkerbolt:draft:campaign-02-par-dessus-le-mur-brouillon');
+    const raw = localStorage.getItem('tinkerbolt:draft:tuto-2-brouillon');
     if (raw === null) return null;
     const envelope = JSON.parse(raw) as {
       data?: {
@@ -39,11 +39,11 @@ const storedWallX = (page: Page): Promise<number | null> =>
       };
     };
     const document = envelope.data?.document ?? null;
-    const wall = document?.objects?.find((object) => object.id === 'wall');
-    return wall?.transform?.position?.x ?? null;
+    const floor = document?.objects?.find((object) => object.id === 'workshop-floor');
+    return floor?.transform?.position?.x ?? null;
   });
 
-test('édite une esquisse de campagne au toucher et conserve le brouillon', async ({
+test('édite un tutoriel de campagne au toucher et conserve le brouillon', async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'Le parcours d’édition est validé sur mobile.');
@@ -59,18 +59,18 @@ test('édite une esquisse de campagne au toucher et conserve le brouillon', asyn
   await expect(page.getByRole('button', { name: 'Ouvrir la fiche de calibrage' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Fermer le catalogue' }).tap();
 
-  await expect(page).toHaveURL(/\/editor\?draft=campaign-02-par-dessus-le-mur-brouillon$/u);
+  await expect(page).toHaveURL(/\/editor\?draft=tuto-2-brouillon$/u);
   await expect(page.getByText('Mode éditeur')).toBeVisible();
-  expect(await storedWallX(page)).toBe(5);
+  expect(await storedFloorX(page)).toBe(8.195822458208895);
 
-  await tapWorldPoint(page, 5, 3.6);
+  await tapWorldPoint(page, 8.195822458208895, 7.974035655966092);
   const openProperties = page.getByRole('button', { name: 'Ouvrir les propriétés' });
   if (await openProperties.isVisible()) await openProperties.tap();
   await page.getByRole('button', { name: 'Vers la droite' }).tap();
-  await expect.poll(() => storedWallX(page)).toBeGreaterThan(5);
+  await expect.poll(() => storedFloorX(page)).toBeGreaterThan(8.195822458208895);
 
   await page.reload();
   await expect(page.getByText('Mode éditeur')).toBeVisible();
-  expect(await storedWallX(page)).toBeGreaterThan(5);
+  expect(await storedFloorX(page)).toBeGreaterThan(8.195822458208895);
   await expect(page.getByRole('button', { name: 'Exporter le niveau' })).toBeVisible();
 });

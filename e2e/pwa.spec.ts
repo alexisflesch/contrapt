@@ -17,7 +17,7 @@ test('ouvre le niveau 1 hors ligne après le premier chargement', async ({ page,
     )
     .toBe(true);
 
-  await page.goto('/levels/campaign-01-la-bille-de-service/play');
+  await page.goto('/levels/tuto-1/play');
   await expect(page.getByText(/^Niveau 1\b/)).toBeVisible();
 
   await context.setOffline(true);

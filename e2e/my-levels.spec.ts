@@ -66,7 +66,7 @@ test('importe un fichier depuis « Mes niveaux » et le retrouve dans la liste (
   await expect(
     page
       .getByRole('region', { name: 'Mes créations' })
-      .getByRole('region', { name: 'La bille de service (remix)' }),
+      .getByRole('region', { name: 'Le petit pont (remix)' }),
   ).toBeVisible();
   await expect(received.getByRole('region', { name: 'Démonstration' })).toBeVisible();
   await captureFormats(page, 'my-levels-filled');

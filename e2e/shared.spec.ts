@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-import sharedLevel from '../src/content/levels/campaign-02-par-dessus-le-mur.json' with { type: 'json' };
+import sharedLevel from '../test/fixtures/campaign-sketches/campaign-02-par-dessus-le-mur.json' with { type: 'json' };
 import { decodeLevelFile } from '../src/infrastructure/level-file/level-file-codec';
 import { encodeShareFragment } from '../src/infrastructure/level-share/level-share-codec';
 

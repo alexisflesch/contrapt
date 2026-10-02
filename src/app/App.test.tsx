@@ -11,6 +11,7 @@ import type {
 import type { CampaignProgress } from '../application/progression';
 import type { ProgressRepository } from '../application/progression/progress-repository';
 import { embeddedLevels } from '../content/embedded-levels';
+import type * as EmbeddedLevels from '../content/embedded-levels';
 import { levelDocumentSchema } from '../domain/level-document';
 import type {
   ReceivedLevel,
@@ -30,6 +31,19 @@ import styles from '../ui/styles.css?raw';
 import { App } from './App';
 import type { RegisterServiceWorker } from './PwaUpdateProvider';
 import { screenPointToWorld } from './screen-point-to-world';
+
+/** Gesture fixtures stay stable when the published campaign changes (N2). */
+vi.mock('../content/embedded-levels', async (importOriginal) => {
+  const original = await importOriginal<typeof EmbeddedLevels>();
+  const fixtures = await import('../../test/fixtures/sketch-campaign');
+  return {
+    ...original,
+    campaignChapters: fixtures.sketchChapters,
+    embeddedLevels: fixtures.sketchLevels,
+    nextCampaignLevel: (id: string, chapters = fixtures.sketchChapters) =>
+      original.nextCampaignLevel(id, chapters),
+  };
+});
 
 type PointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel';
 

@@ -10,7 +10,7 @@ import type {
   Preferences,
   PreferencesRepository,
 } from '../application/preferences/preferences-repository';
-import { embeddedLevels } from '../content/embedded-levels';
+import { sketchLevels as embeddedLevels } from '../../test/fixtures/sketch-campaign';
 import type { LevelDocument } from '../domain/level-document';
 import { decodeLevelFile } from '../infrastructure/level-file/level-file-codec';
 import { decodeShareFragment } from '../infrastructure/level-share/level-share-codec';

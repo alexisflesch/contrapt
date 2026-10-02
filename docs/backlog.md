@@ -7,17 +7,17 @@ charges décrit en intention et ce que `etat.md` constate.
 Chaque tranche est verticale, commence par ses tests observables et se termine par
 `pnpm check`. Une tranche n'est pas déclarée terminée par l'agent qui l'a écrite.
 
-## État au 26 septembre 2026
+## État au 2 octobre 2026
 
 | Tranche | État                                                                                                       |
 | ------- | ---------------------------------------------------------------------------------------------------------- |
-| T1      | ◐ protocole, scènes 6 et 7 mesurées ; validation sur téléphone réel et retrait de Rapier en attente        |
+| T1      | ✅ Planck retenu après mesures sur téléphone (ADR 0002)        |
 | T2      | ✅                                                                                                         |
-| T3      | ✅ niveau 1 jouable ; fantôme (C1), ombre (C2) et fond suivant la caméra (D3) restent                      |
+| T3      | ✅ fantôme et fond suivant la caméra livrés ; ombres abandonnées (U3)                      |
 | T4a     | ✅                                                                                                         |
-| T4b     | ✅ sélection, déplacement direct, poignée de rotation, propriétés ; parcours desktop à réparer (L1)        |
-| T5      | ◐ campagne de 17 esquisses (`levels/nouveaux-niveaux.md`) : calibration auteur encore à faire              |
-| T6      | ⬜ progression (ADR 0010), stockage et partage (ADR 0011), PWA (ADR 0012) : L19 à L28 ; interface U1 à U12 |
+| T4b     | ✅ sélection, déplacement direct, poignée de rotation, propriétés        |
+| T5      | ◐ N2 en cours : cinq tutoriels de Bolt copiés et solutions ciblées vérifiées ; gate Knip et finalisation restantes              |
+| T6      | ✅ progression, stockage local, partage et PWA ; finitions restantes dans la feuille de route |
 
 L'ordre d'exécution courant est dans `feuille-de-route.md`.
 

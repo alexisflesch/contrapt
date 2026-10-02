@@ -31,7 +31,7 @@ describe('Accueil TinkerBolt', () => {
     ).toBeVisible();
     expect(screen.getByRole('link', { name: 'Commencer à jouer' })).toHaveAttribute(
       'href',
-      '/levels/campaign-01-la-bille-de-service/play',
+      '/levels/tuto-1/play',
     );
     const destinations = screen.getByRole('navigation', { name: 'Explorer TinkerBolt' });
     for (const { name, path } of [
@@ -56,7 +56,7 @@ describe('Accueil TinkerBolt', () => {
     render(
       <App
         progressRepository={createRepository({
-          'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 1 },
+          'tuto-1': { resolved: true, bestObjectCount: 1 },
           'campagne-retiree': { resolved: true, bestObjectCount: 1 },
         })}
       />,
@@ -64,15 +64,15 @@ describe('Accueil TinkerBolt', () => {
 
     expect(screen.getByRole('link', { name: 'Continuer à jouer' })).toHaveAttribute(
       'href',
-      '/levels/campaign-02-par-dessus-le-mur/play',
+      '/levels/tuto-2/play',
     );
     const stats = screen.getByRole('region', { name: 'Ton carnet de bord' });
-    expect(within(stats).getByText('1 / 17')).toBeVisible();
+    expect(within(stats).getByText('1 / 5')).toBeVisible();
     expect(screen.getByRole('progressbar', { name: 'Progression de la campagne' })).toHaveAttribute(
       'value',
       '1',
     );
-    expect(stats).toHaveTextContent('6 %');
+    expect(stats).toHaveTextContent('20 %');
   });
 
   it('permet de revisiter la campagne quand tous les niveaux sont résolus', () => {
@@ -90,7 +90,7 @@ describe('Accueil TinkerBolt', () => {
     ).toBeVisible();
     expect(screen.getByRole('progressbar', { name: 'Progression de la campagne' })).toHaveAttribute(
       'value',
-      '17',
+      '5',
     );
   });
 
@@ -106,7 +106,7 @@ describe('Accueil TinkerBolt', () => {
     );
     expect(screen.getByRole('link', { name: 'Commencer à jouer' })).toHaveAttribute(
       'href',
-      '/levels/campaign-01-la-bille-de-service/play',
+      '/levels/tuto-1/play',
     );
     expect(screen.getByRole('status')).toHaveTextContent(
       'La progression ne peut pas être enregistrée sur cet appareil.',

@@ -19,9 +19,9 @@ const createRepository = (
 
 function ProgressProbe() {
   const { levels, recordCampaignSuccess, unlockAllLevels } = useCampaignProgress();
-  const first = levels['campaign-01-la-bille-de-service'];
-  const second = levels['campaign-02-par-dessus-le-mur'];
-  const challenged = levels['campaign-04-retour-a-l-expediteur'];
+  const first = levels['tuto-1'];
+  const second = levels['tuto-2'];
+  const challenged = levels['tuto-4'];
 
   return (
     <>
@@ -32,7 +32,7 @@ function ProgressProbe() {
       <button
         type="button"
         onClick={() => {
-          recordCampaignSuccess('campaign-01-la-bille-de-service', 0);
+          recordCampaignSuccess('tuto-1', 0);
         }}
       >
         Enregistrer la victoire
@@ -44,7 +44,7 @@ function ProgressProbe() {
 describe('useCampaignProgress', () => {
   it('expose les déblocages et persiste une réussite injectée, puis persiste une réussite injectée', () => {
     const repository = createRepository({
-      'campaign-04-retour-a-l-expediteur': { resolved: true, bestObjectCount: 3 },
+      'tuto-4': { resolved: true, bestObjectCount: 3 },
     });
 
     const originalStorageDescriptor = Object.getOwnPropertyDescriptor(navigator, 'storage');
@@ -82,8 +82,8 @@ describe('useCampaignProgress', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la victoire' }));
 
     expect(repository.save).toHaveBeenCalledWith({
-      'campaign-01-la-bille-de-service': { resolved: true, bestObjectCount: 0 },
-      'campaign-04-retour-a-l-expediteur': { resolved: true, bestObjectCount: 3 },
+      'tuto-1': { resolved: true, bestObjectCount: 0 },
+      'tuto-4': { resolved: true, bestObjectCount: 3 },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la victoire' }));
     expect(persist).toHaveBeenCalledTimes(1);

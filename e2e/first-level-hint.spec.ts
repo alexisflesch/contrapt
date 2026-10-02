@@ -2,7 +2,7 @@ import { mkdir } from 'node:fs/promises';
 
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-const levelOne = '/levels/campaign-01-la-bille-de-service/play';
+const levelOne = '/levels/tuto-1/play';
 
 const formats = [
   { width: 390, height: 844 },

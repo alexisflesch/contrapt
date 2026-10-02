@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, R1 livré (balles sans anneau ni cadre de sélection), validation visuelle attendue ; intégration des tutoriels autorisée. U3 reste abandonnée.
+Dernière mise à jour : 2 octobre 2026, arrêt demandé par l’auteur. R1 commitée (`cf6c5be`) ; N2 en cours dans le working tree, non commitée, gate bloquée à Knip. U3 reste abandonnée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -8,6 +8,22 @@ et ne contient ni décision ni spécification ; celles-ci restent dans
 [le cahier des charges](cahier-des-charges.md) et les ADR du dossier
 `decisions/`. Le travail restant et son ordre sont dans
 [la feuille de route](feuille-de-route.md).
+
+## Arrêt et reprise — N2 en cours
+
+L’auteur a demandé l’arrêt pour préserver son quota. Les cinq tutoriels de Bolt
+sont copiés et branchés dans le working tree, avec des descriptions courtes.
+La correction autorisée du ventilateur du tutoriel 3 est appliquée uniquement
+à sa copie embarquée. Les cinq solutions passent les tests ciblés et les cinq
+victoires tactiles ont été vérifiées, sur plusieurs exécutions Playwright.
+
+**N2 n’est pas livrée** : la dernière gate s’arrête à Knip sur l’export
+`sketchChapters` de `test/fixtures/sketch-campaign.ts`, utilisé via des imports
+dynamiques dans les mocks. Typecheck, lint et formatage passent. Restent :
+correction Knip, gate complète, revue du diff, régénération/revue des captures,
+finalisation documentaire et commit. Voir le point de reprise et le journal N2
+[dans la feuille de route](feuille-de-route.md). Les sources auteur et son
+fichier d’essai restent intacts ; rien n’est poussé.
 
 ## Stack en place
 
@@ -589,7 +605,7 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   discret (`role="status"`) dit « Pseudo enregistré. » ou « Pseudo effacé. ».
   Un pseudo refusé par `authorSchema` est dit sous le champ (`role="alert"`,
   `aria-invalid`) et désactive « Enregistrer le pseudo ». Le panneau
-  « Progression de la campagne » donne « Niveaux résolus : N sur 17. » et
+  « Progression de la campagne » donne « Niveaux résolus : N sur 5. » et
   « Remettre la progression à zéro ». Ce bouton ouvre une confirmation
   `Dialog` où « Annuler » est ciblé. Le texte dit la perte (niveaux résolus,
   records ; seul le niveau 1 reste ouvert) et ce qui est gardé (créations,
@@ -699,24 +715,22 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ### Contenu
 
-- **N1 — nouvelle campagne en esquisses** : 17 niveaux JSON au format U22 sont
-  embarqués sous les identifiants `campaign-01` à `campaign-17`, répartis en
-  cinq chapitres et accessibles dans l’ordre. Les scènes, décors, inventaires,
-  fils et solutions sont indicatifs ; chaque description commence par
-  « Esquisse non calibrée. » et aucun niveau ne porte encore de défi de
-  progression.
-- Les objets de décor sont verrouillés pour le joueur ; les inventaires et les
-  solutions approximatives suivent les familles décrites dans
-  `docs/levels/nouveaux-niveaux.md`. Le niveau 15 de ce document (minuteur)
-  est volontairement différé : `campaign-15` correspond au niveau 16,
-  « Le sonneur », puis `campaign-16` et `campaign-17` ferment la campagne
-  actuelle.
-- Tant que l’auteur n’a pas ajusté puis exporté les esquisses depuis U17/U22,
-  aucune régression headless ne prétend que leur solution gagne. Les tests de
-  registre, de schéma, de progression, de brouillon, de partage et les
-  parcours Playwright couvrent néanmoins leur chargement et leur navigation.
-- `pnpm content:check` valide les 19 documents embarqués : les 17 niveaux de
-  campagne, la démonstration et l’atelier.
+- **N2 — en cours, cinq tutoriels de Bolt dans le working tree** : `tuto-1` à `tuto-5`, dans le chapitre
+  « Premiers pas », remplacent les 17 esquisses. Titres et descriptions courts ;
+  scènes 16 × 9 entièrement constructibles, décors verrouillés, pas de défi
+  d’objets. Chaque solution de référence est rejouée avec les commandes du
+  joueur et gagne avec la simulation actuelle ; le décor seul ne gagne pas.
+- Copies des exports de `levels/`, dont le tutoriel 4 réexporté par l’auteur
+  avec son fil à placer. Sources intactes. Seule correction de mécanique
+  autorisée : ventilateur du tutoriel 3 initialement arrêté dans l’inventaire
+  embarqué, pour que le bouton tenu par la masse le mette en marche. Le bouton
+  reste pressé ; aucun changement de simulateur.
+- Les anciennes esquisses sont conservées dans `test/fixtures/campaign-sketches/`
+  pour les tests de gestes, d’export et de déterminisme : elles ne sont plus
+  embarquées. La progression compte seulement les cinq identifiants actuels ;
+  les anciennes victoires et créations locales restent stockées.
+- `pnpm content:check` devra valider les sept documents embarqués : cinq
+  tutoriels, démonstration et atelier (non atteint par la dernière gate N2).
 - **Fiche de calibrage U28** : ouvrir une création de campagne en développement
   affiche la fiche de l’esquisse source avec l’intention/essai décrit par
   l’auteur, l’inventaire exact autorisé et ses quantités, la solution
@@ -777,7 +791,7 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   dernier document, l’historique annuler/rétablir repart de là ; les fils à
   placer sont exportables et rouverts avec leur marquage.
 - **Fils du joueur (U21).** Le joueur ne relie qu’avec les fils de
-  l’inventaire du niveau ; aucun niveau de campagne n’en donne encore, et
+  l’inventaire du niveau ; les tutoriels 3 à 5 en proposent, et
   l’atelier ne permet pas d’ajouter une entrée « Fil » à l’inventaire (pas
   d’interface d’édition d’inventaire, voir « Mode auteur incomplet »).
 - **Limite de la solution du joueur (M5, ADR 0015).** Elle ne retient pas le
@@ -820,12 +834,10 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ### Contenu et progression
 
-- **Calibration des esquisses** (décision auteur du 27 septembre 2026) : les
-  17 niveaux de campagne sont livrés comme points de départ. L’auteur doit les
-  ouvrir sous `pnpm dev` avec « Modifier le niveau » (solution révélée et
-  fiche de calibrage, M11), ajuster la physique et exporter les
-  documents avant activation de régressions de solution. La fiche U28 facilite
-  désormais cette reprise ; le calibrage physique final reste à faire.
+- **Contenu de v1** : les cinq tutoriels de l’auteur sont intégrés dans le
+  working tree et leurs solutions vérifiées par tests ciblés ; finalisation N2
+  encore requise. Les anciennes esquisses restent seulement des
+  fixtures de test ; leur calibration n’est plus une dette de livraison.
 - **Progression de campagne.** L19 calcule les paliers, records, indices et
   déblocages ; L20 persiste les records dans une enveloppe locale validée ; L21
   enregistre les victoires depuis le snapshot du lancement et expose le hook
@@ -834,7 +846,7 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   `/shared` L24 sont livrés ; les niveaux partagés restent hors campagne et ne
   créent ni progression ni brouillon ; depuis M8, ils sont gardés comme
   niveaux reçus. La PWA L28 est livrée selon l’ADR 0012.
-  Les esquisses actuelles ne portent aucun défi : les paliers restent réservés
+  Les tutoriels actuels ne portent aucun défi : les paliers restent réservés
   aux niveaux calibrés qui en définissent explicitement un.
 - **Fichiers et partage.** L22 encode et décode les documents avec validation
   et migration ; L23 sérialise les fragments URL avec CRC-32 et décompression
@@ -875,6 +887,14 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+Tentative N2 (2 octobre 2026) : **échec à Knip**, export `sketchChapters`
+signalé inutilisé dans `test/fixtures/sketch-campaign.ts:23`. Typecheck, lint
+et formatage réussis ; les étapes suivantes n’ont pas été atteintes. Tests
+ciblés : 13 Vitest de contenu réussis ; chaque tutoriel gagne au toucher et sa
+progression est conservée, sur plusieurs exécutions E2E. Build isolé réussi.
+Le fichier d’essai auteur a été restauré identique. Arrêt demandé : aucune
+relance ni commit N2. La dernière gate complète verte reste R1 ci-dessous.
 
 `pnpm check` après R1 (2 octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 1090 tests Vitest (83 fichiers),

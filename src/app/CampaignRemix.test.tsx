@@ -13,13 +13,13 @@ import type * as EmbeddedLevels from '../content/embedded-levels';
 import { App } from './App';
 
 /**
- * The campaign sketches are not calibrated yet (none wins): level 1 is
- * replaced by a level the ball wins alone, with a short beam to place.
+ * A small deterministic fixture wins without construction, isolating the remix
+ * workflow from the geometry and reference solution of the published campaign.
  * Hoisted with `vi.mock`, hence raw data parsed where it is used.
  */
 const { levelOneId, winnableLevelOneData } = vi.hoisted(() => {
   const locked = { move: false, rotate: false, remove: false } as const;
-  const levelOneId = 'campaign-01-la-bille-de-service';
+  const levelOneId = 'tuto-1';
   return {
     levelOneId,
     winnableLevelOneData: {

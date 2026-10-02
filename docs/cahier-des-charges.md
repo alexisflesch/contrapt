@@ -209,22 +209,23 @@ quantité d’objets.
 **Décision de l’auteur du 1er octobre 2026 : les niveaux de la campagne sont
 conçus à la main par l’auteur, un par un.** Les niveaux générés jusqu’ici par des
 agents (les 12 premiers, puis les 17 esquisses de
-[`levels/nouveaux-niveaux.md`](levels/nouveaux-niveaux.md) embarquées dans
-`src/content/levels/`) ne sont pas assez bons : ils sont provisoires et seront
-remplacés. Aucun agent ne conçoit ni ne calibre de niveau de campagne.
+[`levels/nouveaux-niveaux.md`](levels/nouveaux-niveaux.md) initialement embarquées) ne sont pas assez bons : ils ont été remplacés
+dans le working tree par les cinq tutoriels de l’auteur (N2 en cours,
+2 octobre 2026). Aucun agent ne conçoit ni ne calibre de niveau de campagne.
 
 Les niveaux de l’auteur sont des exports JSON de l’atelier, déposés dans le
 dossier [`levels/`](../levels/) à la racine du dépôt. Ils y arrivent au fil de
 l’eau ; à terme, ils y seront tous. L’auteur les fabrique et les retouche avec
 l’application elle-même : import dans « Mes niveaux », « Modifier », « Révéler la
 solution de l’auteur », puis export vérifié
-([ADR 0015](decisions/0015-mes-niveaux.md)). C’est pourquoi la finition de ces
-niveaux attend que ces fonctions soient livrées : par exemple, `tuto-4` doit être
-réédité pour que son fil devienne « à placer ».
+([ADR 0015](decisions/0015-mes-niveaux.md)). Le tutoriel 4 a été réexporté par l’auteur avec son fil « à placer ».
 
-Au 1er octobre 2026, `levels/` contient cinq niveaux d’apprentissage (`tuto-1` à
-`tuto-5`). **La version 1 peut se contenter de ces cinq niveaux.** Leur nombre
-final et leur découpage en chapitres restent la décision de l’auteur.
+Au 2 octobre 2026, les cinq niveaux d’apprentissage (`tuto-1` à `tuto-5`)
+sont intégrés dans le working tree dans « Premiers pas », avec des descriptions
+courtes et l’auteur Bolt ; N2 reste à finaliser (gate et revue visuelle). Les sources de `levels/` restent intactes. L’auteur a autorisé uniquement
+la correction de l’état initial du ventilateur du tutoriel 3 dans sa copie
+embarquée (arrêté, pour être activé par la masse sur le bouton).
+**La version 1 peut se contenter de ces cinq niveaux.**
 
 Passer de `levels/` à la campagne embarquée est une tâche à part, déclenchée par
 l’auteur : remplacer le contenu de `src/content/levels/` et du catalogue de
@@ -433,7 +434,7 @@ phase ; le détail reste dans `etat.md` et le journal de la feuille de route).
 | 3 — Atelier complet               | hors priorités de livraison v1 : A1 reportée, A2 hors v1, A3 secondaire ; A4 livrée par M14b                                                                                      |
 | 4 — Outillage et mesures          | à faire                                                                                                                                             |
 | 5 — Décisions de l’auteur         | en attente (minuteur et niveau 15, bouton Grist, tri des propositions)                                                                              |
-| Niveaux de la campagne            | l’auteur les conçoit dans `levels/` (5 tutoriels déposés ; peut suffire pour la v1) ; intégration des cinq tutoriels autorisée (N2), auteur Bolt et descriptions courtes |
+| Niveaux de la campagne            | N2 en cours, non commitée : cinq tutoriels de Bolt, descriptions et solutions ciblées vérifiées ; gate Knip et validation finale restantes |
 
 ## Décisions réellement encore ouvertes
 
