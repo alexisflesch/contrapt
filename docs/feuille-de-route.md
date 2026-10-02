@@ -4,35 +4,76 @@ Rédigée le 1er octobre 2026. Remplace `feuille-de-route-luna.md`, conservée c
 historique (journal L1 à U29) : on n'y lit que l'entrée de journal qu'une tâche
 cite.
 
-Destinataire : l'agent d'implémentation qui reprend le dépôt — Claude Code
-(Opus). Il peut déléguer une sous-tâche bien délimitée (un test, un adaptateur,
-une passe de captures) à un sous-agent Claude Sonnet ou Opus, mais il reste
-responsable du résultat : il relit le diff, lance la gate et tient le journal.
+Destinataire : l'agent d'implémentation qui reprend le dépôt — Claude Code. Il
+délègue chaque tâche à un sous-agent Claude Sonnet ou Opus (répartition dans le
+point de reprise), mais il reste responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
-## Point de reprise (fin de session du 1er octobre 2026)
+## Point de reprise (fin de session du 2 octobre 2026)
 
-- **Phase 1 terminée ; phase 2 commencée : U12, U1, U13, U7, U8, U10 et U11
-  faites (2 octobre 2026), prochaine tâche U2.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
-  2026, qui livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
-  2 octobre 2026). `pnpm check` était vert au dernier commit.
+- **Phase 0, phase 1 (M1 à M15) et, en phase 2, U12, U1, U13, U7, U8, U10 et
+  U11 sont faites** (journal § 7). **Prochaine tâche : U2** (fond qui suit la
+  caméra), puis U3, l'inspecteur compact, puis les phases 3 et 4. La phase 5
+  attend l'auteur. `pnpm check` était vert au dernier commit (`aa8d779`,
+  1 073 tests Vitest, 72 E2E `mobile` dont 1 ignoré). Rien n'est poussé.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
   part dans un sous-agent neuf, une à la fois, avec pour consigne de lire
   `AGENTS.md`, `docs/index.md`, ce fichier (§ 1 à 3, la tâche, le journal),
-  `docs/etat.md` et les ADR citées, puis de faire un commit par tâche.
+  `docs/etat.md`, la puce de la tâche dans `feuille-de-route-luna.md` § 6 et les
+  ADR citées, puis de faire **un seul commit** par tâche (code, tests, journal,
+  `etat.md`, tableau « Avancement » du cahier des charges, ce point de reprise).
   **Opus pour le gros raisonnement et l'UI/UX, Sonnet pour l'écriture de
   code** (choix de l'auteur, 2 octobre 2026, qui remplace « Sonnet sans
   changement visible, Opus pour l'interface ») ; une tâche qui mêle les deux
-  est découpée en étapes successives, un seul commit à la fin. Entre deux tâches, la session principale
-  relit le rapport et le diff, regarde au moins une capture, tranche les
-  questions simples en les écrivant dans l'ADR ou la tâche concernée, et
-  remonte à l'auteur ce qui relève de son goût ou de son contenu.
-- **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b,
-  de U12, de U1, de U13, de U7, de U8, de U10 et de U11 (`test-results/`, dont `test-results/beam-sprites/`,
-  `test-results/placement-ghost/`, `test-results/build-zones/`,
-  `test-results/goal-ball/`, `test-results/first-level-hint/`,
-  `test-results/pwa-invitation/` et `test-results/settings/`) ; relecture des documents de M15 (entrée du journal) ;
-  questions de goût listées dans les entrées M12 à M14b du journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
-  la phase 5.
+  est découpée en étapes successives, un seul commit à la fin (M14b : étape A
+  Sonnet, étape B Opus). Entre deux tâches, la session principale relit le
+  rapport et le diff, regarde au moins une capture, tranche les questions
+  simples en les écrivant dans l'ADR ou la tâche concernée, et remonte à
+  l'auteur ce qui relève de son goût ou de son contenu. Prochaines tâches
+  probables : U2 et U3 (rendu : Opus), inspecteur compact (correctif avec test
+  rouge : Sonnet), A1 à A3 (interface tactile : Opus), L2 et la mesure de
+  l'export (outillage : Sonnet).
+- **Pièges connus pour la gate** :
+  - `tmp/check-levels.ts` est un fichier d'essai **de l'auteur** (ignoré par
+    git, mais lu par ESLint) : il fait échouer `pnpm lint`, donc `pnpm check` et
+    `pnpm check:fast` (« was not found by the project service »). Ne pas le
+    modifier ni le supprimer : le déplacer hors du dépôt le temps de la gate
+    (scratchpad), puis le remettre identique (`sha256sum` attendu `1113625e…`,
+    mode 644). Seul l'auteur décide de l'exclure d'ESLint.
+  - Toute exécution Playwright isolée vide `test-results/` (donc les captures
+    des tâches précédentes) ; seul `pnpm check` les régénère toutes. Ne pas
+    lancer d'E2E isolé juste avant de demander une validation visuelle.
+  - Intermittences connues en E2E sous charge : `layout.spec.ts` D4 et U15
+    (relancer la gate et le dire ; voir `etat.md`). Knip échoue sur un type
+    exporté mais inutilisé : le rendre local.
+- **N'attend que l'auteur** :
+  - validation visuelle des captures de M8 à M14b et de U12, U1, U13, U7, U8,
+    U10, U11 (`test-results/`, régénérées par `pnpm check` ; sous-dossiers
+    `beam-sprites/`, `placement-ghost/`, `build-zones/`, `goal-ball/`,
+    `first-level-hint/`, `pwa-invitation/`, `settings/`) ; relecture des
+    documents de M15 (entrée du journal) ;
+  - questions de goût dans « Pour l'auteur » des entrées M12 à U11 du journal
+    (tutoiement/vouvoiement de la boîte d'export, teintes des zones et du
+    fantôme, anneau de la balle cible, textes de l'aide du niveau 1 et des
+    invitations PWA, libellé « Remettre la progression à zéro ») ;
+  - **U12** : les sources `art/assets/beam/` n'ont pas le rapport de
+    l'empreinte (courte écrasée de 12 %, moyenne étirée de 21 %, longue
+    écrasée de 50 % et coupée au bord gauche) : redessiner à 8:1, 16:1, 24:1
+    ou exporter en neuf tranches ; la tâche a été faite sans trace de
+    validation du dessin (`git revert d3a119b` l'annule) ; le script
+    `art/build-sprites.py` lancé en entier modifie aussi d'autres sprites
+    (bouton, levier, seconde balle), à éclaircir avant toute régénération ;
+  - champs facultatifs ajoutés à l'enveloppe v1 des préférences sans migration
+    (`firstLevelHintDone` en U8, `installInvitationDeclined` en U10 ; ADR 0011,
+    amendements du 2 octobre 2026) : une ancienne PWA en cache les verrait
+    invalides ; à confirmer ;
+  - contradictions de documents non arbitrées (M15 : confirmation modale d'une
+    action annulable, autosauvegarde silencieuse, « tester » encore employé
+    dans `mobile-editor-interactions.md`) ; la liste `navigateFallbackAllowlist`
+    de `vite.config.ts` n'inclut pas `/my-levels` (repli hors ligne, relevé en
+    U10, non traité) ; le capuchon du bouton du niveau 1 est rouge alors que le
+    rouge est réservé à la balle de l'objectif (U19, relevé en U7) ;
+  - feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de la
+    phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
 
 Ce document fixe **quoi faire et dans quel ordre**. Il ne redéfinit aucune
