@@ -42,7 +42,8 @@ type Operation =
   | { readonly kind: 'stroke' }
   | { readonly kind: 'globalAlpha'; readonly values: readonly number[] }
   | { readonly kind: 'fillText'; readonly values: readonly unknown[] }
-  | { readonly kind: 'setLineDash'; readonly values: readonly number[] };
+  | { readonly kind: 'setLineDash'; readonly values: readonly number[] }
+  | { readonly kind: 'strokeStyle'; readonly values: readonly string[] };
 
 type ProjectedObject = Readonly<{
   readonly family: SpriteFamily;
@@ -163,8 +164,8 @@ const drawnAssetOrder = async (
   return drawOperations.map((operation) => {
     const source = operation.values[0];
     const entry = (
-      Object.entries(spriteLoader.sprites) as ReadonlyArray<[SpriteAsset, unknown]>
-    ).find(([, sprite]) => sprite === source);
+      Object.entries(spriteLoader.sprites) as ReadonlyArray<[SpriteAsset, DecodedSprite]>
+    ).find(([, sprite]) => sprite.source === source);
     if (entry === undefined) {
       throw new Error('Le sprite dessiné est introuvable parmi les sprites chargés.');
     }
@@ -233,6 +234,7 @@ const createContext = (): {
   const operations: Operation[] = [];
   let lineWidth = 1;
   let globalAlpha = 1;
+  let strokeStyle = '';
 
   const context = {
     save: (): void => {
@@ -282,7 +284,13 @@ const createContext = (): {
       globalAlpha = value;
       operations.push({ kind: 'globalAlpha', values: [value] });
     },
-    strokeStyle: '',
+    get strokeStyle(): string {
+      return strokeStyle;
+    },
+    set strokeStyle(value: string) {
+      strokeStyle = value;
+      operations.push({ kind: 'strokeStyle', values: [value] });
+    },
     fillStyle: '',
     lineCap: 'butt',
     font: '',
@@ -312,6 +320,13 @@ const createContext = (): {
   return { context, operations };
 };
 
+/** A decoded sprite whose bitmap is a marker object, so a draw names its asset. */
+const fakeSprite = (asset: SpriteAsset): DecodedSprite => ({
+  width: 64,
+  height: 32,
+  source: { asset },
+});
+
 const createPendingSpriteLoader = (): {
   readonly loader: SpriteLoader;
   readonly requestedFamilies: SpriteFamily[];
@@ -321,34 +336,34 @@ const createPendingSpriteLoader = (): {
 } => {
   const requestedFamilies: SpriteFamily[] = [];
   const sprites: Readonly<Record<SpriteAsset, DecodedSprite>> = {
-    'ball-base': { width: 64, height: 32 },
-    'ball-spin': { width: 64, height: 32 },
-    'ball-highlight': { width: 64, height: 32 },
-    'second-ball-base': { width: 64, height: 32 },
-    'second-ball-spin': { width: 64, height: 32 },
-    'second-ball-highlight': { width: 64, height: 32 },
-    'basket-back': { width: 64, height: 32 },
-    'basket-front': { width: 64, height: 32 },
-    'beam-short': { width: 64, height: 32 },
-    'beam-medium': { width: 64, height: 32 },
-    'beam-long': { width: 64, height: 32 },
-    'seesaw-fulcrum': { width: 64, height: 32 },
-    'seesaw-beam': { width: 64, height: 32 },
-    'mass-10kg': { width: 64, height: 32 },
-    'lever-base': { width: 64, height: 32 },
-    'lever-handle': { width: 64, height: 32 },
-    'conveyor-belt': { width: 64, height: 32 },
-    'conveyor-belt-left': { width: 64, height: 32 },
-    'conveyor-frame': { width: 64, height: 32 },
-    'button-base': { width: 64, height: 32 },
-    'button-cap': { width: 64, height: 32 },
-    'fan-blades': { width: 64, height: 32 },
-    'fan-body': { width: 64, height: 32 },
-    'barrier-bar': { width: 64, height: 32 },
-    'barrier-pillar': { width: 64, height: 32 },
-    'springboard-spring': { width: 64, height: 32 },
-    'springboard-base': { width: 64, height: 32 },
-    'springboard-platform': { width: 64, height: 32 },
+    'ball-base': fakeSprite('ball-base'),
+    'ball-spin': fakeSprite('ball-spin'),
+    'ball-highlight': fakeSprite('ball-highlight'),
+    'second-ball-base': fakeSprite('second-ball-base'),
+    'second-ball-spin': fakeSprite('second-ball-spin'),
+    'second-ball-highlight': fakeSprite('second-ball-highlight'),
+    'basket-back': fakeSprite('basket-back'),
+    'basket-front': fakeSprite('basket-front'),
+    'beam-short': fakeSprite('beam-short'),
+    'beam-medium': fakeSprite('beam-medium'),
+    'beam-long': fakeSprite('beam-long'),
+    'seesaw-fulcrum': fakeSprite('seesaw-fulcrum'),
+    'seesaw-beam': fakeSprite('seesaw-beam'),
+    'mass-10kg': fakeSprite('mass-10kg'),
+    'lever-base': fakeSprite('lever-base'),
+    'lever-handle': fakeSprite('lever-handle'),
+    'conveyor-belt': fakeSprite('conveyor-belt'),
+    'conveyor-belt-left': fakeSprite('conveyor-belt-left'),
+    'conveyor-frame': fakeSprite('conveyor-frame'),
+    'button-base': fakeSprite('button-base'),
+    'button-cap': fakeSprite('button-cap'),
+    'fan-blades': fakeSprite('fan-blades'),
+    'fan-body': fakeSprite('fan-body'),
+    'barrier-bar': fakeSprite('barrier-bar'),
+    'barrier-pillar': fakeSprite('barrier-pillar'),
+    'springboard-spring': fakeSprite('springboard-spring'),
+    'springboard-base': fakeSprite('springboard-base'),
+    'springboard-platform': fakeSprite('springboard-platform'),
   };
   let ready = false;
   let releasePending: () => void = () => {
@@ -982,7 +997,7 @@ describe('renderer Canvas 2D du plateau', () => {
         continue;
       }
 
-      expect(drawOperation.values[0]).toBe(spriteLoader.sprites[object.assetKey]);
+      expect(drawOperation.values[0]).toBe(spriteLoader.sprites[object.assetKey].source);
     }
   });
 
@@ -1373,5 +1388,206 @@ describe('renderer Canvas 2D du plateau', () => {
     await renderer.render(projection);
 
     expect(operations.some(isRotationKnob)).toBe(true);
+  });
+});
+
+/** Canvas state at one drawing operation, replayed from the recorded operations. */
+type DrawState = Readonly<{
+  readonly alpha: number;
+  readonly dashed: boolean;
+  readonly lineWidth: number;
+  readonly strokeStyle: string;
+  /** `translate` and `rotate` applied since the last `setTransform`, in order. */
+  readonly transforms: readonly Operation[];
+}>;
+
+type DrawOperation = Extract<Operation, { readonly kind: 'drawImage' | 'strokeRect' }>;
+
+const replay = (
+  operations: readonly Operation[],
+): readonly { readonly operation: DrawOperation; readonly state: DrawState }[] => {
+  const initial: DrawState = {
+    alpha: 1,
+    dashed: false,
+    lineWidth: 1,
+    strokeStyle: '',
+    transforms: [],
+  };
+  const stack: DrawState[] = [];
+  let state = initial;
+  const drawn: { readonly operation: DrawOperation; readonly state: DrawState }[] = [];
+  for (const operation of operations) {
+    switch (operation.kind) {
+      case 'save':
+        stack.push(state);
+        break;
+      case 'restore':
+        state = stack.pop() ?? initial;
+        break;
+      case 'globalAlpha':
+        state = { ...state, alpha: operation.values[0] ?? 1 };
+        break;
+      case 'setLineDash':
+        state = { ...state, dashed: operation.values.length > 0 };
+        break;
+      case 'lineWidth':
+        state = { ...state, lineWidth: operation.values[0] ?? 1 };
+        break;
+      case 'strokeStyle':
+        state = { ...state, strokeStyle: operation.values[0] ?? '' };
+        break;
+      case 'translate':
+      case 'rotate':
+        state = { ...state, transforms: [...state.transforms, operation] };
+        break;
+      case 'drawImage':
+      case 'strokeRect':
+        drawn.push({ operation, state });
+        break;
+      case 'setTransform':
+      case 'scale':
+      case 'fillRect':
+      case 'beginPath':
+      case 'moveTo':
+      case 'lineTo':
+      case 'arc':
+      case 'stroke':
+      case 'fillText':
+        break;
+    }
+  }
+  return drawn;
+};
+
+describe('fantôme de placement (U1)', () => {
+  const ghost = (isGhostValid: boolean) => ({ ghostPlacementId: 'beam-1', isGhostValid });
+
+  const renderGhost = async (
+    options: { readonly ghostPlacementId: string; readonly isGhostValid: boolean } | undefined,
+    pixelsPerWorldUnit = viewport.pixelsPerWorldUnit,
+  ) => {
+    const { context, operations } = createContext();
+    const spriteLoader = createPendingSpriteLoader();
+    spriteLoader.setReady();
+    const renderer = createBoardRenderer({
+      canvas: { width: 0, height: 0 },
+      context,
+      viewport: { ...viewport, pixelsPerWorldUnit },
+      spriteLoader: spriteLoader.loader,
+    });
+    await renderer.render(projectLevel(levelDocument, undefined, options));
+    return { drawn: replay(operations), sprites: spriteLoader.sprites };
+  };
+
+  /** The medium beam `beam-1`: 4 × 0,25 at (16, 10), turned a quarter of π. */
+  const beamCentre = worldToPixels({ x: 16, y: 10 }, viewport);
+
+  it('projette le placement candidat en fantôme, et les autres objets pleins', () => {
+    const appearances = (options?: Parameters<typeof projectLevel>[2]) =>
+      projectLevel(levelDocument, undefined, options).objects.map(({ id, appearance }) => [
+        id,
+        appearance,
+      ]);
+
+    const solid = appearances();
+    expect(solid.length).toBeGreaterThan(0);
+    expect(solid.every(([, look]) => look === 'solid')).toBe(true);
+    expect(appearances(ghost(true))).toEqual(
+      solid.map(([id]) => [id, id === 'beam-1' ? 'ghost-valid' : 'solid']),
+    );
+    expect(appearances(ghost(false))).toEqual(
+      solid.map(([id]) => [id, id === 'beam-1' ? 'ghost-invalid' : 'solid']),
+    );
+  });
+
+  it('dessine un fantôme valide avec le sprite de sa famille, à son empreinte et sa rotation, translucide', async () => {
+    const { drawn, sprites } = await renderGhost(ghost(true));
+
+    const beam = drawn.find(
+      ({ operation }) =>
+        operation.kind === 'drawImage' && operation.values[0] === sprites['beam-medium'].source,
+    );
+    expect(beam).toBeDefined();
+    expect(beam?.operation.values.slice(-2)).toEqual([16, 1]);
+    expect(beam?.state.alpha).toBe(0.55);
+    expect(beam?.state.transforms).toEqual([
+      { kind: 'translate', values: [beamCentre.x, beamCentre.y] },
+      { kind: 'rotate', values: [Math.PI / 4] },
+    ]);
+
+    // Every other object stays opaque.
+    const others = drawn.filter(
+      ({ operation }) =>
+        operation.kind === 'drawImage' && operation.values[0] !== sprites['beam-medium'].source,
+    );
+    expect(others.length).toBeGreaterThan(0);
+    expect(others.every(({ state }) => state.alpha === 1)).toBe(true);
+  });
+
+  it('entoure un fantôme valide d’un trait plein de 2 px CSS, après son sprite', async () => {
+    const { drawn, sprites } = await renderGhost(ghost(true));
+
+    const outlineIndex = drawn.findIndex(
+      ({ operation }) =>
+        operation.kind === 'strokeRect' && operation.values[2] === 16 && operation.values[3] === 1,
+    );
+    const spriteIndex = drawn.findIndex(
+      ({ operation }) =>
+        operation.kind === 'drawImage' && operation.values[0] === sprites['beam-medium'].source,
+    );
+    const outline = drawn[outlineIndex];
+    expect(outline).toBeDefined();
+    expect(outlineIndex).toBeGreaterThan(spriteIndex);
+    expect(outline?.state.lineWidth).toBe(2);
+    expect(outline?.state.dashed).toBe(false);
+    expect(outline?.state.alpha).toBe(1);
+    expect(outline?.state.transforms).toEqual([
+      { kind: 'translate', values: [beamCentre.x, beamCentre.y] },
+      { kind: 'rotate', values: [Math.PI / 4] },
+    ]);
+  });
+
+  it('dessine un fantôme invalide plus pâle, entouré de tirets couleur d’avertissement', async () => {
+    const { drawn, sprites } = await renderGhost(ghost(false));
+
+    const beam = drawn.find(
+      ({ operation }) =>
+        operation.kind === 'drawImage' && operation.values[0] === sprites['beam-medium'].source,
+    );
+    expect(beam?.state.alpha).toBe(0.35);
+
+    const outline = drawn.find(
+      ({ operation }) =>
+        operation.kind === 'strokeRect' && operation.values[2] === 16 && operation.values[3] === 1,
+    );
+    expect(outline?.state.dashed).toBe(true);
+    expect(outline?.state.strokeStyle).toBe('#e53935');
+    expect(outline?.state.lineWidth).toBe(2);
+  });
+
+  it('agrandit le sprite avec le zoom, mais pas l’épaisseur du contour', async () => {
+    const atFour = await renderGhost(ghost(true), 4);
+    const atEight = await renderGhost(ghost(true), 8);
+    const beamSize = ({ drawn, sprites }: Awaited<ReturnType<typeof renderGhost>>) =>
+      drawn
+        .find(
+          ({ operation }) =>
+            operation.kind === 'drawImage' && operation.values[0] === sprites['beam-medium'].source,
+        )
+        ?.operation.values.slice(-2);
+    const outlineWidth = ({ drawn }: Awaited<ReturnType<typeof renderGhost>>) =>
+      drawn.filter(({ operation }) => operation.kind === 'strokeRect').at(-1)?.state.lineWidth;
+
+    expect(beamSize(atFour)).toEqual([16, 1]);
+    expect(beamSize(atEight)).toEqual([32, 2]);
+    expect(outlineWidth(atFour)).toBe(2);
+    expect(outlineWidth(atEight)).toBe(2);
+  });
+
+  it('ne dessine ni fantôme ni contour hors placement', async () => {
+    const { drawn } = await renderGhost(undefined);
+
+    expect(drawn.every(({ state }) => state.alpha === 1)).toBe(true);
+    expect(drawn.some(({ operation }) => operation.kind === 'strokeRect')).toBe(false);
   });
 });

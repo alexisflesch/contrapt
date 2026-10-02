@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, U12 (poutres en trois tailles) livrée ; phase 1 (« Mes niveaux ») terminée.
+Dernière mise à jour : 2 octobre 2026, U1 (fantôme de placement dessiné par le renderer) livrée ; phase 1 (« Mes niveaux ») terminée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -424,6 +424,25 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   parcours `e2e/beam-sprites.spec.ts` (captures
   `test-results/beam-sprites/beams-{390x844,844x390,1440x900}.png`).
   **Validation visuelle de l’auteur attendue.**
+- Fantôme de placement (U1, spécification C1 de `plan-remise-en-jeu.md`) :
+  l’objet en cours de placement est dessiné par le renderer avec son sprite,
+  son empreinte et sa rotation réelles, à l’échelle de la caméra, translucide
+  (alpha 0,55) et entouré d’un trait plein bleu de 2 px CSS quand la position
+  est valide ; plus pâle (alpha 0,35) et entouré de tirets rouges quand elle
+  est refusée (hors zone de construction). Le contour ne grossit pas avec le
+  zoom. État de présentation seulement : `placementGhost(session)`
+  (`src/app/placement-ghost.ts`) le déduit de la manipulation en cours,
+  `projectLevel(document, simulation, ghost)` donne à chaque objet une
+  `appearance` (`solid`, `ghost-valid`, `ghost-invalid`) ; ni le document ni
+  l’historique ne changent. Le canvas expose `data-placement-ghost`
+  (`valid`/`invalid`) et `data-placement-ghost-position`. L’ancien overlay DOM
+  `.placement-preview` et ses règles CSS sont supprimés ; l’annonce
+  « Aperçu de placement valide » (`role="status"`) reste. Tests
+  `placement-ghost.test.ts`, `board-renderer.test.ts` (« fantôme de placement
+  (U1) »), `App.test.tsx` et parcours `e2e/placement-ghost.spec.ts` (boîte du
+  fantôme = empreinte puis objet posé, captures
+  `test-results/placement-ghost/ghost-{valid,invalid}-{390x844,844x390,1440x900}.png`).
+  **Validation visuelle de l’auteur attendue.**
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
   cadrage, recadrage sur vrai redimensionnement seulement.
@@ -637,9 +656,6 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ### Interface
 
-- **Aperçu de placement en CSS.** L’overlay DOM `.placement-preview`
-  (`src/ui/BoardView.tsx`) n’a ni la forme, ni la taille, ni la rotation de
-  l’objet ; le fantôme dessiné par le renderer (C1) reste à faire.
 - **Fond en CSS.** `board-generic-v0.png` est un `background-image` de
   `.scene-frame` : il ne suit ni le zoom ni le panoramique (D3).
 - **Sources de poutre.** Le rapport des sources de `art/assets/beam/` n'est pas
@@ -728,6 +744,15 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U1 (2 octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 994 tests Vitest (78 fichiers), build
+Vite/PWA et 58 tests Playwright `mobile` (57 réussis, 1 ignoré). Une première
+exécution s’était arrêtée à Knip (type `BoardAppearance` exporté sans
+usage), corrigé avant la seconde. Pas d’intermittence D4 ni U15 observée. Le
+fichier d’essai de l’auteur `tmp/check-levels.ts` a été écarté du dépôt le
+temps de la gate (ESLint le refuse), puis remis à l’identique (SHA-256
+`1113625e…a92907` et mode 644 vérifiés).
 
 `pnpm check` après U12 (2 octobre 2026) : passe du premier coup —
 typecheck, lint, formatage, Knip, contenu (19 documents), 982 tests Vitest

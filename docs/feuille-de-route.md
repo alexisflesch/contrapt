@@ -11,8 +11,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
 ## Point de reprise (fin de session du 1er octobre 2026)
 
-- **Phase 1 terminée ; phase 2 commencée : U12 faite (2 octobre 2026), prochaine
-  tâche U1.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
+- **Phase 1 terminée ; phase 2 commencée : U12 et U1 faites (2 octobre 2026),
+  prochaine tâche U13.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
   2026, qui livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
   2 octobre 2026). `pnpm check` était vert au dernier commit.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
@@ -26,8 +26,9 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   relit le rapport et le diff, regarde au moins une capture, tranche les
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
-- **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b et
-  de U12 (`test-results/`, dont `test-results/beam-sprites/`) ; relecture des documents de M15 (entrée du journal) ;
+- **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b,
+  de U12 et de U1 (`test-results/`, dont `test-results/beam-sprites/` et
+  `test-results/placement-ghost/`) ; relecture des documents de M15 (entrée du journal) ;
   questions de goût listées dans les entrées M12 à M14b du journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
   la phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
@@ -407,8 +408,8 @@ validation visuelle pour chacune.
 
 1. ~~U12 — Poutres en trois tailles~~ : faite le 2 octobre 2026 (journal U12) ;
    validation visuelle attendue.
-2. **U1 — Fantôme de placement** dessiné par le renderer
-   (`plan-remise-en-jeu.md` § 5 « C1 ») ; remplace l'overlay CSS.
+2. ~~U1 — Fantôme de placement~~ : faite le 2 octobre 2026 (journal U1) ;
+   validation visuelle attendue.
 3. **U13 — Zones de construction visibles** et objet qui suit le doigt hors
    zone avec fantôme invalide, un seul message de refus par geste.
 4. **U7 — Balle suivie** : signaler la balle cible de l'objectif.
@@ -1897,3 +1898,122 @@ className="level-card-description">` après l’état, comme `/levels` (même
   entier, change `button-cap`, `lever-handle`, `second-ball-*` : ses sources ou
   lui ont été retouchés depuis l'export commité ; à éclaircir avant de
   régénérer le reste.
+
+### U1 — Fantôme de placement — fait — commit de cette entrée
+
+- Déroulé : une seule étape, sous-agent Opus (tâche d'interface). Lecture
+  imposée faite ; lus en plus pour le travail : `src/ui/BoardView.tsx`,
+  `src/app/use-board-pointers.ts`, `src/app/BoardShell.tsx`,
+  `src/presentation/board-renderer.ts` et `sprite-loader.ts` (et leurs
+  tests), `src/application/editor-session/editor-session.ts` (forme de la
+  manipulation), `src/app/App.test.tsx` et `e2e/smoke.spec.ts` (tests de
+  l'ancien aperçu), `e2e/player-wires.spec.ts` et `e2e/beam-sprites.spec.ts`
+  (modèles de niveau partagé et de captures), le style `.placement-preview`.
+- Puce citée (`feuille-de-route-luna.md` § 6) : « **U1 — Fantôme de
+  placement** dessiné par le renderer (spéc. complète :
+  `plan-remise-en-jeu.md` § 5 « C1 »). Meilleur candidat pour un premier
+  essai. »
+- Tests ajoutés : `src/app/placement-ghost.test.ts` › `placementGhost (U1)`
+  (6 cas : aucun fantôme hors placement, ni avant la première position, ni
+  pour un déplacement ; candidat valide dans la zone, invalide hors zone ;
+  disparu après confirmation, historique intact avant) ;
+  `src/presentation/board-renderer.test.ts` › « fantôme de placement (U1) »
+  (6 cas : `appearance` projetée ; sprite `beam-medium` à l'empreinte 16 × 1
+  px, `translate` + `rotate(π/4)`, alpha 0,55, autres objets à 1 ; contour
+  plein 2 px bleu après le sprite ; fantôme invalide alpha 0,35, tirets,
+  `#e53935` ; zoom ×2 → sprite ×2, contour toujours 2 px ; rien hors
+  placement) ; `e2e/placement-ghost.spec.ts` (parcours : catalogue → survol
+  dans la zone, `data-placement-ghost="valid"`, la boîte des pixels changés
+  coïncide à 3 px près avec l'empreinte 4 × 0,25 à l'échelle de la caméra →
+  survol hors zone, `invalid`, l'annonce disparaît → retour, toucher, le
+  fantôme disparaît, la poutre posée occupe la même boîte, quantité 0 ; et
+  captures des trois formats). `e2e/smoke.spec.ts` › « affiche un aperçu
+  valide… » vérifie en plus `data-placement-ghost="valid"` et l'absence de
+  `.placement-preview`.
+- Échec initial constaté : Vitest, `expected 1 to be 0.55`, `expected 1 to be
+  0.35`, `expected undefined to be defined` (contour absent), `expected
+  undefined to be 2`, `expected false to be true` (`appearance` absente) —
+  5 rouges sur 6 du bloc renderer (le cas « rien hors placement » passait
+  déjà) ; `Failed to load url ./placement-ghost` ;
+  `App.test.tsx` : `expect(element).not.toBeInTheDocument()` (l'overlay
+  `.placement-preview` existait). Playwright, contre un build de l'ancien code
+  (`git stash` de `src/`, puis restauré) : `toHaveAttribute` attendu
+  `"valid"`, reçu `""`.
+- Tests existants réécrits : `App.test.tsx` › « affiche un aperçu de placement
+  qui suit la souris puis le geste tactile » devient « dessine le fantôme de
+  placement dans le canvas, qui suit la souris puis le geste tactile (U1) » :
+  il lisait `data-position` sur l'overlay `role="img"` supprimé ; il lit
+  désormais `data-placement-ghost(-position)` du canvas, vérifie l'absence
+  d'overlay et ajoute la confirmation au relâcher. `sprite-loader.test.ts` et
+  les sprites factices de `board-renderer.test.ts` portent une `source`
+  (nettoyage C1 § 4, ci-dessous) : les comparaisons d'identité visent
+  `sprite.source`. Aucun test affaibli ni supprimé.
+- Réalisé : `projectLevel(document, simulation?, ghost?)` et
+  `ProjectedBoardObject.appearance` ; le renderer règle `globalAlpha` par
+  apparence et trace le contour du fantôme en dernier, en pixels CSS
+  (`drawGhostOutline`, réutilise `drawFootprintOutline`). `placementGhost`
+  dans `src/app/` déduit le fantôme de la manipulation `placement` ;
+  `BoardView` le passe au renderer et l'expose sur le canvas.
+  `invalidPlacementId` ne sert plus qu'aux déplacements et rotations refusés
+  (comportement inchangé pour eux). Supprimés : l'overlay et ses 99 lignes de
+  CSS, l'état `placementPreview` de `use-board-pointers.ts` (devenu mort :
+  `PlacementPreview`, `placementPreviewFromPointer`, `setPlacementIndicator`,
+  `clearPlacementPreview`). C1 § 4 : `DecodedSprite.source` est obligatoire et
+  le renderer dessine `sprite.source`, sans le repli `sprite.source ?? sprite`.
+- Fichiers touchés hors périmètre : `src/presentation/sprite-loader.ts` (type
+  `DecodedSprite`, demandé par C1 § 4) ; `src/app/BoardShell.tsx` (retrait de
+  la prop et de l'appel morts).
+- Écarts avec la tâche / la spec :
+  1. C1 écrit `projectLevel(document, { ghostPlacementId, isGhostValid })` ;
+     le code avait depuis un second paramètre `simulation` : l'option est le
+     troisième paramètre, mêmes noms de champs.
+  2. C1 demande `setGlobalAlpha` sur le port : le port exposait déjà
+     `globalAlpha` (propriété, utilisée pour les fils) et `setLineDash` ;
+     rien d'ajouté (« n'exposer que ce qui est réellement utilisé »).
+  3. Couleur du contour valide : C1 ne la fixe pas ; repris le bleu de la
+     sélection et de la poignée (`#1e88e5`). Invalide : le rouge déjà utilisé
+     pour une position refusée (`#e53935`), tirets 6/4 comme le contour
+     « à placer ».
+  4. C1 décrit « en survolant le plateau » : au tactile il n'y a pas de
+     survol ; le fantôme suit le doigt pendant l'appui, et la souris au
+     survol (comportement existant de `use-board-pointers`). L'E2E utilise
+     le survol souris pour figer l'état à capturer.
+- Contradictions rencontrées : aucune entre sources d'autorité ; seulement le
+  décalage de signature ci-dessus (spec antérieure au code).
+- Captures inspectées (Read sur les PNG) :
+  `test-results/placement-ghost/ghost-{valid,invalid}-{390x844,844x390,1440x900}.png`.
+  Valide, aux trois formats : une poutre moyenne horizontale (rotation 0,
+  celle d'un nouveau placement), du sprite bois réel et à la longueur de 4 m
+  (environ la moitié de la largeur de la zone bleue de 5 m), un peu
+  translucide (le fond et la teinte de la zone transparaissent), cernée d'un
+  rectangle bleu plein fin ; bien lisible sur le fond beige comme sur la
+  teinte de la zone ; l'annonce « Aperçu de placement valide » en bas à
+  droite du plateau. Invalide : la même poutre hors de la zone, nettement plus
+  pâle, cernée d'un tireté rouge ; pas d'annonce. La distinction ne tient pas
+  qu'à la couleur : trait plein contre tirets, et opacité différente. En
+  390 × 844 la poutre mesure environ 170 px, en 844 × 390 environ 185 px, en
+  1440 × 900 environ 360 px : à l'échelle de la caméra. Le contour garde la
+  même épaisseur à tous les formats.
+- Gate : `pnpm check` passe à la seconde exécution — typecheck, lint,
+  formatage, Knip, contenu (19 documents), 994 tests Vitest en 78 fichiers,
+  build, 58 tests Playwright `mobile` (57 réussis, 1 ignoré). La première
+  s'était arrêtée à Knip (`BoardAppearance` exporté sans usage hors du module,
+  rendu local). Pas d'intermittence D4 ni U15 observée. `tmp/check-levels.ts`
+  (ESLint le refuse) a été déplacé hors du dépôt pendant `pnpm check:fast` et
+  les deux `pnpm check`, puis remis exactement à sa place : SHA-256
+  `1113625e…a92907` et mode 644 identiques avant et après.
+- Non vérifié : un vrai téléphone (le fantôme sous le doigt peut être masqué
+  par le doigt lui-même : rien ne le décale, C1 ne le demande pas) ; les
+  familles autres que la poutre en capture (le renderer est générique, testé
+  sur la poutre) ; le fantôme en mode création (même code, non capturé).
+- Pour l'auteur : validation visuelle des six captures ci-dessus.
+  Questions (tranchées de façon conservatrice, à confirmer) : (1) couleur du
+  contour valide (bleu de sélection) et opacités 0,55/0,35 de C1 vous
+  conviennent-elles ? (2) L'annonce textuelle « Aperçu de placement valide »
+  est gardée pour l'accessibilité (le canvas est muet) ; faut-il aussi
+  annoncer l'état refusé, ou la retirer ? (3) Constaté, préexistant et non
+  touché : pendant l'aperçu, la carte du catalogue affiche déjà « Quantité :
+  0 » (la projection applique la commande de placement), visible en
+  1440 × 900. (4) Un objet déplacé hors zone garde l'ancien rendu (alpha 0,5,
+  contour rouge plein) : l'aligner sur le fantôme invalide relève-t-il de
+  U13 ?

@@ -241,6 +241,9 @@ test.describe('coque sur le petit viewport supporté', () => {
     await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
 
     await expect(page.getByRole('status')).toContainText('Aperçu de placement valide');
+    // U1: the ghost is drawn by the renderer, no DOM overlay sits on the board.
+    await expect(renderer).toHaveAttribute('data-placement-ghost', 'valid');
+    await expect(board.locator('.placement-preview')).toHaveCount(0);
     const renderingWithPreview = await renderer.screenshot();
     expect(renderingWithPreview.equals(renderingBeforePreview)).toBe(false);
   });

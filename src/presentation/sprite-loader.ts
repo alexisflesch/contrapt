@@ -61,7 +61,8 @@ export const spriteThumbnailPath = (thumbnail: SpriteThumbnail): string =>
 export type DecodedSprite = Readonly<{
   readonly width: number;
   readonly height: number;
-  readonly source?: unknown;
+  /** The decoded bitmap handed to the canvas port's `drawImage`. */
+  readonly source: unknown;
 }>;
 
 export type SpriteDecoder = (path: string) => Promise<DecodedSprite>;

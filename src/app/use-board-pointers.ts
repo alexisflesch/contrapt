@@ -77,14 +77,6 @@ const isIdentifierUsed = (document: LevelDocument, id: string): boolean =>
   document.objects.some((placement) => placement.id === id) ||
   document.inventory.some((entry) => entry.id === id);
 
-export interface PlacementPreview {
-  readonly kind: ObjectKind;
-  readonly screenPosition: ScreenPoint;
-  readonly worldPosition: ScreenPoint;
-  readonly isValid: boolean;
-  readonly revision: number;
-}
-
 const unavailablePositionMessage = 'Placement refusé : la position tactile est indisponible.';
 const unavailableViewportMessage = 'Placement refusé : le cadrage du plateau est indisponible.';
 
@@ -101,27 +93,6 @@ const hasFiniteCoordinates = (point: ScreenPoint): boolean =>
   Number.isFinite(point.x) && Number.isFinite(point.y);
 
 const hasUsableZoom = (zoom: number): boolean => Number.isFinite(zoom) && zoom > 0;
-
-const placementPreviewFromPointer = (
-  kind: ObjectKind,
-  point: ScreenPoint,
-  boardRect: BoardOffset,
-  pixelsPerWorldUnit: number,
-  origin: ScreenPoint,
-  isValid: boolean,
-): Omit<PlacementPreview, 'revision'> | null => {
-  if (!hasFiniteCoordinates(point) || !hasUsableZoom(pixelsPerWorldUnit)) return null;
-
-  return {
-    kind,
-    screenPosition: {
-      x: point.x - boardRect.left,
-      y: point.y - boardRect.top,
-    },
-    worldPosition: screenPointToWorld(point, boardRect, pixelsPerWorldUnit, origin),
-    isValid,
-  };
-};
 
 interface PointerPreview {
   readonly session: EditorSession;
@@ -188,16 +159,13 @@ interface UseBoardPointersOptions {
 
 interface BoardPointersController {
   readonly placementTool: PlacementTool | null;
-  readonly placementPreview: PlacementPreview | null;
   readonly activatePlacement: (kind: ObjectKind, source: PlacementSource) => void;
   /** The toolbar's "Annuler le placement" button: cancels the projection and clears the active tool. */
   readonly cancelPlacement: () => void;
   readonly boardPointerHandlers: BoardPointerHandlers;
   /** Clears the active placement tool. Exposed for `use-simulation-runner.ts`, which resets it when a simulation launches. */
   readonly clearPlacementTool: () => void;
-  /** Clears only the placement preview. Exposed for loading a new level, which does not reset the finer-grained gesture-tracking refs. */
-  readonly clearPlacementPreview: () => void;
-  /** Clears the placement preview and every pointer/gesture tracking ref. Exposed for `use-simulation-runner.ts`'s launch/reset transitions. */
+  /** Clears every pointer/gesture tracking ref. Exposed for `use-simulation-runner.ts`'s launch/reset transitions. */
   readonly resetGestureState: () => void;
 }
 
@@ -224,9 +192,7 @@ export function useBoardPointers({
   onWiringTap,
 }: UseBoardPointersOptions): BoardPointersController {
   const [placementTool, setPlacementTool] = useState<PlacementTool | null>(null);
-  const [placementPreview, setPlacementPreview] = useState<PlacementPreview | null>(null);
   const nextPlacementNumber = useRef(1);
-  const placementPreviewRevisionRef = useRef(0);
   const placementToolRef = useRef<PlacementTool | null>(placementTool);
   const hasValidPlacementPreview = useRef(false);
   const activePointer = useRef<{ readonly id: number | null } | null>(null);
@@ -279,12 +245,7 @@ export function useBoardPointers({
     pinchStart.current = null;
   };
 
-  const clearPlacementPreview = (): void => {
-    setPlacementPreview(null);
-  };
-
   const resetGestureState = (): void => {
-    clearPlacementPreview();
     hasValidPlacementPreview.current = false;
     activePointer.current = null;
     capturedPointerId.current = null;
@@ -433,7 +394,6 @@ export function useBoardPointers({
     }
     hasValidPlacementPreview.current = false;
     activePointer.current = null;
-    setPlacementPreview(null);
   };
 
   const cancelPlacement = (): void => {
@@ -470,35 +430,11 @@ export function useBoardPointers({
 
     updateSession(result.session);
     updatePlacementTool({ kind, placementId, source });
-    setPlacementPreview(null);
     hasValidPlacementPreview.current = false;
     activePointer.current = null;
     capturedPointerId.current = null;
     resetBoardGesture();
     setFeedback(null);
-  };
-
-  const setPlacementIndicator = (
-    kind: ObjectKind,
-    point: ScreenPoint,
-    boardRect: BoardOffset,
-    isValid: boolean,
-  ): void => {
-    const preview = placementPreviewFromPointer(
-      kind,
-      point,
-      boardRect,
-      cameraRef.current.pixelsPerWorldUnit,
-      cameraRef.current.origin,
-      isValid,
-    );
-    if (preview === null) {
-      setPlacementPreview(null);
-      return;
-    }
-
-    placementPreviewRevisionRef.current += 1;
-    setPlacementPreview({ ...preview, revision: placementPreviewRevisionRef.current });
   };
 
   const placeAt = (point: ScreenPoint, boardRect: BoardOffset): void => {
@@ -507,13 +443,11 @@ export function useBoardPointers({
 
     if (!hasFiniteCoordinates(point)) {
       hasValidPlacementPreview.current = false;
-      setPlacementPreview(null);
       setFeedback(unavailablePositionMessage);
       return;
     }
     if (!hasUsableZoom(cameraRef.current.pixelsPerWorldUnit)) {
       hasValidPlacementPreview.current = false;
-      setPlacementPreview(null);
       setFeedback(unavailableViewportMessage);
       return;
     }
@@ -548,9 +482,7 @@ export function useBoardPointers({
       }),
     );
     updateSession(result.session);
-    const isValid = result.refusal === null;
-    setPlacementIndicator(activeTool.kind, point, boardRect, isValid);
-    hasValidPlacementPreview.current = isValid;
+    hasValidPlacementPreview.current = result.refusal === null;
     placementRefusal.current = result.refusal;
   };
 
@@ -570,7 +502,6 @@ export function useBoardPointers({
       placementRefusal.current = null;
       const cancelled = cancelEditorManipulation(sessionRef.current);
       if (cancelled.status === 'accepted') updateSession(cancelled.session);
-      setPlacementPreview(null);
       if (refusal !== null) reportRefusal(refusal);
       return;
     }
@@ -580,7 +511,6 @@ export function useBoardPointers({
     if (result.status === 'accepted') {
       updatePlacementTool(null);
       hasValidPlacementPreview.current = false;
-      setPlacementPreview(null);
       setFeedback(null);
     } else {
       reportRefusal(result.reason);
@@ -688,7 +618,6 @@ export function useBoardPointers({
       hasValidPlacementPreview.current = false;
       activePointer.current = null;
       capturedPointerId.current = null;
-      setPlacementPreview(null);
       setFeedback('Placement annulé : le cadrage du plateau a changé.');
     };
 
@@ -719,13 +648,11 @@ export function useBoardPointers({
 
         if (!hasFiniteCoordinates(point)) {
           hasValidPlacementPreview.current = false;
-          setPlacementPreview(null);
           setFeedback(unavailablePositionMessage);
           return;
         }
         if (!hasUsableZoom(cameraRef.current.pixelsPerWorldUnit)) {
           hasValidPlacementPreview.current = false;
-          setPlacementPreview(null);
           setFeedback(unavailableViewportMessage);
           return;
         }
@@ -742,7 +669,6 @@ export function useBoardPointers({
         const boardRect = readCanvasRect();
         if (boardRect === null) {
           hasValidPlacementPreview.current = false;
-          setPlacementPreview(null);
           setFeedback(unavailableViewportMessage);
           return;
         }
@@ -955,12 +881,10 @@ export function useBoardPointers({
 
   return {
     placementTool,
-    placementPreview,
     activatePlacement,
     cancelPlacement,
     boardPointerHandlers,
     clearPlacementTool,
-    clearPlacementPreview,
     resetGestureState,
   };
 }

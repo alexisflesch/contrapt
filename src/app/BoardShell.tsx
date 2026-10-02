@@ -239,7 +239,6 @@ export function BoardShell({
     simulation.disposeSimulationSession();
     updateSession(createEditorSession(mode, createConstructionAttempt(resetDocument)));
     pointers.clearPlacementTool();
-    pointers.clearPlacementPreview();
     simulation.clearAttemptOutcome();
     setIsDrawerOpen(false);
     setIsInspectorOpen(false);
@@ -480,7 +479,6 @@ export function BoardShell({
           simulationStateRef={simulation.simulationStateRef}
           cameraRef={boardCamera.cameraRef}
           boardCanvasRef={boardCamera.boardCanvasRef}
-          placementPreview={pointers.placementPreview}
           boardPointerHandlers={pointers.boardPointerHandlers}
           onZoomIn={boardCamera.zoomIn}
           onZoomOut={boardCamera.zoomOut}

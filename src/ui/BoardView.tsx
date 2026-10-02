@@ -5,7 +5,8 @@ import {
   currentEditorAttempt,
   type EditorSession,
 } from '../application/editor-session/editor-session';
-import type { BoardPointerHandlers, PlacementPreview } from '../app/use-board-pointers';
+import { placementGhost } from '../app/placement-ghost';
+import type { BoardPointerHandlers } from '../app/use-board-pointers';
 import {
   constrainingBuildZones,
   createBoardRenderer,
@@ -214,7 +215,6 @@ interface BoardViewProps {
   readonly simulationStateRef: RefObject<SimulationSnapshot | null>;
   readonly cameraRef: RefObject<Camera>;
   readonly boardCanvasRef: RefObject<HTMLCanvasElement | null>;
-  readonly placementPreview: PlacementPreview | null;
   readonly boardPointerHandlers: BoardPointerHandlers;
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
@@ -224,7 +224,8 @@ interface BoardViewProps {
 
 /**
  * The board itself: the canvas and its sprite-pipeline rendering (ADR 0006,
- * ADR 0007), the placement-preview overlay, and the camera zoom controls.
+ * ADR 0007), including the placement ghost (C1, U1), and the camera zoom
+ * controls.
  * B1 (plan-remise-en-jeu.md § 4) removed the debug "scene objects" pip list
  * that used to sit under the canvas — a leftover pre-A5 inspection layer, not
  * part of the player-facing UI. Tests that need to read or select a placed
@@ -239,7 +240,6 @@ export function BoardView({
   simulationStateRef,
   cameraRef,
   boardCanvasRef,
-  placementPreview,
   boardPointerHandlers,
   onZoomIn,
   onZoomOut,
@@ -255,6 +255,16 @@ export function BoardView({
   const simulationBall = simulationState?.bodies.find(
     (body) => body.placementId === simulationBallId && body.role === 'primary',
   );
+
+  // The placement a gesture projects, drawn as a ghost by the renderer and
+  // exposed for tests and tools like the balls below.
+  const ghost = session.phase === 'construction' ? placementGhost(session) : null;
+  const ghostPlacement =
+    ghost === null
+      ? undefined
+      : currentEditorAttempt(session).document.objects.find(
+          ({ id }) => id === ghost.ghostPlacementId,
+        );
 
   // Which balls the board draws red (the goal's) and blue, exposed for tests
   // and tools: the same projection the renderer draws.
@@ -321,11 +331,14 @@ export function BoardView({
           const simulationAttempt = currentSession.simulationSnapshot;
           const displayedDocument = (simulationAttempt ?? currentEditorAttempt(currentSession))
             .document;
+          const ghostView =
+            currentSession.phase === 'construction' ? placementGhost(currentSession) : null;
           const projection = projectLevel(
             displayedDocument,
             simulationAttempt !== null && simulation !== null
               ? simulationView(simulation)
               : undefined,
+            ghostView ?? undefined,
           );
           const selectedPlacementId = currentSession.selectedPlacementId;
           const projectionWithEffectiveCapabilities =
@@ -343,7 +356,9 @@ export function BoardView({
                   ...(currentSession.mode === 'resolution' && {
                     buildZones: constrainingBuildZones(displayedDocument),
                   }),
+                  // A refused placement is drawn as an invalid ghost instead.
                   ...(manipulation !== null &&
+                    manipulation.kind !== 'placement' &&
                     manipulation.invalidReason !== null && {
                       invalidPlacementId: manipulation.placementId,
                     }),
@@ -411,27 +426,18 @@ export function BoardView({
               .join(' ')}
             data-camera-zoom={String(camera.pixelsPerWorldUnit)}
             data-camera-origin={`${String(camera.origin.x)},${String(camera.origin.y)}`}
+            data-placement-ghost={
+              ghost === null ? undefined : ghost.isGhostValid ? 'valid' : 'invalid'
+            }
+            data-placement-ghost-position={
+              ghostPlacement === undefined
+                ? undefined
+                : `${String(ghostPlacement.transform.position.x)},${String(
+                    ghostPlacement.transform.position.y,
+                  )}`
+            }
           />
-          {placementPreview !== null && session.phase === 'construction' && (
-            <div
-              className={`placement-preview placement-preview-${placementPreview.kind.toLowerCase()}${
-                placementPreview.isValid ? '' : ' placement-preview-invalid'
-              }`}
-              role="img"
-              aria-label={`Aperçu de placement : ${placementPreview.kind}`}
-              data-position={`${String(placementPreview.worldPosition.x)},${String(
-                placementPreview.worldPosition.y,
-              )}#${String(placementPreview.revision)}`}
-              data-valid={placementPreview.isValid}
-              style={{
-                left: `${String(placementPreview.screenPosition.x)}px`,
-                top: `${String(placementPreview.screenPosition.y)}px`,
-              }}
-            >
-              <span aria-hidden="true" />
-            </div>
-          )}
-          {placementPreview?.isValid === true && session.phase === 'construction' && (
+          {ghost?.isGhostValid === true && (
             <p className="placement-preview-status" role="status">
               Aperçu de placement valide
             </p>

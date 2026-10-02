@@ -426,7 +426,7 @@ describe('coque TinkerBolt', () => {
     }
   });
 
-  it('affiche un aperçu de placement qui suit la souris puis le geste tactile', () => {
+  it('dessine le fantôme de placement dans le canvas, qui suit la souris puis le geste tactile (U1)', () => {
     render(<App />);
     openEmbeddedWorkshop();
 
@@ -434,9 +434,8 @@ describe('coque TinkerBolt', () => {
     fireEvent.click(screen.getByRole('button', { name: /Masse/ }));
 
     const board = screen.getByRole('region', { name: 'Plateau de jeu' });
-    expect(
-      screen.queryByRole('img', { name: 'Aperçu de placement : Masse' }),
-    ).not.toBeInTheDocument();
+    const canvas = within(board).getByRole('img', { name: 'Rendu du plateau' });
+    expect(canvas).not.toHaveAttribute('data-placement-ghost');
 
     firePointerEvent(board, 'pointermove', {
       pointerId: 1,
@@ -445,9 +444,11 @@ describe('coque TinkerBolt', () => {
       clientY: 100,
     });
 
-    const preview = screen.getByRole('img', { name: 'Aperçu de placement : Masse' });
-    expect(preview).toBeVisible();
-    const initialPosition = preview.getAttribute('data-position');
+    // The ghost is drawn by the renderer: no DOM overlay sits on the board.
+    expect(board.querySelector('.placement-preview')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Aperçu de placement/ })).not.toBeInTheDocument();
+    expect(canvas).toHaveAttribute('data-placement-ghost', 'valid');
+    const initialPosition = canvas.getAttribute('data-placement-ghost-position');
     expect(initialPosition).not.toBeNull();
 
     firePointerEvent(board, 'pointermove', {
@@ -457,8 +458,8 @@ describe('coque TinkerBolt', () => {
       clientY: 180,
     });
 
-    expect(preview).toHaveAttribute('data-position');
-    const mousePosition = preview.getAttribute('data-position');
+    const mousePosition = canvas.getAttribute('data-placement-ghost-position');
+    expect(mousePosition).not.toBeNull();
     expect(mousePosition).not.toBe(initialPosition);
 
     firePointerEvent(board, 'pointerdown', {
@@ -470,11 +471,23 @@ describe('coque TinkerBolt', () => {
     firePointerEvent(board, 'pointermove', {
       pointerId: 2,
       pointerType: 'touch',
-      clientX: 260,
-      clientY: 180,
+      clientX: 200,
+      clientY: 140,
     });
 
-    expect(preview.getAttribute('data-position')).not.toBe(mousePosition);
+    expect(canvas.getAttribute('data-placement-ghost-position')).not.toBe(mousePosition);
+    expect(board.querySelector('.placement-preview')).not.toBeInTheDocument();
+
+    firePointerEvent(board, 'pointerup', {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 200,
+      clientY: 140,
+    });
+
+    // Committed: the object is solid, the ghost is gone.
+    expect(canvas).not.toHaveAttribute('data-placement-ghost');
+    expect(canvas).not.toHaveAttribute('data-placement-ghost-position');
   });
 
   it('replie le catalogue sans superposer de texte dans la zone de construction', () => {

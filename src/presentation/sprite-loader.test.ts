@@ -32,6 +32,7 @@ type DecodedBitmapFixture = Readonly<{
 type DecodedSpriteFixture = Readonly<{
   readonly width: number;
   readonly height: number;
+  readonly source: string;
 }>;
 
 interface Deferred<T> {
@@ -189,6 +190,7 @@ describe('sprite loader contract', () => {
       decodedByPath.set(path, {
         width: 64 * scale,
         height: 48 * scale,
+        source: path,
       });
     }
 
@@ -242,7 +244,7 @@ describe('sprite loader contract', () => {
       for (const asset of spriteAssetsForFamily(family)) {
         const path = spriteAssetPath(asset, 2);
         pendingByPath.set(path, createDeferred<DecodedSpriteFixture>());
-        decodedByPath.set(path, { width: 128, height: 96 });
+        decodedByPath.set(path, { width: 128, height: 96, source: path });
       }
     }
 
@@ -278,7 +280,7 @@ describe('sprite loader contract', () => {
 
   it('retries a failed asset on the next request and becomes ready after success', async () => {
     const failedPath = spriteAssetPath('mass-10kg', 2);
-    const sprite: DecodedSpriteFixture = { width: 128, height: 96 };
+    const sprite: DecodedSpriteFixture = { width: 128, height: 96, source: 'bitmap' };
     let attempts = 0;
     const decoder = vi.fn((path: string): Promise<DecodedSpriteFixture> => {
       expect(path).toBe(failedPath);
@@ -322,7 +324,7 @@ describe('sprite loader contract', () => {
       if (path === failedPath) {
         return Promise.reject(new Error('Décodage impossible'));
       }
-      return Promise.resolve({ width: 192, height: 144 });
+      return Promise.resolve({ width: 192, height: 144, source: path });
     });
     const loader = createSpriteLoader({ scale: 3, decode: decoder });
 

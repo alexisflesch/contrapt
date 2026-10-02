@@ -171,6 +171,18 @@ type ProjectedLayer = Readonly<{
   readonly spin?: Readonly<{ readonly angle: number; readonly squash: number }>;
 }>;
 
+/**
+ * How an object is drawn: `solid` for every placed object, `ghost-valid` and
+ * `ghost-invalid` for the placement a gesture is projecting (C1, U1).
+ */
+type BoardAppearance = 'solid' | 'ghost-valid' | 'ghost-invalid';
+
+/** The placement to draw as a ghost, and whether its position can be committed. */
+export type BoardGhost = Readonly<{
+  readonly ghostPlacementId: string;
+  readonly isGhostValid: boolean;
+}>;
+
 export type ProjectedBoardObject = Readonly<{
   readonly id: string;
   readonly family: SpriteFamily;
@@ -186,6 +198,8 @@ export type ProjectedBoardObject = Readonly<{
   /** Whole-object footprint in world units, relative to `position`, for selection and framing. */
   readonly destination: BoardDestination;
   readonly layer: ProjectedLayer;
+  /** Presentation only: a ghost is the placement being projected, never a document state. */
+  readonly appearance: BoardAppearance;
 }>;
 
 type BoardProjection = Readonly<{
@@ -576,14 +590,21 @@ export const withAuthorRotation = (
 export const constrainingBuildZones = (document: LevelDocument): readonly BoardZone[] =>
   isPlacementUnconstrained(document) ? [] : document.buildZones;
 
+const appearanceOf = (id: string, ghost: BoardGhost | undefined): BoardAppearance => {
+  if (ghost?.ghostPlacementId !== id) return 'solid';
+  return ghost.isGhostValid ? 'ghost-valid' : 'ghost-invalid';
+};
+
 /**
  * Projects a document on the board. `simulation` is given while a
  * simulation runs: moving bodies, belts and wires then follow it, while the
- * document itself is never rewritten.
+ * document itself is never rewritten. `ghost` names the placement a gesture
+ * is projecting, drawn translucent (C1).
  */
 export const projectLevel = (
   document: LevelDocument,
   simulation?: BoardSimulationView,
+  ghost?: BoardGhost,
 ): BoardProjection => {
   const objects = document.objects
     .flatMap((object, documentIndex) =>
@@ -604,6 +625,7 @@ export const projectLevel = (
           rotatable: object.permissions.rotate,
           destination: footprintForObject(object),
           layer: projectLayer(object, assetKey, simulation),
+          appearance: appearanceOf(object.id, ghost),
         },
       })),
     )
@@ -680,6 +702,15 @@ const INVALID_OUTLINE = '#e53935';
 const TO_PLACE_OUTLINE = '#6a1b9a';
 const TO_PLACE_DASH_CSS_PIXELS = [6, 4];
 const INVALID_OBJECT_ALPHA = 0.5;
+/** C1: a ghost shows the object it will become, see-through; a refused one fades further. */
+const GHOST_ALPHA: Record<BoardAppearance, number> = {
+  solid: 1,
+  'ghost-valid': 0.55,
+  'ghost-invalid': 0.35,
+};
+/** The selection and rotation handle's blue: a valid ghost is outlined like a selection. */
+const GHOST_VALID_OUTLINE = '#1e88e5';
+const GHOST_INVALID_DASH_CSS_PIXELS = [6, 4];
 
 const drawBuildZones = (
   context: BoardCanvasContext,
@@ -856,6 +887,29 @@ const drawSelection = (
   drawRotationHandle(context, object, viewport);
 };
 
+/**
+ * C1: the ghost's footprint, outlined in CSS pixels so the stroke keeps its
+ * width at any zoom; solid when the position is valid, dashed in the warning
+ * colour when it is refused, so the two states differ by more than colour.
+ */
+const drawGhostOutline = (
+  context: BoardCanvasContext,
+  projection: BoardProjection,
+  viewport: BoardViewport,
+): void => {
+  const ghost = projection.objects.find(({ appearance }) => appearance !== 'solid');
+  if (ghost === undefined) return;
+
+  context.save();
+  if (ghost.appearance === 'ghost-invalid') {
+    context.setLineDash?.(GHOST_INVALID_DASH_CSS_PIXELS);
+    drawFootprintOutline(context, ghost, viewport, INVALID_OUTLINE);
+  } else {
+    drawFootprintOutline(context, ghost, viewport, GHOST_VALID_OUTLINE);
+  }
+  context.restore();
+};
+
 export const createBoardRenderer = ({
   canvas,
   context,
@@ -893,7 +947,10 @@ export const createBoardRenderer = ({
       const { x, y, width, height } = destinationToPixels(object.layer.destination, viewport);
 
       context.save();
-      if (object.id === projection.invalidPlacementId) context.globalAlpha = INVALID_OBJECT_ALPHA;
+      if (object.appearance !== 'solid') context.globalAlpha = GHOST_ALPHA[object.appearance];
+      else if (object.id === projection.invalidPlacementId) {
+        context.globalAlpha = INVALID_OBJECT_ALPHA;
+      }
       context.translate(position.x, position.y);
       context.rotate(object.layer.rotation);
       if (object.layer.mirrored === true) context.scale(-1, 1);
@@ -902,7 +959,7 @@ export const createBoardRenderer = ({
         context.scale(spin.squash, 1);
         context.rotate(spin.angle);
       }
-      const image = sprite.source !== undefined ? sprite.source : sprite;
+      const image = sprite.source;
       const region = object.layer.source;
       if (region === undefined) {
         context.drawImage(image, x, y, width, height);
@@ -933,8 +990,12 @@ export const createBoardRenderer = ({
       drawSelection(context, selection, viewport);
     }
 
+    drawGhostOutline(context, projection, viewport);
+
     // Drawn last so the refused footprint stays red over the selection frame.
-    const invalid = projection.objects.find(({ id }) => id === projection.invalidPlacementId);
+    const invalid = projection.objects.find(
+      ({ id, appearance }) => id === projection.invalidPlacementId && appearance === 'solid',
+    );
     if (invalid !== undefined) drawFootprintOutline(context, invalid, viewport, INVALID_OUTLINE);
   },
 });
