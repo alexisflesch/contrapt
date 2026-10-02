@@ -17,8 +17,10 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   part dans un sous-agent neuf, une à la fois, avec pour consigne de lire
   `AGENTS.md`, `docs/index.md`, ce fichier (§ 1 à 3, la tâche, le journal),
   `docs/etat.md` et les ADR citées, puis de faire un commit par tâche.
-  **Sonnet pour une tâche sans changement visible, Opus pour une tâche
-  d'interface** (choix de l'auteur). Entre deux tâches, la session principale
+  **Opus pour le gros raisonnement et l'UI/UX, Sonnet pour l'écriture de
+  code** (choix de l'auteur, 2 octobre 2026, qui remplace « Sonnet sans
+  changement visible, Opus pour l'interface ») ; une tâche qui mêle les deux
+  est découpée en étapes successives, un seul commit à la fin. Entre deux tâches, la session principale
   relit le rapport et le diff, regarde au moins une capture, tranche les
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
