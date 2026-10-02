@@ -93,6 +93,46 @@ describe('dépôt local des préférences (ADR 0011, ADR 0016 § Pseudo)', () =>
     });
   });
 
+  it('retient le refus de l’invitation d’installation, à côté des autres préférences (U10)', () => {
+    const storage = new MemoryStorage();
+    const repository = createLocalStoragePreferencesRepository(storage);
+
+    expect(
+      repository.save({
+        author: 'Lili',
+        firstLevelHintDone: true,
+        installInvitationDeclined: true,
+      }),
+    ).toEqual({ status: 'ok' });
+    expect(JSON.parse(storage.getItem(preferencesKey) ?? 'null')).toEqual({
+      kind: 'preferences',
+      version: 1,
+      data: { author: 'Lili', firstLevelHintDone: true, installInvitationDeclined: true },
+    });
+    expect(repository.load()).toEqual({
+      status: 'ok',
+      preferences: { author: 'Lili', firstLevelHintDone: true, installInvitationDeclined: true },
+    });
+  });
+
+  it('relit à l’identique des préférences écrites avant U10, sans refus d’installation', () => {
+    const storage = new MemoryStorage();
+    const before = JSON.stringify({
+      kind: 'preferences',
+      version: 1,
+      data: { author: 'Lili', firstLevelHintDone: true },
+    });
+    storage.seed(preferencesKey, before);
+    const repository = createLocalStoragePreferencesRepository(storage);
+
+    expect(repository.load()).toEqual({
+      status: 'ok',
+      preferences: { author: 'Lili', firstLevelHintDone: true },
+    });
+    expect(storage.writes).toEqual([]);
+    expect(storage.getItem(preferencesKey)).toBe(before);
+  });
+
   it('relit à l’identique des préférences écrites avant U8, sans l’aide du niveau 1', () => {
     const storage = new MemoryStorage();
     const before = JSON.stringify({ kind: 'preferences', version: 1, data: { author: 'Lili' } });
@@ -127,6 +167,10 @@ describe('dépôt local des préférences (ADR 0011, ADR 0016 § Pseudo)', () =>
     [
       'aide du niveau 1 invalide',
       JSON.stringify({ kind: 'preferences', version: 1, data: { firstLevelHintDone: false } }),
+    ],
+    [
+      'refus d’installation invalide',
+      JSON.stringify({ kind: 'preferences', version: 1, data: { installInvitationDeclined: 1 } }),
     ],
     [
       'champ inconnu',

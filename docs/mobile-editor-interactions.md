@@ -74,6 +74,18 @@ ni la barre d'actions ; elle se tait pendant la simulation ; un toucher sur
 « Masquer l'aide » ou la première pose la retire pour de bon (préférence
 locale, ADR 0011).
 
+Quand une nouvelle version de l’application attend (U10, ADR 0012), une carte
+discrète « Nouvelle version disponible. » propose « Mettre à jour » et une
+croix « Plus tard ». Sur le plateau, elle occupe le même emplacement réservé que
+l’aide, se tait pendant la simulation et pendant un geste, et n’apparaît que
+tant qu’aucune commande n’a été validée sur ce plateau (le rechargement ne doit
+rien perdre) ; elle est aussi en tête de l’accueil. Rien ne recharge sans le
+toucher « Mettre à jour ». Quand le navigateur permet l’installation
+(`beforeinstallprompt`, Chrome sur Android), l’accueil seul montre « Installe
+TinkerBolt pour le retrouver comme une application, même hors ligne. » avec
+« Installer » et une croix « Ne pas installer » ; un refus est retenu
+(préférence locale). Ailleurs, par exemple sur iOS, rien n’est montré.
+
 En portrait sur téléphone, le catalogue est un tiroir bas avec au moins deux
 positions : replié et ouvert. En paysage, l'hypothèse initiale est un tiroir
 latéral afin de conserver la hauteur du plateau. Le contenu, l'ordre de focus et

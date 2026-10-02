@@ -138,3 +138,13 @@ migration (tests de l’adaptateur pour l’ancienne et la nouvelle forme). Une
 version de l’application antérieure à U8 (PWA en cache) lirait le nouveau champ
 comme invalide, la sauvegarderait sous `tinkerbolt:backup:preferences` et
 oublierait le pseudo.
+
+## Amendement du 2 octobre 2026 — refus de l’installation (U10)
+
+`tinkerbolt:preferences` porte un troisième champ facultatif,
+`installInvitationDeclined: true`, écrit quand le joueur refuse l’invitation
+d’installation (ADR 0012, amendement du même jour). Mêmes règles que
+`firstLevelHintDone` : seule la valeur `true` est valide, l’enveloppe reste en
+version 1 sans migration (tests de l’adaptateur pour l’ancienne et la nouvelle
+forme), et toute écriture d’un champ conserve les autres. Même conséquence
+assumée pour une version antérieure de l’application en cache.

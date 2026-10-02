@@ -55,12 +55,14 @@ const rememberedPseudo = (preferences: PreferencesRepository): string => {
 
 const rememberPseudo = (preferences: PreferencesRepository, author: string | undefined): void => {
   try {
-    // U8: the other preferences (level 1's hint) are kept as they were.
+    // U8, U10: the other preferences (level 1's hint, the declined install) are kept as they were.
     const loaded = preferences.load();
-    const kept: Preferences =
-      loaded.status === 'ok' && loaded.preferences.firstLevelHintDone === true
-        ? { firstLevelHintDone: true }
-        : {};
+    const { firstLevelHintDone, installInvitationDeclined }: Preferences =
+      loaded.status === 'ok' ? loaded.preferences : {};
+    const kept: Preferences = {
+      ...(firstLevelHintDone === undefined ? {} : { firstLevelHintDone }),
+      ...(installInvitationDeclined === undefined ? {} : { installInvitationDeclined }),
+    };
     preferences.save(author === undefined ? kept : { ...kept, author });
   } catch {
     // Best effort, like the result it would have returned: the export already happened.

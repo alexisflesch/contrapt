@@ -13,7 +13,9 @@ import { Link } from 'react-router-dom';
 import { campaignChapters, embeddedLevels } from '../content/embedded-levels';
 import { spriteThumbnailPath } from '../presentation/sprite-loader';
 import { AppFrame } from '../ui/AppFrame';
+import { PwaInvitation } from '../ui/PwaInvitation';
 import { useCampaignProgress } from './use-campaign-progress';
+import { usePwaInvitation } from './use-pwa-invitation';
 
 /** Decorative composition using the same local artwork as the game. */
 function WorkshopIllustration() {
@@ -43,6 +45,7 @@ function WorkshopIllustration() {
 
 export function HomePage() {
   const { levels, storageError, storageWarning } = useCampaignProgress();
+  const pwaInvitation = usePwaInvitation(null);
   const resolvedCount = embeddedLevels.filter(
     (level) => levels[level.id]?.resolved === true,
   ).length;
@@ -65,6 +68,13 @@ export function HomePage() {
   return (
     <AppFrame title="Accueil" subtitle="À toi d’inventer" variant="page">
       <div className="page-content home-page">
+        {pwaInvitation !== null && (
+          <PwaInvitation
+            kind={pwaInvitation.kind}
+            onAccept={pwaInvitation.onAccept}
+            onDismiss={pwaInvitation.onDismiss}
+          />
+        )}
         <section className="home-hero" aria-labelledby="home-title">
           <div className="home-hero-copy">
             <p className="home-kicker">

@@ -27,7 +27,10 @@ import { Dialog } from '../ui/Dialog';
 import { SimulationControls } from '../ui/SimulationControls';
 import { CalibrationGuide } from '../ui/CalibrationGuide';
 import { FirstLevelHint } from '../ui/FirstLevelHint';
+import { PwaInvitation } from '../ui/PwaInvitation';
 import { firstLevelHintStep } from './first-level-hint';
+import { usePwaInvitation } from './use-pwa-invitation';
+import { usePwaUpdateStatus } from './use-pwa-update-status';
 import { useBoardCamera } from './use-board-camera';
 import { placementSourceKey, useBoardPointers } from './use-board-pointers';
 import { LevelExportDialog } from './LevelExportDialog';
@@ -171,6 +174,10 @@ export function BoardShell({
     firstLevelHint === undefined
       ? null
       : firstLevelHintStep({ phase: session.phase, hasLaunched, hasActed });
+  // U10 (ADR 0012): a waiting update is offered only in a safe phase, and
+  // only while its reload would lose nothing (no command on this board yet).
+  const isUpdateOfferable = usePwaUpdateStatus(session);
+  const pwaInvitation = usePwaInvitation({ isUpdateOfferable, hasUnsavedConstruction: hasActed });
   const onHintDoneRef = useRef(firstLevelHint?.onDone);
   useEffect(() => {
     onHintDoneRef.current = firstLevelHint?.onDone;
@@ -511,6 +518,13 @@ export function BoardShell({
           onWheelZoom={boardCamera.zoomWithWheel}
         />
         <div className="status-slot">
+          {pwaInvitation !== null && (
+            <PwaInvitation
+              kind={pwaInvitation.kind}
+              onAccept={pwaInvitation.onAccept}
+              onDismiss={pwaInvitation.onDismiss}
+            />
+          )}
           {hintStep !== null && firstLevelHint !== undefined && (
             <FirstLevelHint step={hintStep} onDismiss={firstLevelHint.onDone} />
           )}

@@ -539,6 +539,18 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   précache l’application et ses assets ; les routes de jeu et d’atelier ont un
   repli hors ligne. Le hook `usePwaUpdateStatus(phase)` expose une mise à jour en
   attente seulement pendant une phase sûre, hors simulation et manipulation.
+- **U10 — invitations PWA** (2 octobre 2026, validation visuelle attendue) :
+  une carte « Nouvelle version disponible. » avec « Mettre à jour » et « Plus
+  tard » se montre en tête de l’accueil et, sur un plateau, dans l’emplacement
+  réservé, en phase sûre et tant qu’aucune commande n’y a été validée (le
+  rechargement ne perd rien) ; rien ne recharge sans le toucher. À l’accueil
+  seulement, quand le navigateur émet `beforeinstallprompt`, une carte propose
+  « Installer » (demande du navigateur) ou « Ne pas installer » ; un refus est
+  retenu (`installInvitationDeclined`, préférences v1, ADR 0012 et 0011,
+  amendements du 2 octobre 2026). Sans l’événement (iOS…), rien n’est montré.
+  Décision pure `pwaInvitation`, port de service worker injectable
+  (`RegisterServiceWorker`) ; E2E `e2e/pwa-invitation.spec.ts` sur le build
+  réel (nouvelle version enregistrée sur la même portée, événement simulé).
 - **U27 — icônes d’interface** : les pictogrammes d’action, de navigation, de cadrage, de catalogue, d’export et de résultat utilisent `lucide-react` (ADR 0014). Les libellés accessibles restent inchangés.
 - **U6 — recommencer et remise à zéro de l’atelier** : pendant la simulation,
   une seule commande « Recommencer » est visible ; dans l’atelier, « Ràz atelier »
@@ -740,8 +752,11 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 - **PWA L28.** `vite-plugin-pwa` 1.3.0 et Workbox 7.4.1 produisent le manifeste,
   les icônes provisoires, le précache (environ 10 Mio) et le service worker de
   production. Le test E2E confirme l’ouverture du niveau 1 après rechargement hors
-  ligne. La proposition visible d’installation et de mise à jour (U10) reste un
-  travail d’interface.
+  ligne. Les invitations visibles de mise à jour et d’installation sont livrées
+  (U10). Limite : sur un plateau où une commande a été validée, la mise à jour
+  n’est proposée qu’en revenant à l’accueil ou en ouvrant un autre plateau ; le
+  rechargement effectif après « Mettre à jour » n’est vérifié que par le test
+  applicatif (action injectée appelée), pas dans le navigateur.
 - **Retest du Xiaomi après L2c.** Le vieux téléphone avait exigé un rechargement
   de `/bench/play`. Le chargeur retente maintenant un asset en échec lors des
   rendus suivants, au plus trois fois ; le comportement doit encore être vérifié
@@ -805,13 +820,20 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
 
 ## Dernière exécution de la gate
 
-`pnpm check` après U8 (2 octobre 2026) : passe du premier coup —
-typecheck, lint, formatage, Knip, contenu (19 documents), 1025 tests Vitest
-(80 fichiers), build Vite/PWA et 65 tests Playwright `mobile` (64 réussis,
-1 ignoré). Pas d’intermittence D4 ni U15 observée. Le fichier d’essai de
+`pnpm check` après U10 (2 octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 1049 tests Vitest (81 fichiers),
+build Vite/PWA et 69 tests Playwright `mobile` (68 réussis, 1 ignoré). Une
+première exécution s’était arrêtée à Knip (type exporté inutilisé), corrigé
+avant la gate verte. Pas d’intermittence D4 ni U15 observée. Le fichier d’essai de
 l’auteur `tmp/check-levels.ts` a été écarté du dépôt le temps de la gate
 (ESLint le refuse), puis remis à l’identique (SHA-256 `1113625e…a92907` et
 mode 644 vérifiés).
+
+`pnpm check` après U8 (2 octobre 2026) : passe du premier coup —
+typecheck, lint, formatage, Knip, contenu (19 documents), 1025 tests Vitest
+(80 fichiers), build Vite/PWA et 65 tests Playwright `mobile` (64 réussis,
+1 ignoré). Pas d’intermittence D4 ni U15 observée. `tmp/check-levels.ts`
+écarté puis remis à l’identique.
 
 `pnpm check` après U7 (2 octobre 2026) : passe du premier coup —
 typecheck, lint, formatage, Knip, contenu (19 documents), 1009 tests Vitest

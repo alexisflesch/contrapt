@@ -28,7 +28,7 @@ import {
   PreferencesRepositoryContext,
   unavailablePreferencesRepository,
 } from './preferences-repository-context';
-import { PwaUpdateProvider } from './PwaUpdateProvider';
+import { PwaUpdateProvider, type RegisterServiceWorker } from './PwaUpdateProvider';
 import {
   ReceivedLevelRepositoryContext,
   unavailableReceivedLevelRepository,
@@ -57,6 +57,8 @@ interface AppProps {
    * revealed and the calibration guide shows. `false` by default.
    */
   readonly developmentMode?: boolean;
+  /** U10: replaces the production service worker registration (tests only). */
+  readonly registerServiceWorker?: RegisterServiceWorker;
 }
 
 const unavailableProgressRepository: ProgressRepository = {
@@ -108,6 +110,7 @@ export function App({
   preferencesRepository,
   unlockAllLevels = false,
   developmentMode = false,
+  registerServiceWorker,
 }: AppProps = {}) {
   const [browserDraftRepository] = useState(() =>
     draftRepository === undefined ? createBrowserDraftRepository() : unavailableDraftRepository,
@@ -130,7 +133,7 @@ export function App({
   const repository = progressRepository ?? browserProgressRepository;
 
   return (
-    <PwaUpdateProvider>
+    <PwaUpdateProvider registerServiceWorker={registerServiceWorker}>
       <DevelopmentModeContext value={developmentMode}>
         <CampaignProgressProvider repository={repository} unlockAllLevels={unlockAllLevels}>
           <DraftRepositoryContext value={draftRepository ?? browserDraftRepository}>

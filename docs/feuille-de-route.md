@@ -11,8 +11,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
 ## Point de reprise (fin de session du 1er octobre 2026)
 
-- **Phase 1 terminée ; phase 2 commencée : U12, U1, U13, U7 et U8 faites (2
-  octobre 2026), prochaine tâche U10.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
+- **Phase 1 terminée ; phase 2 commencée : U12, U1, U13, U7, U8 et U10 faites (2
+  octobre 2026), prochaine tâche U11.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
   2026, qui livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
   2 octobre 2026). `pnpm check` était vert au dernier commit.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
@@ -27,9 +27,10 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
 - **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b,
-  de U12, de U1, de U13, de U7 et de U8 (`test-results/`, dont `test-results/beam-sprites/`,
+  de U12, de U1, de U13, de U7, de U8 et de U10 (`test-results/`, dont `test-results/beam-sprites/`,
   `test-results/placement-ghost/`, `test-results/build-zones/`,
-  `test-results/goal-ball/` et `test-results/first-level-hint/`) ; relecture des documents de M15 (entrée du journal) ;
+  `test-results/goal-ball/`, `test-results/first-level-hint/` et
+  `test-results/pwa-invitation/`) ; relecture des documents de M15 (entrée du journal) ;
   questions de goût listées dans les entrées M12 à M14b du journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
   la phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
@@ -417,8 +418,8 @@ validation visuelle pour chacune.
    visuelle attendue.
 5. ~~U8 — Aide du niveau 1~~ : faite le 2 octobre 2026 (journal U8) ;
    validation visuelle attendue.
-6. **U10 — Invitation de mise à jour et d'installation** de la PWA, branchée sur
-   `usePwaUpdateStatus` (phase sûre uniquement).
+6. ~~U10 — Invitation de mise à jour et d'installation~~ : faite le 2 octobre
+   2026 (journal U10) ; validation visuelle attendue.
 7. **U11 — Paramètres** : `/settings` est une page provisoire ; y mettre
    « Réinitialiser la progression » (confirmation destructive) et le pseudo
    retenu (M14), modifiable et effaçable.
@@ -2363,3 +2364,131 @@ className="level-card-description">` après l’état, comme `/levels` (même
   dock étroit : acceptable, ou faut-il un texte plus court ? (5) Les niveaux
   de `levels/` (tutoriels) remplaceront la campagne : l'aide vise l'indice 0
   de la campagne embarquée, quel que soit son identifiant.
+
+### U10 — Invitation de mise à jour et d’installation — fait — commit de cette entrée
+
+- Déroulé : une seule étape, sous-agent Opus (tâche d’interface). Lecture
+  imposée faite ; lus en plus pour le travail : le code PWA de L28
+  (`PwaUpdateProvider.tsx`, `pwa-update-context.ts`, `pwa-update-state.ts`,
+  `use-pwa-update-status.ts`, leurs tests, `test/fixtures/pwa-register.ts`,
+  `vite.config.ts`, `e2e/pwa.spec.ts`, `playwright.config.ts`), le client
+  `registerSW` de `vite-plugin-pwa` (pour savoir quand il recharge), `App.tsx`,
+  `HomePage.tsx`, `BoardShell.tsx`, `PlayLevelPage.tsx` (la tentative de
+  campagne est-elle enregistrée ? non), `FirstLevelHint.tsx` et les règles
+  `.board-hint` / `.status-slot`, le port et l’adaptateur des préférences,
+  `LevelExportDialog.tsx`, ADR 0011 (amendement U8), `e2e/first-level-hint.spec.ts`
+  (modèle).
+- Puce citée (`feuille-de-route-luna.md` § 6) : « **U10 — Invitation de mise à
+  jour et installation** de la PWA (L28). » Entrée L28 lue : « Le hook expose
+  uniquement l’état disponible et le masque pendant une simulation ou un geste.
+  L’invitation visible d’installation ou de mise à jour est U10 et reste
+  différée. »
+- État trouvé : `usePwaUpdateStatus(phase)` et `canPromptUpdate` existaient
+  (L28) mais n’étaient appelés par aucun écran ; aucun `beforeinstallprompt`
+  dans le code ; la fonction de mise à jour rendue par `registerSW` était jetée.
+  Rien de U10 dans `git log`.
+- Tests ajoutés : `src/app/pwa-invitation.test.ts` › `pwaInvitation (U10)` (7
+  cas : rien sans mise à jour ni événement ; mise à jour à l’accueil et sur un
+  plateau intact ; pas sur un plateau dont la construction serait perdue ;
+  « Plus tard » ; installation à l’accueil seulement ; refus retenu ; priorité
+  de la mise à jour) ; `PwaUpdateProvider.test.tsx` › « expose la mise à jour
+  en attente en phase sûre, et la tait en simulation ou pendant un geste »,
+  « n’applique la mise à jour que sur demande », « oublie l’invitation de mise
+  à jour le temps de la visite… », et `invitation d’installation PWA (U10)` (4
+  cas : rien sans événement ; événement retenu, `preventDefault`, demande
+  ouverte une fois ; refus rapporté ; événement sans `prompt` ignoré et
+  `appinstalled`) ; `local-storage-preferences-repository.test.ts` › « retient
+  le refus de l’invitation d’installation… », « relit à l’identique des
+  préférences écrites avant U10… » et le cas « refus d’installation invalide » ;
+  `LevelExportDialog.test.tsx` › « retient le pseudo sans oublier le refus de
+  l’invitation d’installation (U10) » ; `App.test.tsx` › six tests (U10) :
+  mise à jour à l’accueil appliquée seulement au toucher ; sur le plateau, dans
+  `.status-slot`, absente pendant la simulation, de retour après
+  « Recommencer », « Plus tard » ; absente après une pose ; installation à
+  l’accueil seulement après l’événement, « Installer » ouvre la demande ;
+  refus retenu après remontage ; refus donné dans la demande du navigateur
+  retenu ; `e2e/pwa-invitation.spec.ts` (390 × 844 au toucher, build réel :
+  une seconde version du service worker enregistrée sur la même portée
+  déclenche `onNeedRefresh`, la carte apparaît à l’accueil puis à côté du
+  plateau sans recouvrir plateau ni actions, disparaît pendant la simulation,
+  revient, « Plus tard » ; événement `beforeinstallprompt` simulé, « Ne pas
+  installer », `localStorage` contient `{ installInvitationDeclined: true }`,
+  absente au rechargement ; captures aux trois formats).
+- Échec initial constaté : Vitest, `Failed to load url ./pwa-invitation`,
+  `Failed to resolve import "./use-pwa"` ; adaptateur : `expected { status:
+  'error', …(1) } to deeply equal { status: 'ok' }` ; export : `expected [ {
+  firstLevelHintDone: true, …(1) } ] to deeply equal [ { author: 'Noé', …(2) }
+  ]` ; `App.test.tsx` : `Unable to find role="region" and name "Mise à jour de
+  TinkerBolt"` (×3), `Invitation d’installation absente.` (×3). Playwright,
+  contre un build de l’ancien code (`git stash` des fichiers de production,
+  restaurés, `diff -r` identique) : `toBeVisible()` — `Received: <element(s)
+  not found>`, pour les quatre tests.
+- Tests existants réécrits : `PwaUpdateProvider.test.tsx` › « expose false tant
+  qu’aucune mise à jour… » est inchangé (seuls les imports du fichier ont
+  bougé). Aucun test affaibli ni supprimé.
+- Réalisé : `PwaUpdateProvider` reçoit un port injectable
+  `registerServiceWorker` (par défaut `registerSW` en production), garde la
+  fonction de mise à jour qu’il rend et ne l’appelle que sur demande ; il
+  écoute `beforeinstallprompt` (rétréci à l’exécution, sans assertion de type)
+  et `appinstalled`. Le contexte expose `PwaState` (`usePwa`) ;
+  `usePwaUpdateStatus` garde sa signature. `pwaInvitation` (pur) et
+  `usePwaInvitation` (préférences) choisissent la carte ; `PwaInvitation`
+  (`src/ui/`) reprend la carte de l’aide U8 avec un `Button` « go ». `BoardShell`
+  la place en tête de `.status-slot`, `HomePage` en tête de page. Préférences :
+  `installInvitationDeclined?: true`. `App` accepte `registerServiceWorker`
+  (tests). Service worker, manifeste, précache, domaine, simulation, schéma de
+  niveau et constantes physiques inchangés.
+- Fichiers touchés hors périmètre : `src/app/LevelExportDialog.tsx` (retenir un
+  pseudo aurait effacé le refus : il ne conservait que `firstLevelHintDone`) ;
+  ADR 0011 (amendement pour le champ).
+- Écarts avec la tâche : (1) sur un plateau, la mise à jour attend en plus
+  qu’aucune commande n’ait été validée : l’ADR 0012 dit « recharger ne perd
+  rien », vrai des brouillons, faux de la tentative d’un niveau de campagne,
+  reçu ou partagé (en session seulement) ; la consigne interdit toute perte de
+  construction ; consigné par amendement de l’ADR 0012. (2) Le rechargement
+  après « Mettre à jour » n’est pas parcouru dans le navigateur (le test App
+  vérifie que l’action injectée est appelée ; le E2E ne la touche pas). (3) Pas
+  d’invitation d’installation sur le plateau ni sur la liste des niveaux.
+- Contradictions rencontrées : ADR 0012 « Les brouillons étant enregistrés en
+  continu, recharger ne perd rien » contre `PlayLevelPage` (la tentative de
+  campagne n’est pas enregistrée) ; résolu côté interface (point 1), sans
+  toucher au service worker.
+- Captures inspectées (Read sur les PNG) :
+  `test-results/pwa-invitation/{mise-a-jour-accueil,mise-a-jour-plateau,installation-accueil}-{390x844,844x390,1440x900}.png`.
+  Plateau 390 × 844 : carte crème à liseré jaune sous les boutons de cadrage,
+  au-dessus de la poignée du catalogue : icône de rafraîchissement, « Nouvelle
+  version disponible. » sur deux lignes, bouton vert « Mettre à jour », croix ;
+  plateau et barre d’actions dégagés. Plateau 844 × 390 : dans le dock droit
+  sous les boutons de cadrage, texte sur deux lignes, bouton et croix sur une
+  seconde rangée ; le plateau garde sa taille. (Au premier jet, le bouton
+  recouvrait le texte dans ce dock étroit : corrigé par un retour à la ligne
+  qui garde bouton et croix ensemble.) Plateau 1440 × 900 : en tête du rail
+  droit, texte sur une ligne, bouton et croix en dessous, à droite. Accueil :
+  carte en tête de page, au-dessus de « Bienvenue dans l’atelier », sur une
+  ligne en 844 et 1440 (largeur limitée à 640 px), deux lignes en 390.
+  Installation à l’accueil : même carte, icône de téléchargement, « Installe
+  TinkerBolt pour le retrouver comme une application, même hors ligne. » (trois
+  lignes en 390, une en 844 et 1440), bouton « Installer », croix.
+- Gate : `pnpm check` passe — typecheck, lint, formatage, Knip, contenu (19
+  documents), 1049 tests Vitest en 81 fichiers, build, 69 tests Playwright
+  `mobile` (68 réussis, 1 ignoré). Une première exécution s’était arrêtée à
+  Knip (`PwaInvitationOffer` exporté sans usage), corrigé. Pas d’intermittence
+  D4 ni U15 observée. Le nouvel E2E passe 12 fois sur 12 (`--repeat-each=3`).
+  `tmp/check-levels.ts` (ESLint le refuse) a été déplacé hors du dépôt pendant
+  `pnpm check:fast` et `pnpm check`, puis remis exactement à sa place : SHA-256
+  `1113625e…a92907` et mode 644 identiques avant et après.
+- Non vérifié : un vrai téléphone Android (vraie demande d’installation, vraie
+  mise à jour publiée) ; le rechargement après « Mettre à jour » ; iOS (rien ne
+  doit s’afficher : couvert par l’absence d’événement) ; le lecteur d’écran
+  (texte `aria-live="polite"`, régions nommées).
+- Pour l’auteur : validation visuelle des neuf captures ci-dessus. Questions
+  (tranchées de façon conservatrice, à confirmer) : (1) les textes, au
+  tutoiement ; (2) la mise à jour n’est pas proposée sur un plateau où le
+  joueur a déjà agi : préférez-vous la proposer quand même, avec un
+  avertissement de perte, ou enregistrer la tentative de campagne ? (3)
+  « Plus tard » ne vaut que pour la visite ; (4) l’installation n’est proposée
+  qu’à l’accueil ; un refus est définitif (pas de nouvel essai après un
+  délai) ; aucune aide pour iOS (« Partager › Sur l’écran d’accueil ») ; (5)
+  constaté, hors périmètre : la liste de repli hors ligne de `vite.config.ts`
+  (`navigateFallbackAllowlist`) ne contient pas `/my-levels`.
+

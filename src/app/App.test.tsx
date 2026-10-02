@@ -28,6 +28,7 @@ import {
 import styles from '../ui/styles.css?raw';
 
 import { App } from './App';
+import type { RegisterServiceWorker } from './PwaUpdateProvider';
 import { screenPointToWorld } from './screen-point-to-world';
 
 type PointerEventType = 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel';
@@ -114,6 +115,32 @@ const createPreferencesRepository = (initial: Preferences = {}) => {
 
 const firstLevelHint = (): HTMLElement | null =>
   screen.queryByRole('region', { name: 'Aide du niveau 1' });
+
+/** U10: a service worker port whose new version is already waiting. */
+const waitingPwaUpdate = () => {
+  const applyUpdate = vi.fn(() => Promise.resolve());
+  const register: RegisterServiceWorker = (onNeedRefresh) => {
+    onNeedRefresh();
+    return Promise.resolve(applyUpdate);
+  };
+  return { applyUpdate, register };
+};
+
+/** U10: a fake `beforeinstallprompt`, as Chrome on Android fires it. */
+const installPromptEvent = (outcome: 'accepted' | 'dismissed') => {
+  const prompt = vi.fn(() => Promise.resolve());
+  const event = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+    prompt,
+    userChoice: Promise.resolve({ outcome, platform: 'web' }),
+  });
+  return { event, prompt };
+};
+
+const pwaUpdateInvitation = (): HTMLElement | null =>
+  screen.queryByRole('region', { name: 'Mise à jour de TinkerBolt' });
+
+const installInvitation = (): HTMLElement | null =>
+  screen.queryByRole('region', { name: 'Installer TinkerBolt' });
 
 /** M8: an in-memory received-level port whose writes all answer `saveResult`. */
 const createReceivedLevelRepository = (saveResult: ReceivedLevelWriteResult = { status: 'ok' }) => {
@@ -2870,5 +2897,130 @@ describe('coque TinkerBolt', () => {
     expect(screen.getByText('Niveau 2 · Par-dessus le mur')).toBeVisible();
     expect(firstLevelHint()).toBeNull();
     expect(preferences.saved).toEqual([]);
+  });
+
+  it('propose la mise à jour à l’accueil et ne l’applique que sur demande (U10)', async () => {
+    window.history.replaceState(null, '', '/');
+    const update = waitingPwaUpdate();
+    render(<App registerServiceWorker={update.register} />);
+
+    const invitation = await screen.findByRole('region', { name: 'Mise à jour de TinkerBolt' });
+    expect(invitation).toHaveTextContent('Nouvelle version disponible.');
+    expect(update.applyUpdate).not.toHaveBeenCalled();
+
+    fireEvent.click(within(invitation).getByRole('button', { name: 'Mettre à jour' }));
+    expect(update.applyUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('propose la mise à jour hors du plateau, la tait pendant la simulation et la remet à plus tard (U10)', async () => {
+    const update = waitingPwaUpdate();
+    const preferences = createPreferencesRepository({ firstLevelHintDone: true });
+    render(
+      <App
+        registerServiceWorker={update.register}
+        preferencesRepository={preferences.repository}
+      />,
+    );
+
+    const invitation = await screen.findByRole('region', { name: 'Mise à jour de TinkerBolt' });
+    expect(screen.getByRole('region', { name: 'Plateau de jeu' })).not.toContainElement(invitation);
+    expect(invitation.closest('.status-slot')).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer' }));
+    expect(pwaUpdateInvitation()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Recommencer' }));
+    const again = pwaUpdateInvitation();
+    if (again === null) throw new Error('Invitation de mise à jour absente après la simulation.');
+
+    fireEvent.click(within(again).getByRole('button', { name: 'Plus tard' }));
+    expect(pwaUpdateInvitation()).toBeNull();
+    expect(update.applyUpdate).not.toHaveBeenCalled();
+    expect(preferences.saved).toEqual([]);
+  });
+
+  it('ne propose pas sur le plateau une mise à jour qui ferait perdre la construction (U10)', async () => {
+    const update = waitingPwaUpdate();
+    const preferences = createPreferencesRepository({ firstLevelHintDone: true });
+    render(
+      <App
+        registerServiceWorker={update.register}
+        preferencesRepository={preferences.repository}
+      />,
+    );
+    await screen.findByRole('region', { name: 'Mise à jour de TinkerBolt' });
+
+    placeCampaignBeam(5.0, 2.15);
+    expect(pwaUpdateInvitation()).toBeNull();
+    expect(update.applyUpdate).not.toHaveBeenCalled();
+  });
+
+  it('ne propose l’installation qu’à l’accueil, quand le navigateur l’a émise, et l’ouvre sur demande (U10)', async () => {
+    window.history.replaceState(null, '', '/');
+    const preferences = createPreferencesRepository();
+    render(<App preferencesRepository={preferences.repository} />);
+    expect(
+      screen.getByRole('heading', { name: 'Les bonnes idées font leur chemin.' }),
+    ).toBeVisible();
+    expect(installInvitation()).toBeNull();
+
+    const install = installPromptEvent('accepted');
+    act(() => {
+      window.dispatchEvent(install.event);
+    });
+    const invitation = installInvitation();
+    if (invitation === null) throw new Error('Invitation d’installation absente.');
+    expect(invitation).toHaveTextContent(
+      'Installe TinkerBolt pour le retrouver comme une application, même hors ligne.',
+    );
+
+    await act(async () => {
+      fireEvent.click(within(invitation).getByRole('button', { name: 'Installer' }));
+      await Promise.resolve();
+    });
+    expect(install.prompt).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(installInvitation()).toBeNull();
+    });
+    expect(preferences.saved).toEqual([]);
+  });
+
+  it('retient le refus de l’installation, même après rechargement (U10)', () => {
+    window.history.replaceState(null, '', '/');
+    const preferences = createPreferencesRepository({ author: 'Lili' });
+    render(<App preferencesRepository={preferences.repository} />);
+    act(() => {
+      window.dispatchEvent(installPromptEvent('accepted').event);
+    });
+    const invitation = installInvitation();
+    if (invitation === null) throw new Error('Invitation d’installation absente.');
+
+    fireEvent.click(within(invitation).getByRole('button', { name: 'Ne pas installer' }));
+    expect(installInvitation()).toBeNull();
+    expect(preferences.saved).toEqual([{ author: 'Lili', installInvitationDeclined: true }]);
+
+    cleanup();
+    window.history.replaceState(null, '', '/');
+    render(<App preferencesRepository={preferences.repository} />);
+    act(() => {
+      window.dispatchEvent(installPromptEvent('accepted').event);
+    });
+    expect(installInvitation()).toBeNull();
+  });
+
+  it('retient aussi le refus donné dans la demande du navigateur (U10)', async () => {
+    window.history.replaceState(null, '', '/');
+    const preferences = createPreferencesRepository();
+    render(<App preferencesRepository={preferences.repository} />);
+    act(() => {
+      window.dispatchEvent(installPromptEvent('dismissed').event);
+    });
+    const invitation = installInvitation();
+    if (invitation === null) throw new Error('Invitation d’installation absente.');
+
+    fireEvent.click(within(invitation).getByRole('button', { name: 'Installer' }));
+    await waitFor(() => {
+      expect(preferences.saved).toEqual([{ installInvitationDeclined: true }]);
+    });
+    expect(installInvitation()).toBeNull();
   });
 });

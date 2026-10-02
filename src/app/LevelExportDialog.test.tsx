@@ -351,6 +351,22 @@ describe('titre, pseudo et licence dans la boîte d’export (M14, ADR 0016)', (
     ]);
   });
 
+  it('retient le pseudo sans oublier le refus de l’invitation d’installation (U10)', () => {
+    const preferences = memoryPreferences({
+      firstLevelHintDone: true,
+      installInvitationDeclined: true,
+    });
+    renderDialog(levelOneWorkshop, {}, preferences.repository);
+    const pseudo = screen.getByRole('textbox', { name: 'Pseudo (facultatif)' });
+
+    fireEvent.change(pseudo, { target: { value: 'Noé' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+
+    expect(preferences.saved).toEqual([
+      { author: 'Noé', firstLevelHintDone: true, installInvitationDeclined: true },
+    ]);
+  });
+
   it.each<[string, PreferencesRepository]>([
     [
       'renvoie une erreur',

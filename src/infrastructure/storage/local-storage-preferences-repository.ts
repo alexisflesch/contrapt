@@ -14,12 +14,14 @@ const PREFERENCES_BACKUP_KEY = 'tinkerbolt:backup:preferences';
 
 /**
  * ADR 0016 § Pseudo: the pseudonym follows `metadata.author`'s rule. ADR 0011
- * (amendment of 2 Oct. 2026, U8): level 1's hint, once done, is the only other
- * field — optional, so a version 1 value written before it stays valid.
+ * (amendments of 2 Oct. 2026, U8 and U10): level 1's hint, once done, and the
+ * declined install invitation are the only other fields — optional, so a
+ * version 1 value written before them stays valid.
  */
 const preferencesSchema = z.strictObject({
   author: authorSchema.optional(),
   firstLevelHintDone: z.literal(true).optional(),
+  installInvitationDeclined: z.literal(true).optional(),
 });
 
 const preferencesEnvelopeSchema = z.strictObject({
@@ -39,10 +41,11 @@ const parseEnvelope = (rawValue: string): Preferences | null => {
   }
   const parsed = preferencesEnvelopeSchema.safeParse(candidate);
   if (!parsed.success) return null;
-  const { author, firstLevelHintDone } = parsed.data.data;
+  const { author, firstLevelHintDone, installInvitationDeclined } = parsed.data.data;
   return {
     ...(author === undefined ? {} : { author }),
     ...(firstLevelHintDone === undefined ? {} : { firstLevelHintDone }),
+    ...(installInvitationDeclined === undefined ? {} : { installInvitationDeclined }),
   };
 };
 

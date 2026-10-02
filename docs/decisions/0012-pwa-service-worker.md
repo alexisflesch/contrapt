@@ -45,3 +45,37 @@ contrôle au milieu d'une session d'édition sans prévenir. Rien n'est impléme
   masquer les modifications.
 - Le build produit `sw.js` et `manifest.webmanifest` ; la gate le vérifie par un
   test sur `dist/` ou par l'E2E hors ligne.
+
+## Amendement du 2 octobre 2026 — invitations visibles (U10)
+
+Précise la décision « Mises à jour » et ajoute l’installation ; le service
+worker, sa stratégie (`registerType: 'prompt'`) et son précache sont inchangés.
+
+- **Mise à jour.** L’invitation « Nouvelle version disponible. » porte l’action
+  « Mettre à jour » et une croix « Plus tard ». Elle se montre en tête de
+  l’accueil et, sur un plateau, dans l’emplacement réservé (`.status-slot`),
+  jamais par-dessus le plateau ni la barre d’actions. Sur un plateau, outre la
+  phase sûre (`usePwaUpdateStatus`, ni simulation ni manipulation), elle
+  attend que le rechargement ne perde rien : aucune commande validée sur ce
+  plateau depuis son ouverture. Raison : la phrase « recharger ne perd rien »
+  ne vaut que pour les brouillons ; la tentative d’un niveau de campagne, d’un
+  niveau reçu ou partagé vit dans la session et serait perdue. Rien ne recharge
+  sans le toucher « Mettre à jour » (le rechargement suit l’activation du
+  nouveau service worker, `registerSW`). « Plus tard » vaut pour la visite ;
+  rien n’est enregistré.
+- **Installation.** Elle ne s’appuie que sur l’événement `beforeinstallprompt`
+  (Chrome, Android) : l’application le retient (`preventDefault`) et, à
+  l’accueil seulement, montre « Installe TinkerBolt pour le retrouver comme une
+  application, même hors ligne. » avec « Installer » (qui ouvre la demande du
+  navigateur, une seule fois par événement) et une croix « Ne pas installer ».
+  Sans cet événement (Safari, iOS, Firefox, application déjà installée), rien
+  n’est montré : pas d’invitation ni d’instructions de substitution.
+  `appinstalled` la retire.
+- **Refus mémorisé.** La croix « Ne pas installer » ou un refus dans la demande
+  du navigateur écrit `installInvitationDeclined: true` dans
+  `tinkerbolt:preferences` (champ facultatif de l’enveloppe version 1, comme
+  `firstLevelHintDone`, ADR 0011, amendement du 2 octobre 2026) ; l’invitation
+  ne revient plus. Les autres préférences sont conservées.
+- **Priorité.** Une seule invitation à la fois : la mise à jour passe avant
+  l’installation. La décision est la fonction pure `pwaInvitation`
+  (`src/app/pwa-invitation.ts`).

@@ -2,10 +2,13 @@
  * ADR 0016 § Pseudo: the only personal datum kept, the last pseudonym typed.
  * ADR 0011 (amendment of 2 Oct. 2026, U8): whether level 1's hint was closed
  * or followed — not a personal datum; only `true` is ever recorded.
+ * ADR 0012 (amendment of 2 Oct. 2026, U10): whether the invitation to install
+ * the app was declined — likewise only `true`.
  */
 export interface Preferences {
   readonly author?: string;
   readonly firstLevelHintDone?: true;
+  readonly installInvitationDeclined?: true;
 }
 
 export type PreferencesRepositoryErrorCode =

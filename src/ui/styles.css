@@ -1773,6 +1773,32 @@ select:focus-visible {
 }
 
 /*
+ * U10 : l'invitation de mise à jour ou d'installation reprend la carte de
+ * l'aide (U8), dans le flux, avec une action ; à l'accueil, elle précède le
+ * contenu, dans la largeur du texte. Dans le dock étroit du paysage, l'action
+ * et la croix passent sous le texte plutôt que de le recouvrir.
+ */
+.pwa-invitation {
+  flex-wrap: wrap;
+}
+
+.pwa-invitation .board-hint-text {
+  flex-basis: 10em;
+}
+
+.pwa-invitation-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin-left: auto;
+}
+
+.home-page > .pwa-invitation {
+  max-width: 640px;
+  margin-bottom: var(--space-5);
+}
+
+/*
  * B1 : le bandeau de résultat est dans le flux, après le plateau dans le DOM,
  * jamais en overlay : il ne recouvre pas ce que le joueur vient de regarder.
  */
