@@ -9,6 +9,37 @@ tâche à un sous-agent neuf — **Opus pour le raisonnement et l'UI/UX, Sonnet 
 l'écriture de code** — et reste responsable du résultat : il relit le diff,
 regarde les captures, lance la gate et tient le journal.
 
+## Point de reprise (pause demandée par l'auteur, 2 octobre 2026)
+
+**Fait et commité** (gate verte à chaque commit, rien n'est poussé) : V0, V1,
+V2a–c, V3, V4 (maquettes validées), V5, V6, V7, T1. Dernier commit au moment de
+la pause : voir `git log` (T1 `59119d2`, puis ce point de reprise).
+
+**Validé par l'auteur** : maquettes V4 ; police Nunito vue dans son navigateur
+(V7). **Validation visuelle attendue** : captures V2b, V6, V7 (elles étaient
+dans le scratchpad de la session, perdues ; les régénérer pour V9).
+
+**Prochaines tâches, dans l'ordre** : V7b (ci-dessous), V8, V9.
+
+**Réponses de l'auteur à garder** :
+
+- Le crayon d'un niveau de campagne ouvre la solution révélée et la fiche de
+  calibrage **seulement sous `pnpm dev`** (`DevelopmentModeContext`) ; la
+  version publiée ne les montre pas. La révélation en dev reste ; la fiche de
+  calibrage disparaît (V7b).
+- Une création tirée d'un tutoriel et modifiée a son icône « Jouer » grisée
+  (`puzzleFromWorkshop` : `no-object-to-place`, aucun objet « à placer »).
+  L'auteur juge ce comportement normal : pas de correctif sur la carte. V8
+  vérifie seulement qu'un joueur comprend comment rendre sa création jouable
+  depuis l'Atelier (marquer des objets « à placer », solution vérifiée à
+  l'export) et remonte à l'auteur avant d'agir.
+- Pas de quota à gaspiller : une tâche à la fois, rapport court, l'auteur
+  tranche le goût.
+
+**Déploiement** : GitHub Pages au push sur `main`
+(`.github/workflows/deploy-pages.yml`, base `/<dépôt>/`). Vérifié à la pause :
+la police est bien réécrite sous la base. Pousser revient à l'auteur.
+
 ## Objectif de la v1
 
 Un jeu **propre** qui fonctionne sur **desktop**, avec les cinq tutoriels de
@@ -220,6 +251,16 @@ de la scrollbar, et la police Nunito (journal V4). Captures aux deux formats.
   « Nouveau niveau » : l'en-tête affichait « Atelier de niveau · Atelier ».
   Vérifier que les brouillons existants ne sont pas affectés (le titre d'une
   création enregistrée vient de son document, pas de `workshop.json`).
+
+### V7b — Retirer la fiche de calibrage ● (Sonnet)
+
+Demande de l'auteur : la fiche de calibrage (U28, `src/ui/CalibrationGuide.tsx`,
+dialogue « Fiche de calibrage » ouvert par `BoardShell` via
+`calibrationDocument`) servait à concevoir les niveaux et n'est plus utile.
+La supprimer avec son bouton éventuel, ses tests et son CSS, sans toucher à la
+révélation de la solution en mode dev. Grep `calibrat` dans `src/`, `e2e/`,
+ADR 0015 et `etat.md`. Test rouge : en mode dev, ouvrir une création de
+campagne n'affiche plus de dialogue de calibrage.
 
 ### V8 — Parcours beta-testeur ●●● (Opus)
 
