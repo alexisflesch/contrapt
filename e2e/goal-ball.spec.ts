@@ -43,7 +43,7 @@ const twoBallLevel = levelDocumentSchema.parse({
   wires: [],
 });
 
-/** Ball radius (0,3 unit) plus the ring's fixed gap, as the renderer draws it. */
+/** Where U7 used to add its ring: this must now show only the board. */
 const ringRadius = (zoom: number): number => 0.3 * zoom + 5;
 
 const camera = async (canvas: Locator) => {
@@ -56,11 +56,18 @@ const camera = async (canvas: Locator) => {
 };
 
 /** The canvas's colour on the ring's right edge around a world point. */
-const ringPixel = async (canvas: Locator, centre: Point, backgroundOnly = false): Promise<Rgba> => {
+const ringPixel = async (
+  canvas: Locator,
+  centre: Point,
+  backgroundOnly = false,
+  sample: 'ring' | 'corner' | 'centre' = 'ring',
+): Promise<Rgba> => {
   const { origin, zoom } = await camera(canvas);
   const local = {
-    x: (centre.x - origin.x) * zoom + ringRadius(zoom),
-    y: (centre.y - origin.y) * zoom,
+    x:
+      (centre.x - origin.x) * zoom +
+      (sample === 'ring' ? ringRadius(zoom) : sample === 'corner' ? 0.3 * zoom : 0),
+    y: (centre.y - origin.y) * zoom + (sample === 'corner' ? 0.28 * zoom : 0),
   };
   return canvas.evaluate(
     async (element, { point, backgroundOnly, origin, zoom }): Promise<Rgba> => {
@@ -115,7 +122,9 @@ const openLevel = async (page: Page): Promise<Locator> => {
     .getByRole('img', { name: 'Rendu du plateau' });
   await expect(canvas).toBeVisible();
   // The renderer draws nothing before every sprite is decoded.
-  await expect.poll(async () => isRingRed(await ringPixel(canvas, goalBall))).toBe(true);
+  await expect
+    .poll(async () => isRingRed(await ringPixel(canvas, goalBall, false, 'centre')))
+    .toBe(true);
   return canvas;
 };
 
@@ -142,41 +151,59 @@ const launchAndPause = async (page: Page, canvas: Locator): Promise<Point> => {
   return { x, y };
 };
 
-test('U7 — la balle de l’objectif est cerclée, la bleue non, et l’anneau suit la balle en simulation', async ({
+const expectNoDecoration = async (canvas: Locator, centre: Point): Promise<void> => {
+  for (const sample of ['ring', 'corner'] as const) {
+    const actual = await ringPixel(canvas, centre, false, sample);
+    const background = await ringPixel(canvas, centre, true, sample);
+    for (const channel of [0, 1, 2, 3] as const) {
+      expect(Math.abs(actual[channel] - background[channel])).toBeLessThanOrEqual(3);
+    }
+  }
+};
+
+const selectGoalBall = async (page: Page, canvas: Locator): Promise<void> => {
+  const bounds = await canvas.boundingBox();
+  if (bounds === null) throw new Error('Le plateau doit être visible.');
+  const { origin, zoom } = await camera(canvas);
+  await page.touchscreen.tap(
+    bounds.x + (goalBall.x - origin.x) * zoom,
+    bounds.y + (goalBall.y - origin.y) * zoom,
+  );
+  const close = page.getByRole('button', { name: 'Fermer les propriétés' });
+  if (await close.isVisible()) await close.click();
+  await expect(
+    page.getByRole('complementary', { name: 'Inspecteur des propriétés' }),
+  ).toBeVisible();
+};
+
+test('R1 — la balle cible et la bleue gardent leurs sprites sans anneau ni carré, même sélectionnées et en simulation', async ({
   page,
-}, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours est validé sur mobile.');
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const canvas = await openLevel(page);
-
-  await expect(canvas).toHaveAttribute('data-goal-ball-marker', 'ball-1');
+  await expect(canvas).not.toHaveAttribute('data-goal-ball-marker');
   await expect(canvas).toHaveAttribute('data-red-balls', 'ball-1');
   await expect(canvas).toHaveAttribute('data-blue-balls', 'ball-2');
-  // U2: this spot now shows the background and grid, still without any ring.
-  const bluePixel = await ringPixel(canvas, blueBall);
-  const backgroundPixel = await ringPixel(canvas, blueBall, true);
-  for (const channel of [0, 1, 2, 3] as const) {
-    expect(Math.abs(bluePixel[channel] - backgroundPixel[channel])).toBeLessThanOrEqual(3);
-  }
+  await expectNoDecoration(canvas, goalBall);
+  await expectNoDecoration(canvas, blueBall);
+
+  await selectGoalBall(page, canvas);
+  await expectNoDecoration(canvas, goalBall);
 
   const paused = await launchAndPause(page, canvas);
   expect(paused.y).toBeGreaterThan(goalBall.y + 0.1);
-  await expect(canvas).toHaveAttribute('data-goal-ball-marker', 'ball-1');
-  await expect.poll(async () => isRingRed(await ringPixel(canvas, paused))).toBe(true);
-  // Where the ball started, the ring is gone: it moved with the ball.
-  expect(isRingRed(await ringPixel(canvas, goalBall))).toBe(false);
+  await expectNoDecoration(canvas, paused);
+  await expectNoDecoration(canvas, goalBall);
 
-  // The objective says it in words too.
   await page.getByRole('button', { name: 'Voir l’objectif' }).click();
-  await expect(page.getByRole('dialog', { name: 'Objectif du niveau' })).toContainText(
-    'Seule la balle rouge compte : sur le plateau, elle est entourée d’un anneau.',
-  );
+  const objective = page.getByRole('dialog', { name: 'Objectif du niveau' });
+  await expect(objective).toContainText('Seule la balle rouge compte.');
+  await expect(objective).not.toContainText('anneau');
 });
 
-test('U7 — captures de la balle cerclée, au repos et en simulation, aux trois formats', async ({
+test('R1 — captures sans surcharge, au repos, après sélection et en simulation, aux trois formats', async ({
   page,
-}, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Les captures sont prises sur le profil mobile.');
+}) => {
   await mkdir('test-results/goal-ball', { recursive: true });
 
   for (const viewport of formats) {
@@ -188,14 +215,16 @@ test('U7 — captures de la balle cerclée, au repos et en simulation, aux trois
         scale: 'css',
       });
     await page.setViewportSize(viewport);
-    // Same URL, same hash: leave first, or the app would keep its state.
     await page.goto('about:blank');
     const canvas = await openLevel(page);
-    await page.waitForTimeout(200);
+    await expectNoDecoration(canvas, goalBall);
     await shot('repos');
+    await selectGoalBall(page, canvas);
+    await expectNoDecoration(canvas, goalBall);
+    await shot('selection');
 
     const paused = await launchAndPause(page, canvas);
-    await expect.poll(async () => isRingRed(await ringPixel(canvas, paused))).toBe(true);
+    await expectNoDecoration(canvas, paused);
     await shot('simulation');
   }
 });

@@ -435,7 +435,6 @@ export function BoardView({
             }
             data-red-balls={ballColourIds('ball-base')}
             data-blue-balls={ballColourIds('second-ball-base')}
-            data-goal-ball-marker={shownProjection.goalBallMarkerId}
             data-wires={currentEditorAttempt(session)
               .document.wires.map(({ sourceId, targetId }) => `${sourceId}>${targetId}`)
               .join(' ')}

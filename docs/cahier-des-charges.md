@@ -120,6 +120,13 @@ permissions valent `false`, pas une propriété persistante supplémentaire.
 
 ### Création de niveau
 
+Priorités de livraison v1 confirmées par l’auteur le 2 octobre 2026 : le
+redimensionnement de scène est reporté jusqu’à une discussion de conception,
+les zones de construction sont hors v1, et seul l’objectif « balle dans le
+panier » est retenu. La refonte de l’UI/UX mobile et les compléments des outils
+d’auteur passent après un jeu jouable. Les capacités décrites ci-dessous restent
+la vision de l’éditeur, pas des conditions supplémentaires de livraison v1.
+
 L’auteur utilise le même plateau et les mêmes gestes avec des capacités
 supplémentaires : catalogue autorisé, objets, inventaire, zones de construction,
 objectif, métadonnées, permissions du futur joueur, validation et partage. Les
@@ -422,11 +429,11 @@ phase ; le détail reste dans `etat.md` et le journal de la feuille de route).
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0 — Gate verte                    | faite (G1, G2)                                                                                                                                      |
 | 1 — « Mes niveaux » et communauté | faite (M1 à M15 ; M14b : description modifiable à l’export ; M15 : documentation)                                                                   |
-| 2 — Interface en attente          | en cours (U12, U1, U13, U7, U8, U10, U11 et U2 implémentées, validation visuelle attendue ; U3 abandonnée par l’auteur, code conservé mais désactivé ; reste inspecteur compact) |
-| 3 — Atelier complet               | à faire (A1 à A3) ; A4, description du niveau, livrée par M14b                                                                                      |
+| 2 — Interface en attente          | en cours (U12, U1, U13, U7, U8, U10, U11 et U2 implémentées, validation visuelle attendue ; U3 abandonnée par l’auteur, code conservé mais désactivé ; R1 retire l’anneau U7 et le cadre des balles ; inspecteur compact reporté avec le chantier mobile) |
+| 3 — Atelier complet               | hors priorités de livraison v1 : A1 reportée, A2 hors v1, A3 secondaire ; A4 livrée par M14b                                                                                      |
 | 4 — Outillage et mesures          | à faire                                                                                                                                             |
 | 5 — Décisions de l’auteur         | en attente (minuteur et niveau 15, bouton Grist, tri des propositions)                                                                              |
-| Niveaux de la campagne            | l’auteur les conçoit dans `levels/` (5 tutoriels déposés ; peut suffire pour la v1) ; intégration à la campagne embarquée à déclencher par l’auteur |
+| Niveaux de la campagne            | l’auteur les conçoit dans `levels/` (5 tutoriels déposés ; peut suffire pour la v1) ; intégration des cinq tutoriels autorisée (N2), auteur Bolt et descriptions courtes |
 
 ## Décisions réellement encore ouvertes
 

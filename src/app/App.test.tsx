@@ -2790,21 +2790,20 @@ describe('coque TinkerBolt', () => {
     expect(refusals()).toHaveLength(0);
   });
 
-  it('signale la balle de l’objectif sur le plateau et dans l’objectif quand plusieurs balles sont posées (U7)', () => {
+  it('désigne la balle rouge dans l’objectif sans marqueur permanent sur le plateau (R1)', () => {
     render(<App />);
 
     const canvas = within(screen.getByRole('region', { name: 'Plateau de jeu' })).getByRole('img', {
       name: 'Rendu du plateau',
     });
-    expect(canvas).toHaveAttribute('data-goal-ball-marker', 'ball-red');
+    expect(canvas).not.toHaveAttribute('data-goal-ball-marker');
     expect(canvas).toHaveAttribute('data-blue-balls', 'ball-blue');
 
     fireEvent.click(screen.getByRole('button', { name: 'Voir l’objectif' }));
     const dialog = screen.getByRole('dialog', { name: 'Objectif du niveau' });
     expect(dialog).toHaveTextContent('Faire entrer la balle dans le panier');
-    expect(dialog).toHaveTextContent(
-      'Seule la balle rouge compte : sur le plateau, elle est entourée d’un anneau.',
-    );
+    expect(dialog).toHaveTextContent('Seule la balle rouge compte.');
+    expect(dialog).not.toHaveTextContent(/anneau/);
   });
 
   it('ne signale rien quand la balle de l’objectif est seule (U7)', async () => {

@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, U3 (ombre portée) abandonnée par l’auteur, code conservé mais ombres désactivées ; phase 1 (« Mes niveaux ») terminée.
+Dernière mise à jour : 2 octobre 2026, R1 livré (balles sans anneau ni cadre de sélection), validation visuelle attendue ; intégration des tutoriels autorisée. U3 reste abandonnée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -502,21 +502,16 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   unique, objet revenu, déplacement accepté ; captures
   `test-results/build-zones/{zone,hors-zone,refus}-{390x844,844x390,1440x900}.png`).
   **Validation visuelle de l’auteur attendue.**
-- Balle suivie (U7) : quand le plateau compte au moins deux balles, la balle
-  de l’objectif est entourée d’un anneau plein (rouge de la balle `#de1111`,
-  2,5 px CSS, sur un liseré blanc de 5 px), à 5 px CSS de son bord, en
-  construction comme en simulation, en pause et au résultat ; l’anneau suit
-  la pose simulée et garde son épaisseur au zoom. Une balle seule n’en a pas.
-  Le signal ne tient donc pas qu’à la couleur. `signalledGoalBallId` et
-  `goalBallMarkerId` (`src/presentation/board-renderer.ts`), attribut
-  `data-goal-ball-marker` du canvas ; la boîte « Objectif » ajoute alors
-  « Seule la balle rouge compte : sur le plateau, elle est entourée d’un
-  anneau. » Tests `board-renderer.test.ts` (« balle de l’objectif signalée
-  (U7) »), `App.test.tsx` et parcours `e2e/goal-ball.spec.ts` (pixels de
-  l’anneau, absent près de la balle bleue, suivi après lancer et pause ;
-  captures
-  `test-results/goal-ball/{repos,simulation}-{390x844,844x390,1440x900}.png`).
-  **Validation visuelle de l’auteur attendue.**
+- Balle cible sans surcharge (R1, remplace le rendu U7, ADR 0006 amendée) :
+  sprites rouges pour la cible et bleus pour les autres, sans anneau ajouté au
+  repos, au zoom ni en simulation. Une balle sélectionnée n’est plus encadrée
+  d’un rectangle ; son nom et son panneau portent la sélection. Les autres
+  objets gardent un contour explicitement bleu, sans couleur Canvas héritée.
+  Avec plusieurs balles, la boîte « Objectif » dit « Seule la balle rouge
+  compte. ». Les contours de placement et « À placer » sont conservés.
+  Tests renderer, App et E2E sur pixels réels. Neuf captures inspectées :
+  `test-results/goal-ball/{repos,selection,simulation}-{390x844,844x390,1440x900}.png` ;
+  validation visuelle de l’auteur attendue.
 - Aide du niveau 1 (U8) : sur le premier niveau de la campagne, jamais
   résolu, une carte brève (liseré jaune, ampoule, bouton « Masquer l’aide »)
   dit d’abord « Touche « Lancer » pour voir la machine tourner. », puis, de
@@ -880,6 +875,16 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après R1 (2 octobre 2026) : passe — typecheck, lint,
+formatage, Knip, contenu (19 documents), 1090 tests Vitest (83 fichiers),
+build et 78 tests Playwright mobile (77 réussis, 1 ignoré). Neuf captures
+inspectées aux trois formats, validation de l’auteur attendue. Aucun test
+supprimé ni ignoré pour ce changement ; les attentes U7 sont remplacées par
+l’absence des surcharges refusées par l’auteur. Le fichier d’essai
+`tmp/check-levels.ts` a été écarté puis remis identique. Gate de départ verte
+avec sockets locaux et Chromium autorisés (le sandbox seul refuse le socket
+local de `tsx`).
 
 `pnpm check` après l’abandon et la désactivation U3 (2 octobre 2026) : passe —
 typecheck, lint, formatage, Knip, contenu (19 documents), 1087 tests Vitest

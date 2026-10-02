@@ -60,10 +60,11 @@ En simulation, le tiroir et les contrôles d'édition disparaissent ou sont
 désactivés. Ils sont remplacés par pause ou reprendre et recommencer. Les
 contrôles de caméra restent disponibles.
 
-Quand le plateau compte plusieurs balles, la balle de l'objectif (la rouge) est
-entourée d'un anneau, en construction comme en simulation, où l'anneau la suit ;
-l'objectif le dit aussi en texte : « Seule la balle rouge compte : sur le
-plateau, elle est entourée d’un anneau. » Une balle seule n'a pas d'anneau (U7).
+Quand le plateau compte plusieurs balles, la balle de l'objectif garde ses
+sprites rouges et les autres leurs sprites bleus, sans anneau ajouté (ADR 0006,
+amendement du 2 octobre 2026). L'objectif dit : « Seule la balle rouge compte. »
+Une balle sélectionnée est identifiée par son nom et son panneau contextuel,
+sans cadre rectangulaire autour du sprite.
 
 Sur le niveau 1 de la campagne, tant qu'il n'est pas résolu, une aide brève
 oriente le premier essai (U8) : « Touche « Lancer » pour voir la machine

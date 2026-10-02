@@ -15,7 +15,6 @@ import {
   withAuthorRotation,
   createBoardRenderer,
   projectLevel,
-  signalledGoalBallId,
   worldToPixels,
   type BoardCanvasContext,
   type BoardConveyorBelt,
@@ -1681,13 +1680,14 @@ describe('objet déplacé hors zone (U13)', () => {
   });
 });
 
-describe('balle de l’objectif signalée (U7)', () => {
-  const ringViewport = { ...viewport, origin: { x: 0, y: 0 }, pixelsPerWorldUnit: 40 };
+describe('balle cible sans surcharge (R1, décision auteur)', () => {
+  const ballViewport = { ...viewport, origin: { x: 0, y: 0 }, pixelsPerWorldUnit: 40 };
 
   const renderBalls = async (
     document: Parameters<typeof projectLevel>[0],
     simulation?: BoardSimulationView,
-    pixelsPerWorldUnit = ringViewport.pixelsPerWorldUnit,
+    pixelsPerWorldUnit = ballViewport.pixelsPerWorldUnit,
+    selectedPlacementId?: string,
   ) => {
     const { context, operations } = createContext();
     const spriteLoader = createPendingSpriteLoader();
@@ -1695,89 +1695,78 @@ describe('balle de l’objectif signalée (U7)', () => {
     const renderer = createBoardRenderer({
       canvas: { width: 0, height: 0 },
       context,
-      viewport: { ...ringViewport, pixelsPerWorldUnit },
+      viewport: { ...ballViewport, pixelsPerWorldUnit },
       spriteLoader: spriteLoader.loader,
     });
-    await renderer.render(projectLevel(document, simulation));
+    await renderer.render({
+      ...projectLevel(document, simulation),
+      ...(selectedPlacementId !== undefined && { selectedPlacementId }),
+    });
     return { drawn: replay(operations), sprites: spriteLoader.sprites };
   };
 
-  /** Full circles centred on a world point, at the given zoom. */
-  const ringsAround = (
-    drawn: Awaited<ReturnType<typeof renderBalls>>['drawn'],
-    point: { readonly x: number; readonly y: number },
-    pixelsPerWorldUnit = ringViewport.pixelsPerWorldUnit,
-  ) => {
-    const centre = worldToPixels(point, { ...ringViewport, pixelsPerWorldUnit });
-    return drawn.filter(
-      ({ operation }) =>
-        operation.kind === 'arc' &&
-        operation.values[0] === centre.x &&
-        operation.values[1] === centre.y &&
-        operation.values[4] === 2 * Math.PI,
-    );
-  };
-
-  it('désigne la balle de l’objectif dès que le plateau compte plusieurs balles, et seulement alors', () => {
-    expect(signalledGoalBallId(createTwoBallDocument())).toBe('ball-1');
-    expect(signalledGoalBallId(levelDocument)).toBeUndefined();
-    expect(projectLevel(createTwoBallDocument()).goalBallMarkerId).toBe('ball-1');
-    expect(projectLevel(levelDocument).goalBallMarkerId).toBeUndefined();
-    // The same ball stays signalled while the machine runs.
+  it('ne projette plus de marqueur permanent, même avec plusieurs balles', () => {
+    expect(projectLevel(createTwoBallDocument())).not.toHaveProperty('goalBallMarkerId');
+    expect(projectLevel(levelDocument)).not.toHaveProperty('goalBallMarkerId');
     const running = simulationView([['ball-1', { position: { x: 2, y: 3 }, rotation: 1 }]]);
-    expect(projectLevel(createTwoBallDocument(), running).goalBallMarkerId).toBe('ball-1');
+    expect(projectLevel(createTwoBallDocument(), running)).not.toHaveProperty('goalBallMarkerId');
   });
 
-  it('entoure la balle de l’objectif d’un anneau plein, rouge sur un liseré blanc, après les sprites', async () => {
+  it('garde les sprites rouge et bleu sans ajouter d’anneau ni de cadre', async () => {
     const { drawn, sprites } = await renderBalls(createTwoBallDocument());
-
-    const rings = ringsAround(drawn, { x: 1, y: 1 });
-    // 0,3 unité de rayon à 40 px par unité, plus un écart fixe de 5 px CSS.
-    expect(rings.map(({ operation }) => operation.values[2])).toEqual([17, 17]);
-    expect(rings.map(({ state }) => [state.strokeStyle, state.lineWidth, state.dashed])).toEqual([
-      ['#ffffff', 5, false],
-      ['#de1111', 2.5, false],
-    ]);
-    const ballSprites = new Set<unknown>([
-      sprites['ball-highlight'].source,
-      sprites['second-ball-highlight'].source,
-    ]);
-    const lastBallSprite = Math.max(
-      ...drawn.map(({ operation }, index) =>
-        operation.kind === 'drawImage' && ballSprites.has(operation.values[0]) ? index : -1,
-      ),
+    const sources = drawn.flatMap(({ operation }) =>
+      operation.kind === 'drawImage' ? [operation.values[0]] : [],
     );
-    expect(lastBallSprite).toBeGreaterThan(-1);
-    const [rim] = rings;
-    expect(rim === undefined ? -1 : drawn.indexOf(rim)).toBeGreaterThan(lastBallSprite);
-
-    // The other ball carries no ring: the signal does not rest on colour alone.
-    expect(ringsAround(drawn, { x: 4, y: 1 })).toEqual([]);
+    expect(sources).toContain(sprites['ball-highlight'].source);
+    expect(sources).toContain(sprites['second-ball-highlight'].source);
+    expect(drawn.some(({ operation }) => operation.kind === 'arc')).toBe(false);
+    expect(drawn.some(({ operation }) => operation.kind === 'strokeRect')).toBe(false);
   });
 
-  it('fait suivre l’anneau à la balle pendant la simulation', async () => {
+  it('dessine la balle à sa pose simulée sans anneau', async () => {
     const pose = { position: { x: 2, y: 3 }, rotation: 1 };
-    const { drawn } = await renderBalls(
+    const { drawn, sprites } = await renderBalls(
       createTwoBallDocument(),
       simulationView([['ball-1', pose]]),
     );
-
-    expect(ringsAround(drawn, pose.position)).toHaveLength(2);
-    expect(ringsAround(drawn, { x: 1, y: 1 })).toEqual([]);
-  });
-
-  it('grandit avec la balle au zoom sans épaissir son trait', async () => {
-    const { drawn } = await renderBalls(createTwoBallDocument(), undefined, 80);
-
-    const rings = ringsAround(drawn, { x: 1, y: 1 }, 80);
-    expect(rings.map(({ operation }) => operation.values[2])).toEqual([29, 29]);
-    expect(rings.map(({ state }) => state.lineWidth)).toEqual([5, 2.5]);
-  });
-
-  it('ne dessine aucun anneau quand la balle de l’objectif est seule', async () => {
-    const { drawn } = await renderBalls(levelDocument);
-
+    const ball = drawn.find(
+      ({ operation }) =>
+        operation.kind === 'drawImage' && operation.values[0] === sprites['ball-base'].source,
+    );
+    expect(ball?.state.transforms).toContainEqual({ kind: 'translate', values: [80, 120] });
     expect(drawn.some(({ operation }) => operation.kind === 'arc')).toBe(false);
+  });
+
+  it('n’ajoute aucun anneau au zoom', async () => {
+    const { drawn } = await renderBalls(createTwoBallDocument(), undefined, 80);
+    expect(drawn.some(({ operation }) => operation.kind === 'arc')).toBe(false);
+  });
+
+  it('garde aussi la balle seule sans anneau', async () => {
+    const { drawn } = await renderBalls(levelDocument);
+    expect(drawn.some(({ operation }) => operation.kind === 'arc')).toBe(false);
+  });
+
+  it.each([false, true])(
+    'ne cadre pas une balle sélectionnée, permission de déplacement %s',
+    async (move) => {
+      const document = levelDocumentSchema.parse({
+        ...levelDocument,
+        objects: levelDocument.objects.map((object) =>
+          object.id === 'ball-1'
+            ? { ...object, permissions: { ...object.permissions, move } }
+            : object,
+        ),
+      });
+      const { drawn } = await renderBalls(document, undefined, 40, 'ball-1');
+      expect(drawn.some(({ operation }) => operation.kind === 'strokeRect')).toBe(false);
+    },
+  );
+
+  it('définit explicitement le bleu du contour des autres objets sélectionnés', async () => {
+    const { drawn } = await renderBalls(levelDocument, undefined, 40, 'beam-1');
+    const outline = drawn.find(({ operation }) => operation.kind === 'strokeRect');
+    expect(outline?.state.strokeStyle).toBe('#1e88e5');
   });
 });
 

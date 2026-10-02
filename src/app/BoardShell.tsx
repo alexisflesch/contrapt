@@ -14,7 +14,6 @@ import { puzzleFromWorkshop } from '../application/puzzle/puzzle-workshop';
 import type { LevelDocument } from '../domain/level-document';
 import type { AttemptOutcome } from '../domain/attempt-failure-evaluator';
 import type { ConstructionAttempt } from '../application/construction';
-import { signalledGoalBallId } from '../presentation/board-renderer';
 import { AppFrame } from '../ui/AppFrame';
 import { BoardView } from '../ui/BoardView';
 import { ContextPanel } from '../ui/ContextPanel';
@@ -583,12 +582,9 @@ export function BoardShell({
           }}
         >
           <p className="dialog-text">Faire entrer la balle dans le panier</p>
-          {/* U7: the ring drawn on the board, said in words for whoever cannot tell the colours apart. */}
-          {signalledGoalBallId(currentEditorAttempt(session).document) !== undefined && (
-            <p className="dialog-text">
-              Seule la balle rouge compte : sur le plateau, elle est entourée d’un anneau.
-            </p>
-          )}
+          {/* The objective remains explicit when other balls also appear on the board. */}
+          {currentEditorAttempt(session).document.objects.filter(({ type }) => type === 'ball')
+            .length > 1 && <p className="dialog-text">Seule la balle rouge compte.</p>}
         </Dialog>
       )}
       {calibrationDocument !== undefined && isCalibrationOpen && (

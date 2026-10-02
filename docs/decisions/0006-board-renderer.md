@@ -116,3 +116,17 @@ nouvelle décision explicite de l’auteur.
 Cet amendement remplace la demande C2 du plan de remise en jeu et la tâche U3
 de la feuille de route ; U3 est abandonnée, elle n’attend plus de validation
 visuelle.
+
+## Amendement du 2 octobre 2026 — retirer les surcharges de la balle
+
+L’auteur refuse l’anneau rouge ajouté par U7 et le cadre noir autour de la balle.
+La balle cible garde ses sprites rouges, les autres leurs sprites bleus ; aucun
+anneau permanent n’est ajouté. La boîte « Objectif » indique que seule la balle
+rouge compte lorsqu’il y a plusieurs balles.
+
+Une balle sélectionnée n’a pas de cadre rectangulaire : son nom et son panneau
+de propriétés portent la sélection. Les autres objets conservent leurs contours
+de sélection, avec le bleu déjà utilisé par les poignées, défini explicitement.
+Les contours temporaires de placement et les marques « À placer » de l’atelier
+gardent leur rôle distinct. Cet amendement remplace le rendu de signalement U7,
+sans refonte des interactions mobiles.

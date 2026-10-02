@@ -10,11 +10,34 @@ point de reprise), mais il reste responsable du résultat : il relit le diff, la
 
 ## Point de reprise (fin de session du 2 octobre 2026)
 
+**Priorités v1 révisées par l’auteur le 2 octobre 2026.** La livraison d’un jeu
+jouable prime sur les outils d’auteur et la refonte mobile. Ordre autorisé :
+
+1. **R1 — Retirer les surcharges de la balle — fait, validation visuelle attendue** : anneau U7 retiré, pas de cadre
+   de sélection rectangulaire sur les balles ; garder les sprites et une
+   indication textuelle de l’objectif (ADR 0006 amendée). Tests rouges,
+   captures aux trois formats et gate.
+2. **N2 — Intégrer les cinq tutoriels de `levels/`** : copies embarquées avec
+   identifiants uniques, descriptions courtes et auteur **Bolt** ; préserver
+   les géométries et solutions de l’auteur et vérifier chaque solution par les
+   commandes du joueur et la simulation. Remplacer les esquisses dans la
+   campagne. Les fichiers source de `levels/` restent intacts.
+3. **Limites physiques du plateau** : priorité de jeu ; la règle reste à
+   décider (cadre fermé ou sortie par le bas). La bordure du fond U2 n’est
+   actuellement pas un mur. Aucun changement de physique avant cette décision.
+
+A1 est reportée jusqu’à une discussion de conception ; A2 et les restrictions
+de zones sont hors v1 ; A3 ne prévoyait que la balle et le panier, reste
+secondaire. Aucun objectif autre que « balle dans le panier » en v1. L’inspecteur
+compact et le chantier UI/UX mobile sont reportés. Les contrats de zones déjà
+présents dans le format restent lisibles ; leur traitement hors v1 exige une
+tâche distincte, pas une suppression improvisée du schéma.
+
 - **Phase 0, phase 1 (M1 à M15) et, en phase 2, U12, U1, U13, U7, U8, U10,
   U11 et U2 sont implémentées** (journal § 7 ; validation visuelle attendue).
   **U3 est abandonnée par l’auteur** : les ombres ne conviennent pas à l’esprit
   du jeu ni au design ; le code est conservé mais désactivé (ADR 0006).
-  **Prochaine tâche : inspecteur compact**, puis les phases 3 et 4. La phase 5
+  **Prochaine tâche : N2**, selon les priorités v1 ci-dessus. La phase 5
   attend l'auteur. `pnpm check` passe après la désactivation U3 (commit de
   l’entrée U3, 1 087 tests Vitest, 78 E2E `mobile` dont 1 ignoré). Rien n'est poussé.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
@@ -472,7 +495,7 @@ validation visuelle pour chacune.
    Code et tests du renderer conservés, ombres désactivées dans l’application ;
    pas de validation visuelle attendue. L’amendement de l’ADR 0006 remplace C2.
    Ne pas réactiver sans nouvelle décision explicite de l’auteur (journal U3).
-10. **Inspecteur compact** : toucher un autre objet alors que l'inspecteur est
+10. **Inspecteur compact — reporté avec le chantier mobile** : toucher un autre objet alors que l'inspecteur est
     fermé et un objet sélectionné doit le rouvrir (dette de `etat.md`). Test
     rouge d'abord.
 
@@ -482,10 +505,10 @@ Les commandes existent (L25, `authoring-commands.ts`) ; il manque l'interface
 tactile. Lire `mobile-editor-interactions.md` et `architecture.md` § Commandes
 et historique. Une tâche par point, captures pour chacune.
 
-1. **A1 — Scène** : redimensionner la scène (`updateScene`), sans laisser
+1. **A1 — Scène — reportée, conception à discuter** : redimensionner la scène (`updateScene`), sans laisser
    d'objet hors scène (refus explicite).
-2. **A2 — Zones de construction** : ajouter, déplacer, redimensionner, retirer.
-3. **A3 — Objectif** : déplacer la balle rouge et le panier (aujourd'hui uniques
+2. **A2 — Zones de construction — hors v1** : ajouter, déplacer, redimensionner, retirer.
+3. **A3 — Objectif — secondaire, hors priorités de livraison** : déplacer la balle rouge et le panier (aujourd'hui uniques
    et déjà posés) ; `updateLevelGoal` si le modèle l'exige.
 4. ~~A4 — Description du niveau~~ : avancée en M14b, faite (journal M14b).
 
@@ -527,8 +550,8 @@ pas inventer de tâche suivante.
   calibrées ni retouchées par un agent. Les intégrer à la campagne embarquée
   (remplacer `src/content/levels/` et le catalogue, identifiants uniques,
   régression de chaque solution) est une tâche que l'auteur déclenche ; à ce
-  jour, `levels/tuto-1.json` porte l'identifiant `free-workshop` et
-  `levels/tuto-4-…json` reprend celui de `tuto-3` : à corriger à l'intégration.
+  jour, l’auteur **autorise l’intégration des cinq tutoriels (N2, 2 octobre
+  2026)**, avec descriptions rédigées par l’agent et auteur « Bolt ».
 - Validation visuelle des tâches livrées avec captures.
 - Retest du vieux téléphone Xiaomi après L2c.
 - Premier passage distant du workflow CI.
@@ -2855,3 +2878,55 @@ className="level-card-description">` après l’état, comme `/levels` (même
   sur le vieux Xiaomi n’est pas mesuré ; ils ne s’exécutent plus dans l’app.
 - Pour l’auteur : U3 est abandonnée, travail conservé à sa demande ; la
   prochaine tâche reste l’inspecteur compact. Rien n’est poussé.
+
+
+### R1 — Retirer les surcharges de la balle — fait (validation visuelle attendue) — commit de cette entrée
+
+- Décision de l’auteur : priorité au jeu jouable, UI/UX mobile reportée ;
+  rejet de l’anneau rouge et du carré noir autour de la balle. ADR 0006 amendée
+  et texte d’interaction corrigé avant le code, pour remplacer explicitement U7.
+  A1 reportée, A2 hors v1 et A3 secondaire, sans nouvel objectif.
+- Lecture : carte, point de reprise et règles de la feuille de route, état,
+  ADR 0006/0007, tâche et journal U7, puce luna U7 (« signaler quelle balle est
+  la cible de l’objectif »). Lus en plus : renderer, BoardView, BoardShell,
+  leurs tests et E2E U7 pour localiser le cadre (sélection sans couleur explicite).
+  Reprise directe par Codex, sans délégation, comme U2/U3.
+- Tests rouges : les cinq tests renderer U7 décrivent désormais la projection
+  sans marqueur, les sprites rouge/bleu sans anneau, la pose simulée et le zoom
+  sans anneau, et une balle seule inchangée. Deux cas supplémentaires : aucune
+  boîte de sélection sur une balle verrouillée ou déplaçable ; un autre test
+  exige le bleu existant sur la sélection des autres objets. Test App U7 réécrit
+  pour le texte sans anneau et l’absence d’attribut de marqueur.
+- Échec initial : huit échecs ciblés (`expected … not to have property
+  "goalBallMarkerId"`, arcs et rectangles encore présents, couleur de contour
+  vide). Puis correction de la couleur attendue dans le nouveau test : le bleu
+  existant des poignées est `#1e88e5`, pas `#1565c0`.
+- Réalisé : suppression du signalement U7 (helper, projection, passe d’anneau,
+  constantes et attribut DOM). Sélection des balles portée par nom/panneau ;
+  contour des autres objets explicitement bleu. Fantômes, marques « À placer »,
+  sprites et physique inchangés. Texte « Seule la balle rouge compte. » gardé
+  quand il y a plusieurs balles.
+- Tests existants réécrits : les tests U7 renderer/App/E2E, car l’auteur remplace
+  ce comportement ; aucun test supprimé ou ignoré. L’E2E compare les pixels au
+  fond aux anciens emplacements de l’anneau et du carré, avant et après
+  sélection, puis à la pose simulée ; la vérification des sprites reste.
+  Le délai arbitraire de capture U7 est remplacé par l’observation des pixels.
+- Captures inspectées : les neuf PNG
+  `test-results/goal-ball/{repos,selection,simulation}-{390x844,844x390,1440x900}.png`.
+  Balles sans anneau ni boîte, sélection identifiée dans le panneau et sprites
+  conservés pendant la chute. Aucun changement de disposition.
+- Gate : départ puis fin `pnpm check` verts (fin : 1090 tests Vitest,
+  83 fichiers ; 78 E2E mobile, 77 réussis et 1 ignoré). Sockets locaux et
+  Chromium autorisés ; `tmp/check-levels.ts` déplacé hors dépôt pour les gates,
+  puis remis avec les mêmes octets et mode.
+- Fichiers hors périmètre : documents de reprise et de périmètre v1 pour
+  enregistrer les décisions de l’auteur. Les fichiers de `levels/` ne sont
+  ni modifiés ni commités ; le renommage auteur du tutoriel 4 reste à part.
+- Écarts : le cadre de sélection est retiré sur toutes les balles, y compris
+  manipulables, pour garder la même représentation ; noms et panneaux portent
+  toujours la sélection. Aucun changement des gestes mobiles.
+- Contradictions : U7 et le texte d’interaction demandaient l’anneau ; la
+  décision explicite de l’auteur les remplace dans l’ADR avant l’implémentation.
+- Non vérifié : appareil physique, Firefox et Safari.
+- Pour l’auteur : validation visuelle des captures ci-dessus. N2 est autorisée ;
+  le choix de règle des bordures physiques reste ouvert. Rien n’est poussé.
