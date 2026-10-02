@@ -1089,6 +1089,21 @@ select:focus-visible {
   white-space: nowrap;
 }
 
+/* V5: the level's picture in a card; the parchment shows until the image arrives. */
+.level-preview {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #f6ead3;
+}
+
+.level-preview-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
 .level-card-status {
   display: inline-flex;
   width: fit-content;

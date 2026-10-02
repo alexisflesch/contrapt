@@ -568,3 +568,62 @@ the role "link" and name "Jouer"`) ; `navigate-fallback-allowlist.test.ts` « se
   - l'accueil (V7 le refait) garde « 1 chapitres à explorer » (pluriel fautif avec un
     seul chapitre) et la ligne « Niveau 1 · Le petit pont » sous « Jouer », qui ne
     correspond plus à la destination du bouton.
+
+### V5 — Aperçu des niveaux — fait — commit V5 (2 octobre 2026)
+
+- Architecture. `src/presentation/level-preview.ts` : `previewViewport` (caméra
+  d'aperçu) et `renderLevelPreview({ document, cssWidth, cssHeight, devicePixelRatio,
+canvas, context, spriteLoader })`, qui appelle `projectLevel` et
+  `createBoardRenderer` sans second moteur de dessin (état initial, pas de
+  simulation, `toPlaceIds` vidé : aucun contour, poignée ni sélection ; ni horloge ni
+  aléatoire). `src/ui/board-canvas.ts` : l'adaptateur `CanvasRenderingContext2D` et le
+  décodeur de sprites, extraits tels quels de `BoardView.tsx` (qui les importe) pour
+  que le plateau et l'aperçu passent par le même code. `src/app/level-preview-cache.ts` :
+  `createLevelPreviewCache` (injectable, testé) ; `src/app/level-preview-images.ts` :
+  l'instance de l'application (canevas hors écran → PNG → object URL, un chargeur de
+  sprites partagé, capacité 48) ; `src/app/LevelPreview.tsx` + `.level-preview` dans
+  `styles.css`.
+- Cadrage. La scène entière, centrée, sans marge ni plancher de zoom (celui de
+  « Ajuster à la scène », 24 px/unité, ne tiendrait pas la scène dans une petite
+  vignette). Si le ratio n'est pas 16:9, le parchemin et la grille continuent autour.
+  L'aperçu est dessiné dans un repère logique fixe de 640 px de large, la densité de
+  pixels absorbant l'écart : grille d'un pixel et proportions identiques à la maquette
+  quelle que soit la taille de la carte. L'image mesure exactement taille CSS × densité.
+- Cache. Clé = empreinte `levelFingerprint` + taille CSS arrondie + densité ; sans
+  `crypto.subtle` (HTTP hors contexte sécurisé), le texte du fichier sert de clé. Deux
+  documents égaux partagent l'entrée (et un dessin en cours) ; un document modifié en
+  crée une. LRU par ré-insertion ; `acquire` rend une prise (`url`, `release`) : une URL
+  affichée n'est jamais révoquée, le cache dépasse sa capacité tant que des images sont
+  utilisées puis revient à la capacité à la libération. Un échec n'est pas mémorisé.
+- Composant. `LevelPreview({ document, alt = '', cache? })` : cadre 16:9 (CSS) sur
+  parchemin `#f6ead3` ; IntersectionObserver (marge 200 px) ; ne demande l'image qu'une
+  fois la carte proche ; sans IntersectionObserver, dessine tout de suite ; libère la
+  prise au changement de document et au démontage ; en cas d'échec le parchemin reste.
+  Le gris du verrouillage est laissé au CSS de la carte (V6) ; `alt` vide = décoratif.
+- Tests (Red-Green) : `level-preview.test.ts` (11, rouges d'abord par module absent ;
+  le test « ni contour pointillé » vérifié rouge sans le `toPlaceIds: []` :
+  `expected [...] to not include 'setLineDash'`), `level-preview-cache.test.ts` (11 ;
+  la garde « une seule libération » vérifiée rouge en la retirant),
+  `LevelPreview.test.tsx` (8 ; « ne dessine rien avant d'être visible » vérifié rouge
+  avec un état initial visible). Les premiers jets de deux tests du cache supposaient
+  une éviction par ancienneté sans tenir compte des prises ; corrigés (test seul).
+  Aucun test existant modifié.
+- Vérification visuelle (page de test et serveur de dev jetables, retirés) :
+  `/tmp/claude-1000/-home-aflesch-tinkerbolt/6a643584-d9aa-4357-aedc-da10439fec33/scratchpad/v5/`
+  (`tuto-1…5-1x.png`, `-2x.png`, `grille-*`, `autres-*`). Les cinq aperçus (640 × 360)
+  ont le même contenu et le même cadrage que `docs/maquettes/v1/img/tuto-*.png` (écart
+  de pixels : lissage des bords uniquement, 2 à 5 % de pixels). À 2x, l'image naturelle
+  fait 640 × 360 pour 320 × 180 CSS : nette. Une carte hors de l'écran n'a pas d'image
+  avant le défilement, puis en reçoit une.
+- Knip : `LevelPreview` n'est utilisé que par son test, ce que Knip accepte (les
+  fichiers de test sont des points d'entrée) ; aucun faux usage, aucun ignore. V6 le
+  branche.
+- Gate `pnpm check` verte : 1153 tests Vitest (87 fichiers), 6 documents de contenu,
+  87 tests Playwright `v1`. `tmp/check-levels.ts` écarté puis remis identique.
+- Pour V6 : passer `document` (et `alt` vide si le titre est dans la carte) ; poser
+  `LevelPreview` dans le cadre `.thumb` ; griser par CSS (`filter`) la carte verrouillée ;
+  le cadre prend la largeur de son parent, la hauteur vient du ratio. Le cache est
+  global au module : les tests de pages qui monteront `LevelPreview` devront injecter
+  `cache` ou simuler `levelPreviewImages` (jsdom n'a ni canevas ni `createImageBitmap` :
+  l'aperçu y reste simplement sur le parchemin). Changer le titre d'un niveau change
+  son empreinte, donc redessine l'aperçu (sans conséquence visuelle).
