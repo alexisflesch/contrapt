@@ -142,7 +142,7 @@ for (const viewport of formats) {
   test(`U3 abandonnée — aucune ombre au repos, en placement et en chute libre en ${String(viewport.width)} × ${String(viewport.height)}`, async ({
     page,
   }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile', 'Captures sur le profil tactile.');
+    test.skip(!['mobile', 'v1'].includes(testInfo.project.name), 'Captures sur le profil tactile.');
     await page.setViewportSize(viewport);
     await page.goto(`/shared${await encodeShareFragment(shadowLevel)}`);
     const canvas = page.getByRole('img', { name: 'Rendu du plateau' });

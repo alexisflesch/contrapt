@@ -6,7 +6,10 @@ import { decodeLevelFile } from '../src/infrastructure/level-file/level-file-cod
 import { encodeShareFragment } from '../src/infrastructure/level-share/level-share-codec';
 
 test('ouvre un lien partagé fabriqué par le codec sur mobile', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours de partage est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours de partage est validé sur mobile.',
+  );
 
   const fileResult = decodeLevelFile(JSON.stringify(sharedLevel));
   expect(fileResult.status).toBe('ok');
@@ -40,7 +43,10 @@ test('ouvre un lien partagé fabriqué par le codec sur mobile', async ({ page }
 });
 
 test('affiche un message utile pour un partage invalide sur mobile', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'La route de partage est validée sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'La route de partage est validée sur mobile.',
+  );
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/shared#level=bad');
@@ -60,7 +66,10 @@ test('affiche un message utile pour un partage invalide sur mobile', async ({ pa
 test('joue un lien partagé et dit discrètement qu’il n’a pas été gardé quand le stockage est plein (M8)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours de partage est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours de partage est validé sur mobile.',
+  );
 
   const fileResult = decodeLevelFile(JSON.stringify(sharedLevel));
   expect(fileResult.status).toBe('ok');

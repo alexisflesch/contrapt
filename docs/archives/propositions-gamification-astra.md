@@ -4,7 +4,7 @@
 
 Cette analyse porte sur l’envie de progresser, de revenir, de créer et de partager.
 Elle ne propose pas de nouvelles pièces physiques. Elle complète les
-[propositions de puzzles](levels/propositions-evolution-astra.md).
+[propositions de puzzles](../levels/propositions-evolution-astra.md).
 
 **Lecture exclusivement documentaire : fichiers Markdown du dépôt.** Aucun code,
 JSON, visuel ou écran de l’application n’a été inspecté ; aucun essai de jeu n’a
@@ -24,7 +24,7 @@ actuel ; les évolutions qui exigeraient un nouvel arbitrage sont signalées.
 base pour ce jeu : trouver une solution doit suffire à rendre fier. Une économie
 de pièces peut ensuite devenir un nouveau problème pour ceux qui le souhaitent.
 La révélation progressive et l’absence de verrou fondé sur les étoiles sont des
-points forts de l’[ADR 0010](decisions/0010-object-challenge-and-progression.md).
+points forts de l’[ADR 0010](../decisions/0010-object-challenge-and-progression.md).
 
 Mon principal reproche serait ailleurs : les documents décrivent bien ce qui
 valide une réussite, mais moins ce qui donne envie de vivre la suivante. Le
@@ -61,9 +61,9 @@ concrètes.
 | Reprise | Reset exact de la simulation ; persistance des records ; brouillons non encore reliés à leur interface | Cela ne constitue pas encore une sauvegarde documentée de chaque tentative de campagne |
 | Installation et hors ligne | PWA livrée ; invitation visible U10 encore prévue | Le hors-ligne est un avantage à rendre compréhensible au bon moment |
 
-Sources : [état livré et dettes](etat.md), [feuille de route, L19–L28 et U4–U17](feuille-de-route-luna.md),
-[conception des niveaux](levels/conception-niveaux.md),
-[partage et stockage](decisions/0011-local-storage-and-url-sharing.md).
+Sources : [état livré et dettes](../etat.md), [feuille de route, L19–L28 et U4–U17](../feuille-de-route-luna.md),
+[conception des niveaux](../levels/conception-niveaux.md),
+[partage et stockage](../decisions/0011-local-storage-and-url-sharing.md).
 
 Deux nuances comptent pour ne pas surestimer l’existant :
 
@@ -105,7 +105,7 @@ et laisse la construction visible. Une petite marque dans le carnet suffit ;
 pas besoin d’une cinématique ou d’un personnage animé.
 
 Le parcours « Recommencer » doit conserver la construction, conformément à la
-[spécification mobile](mobile-editor-interactions.md). Améliorer ne doit jamais
+[spécification mobile](../mobile-editor-interactions.md). Améliorer ne doit jamais
 signifier effacer par surprise ce qui vient de marcher.
 
 ### Un prochain problème qui suscite une question
@@ -386,7 +386,7 @@ Un bouton explicite « Garder ce puzzle » permettrait de le retrouver, même si
 message d’origine est loin dans la conversation. L’ouverture seule n’enregistre
 rien. Les réussites de cette étagère restent distinctes de la campagne.
 
-Cette conservation doit respecter l’[ADR 0011](decisions/0011-local-storage-and-url-sharing.md)
+Cette conservation doit respecter l’[ADR 0011](../decisions/0011-local-storage-and-url-sharing.md)
 et définir sa propre place dans les sauvegardes. Elle donne une bonne raison de
 revenir sans modifier silencieusement le brouillon d’atelier.
 
@@ -411,7 +411,7 @@ complète fonctionne ». Il faut qu’une solution existe avec l’inventaire et
 actions réellement autorisés au destinataire. Cela ne garantit pas à lui seul
 que le puzzle soit amusant, mais évite une première déception évitable.
 
-La [feuille de route](feuille-de-route-luna.md) prévoit déjà U9 pour l’interface
+La [feuille de route](../feuille-de-route-luna.md) prévoit déjà U9 pour l’interface
 auteur et U17 pour travailler sur une copie d’un niveau de campagne. Ce parcours
 les prolonge ; il ne suppose pas qu’ils soient terminés. U16 fournit déjà la
 sortie par fichier et lien.
@@ -457,7 +457,7 @@ modèles ; ce n’est pas une priorité avant un partage de puzzle simple et fia
 | Décorations fixes choisies par le joueur | Oui, en quantité modeste | Elles donnent une identité à l’atelier sans exiger d’animation complexe |
 
 Une communauté publique peut être une bonne évolution. Elle est déjà envisagée
-comme couche optionnelle dans le [cahier des charges](cahier-des-charges.md).
+comme couche optionnelle dans le [cahier des charges](../cahier-des-charges.md).
 Elle change cependant le périmètre sans backend de la première version : la
 proposer n’équivaut pas à la considérer autorisée ou nécessaire maintenant.
 

@@ -160,7 +160,10 @@ const openRemixWithoutFan = async (page: Page): Promise<void> => {
 test('révèle la solution de l’auteur depuis le menu de l’atelier, au toucher (M12)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await openRemixWithoutFan(page);
   await expect(page.getByText('Mode éditeur')).toBeVisible();

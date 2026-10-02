@@ -46,7 +46,10 @@ const storedFloorX = (page: Page): Promise<number | null> =>
 test('édite un tutoriel de campagne au toucher et conserve le brouillon', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours d’édition est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours d’édition est validé sur mobile.',
+  );
 
   await page.setViewportSize({ width: 390, height: 844 });
   await resolveLevelOne(page);

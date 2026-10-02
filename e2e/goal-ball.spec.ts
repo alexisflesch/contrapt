@@ -14,6 +14,10 @@ const formats = [
 type Point = { readonly x: number; readonly y: number };
 type Rgba = readonly [number, number, number, number];
 
+// The pixel comparisons below were calibrated on a dense screen (Pixel 5, ratio 2.75): at a
+// ratio of 1 the sprite's soft edge reaches the sampled corner by a few levels.
+test.use({ deviceScaleFactor: 2.75 });
+
 const locked = { move: false, rotate: false, remove: false } as const;
 const placed = (id: string, type: string, x: number, y: number) => ({
   id,

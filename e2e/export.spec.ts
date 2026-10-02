@@ -8,7 +8,10 @@ test('exporte le puzzle vérifié en fichier puis en lien de partage au toucher 
   page,
   context,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours d’export est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours d’export est validé sur mobile.',
+  );
 
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.setViewportSize({ width: 390, height: 844 });

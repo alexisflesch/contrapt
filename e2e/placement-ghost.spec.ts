@@ -221,7 +221,10 @@ const hover = async (canvas: Locator, page: Page, point: { x: number; y: number 
 test('U1 — le fantôme de placement est l’objet, translucide, valide puis invalide, puis posé', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   const canvas = await openLevel(page);
   await chooseBeam(page);
@@ -289,7 +292,10 @@ test('U1 — le fantôme de placement est l’objet, translucide, valide puis in
 test('U1 — captures du fantôme valide et invalide aux trois formats', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Les captures sont prises sur le profil mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Les captures sont prises sur le profil mobile.',
+  );
   await mkdir('test-results/placement-ghost', { recursive: true });
 
   for (const viewport of formats) {

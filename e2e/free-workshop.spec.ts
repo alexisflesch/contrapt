@@ -8,7 +8,10 @@ const draftKeys = (page: Page): Promise<string[]> =>
 test('M13 — l’atelier libre s’enregistre à la première modification, sans entrée d’historique', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Parcours critique tactile, sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Parcours critique tactile, sur mobile.',
+  );
 
   await page.goto('/editor');
   await expect(page.getByText('Mode éditeur')).toBeVisible();

@@ -63,7 +63,10 @@ const wiredLevel = levelDocumentSchema.parse({
 test('U21 — le joueur relie avec le fil de son inventaire, puis le délie, au tactile', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le câblage tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le câblage tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/shared${await encodeShareFragment(wiredLevel)}`);
   await expect(page.getByText('Partage · Fil du joueur')).toBeVisible();

@@ -1,5 +1,8 @@
 # Interactions mobiles du plateau et de l'éditeur
 
+Note du 2 octobre 2026 : ce document est la référence de la v2 (UI/UX téléphone).
+La v1 est desktop d'abord (voir `AGENTS.md` § Mobile-first).
+
 Statut : spécification fonctionnelle initiale. Les seuils marqués comme devant être
 validés sur appareil restent provisoires ; ils ne doivent pas être dispersés dans
 le code.

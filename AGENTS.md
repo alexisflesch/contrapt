@@ -89,10 +89,13 @@ formats concernés.
 
 ## Mobile-first
 
-Toute fonctionnalité de jeu ou d'édition doit être utilisable au tactile sur un
-petit écran. Ne pas rendre une action essentielle dépendante du survol, du clic
-droit ou d'un clavier. Les tests end-to-end critiques incluent au moins un viewport
-de téléphone pris en charge.
+v1 : desktop d'abord ; la règle mobile-first revient en v2 (UI/UX téléphone).
+On ne casse pas sciemment ce qui marche au téléphone, mais on n'y investit pas.
+Les tests end-to-end critiques portent sur un viewport desktop (projet Playwright
+`v1`) ; le projet `mobile` reste lançable à la main, hors gate.
+
+Dans tous les cas, ne pas rendre une action essentielle dépendante du seul survol
+ou du seul clic droit.
 
 ## Discipline de changement
 

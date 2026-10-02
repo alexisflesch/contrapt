@@ -73,7 +73,10 @@ const expectNoHorizontalScroll = async (page: Page): Promise<void> => {
 test('U11 — au toucher, le pseudo retenu se modifie et s’efface, et la progression se remet à zéro', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await seed(page, seededState());
   await page.goto('/settings');
@@ -149,7 +152,10 @@ test('U11 — au toucher, le pseudo retenu se modifie et s’efface, et la progr
 test('U11 — en paysage téléphone, la page défile jusqu’à la remise à zéro', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 844, height: 390 });
   await seed(page, seededState());
   await page.goto('/settings');
@@ -169,7 +175,10 @@ test('U11 — en paysage téléphone, la page défile jusqu’à la remise à z�
 });
 
 test('U11 — captures des paramètres aux trois formats', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Les captures sont prises sur le profil mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Les captures sont prises sur le profil mobile.',
+  );
   await mkdir('test-results/settings', { recursive: true });
 
   for (const viewport of formats) {

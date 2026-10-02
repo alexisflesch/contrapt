@@ -48,7 +48,10 @@ const importDemo = async (page: Page): Promise<void> => {
 test('joue un niveau reçu, montre son auteur et enregistre la victoire (M10)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/my-levels');
   await importDemo(page);
@@ -76,7 +79,10 @@ test('joue un niveau reçu, montre son auteur et enregistre la victoire (M10)', 
 test('joue quand même un fichier importé que le stockage plein n’a pas gardé (M10)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.addInitScript(() => {
     Storage.prototype.setItem = () => {
       throw new DOMException('Quota dépassé', 'QuotaExceededError');

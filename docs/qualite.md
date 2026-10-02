@@ -59,6 +59,11 @@ sauvegarder, recharger, importer et partager.
 Au moins un projet de test utilise un viewport et des interactions tactiles de
 téléphone. Les tests desktop ne sont pas considérés comme substituts.
 
+Amendement du 2 octobre 2026 (v1 desktop d'abord) : la gate (`test:e2e:critical`)
+passe sur le projet Playwright `v1` (Desktop Chrome, 1440 × 900, `hasTouch`), qui
+exclut les specs étiquetées `@mobile`. Le projet `mobile` reste lançable à la main,
+hors gate ; l'exigence d'un projet téléphone dans la gate revient en v2.
+
 ### Tests de contenu
 
 Tous les niveaux embarqués sont valides au build. Une solution de référence ou un

@@ -27,7 +27,10 @@ test('présente les cinq tutoriels de Bolt dans un chapitre', async ({ page }) =
 test('ouvre le premier tutoriel jouable avec son inventaire tactile', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/levels/tuto-1/play');
 

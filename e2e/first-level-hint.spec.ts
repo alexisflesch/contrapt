@@ -54,7 +54,10 @@ const storedPreferences = async (page: Page): Promise<unknown> => {
 test('U8 — sur le niveau 1 neuf, l’aide montre « Lancer » puis le tiroir, se ferme d’un toucher et ne revient plus', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(levelOne);
 
@@ -85,7 +88,10 @@ test('U8 — sur le niveau 1 neuf, l’aide montre « Lancer » puis le tiroir, 
 test('U8 — l’aide disparaît à la première pose et ne revient pas au rechargement', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(levelOne);
   const hint = hintOf(page);
@@ -107,7 +113,10 @@ test('U8 — l’aide disparaît à la première pose et ne revient pas au recha
 });
 
 test('U8 — captures de l’aide du niveau 1 aux trois formats', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Les captures sont prises sur le profil mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Les captures sont prises sur le profil mobile.',
+  );
   await mkdir('test-results/first-level-hint', { recursive: true });
 
   for (const viewport of formats) {

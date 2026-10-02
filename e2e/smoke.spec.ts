@@ -9,7 +9,7 @@ const openWorkshopFromMenu = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: 'Atelier de construction' }).click();
 };
 
-test('lance depuis l’accueil le niveau 1 sur un écran mobile', async ({ page }) => {
+test('lance depuis l’accueil le niveau 1', async ({ page }) => {
   await page.goto('/');
 
   await expect(page).toHaveTitle('TinkerBolt');
@@ -28,7 +28,9 @@ test('lance depuis l’accueil le niveau 1 sur un écran mobile', async ({ page 
 
   // Level 1 provides one short beam; free editing history stays unavailable.
   await expect(page.getByRole('region', { name: 'Objets disponibles' })).toBeVisible();
-  await page.getByRole('button', { name: 'Ouvrir le catalogue' }).tap();
+  // Phone layouts keep the catalogue in a drawer; desktop shows it docked.
+  const openCatalogue = page.getByRole('button', { name: 'Ouvrir le catalogue' });
+  if ((await openCatalogue.count()) > 0) await openCatalogue.tap();
   await expect(page.getByRole('button', { name: 'Poutre courte' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Annuler' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Rétablir' })).toBeDisabled();

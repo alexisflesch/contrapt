@@ -98,7 +98,10 @@ test.describe('mise à jour (U10)', () => {
   test('propose la nouvelle version à l’accueil puis hors du plateau, la tait pendant la simulation', async ({
     page,
   }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile', 'Le parcours est validé sur mobile.');
+    test.skip(
+      !['mobile', 'v1'].includes(testInfo.project.name),
+      'Le parcours est validé sur mobile.',
+    );
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await hideFirstLevelHint(page);
@@ -124,7 +127,10 @@ test.describe('mise à jour (U10)', () => {
   });
 
   test('captures de l’invitation de mise à jour aux trois formats', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile', 'Les captures sont prises sur le profil mobile.');
+    test.skip(
+      !['mobile', 'v1'].includes(testInfo.project.name),
+      'Les captures sont prises sur le profil mobile.',
+    );
     await mkdir('test-results/pwa-invitation', { recursive: true });
 
     for (const viewport of formats) {
@@ -158,7 +164,10 @@ test.describe('installation (U10)', () => {
   test('propose l’installation à l’accueil quand le navigateur la permet, et retient le refus', async ({
     page,
   }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile', 'Le parcours est validé sur mobile.');
+    test.skip(
+      !['mobile', 'v1'].includes(testInfo.project.name),
+      'Le parcours est validé sur mobile.',
+    );
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'TinkerBolt' })).toBeVisible();
@@ -185,7 +194,10 @@ test.describe('installation (U10)', () => {
   });
 
   test('captures de l’invitation d’installation aux trois formats', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile', 'Les captures sont prises sur le profil mobile.');
+    test.skip(
+      !['mobile', 'v1'].includes(testInfo.project.name),
+      'Les captures sont prises sur le profil mobile.',
+    );
     await mkdir('test-results/pwa-invitation', { recursive: true });
 
     for (const viewport of formats) {

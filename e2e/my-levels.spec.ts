@@ -24,7 +24,10 @@ const captureFormats = async (page: Page, name: string): Promise<void> => {
 test('importe un fichier depuis « Mes niveaux » et le retrouve dans la liste (M9)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.getByRole('button', { name: 'Ouvrir le menu' }).tap();

@@ -139,6 +139,11 @@ localement, pas uniquement sur le serveur HMR. Il fournit des projets séparés 
 - Firefox et WebKit pour la suite complète avant livraison et régulièrement sur la
   branche principale.
 
+Amendement du 2 octobre 2026 : pour la v1 (desktop d'abord), la gate E2E
+(`test:e2e:critical`) cible le projet `v1` (Chromium desktop 1440 × 900 avec
+`hasTouch`, specs `@mobile` exclues) au lieu du projet tactile `mobile`, qui reste
+lançable à la main hors gate ; l'obligation du projet tactile revient en v2.
+
 La matrice finale des appareils reste à décider dans le cahier des charges. Les
 profils Playwright ne constituent pas à eux seuls une validation sur de vrais
 téléphones. En CI, `forbidOnly` est actif, les retries sont limités et chaque

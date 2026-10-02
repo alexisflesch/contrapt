@@ -95,7 +95,10 @@ const storedBeamX = (page: Page, draftId: string): Promise<number | null> =>
 test('reçoit, gagne, remixe, déplace un objet et exporte au toucher (M11)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/my-levels');
   await page.locator('input[type="file"]').setInputFiles({
@@ -149,7 +152,10 @@ test('reçoit, gagne, remixe, déplace un objet et exporte au toucher (M11)', as
 test('désactive « Modifier » d’un niveau verrouillé et refuse son URL directe (M11)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/levels');
   await expect(

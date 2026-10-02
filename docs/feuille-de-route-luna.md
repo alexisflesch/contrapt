@@ -39,7 +39,7 @@ de la scène, des zones, de l’objectif ; import de fichier ; liste des
 brouillons.
 
 **En attente de l’auteur.** Tri des propositions du 27 septembre
-(`docs/propositions-*.md`, `docs/proposition-evolutions-canary.md`,
+(`docs/archives/propositions-*.md`, `docs/archives/proposition-evolutions-canary.md`,
 `docs/levels/idees-niveaux.md`, `docs/levels/propositions-evolution-astra.md`).
 
 # Feuille de route — reprise de l’implémentation

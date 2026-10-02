@@ -42,7 +42,7 @@ const licenceNotice =
 test('partage avec un pseudo, refuse un pseudo invalide et le retient (M14)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le partage est validé sur mobile.');
+  test.skip(!['mobile', 'v1'].includes(testInfo.project.name), 'Le partage est validé sur mobile.');
 
   await page.setViewportSize({ width: 390, height: 844 });
   await openMachineDraft(page);
@@ -111,7 +111,7 @@ test('partage avec un pseudo, refuse un pseudo invalide et le retient (M14)', as
 test('saisit une description au toucher et la retrouve dans le fichier (M14b)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le partage est validé sur mobile.');
+  test.skip(!['mobile', 'v1'].includes(testInfo.project.name), 'Le partage est validé sur mobile.');
 
   await page.setViewportSize({ width: 390, height: 844 });
   await openMachineDraft(page);

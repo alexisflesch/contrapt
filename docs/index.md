@@ -8,10 +8,14 @@ ligne de routage qui correspond à sa tâche.
 
 L'état réellement livré et les dettes sont dans `etat.md`. Le découpage en
 tranches est dans `backlog.md`. **Le travail restant, tâche par tâche et dans
-l'ordre, est dans `feuille-de-route.md`** : c'est le point d'entrée d'un
-agent qui reprend l'implémentation. `feuille-de-route-luna.md` est l'historique
-de la reprise précédente (journal L1 à U29) ; on n'y lit que l'entrée citée. `plan-remise-en-jeu.md` est l'historique de
-la remise en jeu (phases A à F) ; on n'y lit que la section qu'une tâche cite.
+l'ordre, est dans `feuille-de-route.md`** (feuille de route de la v1, desktop
+d'abord) : c'est le point d'entrée d'un agent qui reprend l'implémentation.
+`feuille-de-route-mes-niveaux.md` (journal G1 à N2) et `feuille-de-route-luna.md`
+(journal L1 à U29) sont les historiques des reprises précédentes ; on n'y lit que
+l'entrée citée. `plan-remise-en-jeu.md` est l'historique de la remise en jeu
+(phases A à F) ; on n'y lit que la section qu'une tâche cite. `docs/archives/`
+contient des propositions d'idées, pas des décisions : on ne les lit pas pour
+implémenter.
 
 ## Autorité
 
@@ -24,14 +28,15 @@ gagne et l'autre document doit être corrigé, pas arbitré au cas par cas.
 | `docs/backlog.md`                                         | 138     | découpage des tranches, dépendances, tranche courante            |
 | `docs/cahier-des-charges.md`                              | 436     | vision produit, périmètre, hors-périmètre                        |
 | `docs/etat.md`                                            | 849     | ce qui est livré, les dettes, la dernière gate                   |
-| `docs/feuille-de-route.md`                                | 1795    | tâches restantes, leur ordre, règles de reprise, journal         |
+| `docs/feuille-de-route.md`                                | 220     | feuille de route v1 : tâches restantes, leur ordre, journal      |
+| `docs/feuille-de-route-mes-niveaux.md`                    | 3034    | historique de la phase « Mes niveaux » (journal G1 à N2)         |
 | `docs/feuille-de-route-luna.md`                           | 2633    | historique de la reprise précédente (journal L1 à U29)           |
 | `docs/plan-remise-en-jeu.md`                              | 1208    | historique A–F ; spécifications détaillées de C1, C2, D3         |
 | `docs/architecture.md`                                    | 223     | couches, dépendances, états distincts, modèle d'objet            |
 | `docs/qualite.md`                                         | 149     | stratégie de test, niveaux de test, gates                        |
 | `docs/catalogue-initial.md`                               | 239     | contrats des onze familles d'objets                              |
 | `docs/tinkerbolt_control_wires_v1.md`                       | 125     | spécification fonctionnelle des fils de commande                 |
-| `docs/mobile-editor-interactions.md`                      | 595     | gestes, états d'interface, scénarios d'acceptation tactiles      |
+| `docs/mobile-editor-interactions.md`                      | 595     | gestes, états d'interface, scénarios tactiles (v2 : hors v1)     |
 | `docs/levels/nouveaux-niveaux.md`                         | —       | campagne esquissée : 18 propositions, niveau 15 différé          |
 | `docs/levels/conception-niveaux.md`                       | 156     | concevoir un niveau : règles du jeu, objets, physique, méthode   |
 | `docs/decisions/0001-product-foundations.md`              | 33      | fondations produit (accepté)                                     |
@@ -81,11 +86,11 @@ Colonne « lire » = lecture obligatoire et suffisante. Ne pas élargir sans rai
 | Rendu du plateau, cadrage, projection          | ADR 0007, ADR 0006, `architecture.md` § Rendu et interface                                                        | `src/presentation/`                            |
 | Assets, sprites, export depuis `art/`          | ADR 0007 § Amendement du 25 septembre 2026, `art/build-sprites.py`                                                | `art/`, `public/assets/`                       |
 | Fils de commande, levier, convoyeur            | ADR 0009, `tinkerbolt_control_wires_v1.md`, `catalogue-initial.md` § Levier, § Convoyeur                            | `src/domain/`, `src/presentation/`             |
-| Interface tactile, tiroir, gestes              | `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile                                     | `src/ui/`, `src/app/`                          |
+| Interface tactile, tiroir, gestes (v2)         | `mobile-editor-interactions.md`, `cahier-des-charges.md` § Interaction mobile                                     | `src/ui/`, `src/app/`                          |
 | Routage, navigation, schéma d'URL              | ADR 0008                                                                                                          | `src/app/`                                     |
 | Conception d'un nouveau niveau                 | `levels/conception-niveaux.md` (se suffit à lui-même)                                                             | `src/content/levels/`                          |
 | Contenu d'un niveau                            | `levels/nouveaux-niveaux.md`, `feuille-de-route.md` § 3, ADR 0007 § Scène d'un niveau                     | `src/content/levels/`                          |
-| Parcours end-to-end                            | `mobile-editor-interactions.md` § Scénarios d'acceptation, `qualite.md` § Tests end-to-end                        | `e2e/`                                         |
+| Parcours end-to-end (v1 : desktop)             | `qualite.md` § Tests end-to-end ; `mobile-editor-interactions.md` § Scénarios d'acceptation (parcours, v2 pour les gestes) | `e2e/`                                         |
 | Stockage, import/export, codec URL             | ADR 0011, ADR 0015, `architecture.md` § Stockage et partage                                                                 | `src/infrastructure/`, `src/application/`      |
 | Défi d'objets, progression de campagne         | ADR 0010, ADR 0011 § `localStorage`                                                                               | `src/application/progression/`, `src/content/` |
 | PWA, service worker                            | ADR 0012, ADR 0003                                                                                                | racine, `src/app/`                             |

@@ -99,7 +99,10 @@ const captureFormats = async (page: Page, name: string): Promise<void> => {
 test('dessine une poutre courte, moyenne et longue avec leur propre sprite (U12)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/my-levels');
   await page.locator('input[type="file"]').setInputFiles({

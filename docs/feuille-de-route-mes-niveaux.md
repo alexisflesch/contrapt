@@ -550,8 +550,8 @@ le journal).
   `art/assets/timer/`. Comportement à décider.
 - **« Proposer ce niveau »** : bouton qui ouvre le formulaire Grist de la forge
   edu, quand le formulaire existe et que son adresse est connue.
-- **Tri des propositions** du 27 septembre (`docs/propositions-*.md`,
-  `docs/proposition-evolutions-canary.md`).
+- **Tri des propositions** du 27 septembre (`docs/archives/propositions-*.md`,
+  `docs/archives/proposition-evolutions-canary.md`).
 
 ## 5. Fin de liste
 

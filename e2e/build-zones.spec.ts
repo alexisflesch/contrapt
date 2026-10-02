@@ -195,7 +195,10 @@ const selectBeam = async (page: Page, canvas: Locator): Promise<void> => {
 test('U13 — zone visible ; hors zone l’objet suit le doigt, puis revient avec un seul refus ; dans la zone, accepté', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   const canvas = await openLevel(page);
 
@@ -244,7 +247,10 @@ test('U13 — zone visible ; hors zone l’objet suit le doigt, puis revient ave
 test('U13 — captures de la zone, du fantôme hors zone et du refus aux trois formats', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Les captures sont prises sur le profil mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Les captures sont prises sur le profil mobile.',
+  );
   await mkdir('test-results/build-zones', { recursive: true });
 
   for (const viewport of formats) {

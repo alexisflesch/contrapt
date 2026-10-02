@@ -5,7 +5,10 @@ import { machineBeam, markBeamToPlace, openMachineDraft, tapWorldPoint } from '.
 test('marque un objet à placer puis résout le puzzle comme un joueur, au toucher (U22)', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le parcours de l’atelier est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le parcours de l’atelier est validé sur mobile.',
+  );
 
   await page.setViewportSize({ width: 390, height: 844 });
   await openMachineDraft(page);

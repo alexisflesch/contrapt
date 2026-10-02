@@ -246,13 +246,16 @@ const runConstructionInteractions = async (page: Page): Promise<void> => {
 test('C3 — place, déplace, modifie et supprime une poutre dans Chromium desktop', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'desktop', 'Ce parcours est la validation Chromium desktop.');
+  test.skip(
+    !['desktop', 'v1'].includes(testInfo.project.name),
+    'Ce parcours est la validation Chromium desktop.',
+  );
   await runConstructionInteractions(page);
 });
 
 test('L17b — tourne le levier de 90° dans chaque sens au tactile', async ({ page }, testInfo) => {
   test.skip(
-    testInfo.project.name !== 'mobile',
+    !['mobile', 'v1'].includes(testInfo.project.name),
     'La poignée tactile du levier est testée sur mobile.',
   );
   await openWorkshop(page);
@@ -307,7 +310,7 @@ test('L17b — tourne le levier de 90° dans chaque sens au tactile', async ({ p
 
 test('U6 — remet l’atelier à zéro après confirmation au tactile', async ({ page }, testInfo) => {
   test.skip(
-    testInfo.project.name !== 'mobile' && testInfo.project.name !== 'desktop',
+    !['mobile', 'desktop', 'v1'].includes(testInfo.project.name),
     'Le parcours U6 est capturé sur mobile et Chromium desktop.',
   );
 
@@ -371,7 +374,7 @@ test('U6 — permet de recommencer un puzzle depuis son document initial', async
   page,
 }, testInfo) => {
   test.skip(
-    testInfo.project.name !== 'mobile' && testInfo.project.name !== 'desktop',
+    !['mobile', 'desktop', 'v1'].includes(testInfo.project.name),
     'Le reset de puzzle est capturé sur mobile et Chromium desktop.',
   );
   await page.setViewportSize(
@@ -436,7 +439,10 @@ test('U6 — permet de recommencer un puzzle depuis son document initial', async
 test('U15 — relie un levier à un convoyeur par la carte Fil, au tactile', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Le câblage tactile est validé sur mobile.');
+  test.skip(
+    !['mobile', 'v1'].includes(testInfo.project.name),
+    'Le câblage tactile est validé sur mobile.',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await openWorkshop(page);
   const board = page.getByRole('region', { name: 'Plateau de jeu' });

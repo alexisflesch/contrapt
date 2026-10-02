@@ -21,6 +21,18 @@ export default defineConfig({
   },
   projects: [
     {
+      // Gate de la v1 : desktop d'abord. `hasTouch` garde valides les specs fondées sur `tap`.
+      name: 'v1',
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chromium',
+        viewport: { width: 1440, height: 900 },
+        hasTouch: true,
+      },
+      grepInvert: /@mobile/,
+    },
+    {
+      // Hors gate depuis la v1 ; lançable à la main (`--project=mobile`).
       name: 'mobile',
       use: { ...devices['Pixel 5'], channel: 'chromium', isMobile: true, hasTouch: true },
     },
