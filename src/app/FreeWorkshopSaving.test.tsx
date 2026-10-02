@@ -115,6 +115,16 @@ describe('atelier libre enregistré (M13, ADR 0015 § Atelier libre)', () => {
     expect(creation.updatedAt).toBe(testClock().toISOString());
   });
 
+  it('une création partie de zéro n’a pas de description (M14b)', () => {
+    render(<App draftRepository={draftStorage()} />);
+
+    placeBall();
+
+    const { metadata } = storedCreation(draftIdInUrl()).document;
+    expect(metadata).toEqual({ title: 'Atelier de niveau' });
+    expect('description' in metadata).toBe(false);
+  });
+
   it('remplace l’entrée d’historique du navigateur au lieu d’en ajouter une', () => {
     render(<App />);
     const entriesBefore = window.history.length;

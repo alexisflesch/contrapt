@@ -107,3 +107,47 @@ test('partage avec un pseudo, refuse un pseudo invalide et le retient (M14)', as
     data: { author: 'Lili' },
   });
 });
+
+test('saisit une description au toucher et la retrouve dans le fichier (M14b)', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Le partage est validé sur mobile.');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openMachineDraft(page);
+  await expect(page.getByText('Mode éditeur')).toBeVisible();
+  await markBeamToPlace(page);
+
+  await page.getByRole('button', { name: 'Exporter le niveau' }).tap();
+  const dialog = page.getByRole('dialog', { name: 'Exporter le niveau' });
+  await expect(dialog.getByText(/Puzzle vérifié/u)).toBeVisible();
+  const description = dialog.getByRole('textbox', { name: 'Description (facultatif)' });
+  await expect(description).toHaveValue('');
+
+  await dialog.getByRole('textbox', { name: 'Nom du niveau' }).fill('Le grand saut');
+  await dialog.getByRole('textbox', { name: 'Pseudo (facultatif)' }).fill('Lili');
+  await description.tap();
+  await description.fill('  Fais rebondir la bille jusqu’au panier.  ');
+  await captureFormats(page, 'share-description');
+
+  // The keyboard opens on the description: it and the export button stay in sight.
+  await description.tap();
+  await page.setViewportSize(keyboardOpenViewport);
+  await expectWithinViewport(page, description);
+  await expectWithinViewport(page, dialog.getByRole('button', { name: 'Télécharger le fichier' }));
+  await page.screenshot({
+    path: 'test-results/share/share-description-keyboard-390x508.png',
+    scale: 'css',
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const downloadPromise = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Télécharger le fichier' }).tap();
+  const download = await downloadPromise;
+  const decoded = decodeLevelFile(await readFile(await download.path(), 'utf8'));
+  expect(decoded.status === 'ok' && decoded.document.metadata).toEqual({
+    title: 'Le grand saut',
+    description: 'Fais rebondir la bille jusqu’au panier.',
+    author: 'Lili',
+  });
+});

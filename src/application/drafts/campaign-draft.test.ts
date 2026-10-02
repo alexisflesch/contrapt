@@ -81,6 +81,15 @@ describe('brouillon d’un niveau de la campagne (U17)', () => {
     expect(levelTwo).toEqual(original);
   });
 
+  it('garde la description du niveau d’origine dans la création (M14b)', () => {
+    const { repository, saved } = createMemoryDraftRepository();
+    expect(levelTwo.metadata.description).toMatch(/^Esquisse non calibrée\./u);
+
+    openCampaignDraft(repository, levelTwo);
+
+    expect(saved[0]?.document.metadata.description).toBe(levelTwo.metadata.description);
+  });
+
   it('rouvre un brouillon existant sans écraser les ajustements de l’auteur', () => {
     const edited = {
       ...levelTwoCreation().document,

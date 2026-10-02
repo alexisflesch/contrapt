@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { embeddedWorkshopDocument } from '../../content/embedded-levels';
 import type { LevelDocument } from '../../domain/level-document';
 import type { DraftCreation, DraftCreationContent, DraftRepository } from './draft-repository';
 import { saveFreeCreation, startFreeCreation } from './save-free-creation';
@@ -40,6 +41,17 @@ describe('atelier libre enregistré (M13, ADR 0015 § Atelier libre)', () => {
 
     expect(result).toEqual({ status: 'ok', draftId: 'creation-abc123' });
     expect(saves).toEqual([{ document: { ...workshop, id: 'creation-abc123' } }]);
+  });
+
+  it('enregistre l’atelier embarqué sans description (M14b)', () => {
+    const { repository, saves } = createMemoryRepository();
+
+    startFreeCreation(repository, embeddedWorkshopDocument, () => 'abc123');
+
+    expect(saves).toHaveLength(1);
+    const metadata = saves[0]?.document.metadata;
+    expect(metadata).toEqual({ title: 'Atelier de niveau' });
+    expect(metadata !== undefined && 'description' in metadata).toBe(false);
   });
 
   it('tire un nouvel aléa quand l’identifiant est déjà pris', () => {

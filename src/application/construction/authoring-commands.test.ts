@@ -438,6 +438,93 @@ describe('commandes d’auteur', () => {
     });
   });
 
+  describe('description de l’auteur (M14b, ADR 0016)', () => {
+    const attributed = createLevel({
+      metadata: {
+        title: 'Authoring test',
+        description: 'Description',
+        author: 'Lili',
+        basedOn: [{ title: 'Origine', author: 'Max' }],
+      },
+    });
+
+    it('change la description sans toucher au reste des métadonnées', () => {
+      const changed = updateLevelDescription({
+        context: 'author',
+        description: 'Autre description',
+      }).execute({ document: attributed, provenance: {} });
+
+      expect(changed.status === 'accepted' && changed.state.document.metadata).toEqual({
+        ...attributed.metadata,
+        description: 'Autre description',
+      });
+    });
+
+    it('retire seulement la description : titre, pseudo et sources restent', () => {
+      const removed = updateLevelDescription({ context: 'author', description: undefined }).execute(
+        { document: attributed, provenance: {} },
+      );
+
+      expect(removed.status === 'accepted' && removed.state.document.metadata).toEqual({
+        title: 'Authoring test',
+        author: 'Lili',
+        basedOn: [{ title: 'Origine', author: 'Max' }],
+      });
+      expect(
+        removed.status === 'accepted' && 'description' in removed.state.document.metadata,
+      ).toBe(false);
+    });
+
+    it('ajoute une description à un niveau qui n’en a pas, le pseudo et les sources gardés', () => {
+      const withoutDescription = createLevel({
+        metadata: { title: 'Authoring test', author: 'Lili' },
+      });
+
+      const added = updateLevelDescription({ context: 'author', description: 'Nouvelle' }).execute({
+        document: withoutDescription,
+        provenance: {},
+      });
+
+      expect(added.status === 'accepted' && added.state.document.metadata).toEqual({
+        title: 'Authoring test',
+        author: 'Lili',
+        description: 'Nouvelle',
+      });
+    });
+
+    it('n’enregistre rien quand la description ne change pas', () => {
+      const withDescription = createHistory<ConstructionAttempt>({
+        document: attributed,
+        provenance: {},
+      });
+      expect(
+        executeCommand(
+          withDescription,
+          updateLevelDescription({ context: 'author', description: 'Description' }),
+        ),
+      ).toEqual({ status: 'accepted', history: withDescription, recorded: false });
+      const withoutDescription = createHistory<ConstructionAttempt>({
+        document: createLevel({ metadata: { title: 'Authoring test', author: 'Lili' } }),
+        provenance: {},
+      });
+      expect(
+        executeCommand(
+          withoutDescription,
+          updateLevelDescription({ context: 'author', description: undefined }),
+        ),
+      ).toEqual({ status: 'accepted', history: withoutDescription, recorded: false });
+    });
+
+    it('refuse une description que le schéma refuse, sans rien réécrire', () => {
+      const state = { document: attributed, provenance: {} };
+
+      expect(
+        updateLevelDescription({ context: 'author', description: 'x'.repeat(2001) }).execute(state),
+      ).toEqual({ status: 'rejected', reason: 'invalid-level-document' });
+      expect(state.document).toEqual(attributed);
+    });
+  });
+
   describe('ajout d’un objet par l’auteur', () => {
     const accepted = (
       command: Command<ConstructionAttempt>,

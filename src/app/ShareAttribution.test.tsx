@@ -203,6 +203,70 @@ describe('partager : titre, pseudo et licence (M14)', () => {
     });
   });
 
+  it('enregistre dans la création, depuis l’atelier, la description exportée, annulable (M14b)', async () => {
+    saveCreation(machine('machine', { title: 'Machine', author: 'Max' }));
+    openAt('/editor?draft=machine');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exporter le niveau' }));
+    const description = within(exportDialog()).getByRole('textbox', {
+      name: 'Description (facultatif)',
+    });
+    expect(description).toHaveValue('');
+    fireEvent.change(description, { target: { value: ' Une rampe, puis le panier. ' } });
+    const shared = await sharedDocument(exportDialog());
+
+    const metadata = { title: 'Machine', author: 'Max', description: 'Une rampe, puis le panier.' };
+    expect(shared.metadata).toEqual(metadata);
+    expect(storedCreation('machine').document.metadata).toEqual(metadata);
+
+    fireEvent.click(within(exportDialog()).getByRole('button', { name: 'Fermer l’export' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(storedCreation('machine').document.metadata).toEqual({
+      title: 'Machine',
+      author: 'Max',
+    });
+    expect(screen.getByRole('button', { name: 'Annuler' })).toBeDisabled();
+  });
+
+  it('enregistre la description depuis « Partager » d’une création de « Mes niveaux » (M14b)', async () => {
+    const source = machine('origine', {
+      title: 'Origine',
+      description: 'La description de Max.',
+      author: 'Max',
+    });
+    saveCreation(
+      machine('remix', {
+        title: 'Origine (remix)',
+        description: 'La description de Max.',
+        basedOn: [{ title: 'Origine', author: 'Max' }],
+      }),
+      source,
+    );
+    openAt('/my-levels');
+
+    fireEvent.click(
+      within(screen.getByRole('region', { name: 'Origine (remix)' })).getByRole('button', {
+        name: 'Partager',
+      }),
+    );
+    const description = within(exportDialog()).getByRole('textbox', {
+      name: 'Description (facultatif)',
+    });
+    expect(description).toHaveValue('La description de Max.');
+    fireEvent.change(description, { target: { value: 'Ma version, plus rapide.' } });
+    const shared = await sharedDocument(exportDialog());
+
+    const metadata = {
+      title: 'Origine (remix)',
+      description: 'Ma version, plus rapide.',
+      basedOn: [{ title: 'Origine', author: 'Max' }],
+    };
+    expect(shared.metadata).toEqual(metadata);
+    const stored = storedCreation('remix');
+    expect(stored.document).toEqual(machine('remix', metadata));
+    expect(stored.source).toEqual(source);
+  });
+
   it('partage un niveau reçu tel quel, sans champ de titre ni de pseudo', () => {
     const document = machine('recu', { title: 'Reçu', author: 'Max' });
     const level: ReceivedLevel = {
@@ -223,5 +287,6 @@ describe('partager : titre, pseudo et licence (M14)', () => {
     const dialog = screen.getByRole('dialog', { name: 'Partager le niveau' });
     expect(within(dialog).queryByRole('textbox', { name: 'Pseudo (facultatif)' })).toBeNull();
     expect(within(dialog).queryByRole('textbox', { name: 'Nom du niveau' })).toBeNull();
+    expect(within(dialog).queryByRole('textbox', { name: 'Description (facultatif)' })).toBeNull();
   });
 });

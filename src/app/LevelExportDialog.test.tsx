@@ -398,3 +398,153 @@ describe('titre, pseudo et licence dans la boîte d’export (M14, ADR 0016)', (
     });
   });
 });
+
+describe('description dans la boîte d’export (M14b, ADR 0016)', () => {
+  /** Level 1 as a remix: its own description, an author and a source to keep. */
+  const attributedWorkshop: LevelDocument = {
+    ...levelOneWorkshop,
+    metadata: {
+      ...levelOneWorkshop.metadata,
+      description: 'Une rampe et un panier.',
+      author: 'Max',
+      basedOn: [{ title: 'Origine', author: 'Zoé' }],
+    },
+  };
+
+  const descriptionField = (): HTMLElement =>
+    screen.getByRole('textbox', { name: 'Description (facultatif)' });
+
+  /** Runs the commands handed to `onApplyAttribution`, one by one, on the workshop. */
+  const applyAll = (
+    document: LevelDocument,
+    commands: readonly Command<ConstructionAttempt>[],
+  ): { readonly attempt: ConstructionAttempt; readonly changes: number } =>
+    commands.reduce<{ readonly attempt: ConstructionAttempt; readonly changes: number }>(
+      ({ attempt, changes }, command) => {
+        const outcome = command.execute(attempt);
+        if (outcome.status !== 'accepted') throw new Error(`refusé : ${outcome.reason}`);
+        return {
+          attempt: outcome.state,
+          changes: changes + (outcome.state === attempt ? 0 : 1),
+        };
+      },
+      { attempt: createConstructionAttempt(document), changes: 0 },
+    );
+
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/');
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it('propose une description facultative, préremplie avec celle du niveau', () => {
+    renderDialog(attributedWorkshop);
+
+    const description = descriptionField();
+    expect(description.tagName).toBe('TEXTAREA');
+    expect(description).toHaveValue('Une rampe et un panier.');
+    expect(description).toHaveAttribute('maxlength', '2000');
+  });
+
+  it('met la description saisie, sans ses espaces de bord, dans le fichier et dans le lien', async () => {
+    const { downloadFile, writeClipboard } = renderDialog(attributedWorkshop);
+
+    fireEvent.change(descriptionField(), { target: { value: '  Fais rouler la bille.\n ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+    expect(downloadedDocument(downloadFile).metadata.description).toBe('Fais rouler la bille.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copier le lien de partage' }));
+    expect(await screen.findByText('Lien copié')).toBeVisible();
+    const decoded = await decodeShareFragment(
+      new URL(String(writeClipboard.mock.calls[0]?.[0])).hash,
+    );
+    expect(decoded.status === 'ok' && decoded.document.metadata.description).toBe(
+      'Fais rouler la bille.',
+    );
+  });
+
+  it('retire la description vidée, en gardant titre, pseudo et sources', () => {
+    const { downloadFile } = renderDialog(attributedWorkshop);
+
+    fireEvent.change(descriptionField(), { target: { value: '   ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+
+    expect(downloadedDocument(downloadFile).metadata).toEqual({
+      title: 'La bille de service',
+      author: 'Max',
+      basedOn: [{ title: 'Origine', author: 'Zoé' }],
+    });
+  });
+
+  it('accepte une description de 2000 caractères', () => {
+    const { downloadFile } = renderDialog(attributedWorkshop);
+    const longest = 'a'.repeat(2000);
+
+    fireEvent.change(descriptionField(), { target: { value: longest } });
+    const download = screen.getByRole('button', { name: 'Télécharger le fichier' });
+    expect(download).toBeEnabled();
+    fireEvent.click(download);
+
+    expect(downloadedDocument(downloadFile).metadata.description).toBe(longest);
+  });
+
+  it('applique à l’export la description saisie par une commande d’auteur', () => {
+    const applied: (readonly Command<ConstructionAttempt>[])[] = [];
+    renderDialog(attributedWorkshop, {
+      onApplyAttribution: (commands) => {
+        applied.push(commands);
+      },
+    });
+
+    fireEvent.change(descriptionField(), { target: { value: ' Fais rouler la bille. ' } });
+    expect(applied).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+
+    expect(applied).toHaveLength(1);
+    const { attempt, changes } = applyAll(attributedWorkshop, applied[0] ?? []);
+    expect(changes).toBe(1);
+    expect(attempt.document.metadata).toEqual({
+      ...attributedWorkshop.metadata,
+      description: 'Fais rouler la bille.',
+    });
+  });
+
+  it('retire la description de la création par une commande quand le champ est vidé', () => {
+    const applied: (readonly Command<ConstructionAttempt>[])[] = [];
+    renderDialog(attributedWorkshop, {
+      onApplyAttribution: (commands) => {
+        applied.push(commands);
+      },
+    });
+
+    fireEvent.change(descriptionField(), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+
+    const { attempt, changes } = applyAll(attributedWorkshop, applied[0] ?? []);
+    expect(changes).toBe(1);
+    expect(attempt.document.metadata).not.toHaveProperty('description');
+    expect(attempt.document.metadata).toEqual({
+      title: 'La bille de service',
+      author: 'Max',
+      basedOn: [{ title: 'Origine', author: 'Zoé' }],
+    });
+  });
+
+  it('ne change rien à la création quand titre, pseudo et description sont inchangés', () => {
+    const applied: (readonly Command<ConstructionAttempt>[])[] = [];
+    renderDialog(attributedWorkshop, {
+      onApplyAttribution: (commands) => {
+        applied.push(commands);
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger le fichier' }));
+
+    expect(applied[0]).toHaveLength(3);
+    expect(applyAll(attributedWorkshop, applied[0] ?? []).changes).toBe(0);
+  });
+});

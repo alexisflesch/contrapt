@@ -110,17 +110,32 @@ const withPseudo = (
   return author === '' ? metadataWithoutAuthor : { ...metadataWithoutAuthor, author };
 };
 
+/** The metadata once the typed description is applied: trimmed, and removed when blank (M14b). */
+const withDescription = (
+  metadata: LevelDocument['metadata'],
+  typed: string | undefined,
+): LevelDocument['metadata'] => {
+  if (typed === undefined) return metadata;
+  const { description: ignoredDescription, ...metadataWithoutDescription } = metadata;
+  void ignoredDescription;
+  const description = typed.trim();
+  return description === ''
+    ? metadataWithoutDescription
+    : { ...metadataWithoutDescription, description };
+};
+
 /**
  * Names the verified puzzle before it leaves the workshop: the name becomes
  * its title, and its identifier and file name when it holds a letter or a
  * digit. A blank name is refused (`null`). When `pseudo` is given, it becomes
  * the author, edge spaces removed, or removes it when blank (M14); an invalid
- * pseudonym is refused (`null`).
+ * pseudonym is refused (`null`). `description` follows the same rule (M14b).
  */
 export const nameExportedLevel = (
   puzzle: LevelDocument,
   name: string,
   pseudo?: string,
+  description?: string,
 ): NamedLevelExport | null => {
   const title = name.trim();
   if (title === '') return null;
@@ -129,7 +144,7 @@ export const nameExportedLevel = (
   const validation = levelDocumentSchema.safeParse({
     ...puzzle,
     id: id === '' ? puzzle.id : id,
-    metadata: withPseudo({ ...puzzle.metadata, title }, pseudo),
+    metadata: withDescription(withPseudo({ ...puzzle.metadata, title }, pseudo), description),
   });
   if (!validation.success) return null;
   return {

@@ -418,12 +418,12 @@ l’ordre du travail restant dans
 Vue d’ensemble pour l’auteur, mise à jour à chaque tâche livrée (une ligne par
 phase ; le détail reste dans `etat.md` et le journal de la feuille de route).
 
-| Phase de la feuille de route      | État au 1er octobre 2026                                                                                                                            |
+| Phase de la feuille de route      | État au 2 octobre 2026                                                                                                                              |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0 — Gate verte                    | faite (G1, G2)                                                                                                                                      |
-| 1 — « Mes niveaux » et communauté | en cours : M1 à M14 livrées ; M14b (description), M15 restent                                                                                       |
+| 1 — « Mes niveaux » et communauté | en cours : M1 à M14b livrées (M14b : description modifiable à l’export) ; M15 (documentation) reste                                                 |
 | 2 — Interface en attente          | à faire                                                                                                                                             |
-| 3 — Atelier complet               | à faire                                                                                                                                             |
+| 3 — Atelier complet               | à faire (A1 à A3) ; A4, description du niveau, livrée par M14b                                                                                      |
 | 4 — Outillage et mesures          | à faire                                                                                                                                             |
 | 5 — Décisions de l’auteur         | en attente (minuteur et niveau 15, bouton Grist, tri des propositions)                                                                              |
 | Niveaux de la campagne            | l’auteur les conçoit dans `levels/` (5 tutoriels déposés ; peut suffire pour la v1) ; intégration à la campagne embarquée à déclencher par l’auteur |

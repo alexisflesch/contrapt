@@ -243,6 +243,32 @@ describe('page « Mes niveaux » (M9, ADR 0015 § Page « Mes niveaux »)', () =
     expect(within(card('Pas encore')).queryByText(/^par /u)).toBeNull();
   });
 
+  it('montre la description d’un niveau reçu en texte brut, et rien sans description (M14b)', () => {
+    saveReceived(
+      receivedLevel(
+        puzzle('recu-decrit', { title: 'Décrit', description: 'Pousse <b>x</b> dans le panier.' }),
+        'e'.repeat(16),
+        '2026-09-25T08:00:00.000Z',
+      ),
+    );
+    saveReceived(
+      receivedLevel(
+        puzzle('recu-muet', { title: 'Muet' }),
+        'f'.repeat(16),
+        '2026-09-01T08:00:00.000Z',
+      ),
+    );
+
+    openMyLevels();
+
+    const described = card('Décrit');
+    const description = within(described).getByText('Pousse <b>x</b> dans le panier.');
+    expect(description).toBeVisible();
+    expect(description).toHaveClass('level-card-description');
+    expect(described.querySelector('b')).toBeNull();
+    expect(card('Muet').querySelector('.level-card-description')).toBeNull();
+  });
+
   it('supprime une création après confirmation, et l’annulation ne supprime rien', () => {
     saveCreation(workshop('creation-a-garder', 'À garder'), '2026-09-01T08:00:00.000Z');
     openMyLevels();

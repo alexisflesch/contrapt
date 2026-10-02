@@ -202,6 +202,17 @@ describe('créer une création depuis un niveau (M6, ADR 0015, ADR 0016)', () =>
     });
   });
 
+  it('garde la description du niveau d’origine, ou n’en invente pas (M14b)', () => {
+    expect(creationFromLevel(level, { createId }).document.metadata.description).toBe(
+      'Fais entrer la balle rouge.',
+    );
+
+    const bare: LevelDocument = { ...level, metadata: { title: 'Sans description' } };
+    const { document } = creationFromLevel(bare, { createId });
+
+    expect('description' in document.metadata).toBe(false);
+  });
+
   it('cite une source sans auteur sans lui en inventer un', () => {
     const anonymous: LevelDocument = { ...level, metadata: { title: 'Anonyme' } };
 

@@ -538,11 +538,13 @@ export const updateLevelAuthor = (input: UpdateLevelAuthorInput): AuthoringComma
 
 export const updateLevelDescription = (input: UpdateLevelDescriptionInput): AuthoringCommand =>
   createAuthoringCommand(input.context, (state) => {
-    if (state.document.metadata.description === input.description) return { status: 'unchanged' };
+    const { description, ...metadataWithoutDescription } = state.document.metadata;
+    if (description === input.description) return { status: 'unchanged' };
+    // Only the description goes: title, author and sources stay (M14b).
     const metadata =
       input.description === undefined
-        ? { title: state.document.metadata.title }
-        : { ...state.document.metadata, description: input.description };
+        ? metadataWithoutDescription
+        : { ...metadataWithoutDescription, description: input.description };
     return { status: 'candidate', document: { ...state.document, metadata } };
   });
 

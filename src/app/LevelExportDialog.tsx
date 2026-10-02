@@ -3,6 +3,7 @@ import { Download, Link2 } from 'lucide-react';
 
 import {
   updateLevelAuthor,
+  updateLevelDescription,
   updateLevelTitle,
   type ConstructionAttempt,
 } from '../application/construction';
@@ -28,6 +29,9 @@ import { usePreferencesRepository } from './preferences-repository-context';
 
 /** Mirrors the level title's length limit (`level-document.ts`). */
 const MAX_LEVEL_NAME_LENGTH = 160;
+
+/** Mirrors the level description's length limit (`level-document.ts`). */
+const MAX_LEVEL_DESCRIPTION_LENGTH = 2000;
 
 /** ADR 0016 § Licence: the exact notice shown when sharing. */
 const LICENCE_NOTICE =
@@ -66,8 +70,9 @@ interface LevelExportDialogProps {
   readonly writeClipboard?: WriteClipboard | undefined;
   readonly run?: PuzzleRunner;
   /**
-   * M14: called once per export with the author commands that record the
-   * exported title and pseudonym in the creation (undoable in the workshop).
+   * M14, M14b: called once per export with the author commands that record
+   * the exported title, pseudonym and description in the creation (undoable
+   * in the workshop).
    */
   readonly onApplyAttribution?: (commands: readonly Command<ConstructionAttempt>[]) => void;
 }
@@ -101,19 +106,26 @@ export function LevelExportDialog({
   const [pseudo, setPseudo] = useState(
     () => levelDocument.metadata.author ?? rememberedPseudo(preferences),
   );
+  const [description, setDescription] = useState(levelDocument.metadata.description ?? '');
   const pseudoError = pseudoRefusal(pseudo);
   const named =
-    preparation.status === 'ready' ? nameExportedLevel(preparation.puzzle, name, pseudo) : null;
+    preparation.status === 'ready'
+      ? nameExportedLevel(preparation.puzzle, name, pseudo, description)
+      : null;
   const pseudoHelpId = useId();
   const pseudoErrorId = useId();
   const [downloadedFileName, setDownloadedFileName] = useState<string | null>(null);
   const [share, setShare] = useState<ShareState>({ status: 'idle' });
 
-  /** M14: the exported title and pseudonym become the creation's, and the pseudonym is kept. */
+  /**
+   * M14, M14b: the exported title, pseudonym and description become the
+   * creation's, and the pseudonym is kept. A blank description is removed.
+   */
   const recordAttribution = ({ metadata }: LevelDocument): void => {
     onApplyAttribution?.([
       updateLevelTitle({ context: 'author', title: metadata.title }),
       updateLevelAuthor({ context: 'author', author: metadata.author }),
+      updateLevelDescription({ context: 'author', description: metadata.description }),
     ]);
     rememberPseudo(preferences, metadata.author);
   };
@@ -171,6 +183,18 @@ export function LevelExportDialog({
               value={name}
               onChange={(event) => {
                 setName(event.currentTarget.value);
+              }}
+            />
+          </label>
+          <label className="export-link">
+            <span className="export-link-label">Description (facultatif)</span>
+            <textarea
+              className="export-link-field export-name-field"
+              rows={3}
+              maxLength={MAX_LEVEL_DESCRIPTION_LENGTH}
+              value={description}
+              onChange={(event) => {
+                setDescription(event.currentTarget.value);
               }}
             />
           </label>

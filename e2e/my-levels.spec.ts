@@ -50,6 +50,13 @@ test('importe un fichier depuis « Mes niveaux » et le retrouve dans la liste (
   const card = received.getByRole('region', { name: 'Démonstration' });
   await expect(card).toBeVisible();
   await expect(card.getByText('Pas encore résolu')).toBeVisible();
+  // M14b: the received level's description, as plain text, like `/levels`.
+  await expect(
+    card.getByText(
+      'Une machine en chaîne qui montre toutes les familles d’objets : appuyez sur Tester et regardez.',
+    ),
+  ).toBeVisible();
+  await captureFormats(page, 'my-levels-received-description');
 
   // A creation too, for the filled page: the campaign's first level, edited.
   await page.goto('/levels');

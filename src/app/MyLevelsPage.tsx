@@ -176,7 +176,7 @@ export function MyLevelsPage() {
         ? null
         : {
             tone: 'alert',
-            message: `${storageMessage(result.code)} Le titre et le pseudo n’ont pas été enregistrés.`,
+            message: `${storageMessage(result.code)} Le titre, la description et le pseudo n’ont pas été enregistrés.`,
           },
     );
     refresh();
@@ -333,6 +333,10 @@ export function MyLevelsPage() {
       <Panel key={level.id} className="level-card my-level-card" label={title} title={title}>
         <Attribution metadata={level.document.metadata} />
         <ReceivedStatus level={level} />
+        {level.document.metadata.description !== undefined && (
+          // M14b: plain text, like the campaign cards of `/levels`.
+          <p className="level-card-description">{level.document.metadata.description}</p>
+        )}
         <div className="my-level-actions">
           <Button
             tone="go"

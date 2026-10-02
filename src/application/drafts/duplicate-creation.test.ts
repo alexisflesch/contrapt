@@ -90,6 +90,28 @@ describe('dupliquer une création (M9, ADR 0015 § Page « Mes niveaux »)', () 
     expect(entries.get('campaign-01-brouillon')).toEqual(original);
   });
 
+  it('garde la description et les autres métadonnées de l’original (M14b)', () => {
+    const base = workshop('creation-1', 'Mon remix');
+    const { repository, saves } = createMemoryRepository({
+      'creation-1': {
+        document: {
+          ...base,
+          metadata: { ...base.metadata, description: 'Ma description', author: 'Lili' },
+        },
+        updatedAt: '2026-09-30T08:00:00.000Z',
+      },
+    });
+
+    duplicateCreation(repository, 'creation-1', () => 'f00d');
+
+    expect(saves[0]?.document.metadata).toEqual({
+      title: 'Mon remix (copie)',
+      description: 'Ma description',
+      author: 'Lili',
+      basedOn: [{ title: 'Le niveau d’origine', author: 'Lili' }],
+    });
+  });
+
   it('duplique une création sans source sans lui en inventer une', () => {
     const { repository, saves } = createMemoryRepository({
       'creation-1': {

@@ -1227,6 +1227,34 @@ describe('objets à placer et solution de référence (U22, ADR 0013)', () => {
   });
 });
 
+describe('description d’un niveau (M14b)', () => {
+  const withoutDescription: LevelDocument = {
+    ...validLevel,
+    metadata: { title: validLevel.metadata.title },
+  };
+  const described: LevelDocument = {
+    ...validLevel,
+    metadata: {
+      title: validLevel.metadata.title,
+      description: 'Une description écrite par l’auteur.',
+      author: 'Mira',
+    },
+  };
+
+  it('relit à l’identique un document sans description, sans l’ajouter', () => {
+    const parsed = levelDocumentSchema.safeParse(withoutDescription);
+
+    expect(parsed.success && parsed.data).toEqual(withoutDescription);
+    expect(parsed.success && 'description' in parsed.data.metadata).toBe(false);
+  });
+
+  it('relit à l’identique un document avec description et pseudo', () => {
+    const parsed = levelDocumentSchema.safeParse(described);
+
+    expect(parsed.success && parsed.data).toEqual(described);
+  });
+});
+
 describe('auteur et sources d’un niveau (M1, ADR 0016)', () => {
   const withMetadata = (metadata: Record<string, unknown>): unknown => ({
     ...validLevel,

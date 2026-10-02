@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 1er octobre 2026.
+Dernière mise à jour : 2 octobre 2026.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -47,7 +47,7 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   `puzzleFromWorkshop` les conserve. Affichés en texte brut sur les cartes de
   « Mes niveaux » (M9) et dans l’en-tête de jeu d’un niveau reçu (M10) ;
   le titre et le pseudo se renseignent dans la boîte d’export depuis M14,
-  `basedOn` n’est jamais édité.
+  la description depuis M14b, `basedOn` n’est jamais édité.
 - Empreinte M2 (ADR 0015) : `levelFingerprint(document)`
   (`src/infrastructure/level-file/level-fingerprint.ts`, asynchrone) renvoie les
   16 premiers chiffres hexadécimaux du SHA-256 (`crypto.subtle`) du texte du
@@ -260,6 +260,28 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   recouvrir la boîte. Validation visuelle attendue (captures
   `test-results/share/{share-fields,share-invalid-pseudo}-{390x844,844x390,1440x900}.png`,
   `share-keyboard-390x508.png`).
+- Description M14b (ADR 0016) : `updateLevelDescription` (commande d’auteur
+  annulable, refusée au joueur) ne retire plus que `description` et garde
+  titre, `author` et `basedOn` ; elle ne rogne rien et refuse plus de
+  2000 caractères. L’atelier libre (`workshop.json`) n’a plus de
+  description : une création partie de zéro n’en a pas, une création issue
+  d’un niveau garde celle du niveau. La boîte d’export d’une création
+  propose « Description (facultatif) » (zone de texte de 3 lignes,
+  `maxLength` 2000) entre le nom et le pseudo, préremplie avec la description
+  du niveau ; les espaces de bord sont retirés à l’export et un champ vidé
+  retire `description` (jamais `''`). Le fichier et le lien portent la
+  saisie ; une troisième commande, `updateLevelDescription`, rejoint le
+  titre et le pseudo (dans l’atelier, une entrée d’historique de plus au
+  plus, « Annuler » la retire ; depuis « Mes niveaux », appliquée à la
+  création enregistrée avec sa `source`). Le « Partager » d’un niveau reçu
+  est inchangé. Les cartes des niveaux reçus de « Mes niveaux » affichent
+  la description en texte brut (classe `level-card-description` de
+  `/levels`, sans troncature, comme elle), rien sans description ; les
+  cartes de « Mes créations » ne l’affichent pas. Validation visuelle
+  attendue (captures
+  `test-results/share/share-description-{390x844,844x390,1440x900}.png`,
+  `share-description-keyboard-390x508.png`,
+  `test-results/my-levels/my-levels-received-description-{390x844,844x390,1440x900}.png`).
 - Géométrie des familles centralisée dans `src/domain/family-geometry.ts`,
   partagée par la physique et le rendu.
 - `History` générique (commande atomique, undo/redo, no-op sans entrée,
@@ -514,14 +536,10 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   décider.
 - **Partage pendant une simulation (M14).** La boîte d’export reste ouverte
   pendant qu’une machine tourne ; un export à ce moment produit bien le
-  fichier et le lien, mais l’atelier refuse les commandes de titre et de
-  pseudo (refus `editing-unavailable-during-simulation`, signalé par le
+  fichier et le lien, mais l’atelier refuse les commandes de titre, de
+  pseudo et de description (refus `editing-unavailable-during-simulation`, signalé par le
   retour habituel de l’atelier) : la création garde son ancien titre. Non
   testé, cas jugé rare.
-- **`updateLevelDescription` retire l’attribution.** Retirer la description
-  reconstruit `metadata` à partir du seul titre et perd `author` et
-  `basedOn`. Aucune interface n’expose cette commande ; constaté pendant M14,
-  non corrigé (hors périmètre).
 - **Niveau reçu (M10).** En 390 px, l’en-tête de `/my-levels/:id/play`
   (bouton « Mes niveaux », objectif, menu) ne laisse que « par <auteur> ·
   d’a… » de l’attribution, tronquée par une ellipse (accepté par le pilote
@@ -634,6 +652,13 @@ le 28 septembre 2026 ; la gate complète n’a pas été lancée.
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après M14b (2 octobre 2026) : passe du premier coup —
+typecheck, lint, formatage, Knip, contenu (19 documents), 975 tests Vitest
+(77 fichiers), build Vite/PWA et 55 tests Playwright `mobile` (54 réussis,
+1 ignoré). Le fichier d’essai de l’auteur `tmp/check-levels.ts` a été
+écarté du dépôt le temps de la gate (ESLint le refuse), puis remis à
+l’identique.
 
 `pnpm check` après M14 (1er octobre 2026) : passe du premier coup —
 typecheck, lint, formatage, Knip, contenu (19 documents), 951 tests Vitest

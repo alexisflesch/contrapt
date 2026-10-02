@@ -11,8 +11,9 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
 ## Point de reprise (fin de session du 1er octobre 2026)
 
-- **Prochaine tâche : M14b**, puis M15 ; ensuite la phase 2. Phase 0 et M1 à
-  M14 sont faites (journal § 7). `pnpm check` était vert au dernier commit.
+- **Prochaine tâche : M15**, puis la phase 2. Phase 0 et M1 à M14b sont
+  faites (journal § 7 ; M14b le 2 octobre 2026, qui livre aussi A4 de la
+  phase 3). `pnpm check` était vert au dernier commit.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
   part dans un sous-agent neuf, une à la fois, avec pour consigne de lire
   `AGENTS.md`, `docs/index.md`, ce fichier (§ 1 à 3, la tâche, le journal),
@@ -24,8 +25,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   relit le rapport et le diff, regarde au moins une capture, tranche les
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
-- **N'attend que l'auteur** : validation visuelle des captures de M8 à M14
-  (`test-results/`) ; questions de goût listées dans les entrées M12 et M14 du
+- **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b
+  (`test-results/`) ; questions de goût listées dans les entrées M12 à M14b du
   journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
   la phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
@@ -435,7 +436,7 @@ et historique. Une tâche par point, captures pour chacune.
 2. **A2 — Zones de construction** : ajouter, déplacer, redimensionner, retirer.
 3. **A3 — Objectif** : déplacer la balle rouge et le panier (aujourd'hui uniques
    et déjà posés) ; `updateLevelGoal` si le modèle l'exige.
-4. ~~A4 — Description du niveau~~ : avancée en M14b.
+4. ~~A4 — Description du niveau~~ : avancée en M14b, faite (journal M14b).
 
 ### Phase 4 — Outillage et mesures
 
@@ -1591,3 +1592,112 @@ with the role "textbox" and name "Pseudo (facultatif)"` (8 sur 8 et 3 sur
   boîte mélange « vous » (U16) et « tu » (licence, aide) — faut-il
   harmoniser ? Un champ vidé fait oublier le pseudo retenu : est-ce le
   comportement voulu ?
+
+### M14b — Description du niveau — fait — commit de cette entrée
+
+- Déroulé : deux étapes, un commit. Étape A (code, sous-agent Sonnet) :
+  correctif de `updateLevelDescription` et atelier libre sans description.
+  Étape B (interface et clôture, sous-agent Opus) : champ de la boîte
+  d’export, cartes des niveaux reçus, E2E, captures, documents.
+- Tests ajoutés (étape A) : `authoring-commands.test.ts` › « description de
+  l’auteur (M14b, ADR 0016) » (retrait qui garde titre, `author` et
+  `basedOn` ; annulable ; refusée au joueur ; `unchanged` si identique ;
+  aucun rognage ; refus au-delà de 2000 caractères) ;
+  `level-document.test.ts` › « description d’un niveau (M14b) » ;
+  `level-file-codec.test.ts` (aller-retour avec et sans description) ;
+  `embedded-levels.test.ts` › « atelier libre embarqué (M14b) » ;
+  `save-free-creation.test.ts` ; `FreeWorkshopSaving.test.tsx` › « une
+  création partie de zéro n’a pas de description (M14b) » ;
+  `duplicate-creation.test.ts`, `campaign-draft.test.ts`,
+  `creation-from-level.test.ts` (la description est conservée).
+- Tests ajoutés (étape B) : `LevelExportDialog.test.tsx` › « description
+  dans la boîte d’export (M14b, ADR 0016) » (7 tests : zone de texte
+  préremplie, `maxlength` 2000 ; saisie rognée dans le fichier et le lien ;
+  champ vidé = clé `description` absente, titre, pseudo et sources gardés ;
+  2000 caractères acceptés ; commande transmise qui pose la description ;
+  commande qui la retire quand le champ est vidé ; rien d’inchangé ne
+  modifie la création — trois commandes, aucune ne change l’état) ;
+  `ShareAttribution.test.tsx` › « enregistre dans la création, depuis
+  l’atelier, la description exportée, annulable (M14b) » (un seul
+  « Annuler » la retire, puis l’historique est vide), « enregistre la
+  description depuis « Partager » d’une création de « Mes niveaux »
+  (M14b) » (préremplie avec celle du remix, `source` et `basedOn`
+  conservés), et le test du niveau reçu vérifie aussi l’absence du champ ;
+  `MyLevelsPage.test.tsx` › « montre la description d’un niveau reçu en
+  texte brut, et rien sans description (M14b) » (`<b>x</b>` littéral) ;
+  `e2e/share-attribution.spec.ts` › « saisit une description au toucher et
+  la retrouve dans le fichier (M14b) » (clavier simulé 390 × 508 :
+  description et « Télécharger le fichier » visibles sans défilement) ;
+  `e2e/my-levels.spec.ts` (description de la carte du niveau reçu, captures).
+- Échec initial constaté : étape A, `expected { title: 'Authoring test' } to
+deeply equal { title: 'Authoring test', …(2) }` (`author` et `basedOn`
+  perdus) et, pour l’atelier libre, `expected { title: 'Atelier de niveau',
+…(1) } to deeply equal { title: 'Atelier de niveau' }` (3 tests) ; les
+  autres tests A étaient des gardes de non-régression verts d’emblée.
+  Étape B : `Unable to find an accessible element with the role "textbox"
+and name "Description (facultatif)"` (6 tests de la boîte, 2 sur 2 App),
+  `expected [ …(2) ] to have a length of 3 but got 2` (septième test de la
+  boîte, revérifié par mutation sans la troisième commande) et `Unable to find an element with the text: Pousse
+<b>x</b> dans le panier.` pour la carte.
+- Tests existants réécrits : aucun (étapes A et B).
+- Fichiers touchés hors périmètre : aucun. `MyLevelsPage.tsx` : l’alerte
+  d’échec d’enregistrement après « Partager » dit désormais « Le titre, la
+  description et le pseudo n’ont pas été enregistrés. » (texte non testé,
+  comme avant).
+- Choix d’implémentation : même modèle que M14. La saisie brute reste dans
+  le champ ; `nameExportedLevel` reçoit la description en quatrième
+  argument et applique la même règle que le pseudo (rognée, retirée si
+  vide) ; `recordAttribution` transmet trois commandes (titre, pseudo,
+  description) à chaque export. Une commande dont la valeur ne change pas
+  est acceptée sans changer l’état : l’historique ne l’enregistre pas et
+  « Mes niveaux » n’écrit rien. « Au plus trois entrées, chacune absente si
+  la valeur ne change pas » est donc tenu par l’historique, comme pour M14,
+  et non par un filtre de la boîte. `updateLevelDescription` ne rogne pas :
+  c’est la boîte qui convertit un champ vide en `undefined`. Champ placé
+  entre le nom et le pseudo (titre et description vont ensemble ; l’aide du
+  pseudo reste collée à la mention de licence), zone de texte de 3 lignes
+  qui réutilise `export-link-field export-name-field` : aucune règle CSS
+  ajoutée, pas d’aide sous le champ (le libellé suffit, et la boîte tient
+  ainsi au-dessus du clavier). Carte reçue : `<p
+className="level-card-description">` après l’état, comme `/levels` (même
+  classe, pas de troncature, ni là ni ici) ; le badge « Esquisse non
+  calibrée. » de `/levels` n’est pas repris : il signale une esquisse de la
+  campagne, pas le texte d’un autre auteur. Cartes de « Mes créations » :
+  pas de description (elles n’affichent aujourd’hui ni état ni attribution ;
+  l’ajouter n’était pas trivialement cohérent).
+- Écarts avec la tâche : aucun.
+- Contradictions rencontrées : aucune.
+- Non vérifié : un vrai téléphone et son clavier ; le comportement d’une
+  description multiligne sur la carte (les sauts de ligne sont rendus comme
+  des espaces, comme sur `/levels`) ; l’export pendant une simulation
+  (dette étendue à la description dans `etat.md`).
+- Pour l'auteur : validation visuelle — captures inspectées
+  `test-results/share/share-description-{390x844,844x390,1440x900}.png`
+  (champ « Description (facultatif) » de trois lignes entre le nom et le
+  pseudo, bordure orange de focus ; le texte saisi par le test commence par
+  deux espaces, visibles dans le champ et rognés à l’export ; en 390 × 844
+  la boîte entière tient, boutons compris ; en 844 × 390 elle défile, la
+  mention de licence est coupée en bas comme avant ; en 1440 × 900 boîte
+  centrée, tout visible),
+  `share-description-keyboard-390x508.png` (clavier simulé : nom,
+  description, pseudo, aide, licence et « Télécharger le fichier » visibles,
+  « Copier le lien de partage » à moitié sous le bord, atteignable en
+  faisant défiler la boîte), `share-keyboard-390x508.png` (capture M14
+  régénérée : même cadrage, la description vide en plus) et
+  `test-results/my-levels/my-levels-received-description-{390x844,844x390,1440x900}.png`
+  (carte « Démonstration » : état « Pas encore résolu », puis la
+  description en gris atténué sur deux lignes, puis les actions ; une carte
+  en pleine largeur en 390, une carte de grille en 844 et 1440). Les
+  captures `share-fields-*` de M14 montrent désormais le champ de
+  description vide. Questions : tutoiement — la boîte mélange toujours
+  « vous » (texte U16 « Envoyez le fichier… », statuts « sélectionnez »,
+  « téléchargez ») et « tu » (licence, aide du pseudo) ; non tranché ici,
+  le nouveau libellé n’emploie ni l’un ni l’autre. Faut-il une aide sous la
+  description (par exemple « Ce que le joueur lira avant de jouer ») ?
+  Faut-il afficher la description sur les cartes de « Mes créations » ? Note
+  de gate : `tmp/check-levels.ts` (fichier d’essai de l’auteur, ignoré par
+  git) fait échouer `pnpm lint` (« was not found by the project service ») ;
+  il a été déplacé hors du dépôt pendant la gate puis remis à l’identique
+  (SHA-256 vérifié avant et après). Les captures de `test-results/` sont
+  effacées par toute exécution Playwright isolée (dossier de sortie vidé) :
+  `pnpm check` les régénère toutes.

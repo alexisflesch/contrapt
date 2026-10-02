@@ -101,6 +101,13 @@ describe('campagne embarquée', () => {
   });
 });
 
+describe('atelier libre embarqué (M14b)', () => {
+  it('n’a pas de description : une création partie de zéro n’en hérite pas', () => {
+    expect(embeddedWorkshopDocument.metadata).toEqual({ title: 'Atelier de niveau' });
+    expect('description' in embeddedWorkshopDocument.metadata).toBe(false);
+  });
+});
+
 describe('niveaux embarqués', () => {
   it('expose des documents v2 valides et conserve les documents hors campagne hors liste', () => {
     for (const level of embeddedLevels) {

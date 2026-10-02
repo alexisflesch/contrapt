@@ -182,6 +182,25 @@ describe('codec de fichier de niveau', () => {
     expect(decodeLevelFile(text)).toEqual({ status: 'ok', document });
   });
 
+  it('fait un aller-retour identique d’un niveau avec description, puis sans description (M14b)', () => {
+    const level = getChallengeAndWiresLevel();
+    const described: LevelDocument = {
+      ...level,
+      metadata: { ...level.metadata, description: 'Une description de l’auteur.' },
+    };
+    const { description: ignored, ...metadataWithoutDescription } = described.metadata;
+    void ignored;
+    const bare: LevelDocument = { ...level, metadata: metadataWithoutDescription };
+
+    expect(decodeLevelFile(encodeLevelFile(described))).toEqual({
+      status: 'ok',
+      document: described,
+    });
+    const reread = decodeLevelFile(encodeLevelFile(bare));
+    expect(reread).toEqual({ status: 'ok', document: bare });
+    expect(reread.status === 'ok' && 'description' in reread.document.metadata).toBe(false);
+  });
+
   it('valide puis migre un document v1 vers un document v2 utilisable', () => {
     const result = decodeLevelFile(JSON.stringify(legacyDocument));
 
