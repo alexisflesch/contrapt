@@ -140,6 +140,11 @@ const createCanvasContextAdapter = (context: CanvasRenderingContext2D): BoardCan
   arc: (x, y, radius, startAngle, endAngle) => {
     context.arc(x, y, radius, startAngle, endAngle);
   },
+  ellipse: (x, y, radiusX, radiusY, rotation, startAngle, endAngle) => {
+    context.ellipse(x, y, radiusX, radiusY, rotation, startAngle, endAngle);
+  },
+  createRadialGradient: (startX, startY, startRadius, endX, endY, endRadius) =>
+    context.createRadialGradient(startX, startY, startRadius, endX, endY, endRadius),
   stroke: () => {
     context.stroke();
   },
@@ -164,7 +169,7 @@ const createCanvasContextAdapter = (context: CanvasRenderingContext2D): BoardCan
   get fillStyle() {
     return typeof context.fillStyle === 'string' ? context.fillStyle : '';
   },
-  set fillStyle(value: string) {
+  set fillStyle(value: string | CanvasGradient) {
     context.fillStyle = value;
   },
   get lineCap() {

@@ -40,6 +40,10 @@ type Operation =
   | { readonly kind: 'moveTo'; readonly values: readonly number[] }
   | { readonly kind: 'lineTo'; readonly values: readonly number[] }
   | { readonly kind: 'arc'; readonly values: readonly number[] }
+  | { readonly kind: 'ellipse'; readonly values: readonly number[] }
+  | { readonly kind: 'radialGradient'; readonly values: readonly number[] }
+  | { readonly kind: 'colourStop'; readonly values: readonly [number, string] }
+  | { readonly kind: 'fill' }
   | { readonly kind: 'stroke' }
   | { readonly kind: 'globalAlpha'; readonly values: readonly number[] }
   | { readonly kind: 'fillText'; readonly values: readonly unknown[] }
@@ -309,10 +313,23 @@ const createContext = (): {
     arc: (...values: number[]): void => {
       operations.push({ kind: 'arc', values });
     },
+    ellipse: (...values: number[]): void => {
+      operations.push({ kind: 'ellipse', values });
+    },
+    createRadialGradient: (...values: number[]): CanvasGradient => {
+      operations.push({ kind: 'radialGradient', values });
+      return {
+        addColorStop: (offset: number, colour: string) => {
+          operations.push({ kind: 'colourStop', values: [offset, colour] });
+        },
+      };
+    },
     stroke: (): void => {
       operations.push({ kind: 'stroke' });
     },
-    fill: (): void => undefined,
+    fill: (): void => {
+      operations.push({ kind: 'fill' });
+    },
     fillText: (...values: readonly unknown[]): void => {
       operations.push({ kind: 'fillText', values });
     },
@@ -560,11 +577,18 @@ const renderWired = async (
 /** Alpha of each wire drawn under the sprites, or of every wire and label when `all`. */
 const wireAlphas = (operations: readonly Operation[], all = false): readonly number[] => {
   const firstSprite = operations.findIndex((operation) => operation.kind === 'drawImage');
-  return (all ? operations : operations.slice(0, firstSprite)).flatMap((operation) =>
-    operation.kind === 'globalAlpha' && operation.values[0] !== undefined
-      ? [operation.values[0]]
-      : [],
-  );
+  const stack: number[] = [];
+  const alphas: number[] = [];
+  let alpha = 1;
+  for (const operation of all ? operations : operations.slice(0, firstSprite)) {
+    if (operation.kind === 'save') stack.push(alpha);
+    if (operation.kind === 'restore') alpha = stack.pop() ?? 1;
+    if (operation.kind === 'globalAlpha') alpha = operation.values[0] ?? 1;
+    if ((operation.kind === 'stroke' || (all && operation.kind === 'fillText')) && alpha < 1) {
+      alphas.push(alpha);
+    }
+  }
+  return alphas;
 };
 
 describe('projection du plateau', () => {
@@ -954,7 +978,9 @@ describe('renderer Canvas 2D du plateau', () => {
     // Ordre de dessin : calques arrière, balle, puis lèvres avant — pas
     // l'ordre du document.
     expect(
-      operations
+      replay(operations)
+        .filter(({ operation }) => operation.kind === 'drawImage')
+        .flatMap(({ state }) => state.transforms)
         .filter(
           (operation): operation is Extract<Operation, { readonly kind: 'translate' }> =>
             operation.kind === 'translate',
@@ -971,7 +997,9 @@ describe('renderer Canvas 2D du plateau', () => {
       [16, 16],
     ]);
     expect(
-      operations
+      replay(operations)
+        .filter(({ operation }) => operation.kind === 'drawImage')
+        .flatMap(({ state }) => state.transforms)
         .filter(
           (operation): operation is Extract<Operation, { readonly kind: 'rotate' }> =>
             operation.kind === 'rotate',
@@ -1405,10 +1433,16 @@ type DrawState = Readonly<{
   readonly lineWidth: number;
   readonly strokeStyle: string;
   /** `translate` and `rotate` applied since the last `setTransform`, in order. */
-  readonly transforms: readonly Operation[];
+  readonly transforms: readonly Extract<
+    Operation,
+    { readonly kind: 'translate' | 'rotate' | 'scale' }
+  >[];
 }>;
 
-type DrawOperation = Extract<Operation, { readonly kind: 'drawImage' | 'strokeRect' | 'arc' }>;
+type DrawOperation = Extract<
+  Operation,
+  { readonly kind: 'drawImage' | 'strokeRect' | 'arc' | 'ellipse' }
+>;
 
 const replay = (
   operations: readonly Operation[],
@@ -1445,15 +1479,19 @@ const replay = (
         break;
       case 'translate':
       case 'rotate':
+      case 'scale':
         state = { ...state, transforms: [...state.transforms, operation] };
         break;
       case 'drawImage':
       case 'strokeRect':
       case 'arc':
+      case 'ellipse':
         drawn.push({ operation, state });
         break;
       case 'setTransform':
-      case 'scale':
+      case 'radialGradient':
+      case 'colourStop':
+      case 'fill':
       case 'fillRect':
       case 'beginPath':
       case 'moveTo':
@@ -1594,7 +1632,11 @@ describe('fantôme de placement (U1)', () => {
   it('ne dessine ni fantôme ni contour hors placement', async () => {
     const { drawn } = await renderGhost(undefined);
 
-    expect(drawn.every(({ state }) => state.alpha === 1)).toBe(true);
+    expect(
+      drawn
+        .filter(({ operation }) => operation.kind === 'drawImage')
+        .every(({ state }) => state.alpha === 1),
+    ).toBe(true);
     expect(drawn.some(({ operation }) => operation.kind === 'strokeRect')).toBe(false);
   });
 });
@@ -1736,6 +1778,154 @@ describe('balle de l’objectif signalée (U7)', () => {
     const { drawn } = await renderBalls(levelDocument);
 
     expect(drawn.some(({ operation }) => operation.kind === 'arc')).toBe(false);
+  });
+});
+
+describe('ombre portée (U3)', () => {
+  it('ne dessine aucune ombre par défaut, au repos, en simulation et pendant un placement (décision auteur)', async () => {
+    const { context, operations } = createContext();
+    const spriteLoader = createPendingSpriteLoader();
+    spriteLoader.setReady();
+    const renderer = createBoardRenderer({
+      canvas: { width: 0, height: 0 },
+      context,
+      viewport,
+      spriteLoader: spriteLoader.loader,
+    });
+    const projections = [
+      projectLevel(levelDocument),
+      projectLevel(
+        levelDocument,
+        simulationView([['ball-1', { position: { x: 13, y: 10 }, rotation: 1.2 }]]),
+      ),
+      projectLevel(levelDocument, undefined, { ghostPlacementId: 'beam-1', isGhostValid: true }),
+      projectLevel(levelDocument, undefined, { ghostPlacementId: 'beam-1', isGhostValid: false }),
+    ];
+    for (const projection of projections) {
+      operations.length = 0;
+      await renderer.render(projection);
+      expect(operations.some(({ kind }) => kind === 'drawImage')).toBe(true);
+      expect(
+        operations.filter(({ kind }) => kind === 'ellipse' || kind === 'radialGradient'),
+      ).toEqual([]);
+    }
+  });
+
+  const renderShadows = async (
+    options: {
+      readonly camera?: BoardViewport;
+      readonly simulation?: BoardSimulationView;
+      readonly ghost?: Parameters<typeof projectLevel>[2];
+    } = {},
+  ) => {
+    const { context, operations } = createContext();
+    const spriteLoader = createPendingSpriteLoader();
+    spriteLoader.setReady();
+    await createBoardRenderer({
+      canvas: { width: 0, height: 0 },
+      context,
+      viewport: options.camera ?? viewport,
+      spriteLoader: spriteLoader.loader,
+      objectShadows: true,
+    }).render(projectLevel(levelDocument, options.simulation, options.ghost));
+    const drawn = replay(operations);
+    return {
+      operations,
+      drawn,
+      shadows: drawn.filter(({ operation }) => operation.kind === 'ellipse'),
+    };
+  };
+
+  it('dessine une seule ombre par objet avant tous les sprites, même avec plusieurs calques', async () => {
+    const { operations, shadows, drawn } = await renderShadows();
+    expect(shadows).toHaveLength(levelDocument.objects.length);
+    const firstSprite = operations.findIndex(({ kind }) => kind === 'drawImage');
+    const lastShadow = operations.map(({ kind }) => kind).lastIndexOf('fill');
+    expect(lastShadow).toBeGreaterThan(-1);
+    expect(lastShadow).toBeLessThan(firstSprite);
+    expect(shadows.every(({ state }) => state.alpha === 0.18)).toBe(true);
+    // A shadow's alpha and transform must never leak into the sprite layers.
+    expect(
+      drawn
+        .filter(({ operation }) => operation.kind === 'drawImage')
+        .every(({ state }) => state.alpha === 1),
+    ).toBe(true);
+  });
+
+  it('place une ellipse large de 90 % de l’empreinte, 0,08 unité sous son bord inférieur', async () => {
+    const { shadows, operations } = await renderShadows();
+    // Basket and seesaw also have multiple layers: only four ellipses overall.
+    const ball = shadows.at(-1);
+    expect(ball?.operation.values).toEqual([0, 0, 1, 1, 0, 0, 2 * Math.PI]);
+    const transforms = ball?.state.transforms;
+    expect(transforms?.[0]?.kind).toBe('translate');
+    expect(transforms?.[0]?.values[0]).toBe(8);
+    expect(transforms?.[0]?.values[1]).toBeCloseTo((8 + 0.3 + 0.08 - 5) * 4);
+    expect(transforms?.[1]?.kind).toBe('scale');
+    expect(transforms?.[1]?.values[0]).toBeCloseTo((0.6 * 0.9 * 4) / 2);
+    expect(transforms?.[1]?.values[1]).toBeCloseTo((0.6 * 0.35 * 4) / 2);
+    expect(operations.filter(({ kind }) => kind === 'radialGradient')).toHaveLength(4);
+    expect(operations.filter(({ kind }) => kind === 'colourStop').slice(-2)).toEqual([
+      { kind: 'colourStop', values: [0, '#30291f'] },
+      { kind: 'colourStop', values: [1, 'rgba(48, 41, 31, 0)'] },
+    ]);
+  });
+
+  it('projette l’ombre avec le zoom et le panoramique, sans doubler les pixels CSS avec le DPR', async () => {
+    const { shadows } = await renderShadows({
+      camera: { ...viewport, origin: { x: 9, y: 4 }, pixelsPerWorldUnit: 8, devicePixelRatio: 3 },
+    });
+    const ball = shadows.at(-1);
+    expect(ball?.state.transforms[0]?.values[0]).toBe(24);
+    expect(ball?.state.transforms[0]?.values[1]).toBeCloseTo((8 + 0.3 + 0.08 - 4) * 8);
+    expect(ball?.state.transforms[1]?.values[0]).toBeCloseTo((0.6 * 0.9 * 8) / 2);
+    expect(ball?.state.transforms[1]?.values[1]).toBeCloseTo((0.6 * 0.35 * 8) / 2);
+  });
+
+  it('suit la balle en chute libre sans modifier le document ni tourner avec son motif', async () => {
+    const before = structuredClone(levelDocument);
+    const pose = { position: { x: 13, y: 10 }, rotation: 1.2 };
+    const { shadows } = await renderShadows({ simulation: simulationView([['ball-1', pose]]) });
+    const ball = shadows.at(-1);
+    expect(ball?.state.transforms[0]?.values[0]).toBe(12);
+    expect(ball?.state.transforms[0]?.values[1]).toBeCloseTo((10 + 0.3 + 0.08 - 5) * 4);
+    expect(ball?.state.transforms.some(({ kind }) => kind === 'rotate')).toBe(false);
+    expect(levelDocument).toEqual(before);
+  });
+
+  it('adapte l’ellipse à l’empreinte tournée d’une poutre et garde le décalage vers le bas du monde', async () => {
+    const { shadows } = await renderShadows();
+    const beam = shadows[1];
+    const extent = (4 + 0.25) / Math.sqrt(2);
+    expect(beam?.state.transforms[0]?.values[0]).toBe(24);
+    expect(beam?.state.transforms[0]?.values[1]).toBeCloseTo((10 + extent / 2 + 0.08 - 5) * 4);
+    expect(beam?.state.transforms[1]?.values[0]).toBeCloseTo((extent * 0.9 * 4) / 2);
+  });
+
+  it('garde l’ombre d’un fantôme valide, sans changer l’opacité de son sprite', async () => {
+    const { shadows, drawn } = await renderShadows({
+      ghost: { ghostPlacementId: 'beam-1', isGhostValid: true },
+    });
+    expect(shadows).toHaveLength(4);
+    expect(shadows[1]?.state.alpha).toBe(0.18);
+    const beam = drawn.find(
+      ({ operation }) => operation.kind === 'drawImage' && operation.values[3] === 16,
+    );
+    expect(beam?.state.alpha).toBe(0.55);
+  });
+
+  it('ne dessine aucune ombre sous un fantôme invalide, tout en gardant les autres ombres', async () => {
+    for (const id of ['beam-1', 'ball-1', 'basket-1']) {
+      const solid = await renderShadows();
+      const invalid = await renderShadows({ ghost: { ghostPlacementId: id, isGhostValid: false } });
+      const shadowIndex = id === 'basket-1' ? 0 : id === 'beam-1' ? 1 : 3;
+      expect(invalid.shadows.map(({ state }) => state.transforms)).toEqual(
+        solid.shadows
+          .filter((_, index) => index !== shadowIndex)
+          .map(({ state }) => state.transforms),
+      );
+      expect(invalid.shadows).toHaveLength(3);
+    }
   });
 });
 

@@ -11,10 +11,12 @@ point de reprise), mais il reste responsable du résultat : il relit le diff, la
 ## Point de reprise (fin de session du 2 octobre 2026)
 
 - **Phase 0, phase 1 (M1 à M15) et, en phase 2, U12, U1, U13, U7, U8, U10,
-  U11 et U2 sont faites** (journal § 7). **Prochaine tâche : U3** (ombre
-  portée), puis l'inspecteur compact, puis les phases 3 et 4. La phase 5
-  attend l'auteur. `pnpm check` passe après U2 (commit de l’entrée U2,
-  1 079 tests Vitest, 75 E2E `mobile` dont 1 ignoré). Rien n'est poussé.
+  U11 et U2 sont implémentées** (journal § 7 ; validation visuelle attendue).
+  **U3 est abandonnée par l’auteur** : les ombres ne conviennent pas à l’esprit
+  du jeu ni au design ; le code est conservé mais désactivé (ADR 0006).
+  **Prochaine tâche : inspecteur compact**, puis les phases 3 et 4. La phase 5
+  attend l'auteur. `pnpm check` passe après la désactivation U3 (commit de
+  l’entrée U3, 1 087 tests Vitest, 78 E2E `mobile` dont 1 ignoré). Rien n'est poussé.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
   part dans un sous-agent neuf, une à la fois, avec pour consigne de lire
   `AGENTS.md`, `docs/index.md`, ce fichier (§ 1 à 3, la tâche, le journal),
@@ -29,7 +31,7 @@ point de reprise), mais il reste responsable du résultat : il relit le diff, la
   rapport et le diff, regarde au moins une capture, tranche les questions
   simples en les écrivant dans l'ADR ou la tâche concernée, et remonte à
   l'auteur ce qui relève de son goût ou de son contenu. Prochaines tâches
-  probables : U3 (rendu : Opus), inspecteur compact (correctif avec test
+  probables : inspecteur compact (correctif avec test
   rouge : Sonnet), A1 à A3 (interface tactile : Opus), L2 et la mesure de
   l'export (outillage : Sonnet).
 - **Pièges connus pour la gate** :
@@ -465,7 +467,11 @@ validation visuelle pour chacune.
    visuelle attendue.
 8. ~~U2 — Fond qui suit la caméra~~ : implémentée le 2 octobre 2026
    (`plan-remise-en-jeu.md` § 6 « D3 », journal U2) ; validation visuelle attendue.
-9. **U3 — Ombre portée** (`plan-remise-en-jeu.md` § 5 « C2 »), après U1.
+9. ~~U3 — Ombre portée~~ : **abandonnée par l’auteur le 2 octobre 2026**,
+   car incompatible avec l’esprit du jeu et le design de l’application.
+   Code et tests du renderer conservés, ombres désactivées dans l’application ;
+   pas de validation visuelle attendue. L’amendement de l’ADR 0006 remplace C2.
+   Ne pas réactiver sans nouvelle décision explicite de l’auteur (journal U3).
 10. **Inspecteur compact** : toucher un autre objet alors que l'inspecteur est
     fermé et un objet sélectionné doit le rouvrir (dette de `etat.md`). Test
     rouge d'abord.
@@ -2770,3 +2776,82 @@ className="level-card-description">` après l’état, comme `/levels` (même
   (SHA-256 `1113625e…a92907`, mode 644). La gate de départ dans le sandbox
   échouait sur `listen EPERM /tmp/tsx-1000/…pipe` ; l’exécution avec sockets
   locaux autorisés passe au départ et en fin de tâche.
+
+### U3 — Ombre portée — abandonnée par l’auteur, code conservé et désactivé — commit de cette entrée
+
+- Décision de l’auteur (2 octobre 2026) : abandonner les ombres, qui ne
+  correspondent pas à l’esprit du jeu ni au design de l’application ; garder
+  le travail mais le désactiver. L’ADR 0006 est amendée, C2 est marquée
+  historique et abandonnée, la tâche sort du travail restant. Aucune
+  réactivation sans nouvelle décision explicite ; aucune validation visuelle
+  d’ombres en attente.
+- Déroulé : reprise directe par Codex, comme U2 (les sous-agents Claude
+  indiqués au point de reprise ne sont pas disponibles dans cet environnement).
+  Dépôt propre ; installation figée et gate de départ vertes. Lecture : carte
+  du dépôt, règles, tâche et reprise, état, ADR 0006 et 0007, architecture
+  § Rendu et interface, C2. Lus en plus : renderer et tests, adaptateur Canvas
+  de `BoardView`, empreintes de familles (socles et miroir), E2E U1/U7/U12/U13
+  et configuration Playwright pour les mesures de pixels et les captures.
+- Puce citée (`feuille-de-route-luna.md` § 6) : « **U3 — Ombre portée**
+  (`plan-remise-en-jeu.md` § 5 « C2 »), après U1. » Elle reste un historique ;
+  la décision ci-dessus la remplace.
+- Code conservé : une passe d’ellipses sous les sprites, une par objet malgré
+  les calques ; largeur 90 % et hauteur 35 % de l’empreinte projetée, centre
+  0,08 unité sous son bord inférieur, dégradé radial brun vers transparent,
+  alpha maximal 0,18. Pose du corps mobile ou du socle ; caméra, rotation et
+  miroir pris en compte, fantôme invalide exclu. Adaptateur Canvas natif pour
+  l’ellipse et le gradient. `objectShadows = false` dans les options du
+  renderer désactive la passe entière ; aucun appel de l’application ne
+  fournit `true`. Aucun réglage utilisateur, asset, niveau, schéma, stockage
+  ni constante physique modifié.
+- Tests ajoutés : renderer › « ombre portée (U3) », sept cas conservés avec
+  activation explicite dans leur fixture (unicité et ordre, géométrie/flou,
+  caméra/DPR, chute sans mutation du document, poutre tournée, fantôme valide,
+  fantôme invalide sans ombre). Huitième cas : absence d’ellipse et de dégradé
+  **par défaut**, au repos, en simulation et avec un fantôme valide/invalide,
+  sprites toujours dessinés. `e2e/object-shadows.spec.ts`, trois formats :
+  absence d’assombrissement sous la balle, sous chaque fantôme et pendant la
+  chute, contre le fond ou le plateau avant prévisualisation.
+- Échecs rouges : essai initial des ombres, sept tests renderer rouges
+  (`expected [] to have a length of 4 but got +0`) et trois E2E rouges
+  (`Expected: > 15, Received: 0`). Après la décision de désactivation, le
+  nouveau test par défaut constate encore les ellipses ; les trois E2E
+  d’absence d’ombre contre le build de l’essai échouent (`Expected: <= 3`,
+  `Received: 34`, `34`, `36`). Puis les 64 tests du renderer passent.
+- Tests existants : les observations du renderer isolent maintenant les
+  transformations des sprites et l’alpha des traits/lettres des fils des
+  opérations d’ombre ; valeurs et bornes attendues inchangées. Le test U1
+  d’opacité porte toujours sur les sprites. L’E2E U1 reste **identique à
+  HEAD**, avec son attente de boîte sans ombre ; une adaptation essayée
+  pendant U3 a été retirée après l’abandon. Aucun test supprimé ni ignoré,
+  aucune tolérance ni aucun délai élargi. Les trois nouveaux E2E d’ombre
+  présente sont réécrits en absence d’ombre, comportement demandé par l’auteur.
+- Fichiers hors périmètre initial : `BoardView.tsx`, adaptateur nécessaire au
+  code conservé ; ADR 0006 et état C2 du plan, nécessaires pour enregistrer
+  l’abandon sans contradiction documentaire.
+- Contradiction résolue : C2 demandait des ombres ; la décision explicite de
+  l’auteur l’annule. L’amendement de l’ADR 0006 fait autorité. Le rendu
+  expérimental ne constitue pas une nouvelle direction graphique acceptée.
+- Vérifications : la gate de l’essai activé avait révélé la boîte E2E U1
+  sans ombre (`3.981818… > 3 px`) ; `pnpm check:fast` de l’essai passait
+  (1086 tests). Gate finale de désactivation verte : typecheck, lint,
+  formatage, Knip, contenu (19 documents), 1087 tests Vitest (83 fichiers),
+  build Vite/PWA, 78 tests Playwright `mobile` (77 réussis, 1 ignoré).
+  L’E2E U1 d’origine passe ; aucune intermittence D4/U15 observée.
+  Les gates écartent le
+  fichier d’essai de l’auteur `tmp/check-levels.ts`, puis le remettent
+  identique (SHA-256 `1113625e…a92907`, mode 644). Serveur Playwright neuf pour
+  les rouges après un serveur réutilisé fermé (`ERR_CONNECTION_REFUSED`) ;
+  CI appliqué à Playwright seul, car l’appliquer avant pnpm change son réglage
+  de magasin virtuel global.
+- Captures : les douze captures de l’essai activé ont été inspectées avant
+  l’abandon ; gardées hors du dépôt dans `/tmp/tinkerbolt-u3-shadows-trial/`.
+  Douze captures du rendu final sans ombre inspectées :
+  `test-results/object-shadows-disabled/{repos,fantome-valide,fantome-invalide,simulation}-{390x844,844x390,1440x900}.png`.
+  Balle, masse, poutre, bascule et panier sans ellipse ajoutée, fantômes
+  conservés, plateau sans trace d’ombre pendant la chute ; contrôles dégagés.
+- Non vérifié : vrai téléphone, Firefox et Safari. Le grand format utilise
+  le profil Chromium tactile de la gate. Le coût des dégradés expérimentaux
+  sur le vieux Xiaomi n’est pas mesuré ; ils ne s’exécutent plus dans l’app.
+- Pour l’auteur : U3 est abandonnée, travail conservé à sa demande ; la
+  prochaine tâche reste l’inspecteur compact. Rien n’est poussé.

@@ -99,3 +99,20 @@ Le rendu par sprites ne change pas la décision ; il en précise le pipeline.
   éventuel, précache — devient un sujet de la tranche qui rend le niveau 1 jouable.
 - Les budgets chiffrés de bundle et de mémoire restent à fixer ; cette décision les
   rend seulement plus faciles à tenir.
+
+## Amendement du 2 octobre 2026 — abandon des ombres portées U3
+
+L’auteur abandonne les ombres portées : elles ne correspondent pas à l’esprit
+du jeu ni au design de l’application. Le plateau reste sans ombre ajoutée,
+en jeu comme dans l’éditeur, pendant une simulation ou un placement.
+
+L’implémentation expérimentale U3 est conservée, avec ses tests de renderer,
+pour un éventuel réexamen. Elle est désactivée par défaut ; aucun appel de
+l’application ne l’active et aucun réglage utilisateur ne la propose.
+L’option interne `objectShadows` du renderer permet aux tests de continuer à
+vérifier le code conservé. Une réactivation dans l’application exige une
+nouvelle décision explicite de l’auteur.
+
+Cet amendement remplace la demande C2 du plan de remise en jeu et la tâche U3
+de la feuille de route ; U3 est abandonnée, elle n’attend plus de validation
+visuelle.

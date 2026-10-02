@@ -71,6 +71,24 @@ export type BoardCanvasContext = {
   readonly translate: (x: number, y: number) => void;
   readonly rotate: (radians: number) => void;
   readonly scale: (x: number, y: number) => void;
+  fillStyle?: string | CanvasGradient;
+  readonly createRadialGradient?: (
+    startX: number,
+    startY: number,
+    startRadius: number,
+    endX: number,
+    endY: number,
+    endRadius: number,
+  ) => CanvasGradient;
+  readonly ellipse?: (
+    x: number,
+    y: number,
+    radiusX: number,
+    radiusY: number,
+    rotation: number,
+    startAngle: number,
+    endAngle: number,
+  ) => void;
   lineWidth?: number;
   readonly setLineDash?: (segments: readonly number[]) => void;
   readonly fillRect?: (
@@ -104,7 +122,7 @@ export type BoardCanvasContext = {
     destinationWidth: number,
     destinationHeight: number,
   ) => void;
-} & Partial<Omit<WireCanvas, 'save' | 'restore' | 'lineWidth'>>;
+} & Partial<Omit<WireCanvas, 'save' | 'restore' | 'lineWidth' | 'fillStyle'>>;
 
 /** A context able to draw wires: every optional path and text operation is there. */
 const canDrawWires = (context: BoardCanvasContext): context is BoardCanvasContext & WireCanvas =>
@@ -701,6 +719,8 @@ type BoardRendererOptions = Readonly<{
   readonly spriteLoader: SpriteLoader;
   /** Decoded with the same local-asset pipeline as the objects, before drawing. */
   readonly loadBackground?: () => Promise<DecodedSprite>;
+  /** U3 was abandoned by the author: kept for experiments, disabled in the app (ADR 0006). */
+  readonly objectShadows?: boolean;
 }>;
 
 const requiredFamilies = (projection: BoardProjection): readonly SpriteFamily[] => [
@@ -739,6 +759,62 @@ const OUTSIDE_SCENE_COLOUR = '#d9d2c7';
 const SCENE_FALLBACK_COLOUR = '#efe2c8';
 const GRID_LINE_WIDTH_CSS_PIXELS = 1;
 const GRID_FULL_OPACITY_ZOOM = 64;
+/** C2/U3: a soft ellipse under the whole object, never baked into its sprite. */
+const OBJECT_SHADOW_OFFSET = 0.08;
+const OBJECT_SHADOW_WIDTH_RATIO = 0.9;
+const OBJECT_SHADOW_HEIGHT_RATIO = 0.35;
+const OBJECT_SHADOW_ALPHA = 0.18;
+
+const drawObjectShadow = (
+  context: BoardCanvasContext,
+  object: ProjectedBoardObject,
+  viewport: BoardViewport,
+): void => {
+  if (
+    object.appearance === 'ghost-invalid' ||
+    context.createRadialGradient === undefined ||
+    context.ellipse === undefined ||
+    context.beginPath === undefined ||
+    context.fill === undefined
+  ) {
+    return;
+  }
+
+  // The first layer follows the body or the articulated object's fixed base.
+  // A fan starts with its offset blades; its shadow belongs to the whole fan.
+  const position = object.family === 'fan' ? object.position : object.layer.position;
+  const { rotation, mirrored } = object.layer;
+  const { x, y, width, height } = object.destination;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const centreX = (x + width / 2) * (mirrored === true ? -1 : 1);
+  const centreY = y + height / 2;
+  const projectedWidth = Math.abs(cos) * width + Math.abs(sin) * height;
+  const projectedHeight = Math.abs(sin) * width + Math.abs(cos) * height;
+  const centre = worldToPixels(
+    {
+      x: position.x + centreX * cos - centreY * sin,
+      y: position.y + centreX * sin + centreY * cos + projectedHeight / 2 + OBJECT_SHADOW_OFFSET,
+    },
+    viewport,
+  );
+
+  context.save();
+  context.globalAlpha = OBJECT_SHADOW_ALPHA;
+  context.translate(centre.x, centre.y);
+  context.scale(
+    worldLengthToPixels((projectedWidth * OBJECT_SHADOW_WIDTH_RATIO) / 2, viewport),
+    worldLengthToPixels((projectedHeight * OBJECT_SHADOW_HEIGHT_RATIO) / 2, viewport),
+  );
+  const gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+  gradient.addColorStop(0, '#30291f');
+  gradient.addColorStop(1, 'rgba(48, 41, 31, 0)');
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.ellipse(0, 0, 1, 1, 0, 0, 2 * Math.PI);
+  context.fill();
+  context.restore();
+};
 
 const drawSceneBackground = (
   context: BoardCanvasContext,
@@ -1038,6 +1114,7 @@ export const createBoardRenderer = ({
   viewport,
   spriteLoader,
   loadBackground,
+  objectShadows = false,
 }: BoardRendererOptions): BoardRenderer => ({
   render: async (projection): Promise<void> => {
     const [, background] = await Promise.all([
@@ -1064,6 +1141,15 @@ export const createBoardRenderer = ({
     };
     if (wireContext !== undefined) {
       drawWires(wireContext, projection.wires, toScreen, wireOptions);
+    }
+
+    if (objectShadows) {
+      const shadowedIds = new Set<string>();
+      for (const object of projection.objects) {
+        if (shadowedIds.has(object.id)) continue;
+        shadowedIds.add(object.id);
+        drawObjectShadow(context, object, viewport);
+      }
     }
 
     for (const object of projection.objects) {

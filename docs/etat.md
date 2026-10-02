@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, U2 (fond et grille qui suivent la caméra) implémentée, validation visuelle attendue ; phase 1 (« Mes niveaux ») terminée.
+Dernière mise à jour : 2 octobre 2026, U3 (ombre portée) abandonnée par l’auteur, code conservé mais ombres désactivées ; phase 1 (« Mes niveaux ») terminée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -438,6 +438,17 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   perspective et orientable, barrière dont seule la partie sortie du poteau est
   dessinée, tremplin à ressort tassé à l’impact), ordre de dessin
   déterministe (la balle après le panier).
+- **U3 — ombres abandonnées** (décision auteur du 2 octobre 2026, ADR 0006
+  amendée) : aucune ombre ajoutée au plateau, en jeu, dans l’éditeur, pendant
+  un placement ou une simulation. Le code expérimental d’ellipse et de
+  dégradé ainsi que les sept tests correspondants sont conservés ; l’option
+  interne du renderer `objectShadows` vaut `false` par défaut et aucun appel
+  de l’application ne l’active. Aucun réglage utilisateur. Un huitième test
+  du renderer vérifie l’absence d’ombre par défaut ; trois E2E vérifient les
+  pixels sans ombre au repos, avec les fantômes valide et invalide et pendant
+  la chute. Captures dans `test-results/object-shadows-disabled/`, aux trois
+  formats. U3 n’attend plus de validation visuelle ; une réactivation exige
+  une nouvelle décision de l’auteur.
 - Poutres en trois tailles (U12) : `beam-short`, `beam-medium` et `beam-long`
   (2, 4 et 6 × 0,25 unités, @2x), exportés par `art/build-sprites.py` depuis
   `art/assets/beam/` (`beam-short.png`, `beam-medium.png`, `beam-big.png`),
@@ -869,6 +880,18 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après l’abandon et la désactivation U3 (2 octobre 2026) : passe —
+typecheck, lint, formatage, Knip, contenu (19 documents), 1087 tests Vitest
+(83 fichiers), build Vite/PWA et 78 tests Playwright `mobile` (77 réussis,
+1 ignoré). Les sept tests des ombres conservées les activent explicitement ;
+un huitième test et les trois nouveaux E2E vérifient leur absence par défaut.
+L’E2E U1 d’origine passe sans adaptation de sa boîte ni de sa tolérance.
+Douze captures du rendu sans ombres inspectées aux trois formats ; U3 est
+abandonnée sur décision de l’auteur, sans validation visuelle en attente.
+Pas d’intermittence D4 ni U15 observée. Le fichier d’essai de l’auteur
+`tmp/check-levels.ts` a été écarté pour la gate puis remis identique (SHA-256
+`1113625e…a92907`, mode 644).
 
 `pnpm check` après U2 (2 octobre 2026) : passe — typecheck, lint,
 formatage, Knip, contenu (19 documents), 1079 tests Vitest (83 fichiers),

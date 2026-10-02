@@ -815,7 +815,11 @@ boîte de l'objet après relâchement : elles coïncident.
 
 ### C2 — Ombre portée au sol
 
-État : ⬜ À faire.
+État : abandonnée par l’auteur le 2 octobre 2026 : les ombres ne correspondent
+pas à l’esprit du jeu ni au design de l’application. Code expérimental U3
+conservé mais désactivé ; voir l’amendement de l’[ADR 0006](decisions/0006-board-renderer.md).
+La spécification ci-dessous est historique et ne doit pas être réactivée sans
+nouvelle décision de l’auteur.
 
 **Modèle : `terra` / effort `medium`.**
 
