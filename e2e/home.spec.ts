@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+const HERO_TITLE = 'Amène la balle jusqu’au panier.';
+
 test('présente l’accueil sans débordement et mène à la campagne au tactile', async ({ page }) => {
   for (const viewport of [
     { width: 390, height: 844 },
@@ -9,24 +11,33 @@ test('présente l’accueil sans débordement et mène à la campagne au tactile
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await expect(
-      page.getByRole('heading', { name: 'Les bonnes idées font leur chemin.' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: HERO_TITLE })).toBeVisible();
     await expect(
       page.getByRole('progressbar', { name: 'Progression de la campagne' }),
     ).toHaveAttribute('value', '0');
+    // V7 : les vignettes des trois lieux et l'aperçu réel du tutoriel 5.
     await expect
       .poll(() =>
         page
-          .locator('.home-sprite')
-          .evaluateAll((images) =>
-            images.every(
-              (image) =>
-                image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
-            ),
+          .locator('.home-place img, .home-board img')
+          .evaluateAll(
+            (images) =>
+              images.length === 4 &&
+              images.every(
+                (image) =>
+                  image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
+              ),
           ),
       )
       .toBe(true);
+    // V7 : la police Nunito est déclarée et servie par l'application, sans réseau tiers.
+    // (Son état de chargement n'est pas vérifié : le Chromium de certains bacs à sable
+    // refuse toute police distante déclarée en CSS, quelle qu'elle soit.)
+    expect(
+      await page.evaluate(() =>
+        [...document.fonts].some((font) => font.family.replaceAll('"', '') === 'Nunito'),
+      ),
+    ).toBe(true);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
     ).toBe(false);
@@ -40,6 +51,9 @@ test('présente l’accueil sans débordement et mène à la campagne au tactile
       fullPage: true,
     });
   }
+  const font = await page.request.get('/fonts/Nunito.woff2');
+  expect(font.ok()).toBe(true);
+  expect(font.headers()['content-type']).toBe('font/woff2');
   await page.getByRole('link', { name: 'Jouer', exact: true }).tap();
   await expect(page).toHaveURL(/\/levels$/);
   await expect(page.getByRole('region', { name: 'Campagne' })).toBeVisible();
@@ -47,19 +61,36 @@ test('présente l’accueil sans débordement et mène à la campagne au tactile
 
 test('ouvre chaque destination et revient à l’accueil depuis le menu', async ({ page }) => {
   await page.goto('/');
-  for (const { name, path } of [
-    { name: 'La campagne', path: '/levels' },
-    { name: 'L’atelier', path: '/editor' },
-    { name: 'Paramètres', path: '/settings' },
+  for (const { open, path } of [
+    {
+      open: () =>
+        page
+          .getByRole('navigation', { name: 'Explorer TinkerBolt' })
+          .getByRole('link', { name: /^Campagne/u }),
+      path: '/levels',
+    },
+    {
+      open: () =>
+        page
+          .getByRole('navigation', { name: 'Explorer TinkerBolt' })
+          .getByRole('link', { name: /^Atelier/u }),
+      path: '/editor',
+    },
+    {
+      open: () =>
+        page
+          .getByRole('navigation', { name: 'Explorer TinkerBolt' })
+          .getByRole('link', { name: /^Mes niveaux/u }),
+      path: '/my-levels',
+    },
+    { open: () => page.getByRole('link', { name: 'ou créer un niveau' }), path: '/editor' },
+    { open: () => page.getByRole('link', { name: 'Paramètres', exact: true }), path: '/settings' },
   ]) {
-    const destinations = page.getByRole('navigation', { name: 'Explorer TinkerBolt' });
-    await destinations.getByRole('link', { name: new RegExp(name) }).tap();
+    await open().tap();
     await expect(page).toHaveURL(new RegExp(`${path}$`));
     await page.getByRole('button', { name: 'Ouvrir le menu' }).tap();
     await page.getByRole('button', { name: 'Accueil', exact: true }).tap();
-    await expect(
-      page.getByRole('heading', { name: 'Les bonnes idées font leur chemin.' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: HERO_TITLE })).toBeVisible();
   }
   await page.goBack();
   await expect(page).toHaveURL(/\/settings$/);
@@ -81,7 +112,11 @@ test('reprend la progression enregistrée après rechargement', async ({ page })
   });
   await page.goto('/');
   await page.reload();
-  await expect(page.getByRole('region', { name: 'Ton carnet de bord' })).toContainText('1 / 5');
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Explorer TinkerBolt' })
+      .getByRole('link', { name: /^Campagne/u }),
+  ).toContainText('1 / 5');
   await expect(
     page.getByRole('progressbar', { name: 'Progression de la campagne' }),
   ).toHaveAttribute('value', '1');

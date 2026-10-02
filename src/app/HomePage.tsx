@@ -1,66 +1,49 @@
-import {
-  ArrowRight,
-  CircleCheck,
-  Flag,
-  Library,
-  Play,
-  Settings,
-  Sparkles,
-  Wrench,
-} from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Play, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import { campaignChapters, embeddedLevels } from '../content/embedded-levels';
-import { spriteThumbnailPath } from '../presentation/sprite-loader';
+import { embeddedLevels } from '../content/embedded-levels';
+import { spriteThumbnailPath, type SpriteThumbnail } from '../presentation/sprite-loader';
 import { AppFrame } from '../ui/AppFrame';
 import { PwaInvitation } from '../ui/PwaInvitation';
+import { LevelPreview } from './LevelPreview';
 import { useCampaignProgress } from './use-campaign-progress';
 import { usePwaInvitation } from './use-pwa-invitation';
 
-/** Decorative composition using the same local artwork as the game. */
-function WorkshopIllustration() {
+/** The level shown beside the welcome text (V4): the fifth tutorial, else the last one. */
+const heroLevel = embeddedLevels.find(({ id }) => id === 'tuto-5') ?? embeddedLevels.at(-1);
+
+interface PlaceProps {
+  readonly to: string;
+  readonly title: string;
+  readonly text: string;
+  readonly sprite: SpriteThumbnail;
+  readonly children?: ReactNode;
+}
+
+/** One of the three destinations below the welcome text, illustrated by a sprite. */
+function Place({ to, title, text, sprite, children }: PlaceProps) {
   return (
-    <div
-      className="home-invention"
-      role="img"
-      aria-label="Une bille, des poutres et un panier dans l’atelier TinkerBolt"
-    >
-      <span className="home-invention-label" aria-hidden="true">
-        Une idée, une réaction en chaîne.
-      </span>
-      <svg className="home-invention-path" viewBox="0 0 500 360" fill="none" aria-hidden="true">
-        <path d="M105 74 Q65 123 183 144 Q350 165 290 214 Q258 249 360 278" />
-      </svg>
-      <img className="home-sprite home-sprite-ball" src={spriteThumbnailPath('ball')} alt="" />
-      <img className="home-sprite home-sprite-beam-one" src={spriteThumbnailPath('beam')} alt="" />
-      <img className="home-sprite home-sprite-beam-two" src={spriteThumbnailPath('beam')} alt="" />
-      <img className="home-sprite home-sprite-basket" src={spriteThumbnailPath('basket')} alt="" />
-      <img className="home-sprite home-sprite-lever" src={spriteThumbnailPath('lever')} alt="" />
-      <span className="home-invention-stamp" aria-hidden="true">
-        <Sparkles size={18} /> Et si ça marchait ?
-      </span>
-    </div>
+    <Link className="home-place" to={to}>
+      <h3>{title}</h3>
+      <p>{text}</p>
+      {children}
+      <img src={spriteThumbnailPath(sprite)} alt="" draggable={false} />
+    </Link>
   );
 }
 
+/** `/` (V7, maquette validée en V4): one call to play, then the three places. */
 export function HomePage() {
   const { levels, storageError, storageWarning } = useCampaignProgress();
   const pwaInvitation = usePwaInvitation(null);
   const resolvedCount = embeddedLevels.filter(
     (level) => levels[level.id]?.resolved === true,
   ).length;
-  const unlockedCount = embeddedLevels.filter(
-    (level) => levels[level.id]?.unlocked === true,
-  ).length;
-  const nextLevel = embeddedLevels.find(
-    (level) => levels[level.id]?.unlocked === true && !levels[level.id]?.resolved,
-  );
-  const nextLevelNumber = nextLevel === undefined ? null : embeddedLevels.indexOf(nextLevel) + 1;
-  const percentage =
-    embeddedLevels.length === 0 ? 0 : Math.round((resolvedCount / embeddedLevels.length) * 100);
+  const total = embeddedLevels.length;
 
   return (
-    <AppFrame title="Accueil" subtitle="À toi d’inventer" variant="page">
+    <AppFrame variant="page">
       <div className="page-content home-page">
         {pwaInvitation !== null && (
           <PwaInvitation
@@ -71,147 +54,78 @@ export function HomePage() {
         )}
         <section className="home-hero" aria-labelledby="home-title">
           <div className="home-hero-copy">
-            <p className="home-kicker">
-              <span aria-hidden="true" /> Bienvenue dans l’atelier
-            </p>
             <h2 id="home-title">
-              Les bonnes idées
+              Amène la balle
               <br />
-              font <span>leur chemin.</span>
+              jusqu’au panier.
             </h2>
-            <p className="home-intro">
-              Une bille, quelques outils et ton imagination. Assemble, essaie, ajuste… et regarde
-              tes idées prendre vie.
+            <p>
+              Poutres, tremplins, ventilateurs, leviers&nbsp;: place les pièces, lance la machine et
+              regarde ce qui se passe. Raté&nbsp;? Ajuste et relance.
             </p>
             <div className="home-hero-actions">
               <Link className="btn btn-go home-play" to="/levels">
-                <Play size={19} aria-hidden="true" />
+                <Play size={20} aria-hidden="true" />
                 Jouer
-                <ArrowRight size={18} aria-hidden="true" />
               </Link>
-              <p className="home-next-level">
-                {nextLevel === undefined
-                  ? 'Il reste toujours une autre façon de faire.'
-                  : `Niveau ${String(nextLevelNumber)} · ${nextLevel.metadata.title}`}
-              </p>
-            </div>
-            <div className="home-facts" aria-label="Contenu du jeu">
-              <span>{embeddedLevels.length} défis à résoudre</span>
-              <span>{campaignChapters.length} chapitres à explorer</span>
-              <span>Une infinité d’idées</span>
+              <Link className="home-create" to="/editor">
+                ou créer un niveau
+              </Link>
             </div>
           </div>
-          <WorkshopIllustration />
-        </section>
-
-        <nav className="home-explore" aria-label="Explorer TinkerBolt">
-          <div className="home-section-heading">
-            <h2>Qu’est-ce qu’on invente aujourd’hui ?</h2>
-            <span>Choisis ton terrain de jeu</span>
-          </div>
-          <div className="home-destinations">
-            <Link className="home-destination" to="/levels">
-              <div className="home-destination-top">
-                <span className="home-destination-icon">
-                  <Flag size={24} aria-hidden="true" />
-                </span>
-                <span className="home-destination-tag">À toi de jouer</span>
-                <ArrowRight size={20} aria-hidden="true" />
-              </div>
-              <h3>La campagne</h3>
-              <p>De petites astuces aux grandes machines : un défi après l’autre.</p>
-              <span className="home-destination-action">
-                Explorer les niveaux <ArrowRight size={16} aria-hidden="true" />
-              </span>
-            </Link>
-            <Link className="home-destination" to="/editor">
-              <div className="home-destination-top">
-                <span className="home-destination-icon">
-                  <Wrench size={24} aria-hidden="true" />
-                </span>
-                <span className="home-destination-tag">Carte blanche</span>
-                <ArrowRight size={20} aria-hidden="true" />
-              </div>
-              <h3>L’atelier</h3>
-              <p>Construis tes machines, imagine tes puzzles et partage tes trouvailles.</p>
-              <span className="home-destination-action">
-                Créer une invention <ArrowRight size={16} aria-hidden="true" />
-              </span>
-            </Link>
-            <Link className="home-destination" to="/my-levels">
-              <div className="home-destination-top">
-                <span className="home-destination-icon">
-                  <Library size={24} aria-hidden="true" />
-                </span>
-                <span className="home-destination-tag">Tes trouvailles</span>
-                <ArrowRight size={20} aria-hidden="true" />
-              </div>
-              <h3>Mes niveaux</h3>
-              <p>Tes créations et les niveaux qu’on t’a envoyés, à rejouer et à partager.</p>
-              <span className="home-destination-action">
-                Ouvrir mes niveaux <ArrowRight size={16} aria-hidden="true" />
-              </span>
-            </Link>
-          </div>
-          <div className="home-utilities">
-            <p>Les essais font aussi partie de l’invention.</p>
-            <Link to="/settings">
-              <Settings size={17} aria-hidden="true" /> Paramètres{' '}
-              <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </div>
-        </nav>
-
-        <section className="home-progress" aria-labelledby="home-progress-title">
-          <div className="home-progress-copy">
-            <p className="home-kicker">
-              <CircleCheck size={16} aria-hidden="true" /> Pas à pas, idée après idée
-            </p>
-            <h2 id="home-progress-title">Ton carnet de bord</h2>
-            <p>
-              {nextLevel === undefined
-                ? 'Tous les défis sont résolus. Place à de nouvelles inventions !'
-                : resolvedCount === 0
-                  ? 'Ta première invention t’attend. Lance la bille !'
-                  : 'Chaque machine résolue ouvre la voie à la suivante.'}
-            </p>
-          </div>
-          <div className="home-progress-details">
-            <dl className="home-stats">
-              <div>
-                <dt>Niveaux résolus</dt>
-                <dd>
-                  {resolvedCount} / {embeddedLevels.length}
-                </dd>
-              </div>
-              <div>
-                <dt>Niveaux accessibles</dt>
-                <dd>{unlockedCount}</dd>
-              </div>
-              <div>
-                <dt>Chapitres</dt>
-                <dd>{campaignChapters.length}</dd>
-              </div>
-            </dl>
-            <div className="home-progress-track">
-              <progress
-                aria-label="Progression de la campagne"
-                value={resolvedCount}
-                max={embeddedLevels.length}
-              />
-              <span>{percentage} %</span>
+          {heroLevel !== undefined && (
+            <div
+              className="home-board"
+              role="img"
+              aria-label={`Aperçu du niveau « ${heroLevel.metadata.title} »`}
+            >
+              <LevelPreview document={heroLevel} />
             </div>
-          </div>
-          {(storageError !== null || storageWarning !== null) && (
-            <p className="home-storage-note" role="status">
-              {storageError !== null
-                ? 'La progression ne peut pas être enregistrée sur cet appareil.'
-                : 'Une ancienne sauvegarde illisible a été mise de côté.'}
-            </p>
           )}
         </section>
-        <footer className="home-footer">
-          <span>TinkerBolt</span> Le plaisir de faire fonctionner ses idées.
+
+        <nav className="home-places" aria-label="Explorer TinkerBolt">
+          <Place
+            to="/levels"
+            title="Campagne"
+            text="Cinq niveaux pour découvrir chaque pièce."
+            sprite="basket"
+          >
+            <div className="home-meter">
+              <progress aria-label="Progression de la campagne" value={resolvedCount} max={total} />
+              <span>
+                {resolvedCount} / {total}
+              </span>
+            </div>
+          </Place>
+          <Place
+            to="/editor"
+            title="Atelier"
+            text="Construis ton propre niveau, teste-le, puis envoie-le à qui tu veux."
+            sprite="lever"
+          />
+          <Place
+            to="/my-levels"
+            title="Mes niveaux"
+            text="Tes créations et les niveaux qu’on t’a envoyés."
+            sprite="springboard"
+          />
+        </nav>
+
+        {(storageError !== null || storageWarning !== null) && (
+          <p className="home-storage-note" role="status">
+            {storageError !== null
+              ? 'La progression ne peut pas être enregistrée sur cet appareil.'
+              : 'Une ancienne sauvegarde illisible a été mise de côté.'}
+          </p>
+        )}
+
+        <footer className="home-foot">
+          <span>Les niveaux partagés sont sous licence CC BY 4.0.</span>
+          <Link to="/settings">
+            <Settings size={16} aria-hidden="true" />
+            Paramètres
+          </Link>
         </footer>
       </div>
     </AppFrame>

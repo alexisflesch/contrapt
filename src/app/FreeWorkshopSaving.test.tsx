@@ -100,13 +100,35 @@ describe('atelier libre enregistré (M13, ADR 0015 § Atelier libre)', () => {
     expect(window.location.search).toBe('');
   });
 
-  it('affiche dans l’en-tête le titre du niveau édité, avec « Atelier » (V3)', () => {
+  it('affiche dans l’en-tête « Nouveau niveau · Atelier » pour un atelier neuf (V3, V7)', () => {
+    render(<App draftRepository={draftStorage()} />);
+
+    const header = screen.getByRole('banner');
+    expect(within(header).getByText('Nouveau niveau')).toBeVisible();
+    expect(within(header).getByText('Atelier')).toBeVisible();
+    expect(header).not.toHaveTextContent('Atelier de niveau');
+    expect(header).not.toHaveTextContent('Mode éditeur');
+  });
+
+  it('garde à une création enregistrée le titre de son document, même l’ancien titre de l’atelier (V7)', () => {
+    render(<App draftRepository={draftStorage()} />);
+    placeBall();
+    const id = draftIdInUrl();
+    const creation = storedCreation(id);
+    // Un brouillon enregistré avant V7 porte l'ancien titre de `workshop.json`.
+    const saved = draftStorage().save({
+      document: { ...creation.document, metadata: { title: 'Atelier de niveau' } },
+    });
+    expect(saved.status).toBe('ok');
+    cleanup();
+
+    window.history.replaceState(null, '', `/editor?draft=${id}`);
     render(<App draftRepository={draftStorage()} />);
 
     const header = screen.getByRole('banner');
     expect(within(header).getByText('Atelier de niveau')).toBeVisible();
-    expect(within(header).getByText('Atelier')).toBeVisible();
-    expect(header).not.toHaveTextContent('Mode éditeur');
+    expect(header).not.toHaveTextContent('Nouveau niveau');
+    expect(storedCreation(id).document.metadata.title).toBe('Atelier de niveau');
   });
 
   it('poser un objet enregistre une création `creation-<aléa>` et met son identifiant dans l’URL', () => {
@@ -130,7 +152,7 @@ describe('atelier libre enregistré (M13, ADR 0015 § Atelier libre)', () => {
     placeBall();
 
     const { metadata } = storedCreation(draftIdInUrl()).document;
-    expect(metadata).toEqual({ title: 'Atelier de niveau' });
+    expect(metadata).toEqual({ title: 'Nouveau niveau' });
     expect('description' in metadata).toBe(false);
   });
 

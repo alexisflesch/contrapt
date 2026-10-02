@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 import { createNavigateFallbackAllowlist } from './scripts/navigate-fallback-allowlist';
+import { precacheGlobIgnores, precacheGlobPatterns } from './scripts/precache-globs';
 
 // GitHub Pages serves the site under `/<repository>/`; the deploy workflow sets
 // this variable. Locally, in tests and in Playwright, the app lives at `/`.
@@ -51,7 +52,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{html,js,css,svg,png,ico,webp,webmanifest}'],
+        globPatterns: [...precacheGlobPatterns],
+        globIgnores: [...precacheGlobIgnores],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
         navigateFallbackAllowlist: [navigateFallbackAllowlist],

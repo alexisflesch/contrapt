@@ -169,6 +169,16 @@ describe('boîte « Exporter » de l’atelier (U16, U22)', () => {
     );
   });
 
+  it('s’adresse au joueur au tutoiement (V7)', () => {
+    renderDialog(levelOneWorkshop);
+
+    expect(
+      screen.getByText(
+        'Puzzle vérifié. Envoie le fichier ou le lien : il ouvre le niveau avec les objets à placer dans le tiroir du joueur.',
+      ),
+    ).toBeVisible();
+  });
+
   it('nomme le niveau avant de télécharger, et refuse un nom vide', () => {
     const { downloadFile } = renderDialog(levelOneWorkshop);
     const name = screen.getByRole('textbox', { name: 'Nom du niveau' });
@@ -215,7 +225,7 @@ describe('boîte « Exporter » de l’atelier (U16, U22)', () => {
     expect(field).toHaveAttribute('readonly');
     expect(field).toHaveDisplayValue(/^https:\/\/exemple\.test\/shared#level=1\./);
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Copie impossible : sélectionnez le lien ci-dessous pour le copier.',
+      'Copie impossible : sélectionne le lien ci-dessous pour le copier.',
     );
     expect(screen.queryByText('Lien copié')).toBeNull();
   });

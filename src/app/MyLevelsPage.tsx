@@ -347,7 +347,6 @@ export function MyLevelsPage() {
   return (
     <AppFrame
       title="Mes niveaux"
-      subtitle="Ta collection"
       variant="page"
       headerAction={
         <>

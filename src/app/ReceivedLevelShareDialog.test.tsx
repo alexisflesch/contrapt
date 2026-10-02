@@ -59,4 +59,22 @@ describe('partager un niveau reçu (M9, ADR 0015 § Page « Mes niveaux »)', ()
     expect(link.pathname).toBe('/tinkerbolt/shared');
     expect(await decodeShareFragment(link.hash)).toEqual({ status: 'ok', document: level });
   });
+
+  it('affiche le lien à sélectionner, au tutoiement, quand la copie est refusée (V7)', async () => {
+    render(
+      <ReceivedLevelShareDialog
+        document={level}
+        onClose={() => undefined}
+        origin="https://exemple.test"
+        writeClipboard={() => Promise.reject(new Error('refusé'))}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copier le lien de partage' }));
+
+    expect(await screen.findByRole('textbox', { name: 'Lien de partage' })).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Copie impossible : sélectionne le lien ci-dessous pour le copier.',
+    );
+  });
 });

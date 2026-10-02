@@ -46,7 +46,7 @@ export function LevelsPage() {
   const [draftErrorLevelId, setDraftErrorLevelId] = useState<string | null>(null);
 
   return (
-    <AppFrame title="Campagne" subtitle="Sélection du niveau" variant="page">
+    <AppFrame title="Campagne" variant="page">
       <div className="page-content page-content-levels">
         {unlockAllLevels && (
           <p className="panel-note dev-mode-note" role="status">

@@ -5,8 +5,10 @@ import { Menu, Plus } from 'lucide-react';
 import { Button } from './Button';
 
 interface AppHeaderProps {
-  readonly title: string;
-  readonly subtitle: string;
+  /** The page's title, centred; none on the home page (V7). */
+  readonly title?: string | undefined;
+  /** The context after the title (« Atelier », « Campagne »…), if the title needs one. */
+  readonly subtitle?: string | undefined;
   /**
    * ADR 0016 § Affichage: the level's author and first source, plain text.
    * Shown in place of the subtitle, which the header has no room to add.
@@ -29,7 +31,8 @@ export interface MenuAction {
 }
 
 /**
- * The app's brand lockup, current screen label, and the navigation menu.
+ * The app's brand lockup, current screen label (« Titre · Contexte », V7),
+ * and the navigation menu.
  * Every destination is a real route (ADR 0008): selecting one navigates
  * away, which unmounts this component along with its own open/closed state
  * — no explicit "close the menu" step is needed after a selection.
@@ -43,23 +46,37 @@ export function AppHeader({
 }: AppHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const context =
+    attribution !== undefined ? (
+      <span className="level-attribution">{attribution}</span>
+    ) : subtitle !== undefined ? (
+      <span className="level-mode">{subtitle}</span>
+    ) : undefined;
 
   return (
     <header className="app-header">
       <Link className="brand-lockup" to="/" aria-label="TinkerBolt, accueil">
         <span className="brand-mark" aria-hidden="true">
-          <Plus size={22} strokeWidth={3} />
+          <Plus size={18} strokeWidth={3.5} />
         </span>
         <h1 className="brand-name">TinkerBolt</h1>
       </Link>
-      <p className="level-label">
-        <span className="level-title">{title}</span>
-        {attribution === undefined ? (
-          <span className="level-mode">{subtitle}</span>
-        ) : (
-          <span className="level-attribution">{attribution}</span>
-        )}
-      </p>
+      {title === undefined ? (
+        <span aria-hidden="true" />
+      ) : (
+        <p className="level-label">
+          <span className="level-title">{title}</span>
+          {context !== undefined && (
+            <>
+              {/* V7: « Titre · Contexte »; the dot is drawn, the two parts are read. */}
+              <span className="level-separator" aria-hidden="true">
+                {' · '}
+              </span>
+              {context}
+            </>
+          )}
+        </p>
+      )}
       <div className="header-actions">
         {action}
         <button

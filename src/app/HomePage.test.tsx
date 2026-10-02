@@ -15,73 +15,126 @@ const createRepository = (progress: CampaignProgress = {}): ProgressRepository =
   clear: () => ({ status: 'ok' }),
 });
 
-describe('Accueil TinkerBolt', () => {
+const HERO_TITLE = 'Amène la balle jusqu’au panier.';
+
+const destinations = (): HTMLElement =>
+  screen.getByRole('navigation', { name: 'Explorer TinkerBolt' });
+
+const campaignProgress = (): HTMLElement =>
+  screen.getByRole('progressbar', { name: 'Progression de la campagne' });
+
+describe('Accueil TinkerBolt (V7, maquette validée en V4)', () => {
   beforeEach(() => {
     window.history.replaceState(null, '', '/');
     window.localStorage.clear();
   });
   afterEach(cleanup);
 
-  it('ouvre la landing à la racine avec les destinations et le premier défi', () => {
+  it('ouvre l’accueil à la racine avec le titre, le texte et les deux appels de la maquette', () => {
     render(<App progressRepository={createRepository()} />);
 
     expect(window.location.pathname).toBe('/');
+    expect(screen.getByRole('heading', { name: HERO_TITLE })).toBeVisible();
     expect(
-      screen.getByRole('heading', { name: 'Les bonnes idées font leur chemin.' }),
+      screen.getByText(
+        'Poutres, tremplins, ventilateurs, leviers : place les pièces, lance la machine et regarde ce qui se passe. Raté ? Ajuste et relance.',
+      ),
     ).toBeVisible();
     expect(screen.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', '/levels');
-    const destinations = screen.getByRole('navigation', { name: 'Explorer TinkerBolt' });
-    for (const { name, path } of [
-      { name: 'La campagne', path: '/levels' },
-      { name: 'L’atelier', path: '/editor' },
-      { name: 'Paramètres', path: '/settings' },
-    ]) {
-      expect(within(destinations).getByRole('link', { name: new RegExp(name) })).toHaveAttribute(
-        'href',
-        path,
-      );
-    }
+    expect(screen.getByRole('link', { name: 'ou créer un niveau' })).toHaveAttribute(
+      'href',
+      '/editor',
+    );
     expect(screen.queryByRole('region', { name: 'Plateau de jeu' })).not.toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'Progression de la campagne' })).toHaveAttribute(
-      'value',
-      '0',
+  });
+
+  it('montre l’aperçu réel du tutoriel 5, dessiné par le rendu du plateau', () => {
+    const { container } = render(<App progressRepository={createRepository()} />);
+
+    const hero = screen.getByRole('img', { name: 'Aperçu du niveau « La chaîne »' });
+    expect(hero.querySelector('.level-preview')).not.toBeNull();
+    // L'illustration composée et le décor de l'atelier ne sont plus utilisés.
+    expect(container.querySelector('.home-invention')).toBeNull();
+    expect(container.innerHTML).not.toContain('board-workshop-day-v1.png');
+  });
+
+  it('ouvre les trois destinations illustrées par un sprite, puis Paramètres en pied de page', () => {
+    render(<App progressRepository={createRepository()} />);
+
+    for (const { name, path, sprite } of [
+      { name: 'Campagne', path: '/levels', sprite: 'basket' },
+      { name: 'Atelier', path: '/editor', sprite: 'lever' },
+      { name: 'Mes niveaux', path: '/my-levels', sprite: 'springboard' },
+    ]) {
+      const link = within(destinations()).getByRole('link', { name: new RegExp(`^${name}`, 'u') });
+      expect(link).toHaveAttribute('href', path);
+      expect(within(link).getByRole('heading', { name })).toBeVisible();
+      const image = link.querySelector('img');
+      expect(image?.getAttribute('src')).toBe(`/assets/sprites/thumbs/${sprite}.png`);
+      expect(image).toHaveAttribute('alt', '');
+    }
+    expect(within(destinations()).getAllByRole('link')).toHaveLength(3);
+    expect(screen.getByText('Cinq niveaux pour découvrir chaque pièce.')).toBeVisible();
+    expect(
+      screen.getByText('Construis ton propre niveau, teste-le, puis envoie-le à qui tu veux.'),
+    ).toBeVisible();
+    expect(screen.getByText('Tes créations et les niveaux qu’on t’a envoyés.')).toBeVisible();
+
+    const footer = screen
+      .getByText('Les niveaux partagés sont sous licence CC BY 4.0.')
+      .closest('footer');
+    if (footer === null) throw new Error('Pied de page introuvable.');
+    expect(within(footer).getByRole('link', { name: 'Paramètres' })).toHaveAttribute(
+      'href',
+      '/settings',
     );
   });
 
-  it('résume la vraie progression et reprend le premier défi accessible non résolu', () => {
+  it('n’a ni kicker, ni faits, ni carnet de bord, ni statistiques, ni titre au centre de l’en-tête', () => {
+    render(<App progressRepository={createRepository()} />);
+
+    expect(screen.queryByRole('region', { name: 'Ton carnet de bord' })).toBeNull();
+    expect(screen.queryByText(/Bienvenue dans l’atelier/u)).toBeNull();
+    expect(screen.queryByText(/défis à résoudre/u)).toBeNull();
+    expect(screen.queryByText(/Niveaux accessibles/u)).toBeNull();
+    expect(screen.queryByText(/%/u)).toBeNull();
+    const header = screen.getByRole('banner');
+    expect(header).not.toHaveTextContent('Accueil');
+    expect(header).not.toHaveTextContent('À toi d’inventer');
+  });
+
+  it('montre dans la carte Campagne la progression résolus / total, en barre et en texte', () => {
     render(
       <App
         progressRepository={createRepository({
           'tuto-1': { resolved: true, bestObjectCount: 1 },
+          'tuto-2': { resolved: true, bestObjectCount: 2 },
           'campagne-retiree': { resolved: true, bestObjectCount: 1 },
         })}
       />,
     );
 
-    expect(screen.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', '/levels');
-    const stats = screen.getByRole('region', { name: 'Ton carnet de bord' });
-    expect(within(stats).getByText('1 / 5')).toBeVisible();
-    expect(screen.getByRole('progressbar', { name: 'Progression de la campagne' })).toHaveAttribute(
-      'value',
-      '1',
-    );
-    expect(stats).toHaveTextContent('20 %');
+    const campaign = within(destinations()).getByRole('link', { name: /^Campagne/u });
+    expect(within(campaign).getByText('2 / 5')).toBeVisible();
+    expect(campaignProgress()).toHaveAttribute('value', '2');
+    expect(campaignProgress()).toHaveAttribute('max', '5');
+    expect(campaign).toContainElement(campaignProgress());
   });
 
-  it('permet de revisiter la campagne quand tous les niveaux sont résolus', () => {
+  it('commence à 0 / 5 et mène toujours à la campagne quand tout est résolu', () => {
+    render(<App progressRepository={createRepository()} />);
+    expect(campaignProgress()).toHaveAttribute('value', '0');
+    expect(within(destinations()).getByText('0 / 5')).toBeVisible();
+    cleanup();
+
     const progress = Object.fromEntries(
       embeddedLevels.map((level) => [level.id, { resolved: true, bestObjectCount: 1 }]),
     );
     render(<App progressRepository={createRepository(progress)} />);
 
     expect(screen.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', '/levels');
-    expect(
-      screen.getByText('Tous les défis sont résolus. Place à de nouvelles inventions !'),
-    ).toBeVisible();
-    expect(screen.getByRole('progressbar', { name: 'Progression de la campagne' })).toHaveAttribute(
-      'value',
-      '5',
-    );
+    expect(campaignProgress()).toHaveAttribute('value', '5');
+    expect(within(destinations()).getByText('5 / 5')).toBeVisible();
   });
 
   it('garde les accès jouables et explique un stockage indisponible', () => {
@@ -120,8 +173,6 @@ describe('Accueil TinkerBolt', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le menu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Accueil' }));
     expect(window.location.pathname).toBe('/');
-    expect(
-      screen.getByRole('heading', { name: 'Les bonnes idées font leur chemin.' }),
-    ).toBeVisible();
+    expect(screen.getByRole('heading', { name: HERO_TITLE })).toBeVisible();
   });
 });

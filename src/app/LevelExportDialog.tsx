@@ -182,7 +182,7 @@ export function LevelExportDialog({
       ) : (
         <>
           <p className="panel-note">
-            Puzzle vérifié. Envoyez le fichier ou le lien : il ouvre le niveau avec les objets à
+            Puzzle vérifié. Envoie le fichier ou le lien : il ouvre le niveau avec les objets à
             placer dans le tiroir du joueur.
           </p>
           <label className="export-link">
@@ -263,9 +263,9 @@ export function LevelExportDialog({
             {share.status === 'copied'
               ? 'Lien copié'
               : share.status === 'manual'
-                ? 'Copie impossible : sélectionnez le lien ci-dessous pour le copier.'
+                ? 'Copie impossible : sélectionne le lien ci-dessous pour le copier.'
                 : share.status === 'failed'
-                  ? 'Ce niveau est trop grand pour un lien : téléchargez le fichier.'
+                  ? 'Ce niveau est trop grand pour un lien : télécharge le fichier.'
                   : downloadedFileName !== null
                     ? `Fichier ${downloadedFileName} téléchargé.`
                     : ''}

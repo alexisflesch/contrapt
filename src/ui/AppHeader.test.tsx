@@ -13,7 +13,7 @@ describe('AppHeader — iconographie U27', () => {
   it('rend le bouton de menu avec une icône SVG Lucide, sans glyphe Unicode', () => {
     render(
       <MemoryRouter>
-        <AppHeader title="Campagne" subtitle="Sélection du niveau" />
+        <AppHeader title="Campagne" />
       </MemoryRouter>,
     );
 
@@ -31,10 +31,7 @@ describe('AppHeader — navigation et lexique (V3)', () => {
       <MemoryRouter initialEntries={['/settings']}>
         <Routes>
           <Route path="/" element={<p>Page d’accueil</p>} />
-          <Route
-            path="/settings"
-            element={<AppHeader title="Paramètres" subtitle="Réglages de l’application" />}
-          />
+          <Route path="/settings" element={<AppHeader title="Paramètres" />} />
         </Routes>
       </MemoryRouter>,
     );
@@ -50,7 +47,7 @@ describe('AppHeader — navigation et lexique (V3)', () => {
   it('liste le menu dans l’ordre du lexique, sans les anciens libellés', () => {
     render(
       <MemoryRouter>
-        <AppHeader title="Campagne" subtitle="Sélection du niveau" />
+        <AppHeader title="Campagne" />
       </MemoryRouter>,
     );
 
@@ -60,5 +57,70 @@ describe('AppHeader — navigation et lexique (V3)', () => {
       .getAllByRole('button')
       .map((button) => button.textContent);
     expect(entries).toEqual(['Accueil', 'Campagne', 'Atelier', 'Mes niveaux', 'Paramètres']);
+  });
+});
+
+describe('AppHeader — titre en texte simple, « Titre · Contexte » (V7)', () => {
+  afterEach(cleanup);
+
+  const pageLabel = (): HTMLElement => {
+    const label = screen.getByRole('banner').querySelector<HTMLElement>('.level-label');
+    if (label === null) throw new Error('Titre de page introuvable dans l’en-tête.');
+    return label;
+  };
+
+  it('écrit le titre puis le contexte sur une ligne, séparés par un point médian', () => {
+    render(
+      <MemoryRouter>
+        <AppHeader title="Le grand détour" subtitle="Atelier" />
+      </MemoryRouter>,
+    );
+
+    expect(pageLabel()).toHaveTextContent(/^Le grand détour · Atelier$/u);
+    expect(screen.getByText('Atelier', { selector: '.level-mode' })).toBeVisible();
+    // Le séparateur est visuel : les lecteurs d'écran lisent le titre puis le contexte.
+    expect(pageLabel().querySelector('[aria-hidden="true"]')).toHaveTextContent('·');
+  });
+
+  it('garde « Niveau N · titre » en titre et ajoute « Campagne » en contexte', () => {
+    render(
+      <MemoryRouter>
+        <AppHeader title="Niveau 1 · Le petit pont" subtitle="Campagne" />
+      </MemoryRouter>,
+    );
+
+    expect(pageLabel()).toHaveTextContent(/^Niveau 1 · Le petit pont · Campagne$/u);
+  });
+
+  it('n’écrit que le titre quand il n’y a pas de contexte', () => {
+    render(
+      <MemoryRouter>
+        <AppHeader title="Campagne" />
+      </MemoryRouter>,
+    );
+
+    expect(pageLabel()).toHaveTextContent(/^Campagne$/u);
+    expect(pageLabel().querySelector('.level-mode')).toBeNull();
+  });
+
+  it('montre l’auteur d’un niveau reçu à la place du contexte', () => {
+    render(
+      <MemoryRouter>
+        <AppHeader title="La chaîne" subtitle="Mes niveaux" attribution="par Mila" />
+      </MemoryRouter>,
+    );
+
+    expect(pageLabel()).toHaveTextContent(/^La chaîne · par Mila$/u);
+  });
+
+  it('n’a pas de titre au centre sans titre de page (accueil)', () => {
+    render(
+      <MemoryRouter>
+        <AppHeader />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('banner').querySelector('.level-label')).toBeNull();
+    expect(screen.getByRole('link', { name: 'TinkerBolt, accueil' })).toBeVisible();
   });
 });

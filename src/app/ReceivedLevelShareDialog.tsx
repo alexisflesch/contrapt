@@ -40,9 +40,9 @@ const shareMessage = (share: ShareState): string => {
     case 'copied':
       return 'Lien copié';
     case 'manual':
-      return 'Copie impossible : sélectionnez le lien ci-dessous pour le copier.';
+      return 'Copie impossible : sélectionne le lien ci-dessous pour le copier.';
     case 'failed':
-      return 'Ce niveau est trop grand pour un lien : téléchargez le fichier.';
+      return 'Ce niveau est trop grand pour un lien : télécharge le fichier.';
     case 'idle':
     case 'working':
       return '';

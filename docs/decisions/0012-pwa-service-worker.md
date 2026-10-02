@@ -21,7 +21,7 @@ contrôle au milieu d'une session d'édition sans prévenir. Rien n'est impléme
   `workbox-build` ^7.4.1 en pairs. Si une version installée ne déclare plus Vite
   8, ne pas forcer l'installation : la décision revient à l'auteur.
 - **Précache** : l'app shell, le JS et le CSS du build, `public/assets/**` (sprites,
-  vignettes, fonds). Les niveaux embarqués sont dans le bundle. Aucune ressource
+  vignettes, fonds ; fonds retirés et police ajoutée, voir l'amendement V7). Les niveaux embarqués sont dans le bundle. Aucune ressource
   distante.
 - **Navigation** : repli sur `index.html` pour toutes les routes de l'ADR 0008,
   y compris `/shared`.
@@ -89,3 +89,13 @@ de déploiement et sert hors ligne `/`, `/levels`, `/levels/:levelId/play`,
 par V3), `/editor`, `/settings`, `/shared`, `/bench` et `/bench/play`. `/my-levels` en était absent depuis M9, malgré la phrase « toutes
 les routes de l'ADR 0008 » ci-dessus ; `/demo` est retirée avec la route (ADR 0008).
 Un test E2E recharge « Mes niveaux » hors ligne.
+
+## Amendement du 2 octobre 2026 — précache sans les fonds, avec la police (V7)
+
+Les fonds de `public/assets/backgrounds/` ne sont plus dessinés nulle part (V2b :
+parchemin uni ; V7 : l’accueil montre l’aperçu d’un vrai niveau). Ils restent dans
+le dépôt (ressources de l’auteur) mais sortent du précache (`globIgnores`) ; la
+police Nunito embarquée (`public/fonts/Nunito.woff2`) y entre (`woff2` ajouté aux
+motifs). Motifs et exclusions vivent dans `scripts/precache-globs.ts`, testés sur
+le contenu de `public/` ; un E2E lit `sw.js`. Précache : 58 entrées (10 226 Kio)
+avant, 55 entrées (≈ 2 606 Kio) après.

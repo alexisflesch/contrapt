@@ -20,6 +20,10 @@ partager. Elle ne couvre pas les sprites et illustrations de `art/` et de
 `public/assets/`. La décision est dans
 [l’ADR 0016](docs/decisions/0016-attribution-licence-niveaux.md).
 
+La police de l’interface, Nunito (© 2014 The Nunito Project Authors), est
+embarquée dans `public/fonts/` sous
+[SIL Open Font License 1.1](public/fonts/OFL.txt).
+
 Le projet est encore en développement. La campagne contient actuellement
 cinq tutoriels conçus par Bolt, avec leurs solutions vérifiées ; le mode auteur
 permet de créer, jouer, modifier,

@@ -12,6 +12,7 @@ import {
   createShareLink,
   nameExportedLevel,
   prepareLevelExport,
+  puzzleRefusalMessage,
 } from './level-export';
 
 const levelFour = embeddedLevels.find(({ id }) => id === 'campaign-04-retour-a-l-expediteur');
@@ -95,11 +96,11 @@ describe('export d’un niveau (U16, U22)', () => {
     expect(nameExportedLevel(preparation.puzzle, '!?')?.puzzle.id).toBe(preparation.puzzle.id);
   });
 
-  it('refuse un atelier sans objet à placer et invite à toucher ceux à retirer', () => {
+  it('refuse un atelier sans objet à placer et invite à sélectionner ceux à poser (tutoiement, V7)', () => {
     expect(prepareLevelExport(embeddedWorkshopDocument)).toEqual({
       status: 'invalid',
       reasons: [
-        'Aucun objet n’est à placer : touchez chaque objet que le joueur devra poser, puis choisissez « À placer » dans ses propriétés.',
+        'Aucun objet n’est à placer : sélectionne chaque objet que le joueur devra poser, puis choisis « À placer » dans ses propriétés.',
       ],
     });
   });
@@ -130,7 +131,7 @@ describe('export d’un niveau (U16, U22)', () => {
     expect(result).toEqual({
       status: 'invalid',
       reasons: [
-        'Aucun objet n’est à placer : touchez chaque objet que le joueur devra poser, puis choisissez « À placer » dans ses propriétés.',
+        'Aucun objet n’est à placer : sélectionne chaque objet que le joueur devra poser, puis choisis « À placer » dans ses propriétés.',
       ],
     });
   });
@@ -153,6 +154,14 @@ describe('export d’un niveau (U16, U22)', () => {
   it('accepte un chemin de base à la racine', () => {
     expect(buildShareUrl('#level=x', 'http://127.0.0.1:4173', '/')).toBe(
       'http://127.0.0.1:4173/shared#level=x',
+    );
+  });
+});
+
+describe('motifs de refus, au tutoiement (V7)', () => {
+  it('demande de garder les objets à placer dans une zone de construction', () => {
+    expect(puzzleRefusalMessage('solution-not-playable')).toBe(
+      'Le joueur ne pourrait pas poser tous les objets à placer là où ils sont : garde-les dans une zone de construction.',
     );
   });
 });

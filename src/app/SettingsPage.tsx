@@ -216,7 +216,7 @@ function ProgressSettings() {
  */
 export function SettingsPage() {
   return (
-    <AppFrame title="Paramètres" subtitle="Réglages de l’application" variant="page">
+    <AppFrame title="Paramètres" variant="page">
       <div className="page-content settings-page">
         <PseudoSettings />
         <ProgressSettings />

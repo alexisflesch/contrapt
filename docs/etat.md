@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0, V1 (fin de N2), V2a (démo supprimée), V2b (pas de bordure, pas de perte par le haut ; validation visuelle attendue) et V2c (repli hors ligne de `/my-levels`) V3 (navigation et vocabulaire ; validation visuelle attendue) V5 (aperçu des niveaux) et V6 (carte de niveau commune ; validation visuelle attendue) livrées, gate globale verte ; prochaine tâche : V7 (accueil, éditeur, scrollbar, police Nunito). U3 reste abandonnée.
+Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0, V1 (fin de N2), V2a (démo supprimée), V2b (pas de bordure, pas de perte par le haut ; validation visuelle attendue) et V2c (repli hors ligne de `/my-levels`) V3 (navigation et vocabulaire ; validation visuelle attendue) V5 (aperçu des niveaux), V6 (carte de niveau commune ; validation visuelle attendue) et V7 (accueil, en-tête, scrollbar, police Nunito ; validation visuelle attendue) livrées, gate globale verte ; prochaine tâche : V8 (parcours beta-testeur). U3 reste abandonnée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -25,8 +25,12 @@ validation visuelle de l’auteur attendue) est livrée. **V5** (aperçu d’un 
 **V6** (carte de niveau commune `LevelCard` avec aperçu, pour la campagne,
 « Mes créations » et « Niveaux reçus » ; « Importer » et « Nouveau niveau » dans
 le bandeau de Mes niveaux ; « Modifié le … » sur les créations ; validation
-visuelle de l’auteur attendue) est livrée. Prochaine tâche : **V7** (accueil,
-bandeau de l’éditeur, scrollbar, police Nunito).
+visuelle de l’auteur attendue) est livrée. **V7** (accueil de la maquette avec
+l’aperçu réel du tutoriel 5 et la progression de la campagne ; en-tête
+« Titre · Contexte » sans pastille ; scrollbar sable commune ; police Nunito
+embarquée et précachée ; fonds retirés du précache ; atelier neuf « Nouveau
+niveau » ; boîtes d’export au tutoiement ; validation visuelle de l’auteur
+attendue) est livrée. Prochaine tâche : **V8** (parcours beta-testeur).
 Les sources auteur et son fichier d’essai restent intacts ; rien n’est poussé.
 
 ## Stack en place
@@ -223,8 +227,7 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   `test-results/shared/shared-not-kept-*.png`).
 - Page « Mes niveaux » M9 (ADR 0015 § Page « Mes niveaux », ADR 0008
   amendée) : `/my-levels` (`MyLevelsPage.tsx`), dans le menu partagé et en
-  quatrième destination de l’accueil (grille de deux colonnes dès 700 px,
-  quatre dès 1 100 px). Section « Mes créations » triée par `updatedAt`
+  troisième lieu de l’accueil (V7). Section « Mes créations » triée par `updatedAt`
   décroissant (`listCreations`) : Modifier (`/editor?draft=<id>`), Jouer
   (même route, état de navigation `{ playPuzzle: true }` qui ouvre
   directement « Jouer le puzzle » U22 ; désactivé sans objet à placer),
@@ -436,15 +439,19 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   (`e2e/board-paper.ts`). Captures dans `test-results/board-paper/` ; validation
   de l’auteur attendue (V2b).
 
-- **Accueil `/`** : landing avec les couleurs et assets locaux de l’application,
-  scène d’atelier illustrée, accès à la campagne, à l’atelier
-  et aux paramètres (et à « Mes niveaux », M9). La commande principale lance le
-  premier niveau accessible non résolu, ou propose de revisiter la campagne
-  terminée. Le carnet de bord affiche les niveaux résolus, accessibles, les
-  chapitres et une jauge de progression, calculés sur la campagne actuelle via
-  le contexte existant. Les erreurs de stockage et sauvegardes illisibles restent
-  signalées. Le menu de chaque écran propose un retour à l’accueil (ADR 0008
-  amendée).
+- **Accueil `/`** (V7, maquette V4) : « Amène la balle jusqu’au panier. », un
+  paragraphe, « Jouer » (→ `/levels`) et « ou créer un niveau » (→ `/editor`) ;
+  à droite l’aperçu réel du tutoriel 5 (`LevelPreview`) ; trois cartes Campagne
+  (progression `résolus / total`, barre et texte), Atelier et Mes niveaux,
+  illustrées par une vignette de sprite ; pied de page « Les niveaux partagés
+  sont sous licence CC BY 4.0. » et « Paramètres ». Pas de titre dans l’en-tête.
+  L’invitation PWA et les notes de stockage restent. Le menu de chaque écran
+  propose un retour à l’accueil (ADR 0008 amendée).
+- **En-tête** (V7) : titre de page en texte simple centré, « Titre · Contexte »
+  (contexte atténué ; auteur d’un niveau reçu à sa place), sans titre à
+  l’accueil ; sous 700 px le contexte passe sous le titre, en paysage compact il
+  est masqué. Police Nunito
+  embarquée (`public/fonts/`, OFL) ; scrollbar commune fine, sable, sans flèches.
 - Routage côté client (ADR 0008) : `/levels`, `/levels/:levelId/play`,
   `/my-levels`, `/my-levels/:id/play`, `/import` (redirige vers `/my-levels`),
   `/editor`, `/settings` (paramètres, U11) et `/shared` (niveau décodé depuis le fragment URL,
@@ -892,6 +899,12 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après V7 (2 octobre 2026) : passe — typecheck, lint, formatage,
+Knip, contenu (6 documents embarqués), 1200 tests Vitest (90 fichiers), build
+(précache : 55 entrées, 2 606 Kio, contre 58 et 10 226 Kio avant) et 88 tests
+Playwright du projet `v1` (0 ignoré). `tmp/check-levels.ts` écarté puis remis
+identique. Captures de V7 : validation de l’auteur attendue.
 
 `pnpm check` après V6 (2 octobre 2026) : passe — typecheck, lint, formatage,
 Knip, contenu (6 documents embarqués), 1185 tests Vitest (89 fichiers), build et

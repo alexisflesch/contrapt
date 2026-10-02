@@ -732,3 +732,102 @@ la maquette, captures), un seul commit.
 - Gate `pnpm check` verte : 1185 tests Vitest (89 fichiers), 87 tests Playwright `v1`.
   `tmp/check-levels.ts` écarté puis remis identique.
 - Pour l'auteur : valider les captures de `v6-final/`.
+
+### V7 — Accueil, éditeur, scrollbar, police — fait (validation visuelle attendue) — commit V7 (2 octobre 2026)
+
+- Tests rouges (avant le code) : `HomePage.test.tsx` réécrit (maquette V4) — `Unable to find
+an accessible element with the role "heading" and name "Amène la balle jusqu’au panier."`,
+  `… role "img" and name "Aperçu du niveau « La chaîne »"`, `… role "link" and name
+/^Campagne/u` ; `AppHeader.test.tsx` « Titre · Contexte » (5 tests : séparateur absent,
+  `title` obligatoire) ; `FreeWorkshopSaving.test` et `embedded-levels.test` — `expected
+{ title: 'Atelier de niveau' } to deeply equal { title: 'Nouveau niveau' }` ;
+  `level-export.test` (« sélectionne… », « garde-les… »), `LevelExportDialog.test`
+  (« Envoie le fichier… », « sélectionne le lien… »), `ReceivedLevelShareDialog.test`
+  (lien à sélectionner, test ajouté) ; `scripts/precache-globs.test.ts` (module absent).
+  Le test « garde à une création enregistrée le titre de son document, même l’ancien titre
+  de l’atelier » est vert dès l’écriture : c’est la garde de non-régression demandée (un
+  brouillon titré « Atelier de niveau » le reste après le renommage de `workshop.json`).
+- **Police** : `docs/maquettes/v1/fonts/Nunito.ttf` (variable, 200–1000) convertie en
+  `public/fonts/Nunito.woff2` avec fontTools déjà installé (277 → 99 Kio, aucun
+  sous-ensemble : mêmes glyphes) ; `public/fonts/OFL.txt` (copyright du fichier + texte OFL
+  1.1) ; `@font-face` local `font-display: swap` dans `styles.css`, `--font-ui` commence par
+  `'Nunito'` ; README § Licence. Aucune dépendance, aucune police distante.
+- **En-tête** : `AppHeader`/`AppFrame` acceptent un titre et un contexte facultatifs ;
+  `<p class="level-label">` garde `.level-title`, puis un séparateur « · » `aria-hidden` et
+  `.level-mode` (ou `.level-attribution` d’un niveau reçu). Sans titre (accueil), rien au
+  centre. Fond `--night-950`, filet `--night-800`, 60 px en grand format (68 avant), marque
+  28 px sans rotation, 22 px. Sous-titres descriptifs retirés là où la maquette n’en a pas :
+  Campagne (« Sélection du niveau »), Mes niveaux (« Ta collection »), Paramètres
+  (« Réglages de l’application »), Accueil (« À toi d’inventer »). Boutons de l’en-tête
+  harmonisés avec la maquette (nuit, trait de 1 px ; vert avec liseré bas ; menu en
+  simple contour ; cibles de 44 px gardées). Sous 700 px, le contexte passe sous le titre,
+  sans séparateur (comme l’ancienne pastille, sans son cadre) : sur une ligne, à 390 px,
+  « Nouveau niveau · Atelier » ne laissait voir que « · A » à côté de trois boutons.
+  L’en-tête ne déborde pas (captures `niveau-390`, `atelier-390`). Un premier essai qui
+  masquait le contexte au téléphone cassait dix specs à 390 × 844 qui le lisent
+  (`campaign-draft`, `export`, `levels`, `shared`…) ; abandonné au profit de l’empilement,
+  aucune spec n’a eu à changer de format.
+- **Accueil** (`HomePage.tsx`, réécrit) : textes exacts du journal V4 ; aperçu réel du
+  tutoriel 5 (`tuto-5`, sinon le dernier niveau) par `LevelPreview`, dans un cadre
+  `role="img"` « Aperçu du niveau « La chaîne » » ; `<nav>` « Explorer TinkerBolt » à trois
+  liens (Campagne avec `<progress>` « Progression de la campagne » et « n / 5 »,
+  Atelier, Mes niveaux ; vignettes `basket`, `lever`, `springboard`) ; pied de page.
+  Invitation PWA en tête (inchangée), note de stockage sous les cartes. Supprimés :
+  illustration composée, kicker, faits, carnet de bord, statistiques, flèches, ligne
+  « Niveau N · titre ». L’accueil n’utilise plus `board-workshop-day-v1.png`.
+- **Précache** : `scripts/precache-globs.ts` (motifs + `globIgnores: ['assets/backgrounds/**']`,
+  `woff2` ajouté), branché dans `vite.config.ts`, testé sur le contenu réel de `public/`
+  (`path.matchesGlob`). Manifeste généré vérifié (`dist/sw.js` : `fonts/Nunito.woff2`
+  présent, aucun `assets/backgrounds/`) et par un E2E (`pwa.spec.ts` lit `/sw.js`). Build :
+  **58 entrées, 10 226 Kio avant (HEAD V6) ; 55 entrées, 2 606 Kio après**. Fichiers des
+  fonds laissés en place. ADR 0012 amendée.
+- **Scrollbar** : fine, pouce sable `#d4c19c` (survol `#b99c69`), sans flèches, piste
+  transparente ; variante `--night-line` pour le menu. Chromium ignore les pseudo-éléments
+  `-webkit-` dès qu’un `scrollbar-width`/`scrollbar-color` est posé (et garde alors ses
+  flèches, comme sur la capture de maquette) : les propriétés standard sont réservées par
+  `@supports not selector(::-webkit-scrollbar)` aux autres navigateurs.
+- **Éditeur** : `workshop.json` « Atelier de niveau » → « Nouveau niveau » ; l’en-tête affiche
+  « Nouveau niveau · Atelier ». Les créations gardent le titre de leur document.
+- **Textes** au tutoiement, neutres souris/toucher : « Envoie le fichier ou le lien »,
+  « sélectionne le lien ci-dessous », « télécharge le fichier » (export et partage d’un
+  niveau reçu), « sélectionne chaque objet que le joueur devra poser, puis choisis
+  « À placer » », « garde-les dans une zone de construction ».
+- **CSS morte retirée** : tout l’ancien accueil (`.home-kicker`, `.home-facts`,
+  `.home-invention*`, `.home-sprite*`, `.home-explore`, `.home-destination*`,
+  `.home-utilities`, `.home-progress*`, `.home-stats`, `.home-footer`, grilles 700/1100 px),
+  la pastille d’en-tête (bordure, fond, colonne, capitales jaunes de `.level-mode`) et ses
+  variantes paysage.
+- Tests réécrits : `HomePage.test.tsx` (tous ; mêmes intentions : destinations, progression,
+  stockage, retour par le menu, sur la nouvelle page), `App.test` (titre de l’accueil, U10),
+  `AppHeader.test` (sous-titres retirés des exemples), `FreeWorkshopSaving.test` (titre
+  « Nouveau niveau »), `save-free-creation.test` et `embedded-levels.test` (métadonnées de
+  l’atelier embarqué), textes de `level-export.test` et `LevelExportDialog.test` ; E2E
+  `home.spec.ts` (même parcours : formats, images chargées, absence de débordement, cible
+  « Jouer », destinations — Mes niveaux et « ou créer un niveau » ajoutés —, progression
+  après rechargement ; la police est vérifiée déclarée et servie). Aucun test supprimé ni
+  ignoré.
+- Specs de format téléphone : aucune modifiée ni passée en 1440 × 900.
+- Bac à sable : le Chromium de l’agent refuse toute police CSS distante (`NOTREACHED` dans
+  `remote_font_face_source.cc`, la maquette elle-même s’y affiche sans Nunito), alors que
+  la même police chargée par l’API `FontFace` s’affiche. Le script de captures charge donc
+  Nunito par `FontFace` ; l’E2E vérifie la déclaration et le service du fichier, pas son
+  état de chargement. À vérifier à l’œil dans un vrai navigateur.
+- Captures (build + `vite preview` port 4317, progression 2/5 injectée, Chromium sans
+  `--hide-scrollbars`) :
+  `/tmp/claude-1000/-home-aflesch-tinkerbolt/6a643584-d9aa-4357-aedc-da10439fec33/scratchpad/v7/`
+  (`accueil-`, `campagne-`, `mes-niveaux-`, `atelier-`, `niveau-` en 1440 et 1280 ;
+  `accueil-390`, `atelier-390`, `niveau-390`). Comparées à `docs/maquettes/v1/captures/` :
+  accueil superposable (hero, aperçu, cartes, pied de page) ; en-tête conforme ; catalogue
+  de l’Atelier à 1280 × 720 avec sa scrollbar sable visible.
+- Écarts restants avec la maquette : le catalogue de l’Atelier garde son bandeau
+  « CATALOGUE / Objets disponibles » et ses cartes (hors V7, la maquette ne couvre que
+  bandeau et scrollbar) ; les boutons de l’en-tête du plateau gardent leur pastille d’icône
+  jaune (`objective-button`) ; les cibles de l’en-tête restent à 44 px (40 dans la
+  maquette) ; dans les cartes de l’accueil, le texte suit directement le titre (la
+  maquette le décale un peu sous « Mes niveaux »).
+- Gate `pnpm check` verte : 1200 tests Vitest (90 fichiers), 6 documents de contenu,
+  88 tests Playwright `v1` (0 ignoré), précache 55 entrées (2 606 Kio).
+  `tmp/check-levels.ts` écarté puis remis identique. Un premier passage avait échoué sur
+  les dix specs qui lisent le contexte à 390 px (voir « En-tête ») ; corrigé côté CSS.
+- Pour l’auteur : valider les captures de `v7/` ; au téléphone, le contexte de l’en-tête
+  s’empile sous le titre (v2 décidera).

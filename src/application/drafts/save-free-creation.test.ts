@@ -50,7 +50,7 @@ describe('atelier libre enregistré (M13, ADR 0015 § Atelier libre)', () => {
 
     expect(saves).toHaveLength(1);
     const metadata = saves[0]?.document.metadata;
-    expect(metadata).toEqual({ title: 'Atelier de niveau' });
+    expect(metadata).toEqual({ title: 'Nouveau niveau' });
     expect(metadata !== undefined && 'description' in metadata).toBe(false);
   });
 

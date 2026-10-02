@@ -3015,9 +3015,7 @@ describe('coque TinkerBolt', () => {
     window.history.replaceState(null, '', '/');
     const preferences = createPreferencesRepository();
     render(<App preferencesRepository={preferences.repository} />);
-    expect(
-      screen.getByRole('heading', { name: 'Les bonnes idées font leur chemin.' }),
-    ).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Amène la balle jusqu’au panier.' })).toBeVisible();
     expect(installInvitation()).toBeNull();
 
     const install = installPromptEvent('accepted');

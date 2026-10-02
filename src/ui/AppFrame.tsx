@@ -3,8 +3,10 @@ import type { ReactNode } from 'react';
 import { AppHeader, type MenuAction } from './AppHeader';
 
 interface AppFrameProps {
-  readonly title: string;
-  readonly subtitle: string;
+  /** None on the home page, whose header has no title (V7). */
+  readonly title?: string;
+  /** The title's context (« Atelier »…), shown as « Titre · Contexte ». */
+  readonly subtitle?: string;
   /** ADR 0016 § Affichage: replaces the subtitle line when present. */
   readonly attribution?: string | undefined;
   /** `board` for the plateau screen (fixed viewport, no page scroll); `page` for scrolling content pages. */

@@ -51,3 +51,13 @@ test('ouvre « Mes niveaux » hors ligne après le premier chargement (V2c)', as
 
   await expect(page.getByRole('region', { name: 'Niveaux reçus' })).toBeVisible();
 });
+
+test('précache la police et les sprites, pas les fonds inutilisés (V7)', async ({ request }) => {
+  const response = await request.get('/sw.js');
+  expect(response.ok()).toBe(true);
+  const serviceWorker = await response.text();
+
+  expect(serviceWorker).toContain('fonts/Nunito.woff2');
+  expect(serviceWorker).toContain('assets/sprites/thumbs/basket.png');
+  expect(serviceWorker).not.toContain('assets/backgrounds/');
+});
