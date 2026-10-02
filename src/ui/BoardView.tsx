@@ -271,9 +271,10 @@ export function BoardView({
 
   // Which balls the board draws red (the goal's) and blue, exposed for tests
   // and tools: the same projection the renderer draws.
-  const projectedLayers = projectLevel(
+  const shownProjection = projectLevel(
     (session.simulationSnapshot ?? currentEditorAttempt(session)).document,
-  ).objects;
+  );
+  const projectedLayers = shownProjection.objects;
   const ballColourIds = (assetKey: 'ball-base' | 'second-ball-base'): string =>
     projectedLayers
       .filter((object) => object.assetKey === assetKey)
@@ -415,6 +416,7 @@ export function BoardView({
             }
             data-red-balls={ballColourIds('ball-base')}
             data-blue-balls={ballColourIds('second-ball-base')}
+            data-goal-ball-marker={shownProjection.goalBallMarkerId}
             data-wires={currentEditorAttempt(session)
               .document.wires.map(({ sourceId, targetId }) => `${sourceId}>${targetId}`)
               .join(' ')}

@@ -11,8 +11,8 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
 
 ## Point de reprise (fin de session du 1er octobre 2026)
 
-- **Phase 1 terminée ; phase 2 commencée : U12, U1 et U13 faites (2 octobre
-  2026), prochaine tâche U7.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
+- **Phase 1 terminée ; phase 2 commencée : U12, U1, U13 et U7 faites (2 octobre
+  2026), prochaine tâche U8.** Phase 0 et M1 à M15 sont faites (journal § 7 ; M14b le 2 octobre
   2026, qui livre aussi A4 de la phase 3 ; M15, la documentation de la phase, le
   2 octobre 2026). `pnpm check` était vert au dernier commit.
 - **Méthode qui a fonctionné** : la session principale orchestre ; chaque tâche
@@ -27,8 +27,9 @@ responsable du résultat : il relit le diff, lance la gate et tient le journal.
   questions simples en les écrivant dans l'ADR ou la tâche concernée, et
   remonte à l'auteur ce qui relève de son goût ou de son contenu.
 - **N'attend que l'auteur** : validation visuelle des captures de M8 à M14b,
-  de U12, de U1 et de U13 (`test-results/`, dont `test-results/beam-sprites/`,
-  `test-results/placement-ghost/` et `test-results/build-zones/`) ; relecture des documents de M15 (entrée du journal) ;
+  de U12, de U1, de U13 et de U7 (`test-results/`, dont `test-results/beam-sprites/`,
+  `test-results/placement-ghost/`, `test-results/build-zones/` et
+  `test-results/goal-ball/`) ; relecture des documents de M15 (entrée du journal) ;
   questions de goût listées dans les entrées M12 à M14b du journal ; feu vert pour intégrer `levels/` à la campagne (§ 6) ; décisions de
   la phase 5.
 - **Ne pas faire** : concevoir, calibrer ou retoucher un niveau (§ 6) ; pousser.
@@ -412,7 +413,8 @@ validation visuelle pour chacune.
    validation visuelle attendue.
 3. ~~U13 — Zones de construction visibles~~ : faite le 2 octobre 2026 (journal
    U13) ; validation visuelle attendue.
-4. **U7 — Balle suivie** : signaler la balle cible de l'objectif.
+4. ~~U7 — Balle suivie~~ : faite le 2 octobre 2026 (journal U7) ; validation
+   visuelle attendue.
 5. **U8 — Aide du niveau 1** : indication brève et non bloquante vers « Tester »
    puis le tiroir.
 6. **U10 — Invitation de mise à jour et d'installation** de la PWA, branchée sur
@@ -2145,3 +2147,98 @@ className="level-card-description">` après l’état, comme `/levels` (même
   objet est sombre, pas bleu (`drawFootprintOutline` sans couleur). (4) La
   question (4) du journal U1 est résolue ici : le déplacement hors zone a le
   rendu du fantôme invalide.
+
+### U7 — Balle suivie — fait — commit de cette entrée
+
+- Déroulé : une seule étape, sous-agent Opus (tâche d'interface). Lecture
+  imposée faite ; lus en plus pour le travail : `src/presentation/board-renderer.ts`
+  et son test, `src/ui/BoardView.tsx`, `src/app/BoardShell.tsx` (boîte
+  « Objectif »), `src/ui/SimulationControls.tsx` (libellés Lancer et pause),
+  `src/app/App.test.tsx`, `e2e/build-zones.spec.ts` (modèle de niveau partagé et
+  de captures), l'entrée U19 du journal luna et le test de palette
+  `wire-renderer.test.ts` (rouge de la balle, `#de1111`), pour réutiliser ce
+  rouge.
+- Puce citée (`feuille-de-route-luna.md` § 6) : « **U7 — Balle suivie** :
+  signaler quelle balle est la cible de l'objectif. » Elle ne cite aucune
+  entrée de journal luna.
+- État trouvé : rien de U7 dans le code ni dans `git log` (seules U18 et U19
+  distinguent la balle de l'objectif par la couleur : rouge contre bleu). Le
+  tableau de bord de `feuille-de-route-luna.md` range bien U7 parmi les tâches
+  à faire (« § 6 dans l'ordre : U12, U1, U7… ») : pas d'écart cette fois.
+- Tests ajoutés : `src/presentation/board-renderer.test.ts` › « balle de
+  l'objectif signalée (U7) » (5 cas : `signalledGoalBallId` et
+  `projectLevel(…).goalBallMarkerId` désignent la balle de l'objectif dès deux
+  balles, rien pour une balle seule, même balle en simulation ; anneau plein
+  centré sur la balle, rayon = rayon de la balle + 5 px CSS, liseré blanc
+  5 px puis trait rouge `#de1111` 2,5 px, dessiné après les sprites des
+  balles, aucun anneau autour de la balle bleue ; l'anneau suit la pose
+  simulée ; au zoom ×2 le rayon suit la balle, pas l'épaisseur ; aucun arc
+  pour une balle seule) ; `src/app/App.test.tsx` › « signale la balle de
+  l'objectif sur le plateau et dans l'objectif quand plusieurs balles sont
+  posées (U7) » (niveau 1 : `data-goal-ball-marker="ball-red"`, phrase dans
+  la boîte « Objectif ») et « ne signale rien quand la balle de l'objectif
+  est seule (U7) » (garde, verte dès l'écriture : elle décrit une absence) ;
+  `e2e/goal-ball.spec.ts` (390 × 844 : pixel rouge sur l'anneau, rien au même
+  endroit près de la balle bleue, attribut ; Lancer, pause, l'anneau est à la
+  position simulée et plus à la position de départ ; phrase de l'objectif ;
+  et captures aux trois formats, au repos et en pause).
+- Échec initial constaté : Vitest, `TypeError: (0 , signalledGoalBallId) is
+  not a function`, `expected [] to deeply equal [ 17, 17 ]`, `expected [] to
+  have a length of 2 but got +0`, `expected [] to deeply equal [ 29, 29 ]` ;
+  `App.test.tsx` : `toHaveAttribute("data-goal-ball-marker", "ball-red")`.
+  Playwright, contre un build de l'ancien code (`git stash` des trois fichiers
+  de production, puis restaurés) : `expect.poll(… isRingRed(…)).toBe(true)`,
+  reçu `false`, pour les deux tests.
+- Tests existants réécrits : aucun. L'aide `replay` de
+  `board-renderer.test.ts` enregistre désormais aussi les `arc` avec leur
+  état (les tests existants filtrent par `kind` et ne changent pas).
+- Réalisé : `signalledGoalBallId(document)` (presentation, pur) renvoie
+  `goal.ballId` quand le document compte au moins deux balles ;
+  `projectLevel` le porte dans `goalBallMarkerId` ; le renderer trace
+  `drawGoalBallMarker` après les objets et les étiquettes de fils, avant
+  contours et sélection, centré sur `layer.position` (la pose simulée pendant
+  le lancer). Le canvas expose `data-goal-ball-marker`. La boîte
+  « Objectif » ajoute, dans ce cas seulement, « Seule la balle rouge compte :
+  sur le plateau, elle est entourée d’un anneau. » Toutes les phases
+  (construction, simulation, pause, résultat). Domaine, simulation, schéma et
+  constantes physiques inchangés.
+- Fichiers touchés hors périmètre : aucun ; `docs/mobile-editor-interactions.md`
+  (§ Organisation de l'écran) décrit l'anneau et la phrase.
+- Écarts avec la tâche : aucun. Choix conservateurs : (1) pas d'anneau quand
+  la balle est seule (rien à distinguer) ; (2) l'anneau en toutes phases, pas
+  seulement en simulation ; (3) rouge de la balle (U19, le rouge appartient à
+  l'objectif) sur liseré blanc, trait plein, pour ne pas ressembler aux
+  tirets rouges du fantôme refusé ; (4) les messages d'échec (« la balle a
+  quitté le plateau ») ne sont pas retouchés.
+- Contradictions rencontrées : aucune.
+- Captures inspectées (Read sur les PNG) :
+  `test-results/goal-ball/{repos,simulation}-{390x844,844x390,1440x900}.png`.
+  Au repos : balle rouge à gauche, cerclée d'un anneau rouge fin sur un
+  liseré blanc, à quelques pixels du bord de la balle ; balle bleue à droite
+  sans rien ; panier en bas à droite ; rien d'autre ne recouvre le plateau.
+  En pause après le lancer : les deux balles sont descendues d'un même cran,
+  l'anneau est resté autour de la rouge. En 390 × 844 et 844 × 390 l'anneau
+  se détache nettement (balle d'environ 24 à 28 px) ; en 1440 × 900 il est
+  plus proche d'un contour de la balle (écart fixe de 5 px pour une balle
+  d'environ 80 px), toujours lisible. Vue aussi, produite par la gate :
+  `test-results/u6/puzzle-390x844.png` (niveau 1) : la balle rouge posée sur
+  son poteau porte l'anneau, la bleue non ; le capuchon du bouton, rouge lui
+  aussi, n'en porte pas.
+- Gate : `pnpm check` passe du premier coup — typecheck, lint, formatage,
+  Knip, contenu (19 documents), 1009 tests Vitest en 79 fichiers, build, 62
+  tests Playwright `mobile` (61 réussis, 1 ignoré). Pas d'intermittence D4 ni
+  U15 observée. `tmp/check-levels.ts` (ESLint le refuse) a été déplacé hors
+  du dépôt pendant `pnpm check:fast` et `pnpm check`, puis remis exactement à
+  sa place : SHA-256 `1113625e…a92907` et mode 644 identiques avant et après.
+- Non vérifié : un vrai téléphone ; un niveau à trois balles dans le
+  navigateur (même code ; le test pur couvre « plus d'une ») ; le lecteur
+  d'écran (le canvas reste muet, la phrase est dans la boîte « Objectif »).
+- Pour l'auteur : validation visuelle des six captures ci-dessus.
+  Questions (tranchées de façon conservatrice, à confirmer) : (1) Les 17
+  niveaux provisoires ont tous au moins deux balles : l'anneau apparaît donc
+  dans chacun ; le garder aussi en construction, ou seulement pendant le
+  lancer ? (2) Couleur et écart (rouge de la balle sur liseré blanc, 5 px) :
+  à 1440 × 900 l'anneau colle à la balle ; un écart proportionnel vous
+  irait-il mieux ? (3) Faut-il dire « la balle rouge » dans les messages
+  d'échec ? (4) Constaté, préexistant : le capuchon du bouton est rouge, ce
+  qui contredit « le rouge n'appartient qu'à l'objectif » (U19).

@@ -60,6 +60,11 @@ En simulation, le tiroir et les contrôles d'édition disparaissent ou sont
 désactivés. Ils sont remplacés par pause ou reprendre et recommencer. Les
 contrôles de caméra restent disponibles.
 
+Quand le plateau compte plusieurs balles, la balle de l'objectif (la rouge) est
+entourée d'un anneau, en construction comme en simulation, où l'anneau la suit ;
+l'objectif le dit aussi en texte : « Seule la balle rouge compte : sur le
+plateau, elle est entourée d’un anneau. » Une balle seule n'a pas d'anneau (U7).
+
 En portrait sur téléphone, le catalogue est un tiroir bas avec au moins deux
 positions : replié et ouvert. En paysage, l'hypothèse initiale est un tiroir
 latéral afin de conserver la hauteur du plateau. Le contenu, l'ordre de focus et

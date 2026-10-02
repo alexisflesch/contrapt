@@ -214,6 +214,8 @@ type BoardProjection = Readonly<{
   readonly selectedPlacementId?: string;
   /** Build zones to highlight while the player constructs; view state, like the selection. */
   readonly buildZones?: readonly BoardZone[];
+  /** U7: the goal's ball, ringed so it stands out from the other balls by more than colour. */
+  readonly goalBallMarkerId?: string;
 }>;
 
 export type BoardZone = Readonly<{ readonly min: BoardPoint; readonly max: BoardPoint }>;
@@ -588,6 +590,15 @@ export const withAuthorRotation = (
 export const constrainingBuildZones = (document: LevelDocument): readonly BoardZone[] =>
   isPlacementUnconstrained(document) ? [] : document.buildZones;
 
+/**
+ * U7: the goal's ball is worth pointing out once the board holds another
+ * ball; alone, it is the ball, and its red says enough.
+ */
+export const signalledGoalBallId = (document: LevelDocument): string | undefined =>
+  document.objects.filter(({ type }) => type === 'ball').length > 1
+    ? document.goal.ballId
+    : undefined;
+
 const appearanceOf = (id: string, ghost: BoardGhost | undefined): BoardAppearance => {
   if (ghost?.ghostPlacementId !== id) return 'solid';
   return ghost.isGhostValid ? 'ghost-valid' : 'ghost-invalid';
@@ -643,8 +654,11 @@ export const projectLevel = (
     )
     .map(({ projected }) => projected);
 
+  const goalBallMarkerId = signalledGoalBallId(document);
+
   return {
     objects,
+    ...(goalBallMarkerId !== undefined && { goalBallMarkerId }),
     wires: projectWires(document),
     wiresDimmed: simulation !== undefined,
     // The outline follows the placement pose: a running machine moves away from it.
@@ -708,6 +722,13 @@ const GHOST_ALPHA: Record<BoardAppearance, number> = {
 /** The selection and rotation handle's blue: a valid ghost is outlined like a selection. */
 const GHOST_VALID_OUTLINE = '#1e88e5';
 const GHOST_INVALID_DASH_CSS_PIXELS = [6, 4];
+/** U7: the goal ball's red (U19), on a white rim that keeps it readable over any sprite. */
+const GOAL_BALL_RING_COLOUR = '#de1111';
+const GOAL_BALL_RING_WIDTH_CSS_PIXELS = 2.5;
+const GOAL_BALL_RING_RIM = '#ffffff';
+const GOAL_BALL_RING_RIM_WIDTH_CSS_PIXELS = 5;
+/** Between the ball's edge and the ring's centre line, so the ring never covers the ball. */
+const GOAL_BALL_RING_GAP_CSS_PIXELS = 5;
 
 const drawBuildZones = (
   context: BoardCanvasContext,
@@ -908,6 +929,38 @@ const drawGhostOutline = (
   context.restore();
 };
 
+/**
+ * U7: a ring around the goal's ball, following it as it rolls. Its width is
+ * in CSS pixels, so it stays a thin line at any zoom; its radius follows the
+ * ball's.
+ */
+const drawGoalBallMarker = (
+  context: BoardCanvasContext & WireCanvas,
+  projection: BoardProjection,
+  viewport: BoardViewport,
+): void => {
+  const ball = projection.objects.find(
+    ({ id, family }) => id === projection.goalBallMarkerId && family === 'ball',
+  );
+  if (ball === undefined) return;
+
+  const centre = worldToPixels(ball.layer.position, viewport);
+  const radius =
+    worldLengthToPixels(ball.destination.width / 2, viewport) + GOAL_BALL_RING_GAP_CSS_PIXELS;
+  context.save();
+  for (const [colour, width] of [
+    [GOAL_BALL_RING_RIM, GOAL_BALL_RING_RIM_WIDTH_CSS_PIXELS],
+    [GOAL_BALL_RING_COLOUR, GOAL_BALL_RING_WIDTH_CSS_PIXELS],
+  ] as const) {
+    context.strokeStyle = colour;
+    context.lineWidth = width;
+    context.beginPath();
+    context.arc(centre.x, centre.y, radius, 0, 2 * Math.PI);
+    context.stroke();
+  }
+  context.restore();
+};
+
 export const createBoardRenderer = ({
   canvas,
   context,
@@ -976,6 +1029,7 @@ export const createBoardRenderer = ({
 
     if (wireContext !== undefined) {
       drawWireLabels(wireContext, projection.wires, toScreen, wireOptions);
+      drawGoalBallMarker(wireContext, projection, viewport);
     }
 
     drawToPlaceOutlines(context, projection, viewport);

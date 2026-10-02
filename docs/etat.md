@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026, U13 (zones de construction visibles, déplacement hors zone en fantôme invalide, un seul refus par geste) livrée ; phase 1 (« Mes niveaux ») terminée.
+Dernière mise à jour : 2 octobre 2026, U7 (balle de l’objectif cerclée quand le plateau compte plusieurs balles) livrée ; phase 1 (« Mes niveaux ») terminée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -464,6 +464,21 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   unique, objet revenu, déplacement accepté ; captures
   `test-results/build-zones/{zone,hors-zone,refus}-{390x844,844x390,1440x900}.png`).
   **Validation visuelle de l’auteur attendue.**
+- Balle suivie (U7) : quand le plateau compte au moins deux balles, la balle
+  de l’objectif est entourée d’un anneau plein (rouge de la balle `#de1111`,
+  2,5 px CSS, sur un liseré blanc de 5 px), à 5 px CSS de son bord, en
+  construction comme en simulation, en pause et au résultat ; l’anneau suit
+  la pose simulée et garde son épaisseur au zoom. Une balle seule n’en a pas.
+  Le signal ne tient donc pas qu’à la couleur. `signalledGoalBallId` et
+  `goalBallMarkerId` (`src/presentation/board-renderer.ts`), attribut
+  `data-goal-ball-marker` du canvas ; la boîte « Objectif » ajoute alors
+  « Seule la balle rouge compte : sur le plateau, elle est entourée d’un
+  anneau. » Tests `board-renderer.test.ts` (« balle de l’objectif signalée
+  (U7) »), `App.test.tsx` et parcours `e2e/goal-ball.spec.ts` (pixels de
+  l’anneau, absent près de la balle bleue, suivi après lancer et pause ;
+  captures
+  `test-results/goal-ball/{repos,simulation}-{390x844,844x390,1440x900}.png`).
+  **Validation visuelle de l’auteur attendue.**
 - Caméra pure `src/presentation/board-camera.ts` (ADR 0007) : ajustement
   `contain` à la scène, bornes de zoom, panoramique, pincement, boutons de
   cadrage, recadrage sur vrai redimensionnement seulement.
@@ -765,6 +780,14 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après U7 (2 octobre 2026) : passe du premier coup —
+typecheck, lint, formatage, Knip, contenu (19 documents), 1009 tests Vitest
+(79 fichiers), build Vite/PWA et 62 tests Playwright `mobile` (61 réussis,
+1 ignoré). Pas d’intermittence D4 ni U15 observée. Le fichier d’essai de
+l’auteur `tmp/check-levels.ts` a été écarté du dépôt le temps de la gate
+(ESLint le refuse), puis remis à l’identique (SHA-256 `1113625e…a92907` et
+mode 644 vérifiés).
 
 `pnpm check` après U13 (2 octobre 2026) : passe du premier coup —
 typecheck, lint, formatage, Knip, contenu (19 documents), 1002 tests Vitest
