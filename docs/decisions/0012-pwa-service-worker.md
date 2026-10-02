@@ -79,3 +79,13 @@ worker, sa stratégie (`registerType: 'prompt'`) et son précache sont inchangé
 - **Priorité.** Une seule invitation à la fois : la mise à jour passe avant
   l’installation. La décision est la fonction pure `pwaInvitation`
   (`src/app/pwa-invitation.ts`).
+
+## Amendement du 2 octobre 2026 — liste des routes du repli hors ligne
+
+Le motif du repli (`navigateFallbackAllowlist`) est extrait dans
+`scripts/navigate-fallback-allowlist.ts` et testé : il respecte le sous-répertoire
+de déploiement et sert hors ligne `/`, `/levels`, `/levels/:levelId/play`,
+`/my-levels`, `/my-levels/:id/play`, `/editor`, `/settings`, `/shared`, `/bench` et
+`/bench/play`. `/my-levels` en était absent depuis M9, malgré la phrase « toutes
+les routes de l'ADR 0008 » ci-dessus ; `/demo` est retirée avec la route (ADR 0008).
+Un test E2E recharge « Mes niveaux » hors ligne.

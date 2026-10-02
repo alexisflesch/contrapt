@@ -1,6 +1,6 @@
 # État du dépôt — TinkerBolt
 
-Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0, V1 (fin de N2), V2a (démo supprimée) et V2b (pas de bordure, pas de perte par le haut ; validation visuelle attendue) livrées, gate globale verte ; prochaine tâche : V2c. U3 reste abandonnée.
+Dernière mise à jour : 2 octobre 2026. Feuille de route v1 (desktop d’abord) ; V0, V1 (fin de N2), V2a (démo supprimée), V2b (pas de bordure, pas de perte par le haut ; validation visuelle attendue) et V2c (repli hors ligne de `/my-levels`) livrées, gate globale verte ; prochaine tâche : V3. U3 reste abandonnée.
 
 Ce fichier décrit l’état réel du dépôt : ce qui est livré, les dettes connues et
 la dernière exécution de la gate globale. Il est réécrit à chaque fin de tâche
@@ -15,10 +15,10 @@ La feuille de route v1 (desktop d’abord) est dans
 [la feuille de route](feuille-de-route.md). **V0** (règle mobile-first suspendue,
 archives, projet Playwright `v1`), **V1** (fin de N2 : Knip, test d’export,
 copies des tutoriels vérifiées), **V2a** (route, page, contenu et tests de la
-démonstration supprimés) et **V2b** (parchemin et grille sur tout le viewport,
-plus de perte par le haut ; validation visuelle de l’auteur attendue) sont
-livrées, gate globale verte. Prochaine tâche : **V2c** (repli hors ligne de
-`/my-levels`).
+démonstration supprimés), **V2b** (parchemin et grille sur tout le viewport,
+plus de perte par le haut ; validation visuelle de l’auteur attendue) et **V2c**
+(repli hors ligne de `/my-levels`) sont livrées, gate globale verte. Prochaine
+tâche : **V3** (navigation et vocabulaire).
 Les sources auteur et son fichier d’essai restent intacts ; rien n’est poussé.
 
 ## Stack en place
@@ -576,8 +576,9 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   non-régression applicative couvre ce parcours (depuis M6 il n’a plus
   d’inventaire).
 - PWA L28 : le build génère un manifeste installable et un service worker qui
-  précache l’application et ses assets ; les routes de jeu et d’atelier ont un
-  repli hors ligne. Le hook `usePwaUpdateStatus(phase)` expose une mise à jour en
+  précache l’application et ses assets ; les routes de jeu, d’atelier et de
+  « Mes niveaux » ont un repli hors ligne (motif testé dans
+  `scripts/navigate-fallback-allowlist.ts`, V2c). Le hook `usePwaUpdateStatus(phase)` expose une mise à jour en
   attente seulement pendant une phase sûre, hors simulation et manipulation.
 - **U10 — invitations PWA** (2 octobre 2026, validation visuelle attendue) :
   une carte « Nouvelle version disponible. » avec « Mettre à jour » et « Plus
@@ -883,6 +884,11 @@ Les marques M1 à M14b renvoient aux tâches de la phase 1 « Mes niveaux »
   pas lié aux pairs Workbox installés en L28.
 
 ## Dernière exécution de la gate
+
+`pnpm check` après V2c (2 octobre 2026) : passe — typecheck, lint, formatage,
+Knip, contenu (6 documents embarqués), 1116 tests Vitest (84 fichiers), build et
+87 tests Playwright du projet `v1` (0 ignoré). `tmp/check-levels.ts` écarté puis
+remis identique.
 
 `pnpm check` après V2b (2 octobre 2026) : passe — typecheck, lint, formatage,
 Knip, contenu (6 documents embarqués), 1097 tests Vitest (83 fichiers), build et

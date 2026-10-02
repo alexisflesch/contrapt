@@ -458,3 +458,25 @@ deeply equal [ fillRect [0, 0, 320, 240] ]` (le fond de scène était encore
   intensité de la grille à fort zoom : 0,16 d'opacité) ? (2) Faut-il retirer les
   trois PNG inutilisés du précache (`globIgnores`) ? Le fichier générique pèse
   1,7 Mo.
+
+### V2c — Repli hors ligne de `/my-levels` — fait — commit V2c (2 octobre 2026)
+
+- Le motif de `navigateFallbackAllowlist` est extrait de `vite.config.ts` dans
+  `scripts/navigate-fallback-allowlist.ts` (`createNavigateFallbackAllowlist(basePath)`,
+  même construction, `routeBasePattern` échappé comme avant) ; `vitest.config.ts`
+  inclut désormais `scripts/**/*.test.ts`. Le comportement des autres routes est
+  inchangé (le motif généré dans `dist/sw.js` ne diffère que par `my-levels`).
+- Tests rouges (module extrait à l'identique, avant correction) :
+  `scripts/navigate-fallback-allowlist.test.ts` — « sert /my-levels hors ligne »,
+  « sert /my-levels/ hors ligne », « sert /my-levels/recu-0123456789abcdef/play hors
+  ligne » : `expected false to be true // Object.is equality` ; « respecte le
+  sous-répertoire de déploiement » et « échappe les caractères spéciaux » échouent
+  de même. `/demo` n'est déjà plus servie depuis V2a (test « ne sert pas /demo »
+  vert dès l'extraction). E2E `pwa.spec.ts` « ouvre « Mes niveaux » hors ligne » :
+  `page.reload: net::ERR_INTERNET_DISCONNECTED` sans le correctif, vert avec.
+- Correctif : `my-levels(?:/.*)?` ajouté au motif. ADR 0012 amendée (liste des
+  routes servies hors ligne), `etat.md` mis à jour.
+- Hors périmètre, signalé : `/import` (redirige vers `/my-levels`) n'est pas dans
+  le repli ; hors ligne, un ancien lien `/import` ne s'ouvrirait pas.
+- Gate `pnpm check` verte : 1116 tests Vitest (84 fichiers), 6 documents de
+  contenu, 87 tests Playwright `v1`.

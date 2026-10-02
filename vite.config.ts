@@ -2,15 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+import { createNavigateFallbackAllowlist } from './scripts/navigate-fallback-allowlist';
+
 // GitHub Pages serves the site under `/<repository>/`; the deploy workflow sets
 // this variable. Locally, in tests and in Playwright, the app lives at `/`.
 const basePath = process.env.TINKERBOLT_BASE_PATH ?? '/';
-const basePathPrefix = basePath === '/' ? '' : basePath.replace(/\/$/, '');
-const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const routeBasePattern = escapeRegExp(basePathPrefix);
-const navigateFallbackAllowlist = new RegExp(
-  `^${routeBasePattern}/(?:levels(?:/.*)?|editor|settings|shared|bench(?:/.*)?)/?$|^${routeBasePattern}/?$`,
-);
+const navigateFallbackAllowlist = createNavigateFallbackAllowlist(basePath);
 
 export default defineConfig({
   base: basePath,
